@@ -46,9 +46,9 @@ on:
       - ".github/workflows/hub-queue.yml"
       # Every file the freshness check reads has to be able to start it.
       #
-      # `hub_queue.py check` scans four prose roots for generated blocks, its
-      # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md` and
-      # `knowledge/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
+      # `hub_queue.py check` scans six prose roots for generated blocks, its
+      # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md`,
+      # `knowledge/`, `NEWS.md` and `notes/evidence/theme-a/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
       # for the members cross-check, and re-renders the one configured target,
       # `knowledge/roadmap.md`. An input the client reads that no filter here
       # names is a guard that is green because it never executed: a pull request
@@ -71,6 +71,9 @@ on:
       - "knowledge/**"
       - "AGENTS.md"
       - "README.md"
+      # B-209's complete assertion grammar also reads NEWS and retained evidence.
+      - "NEWS.md"
+      - "notes/evidence/theme-a/**"
   push:
     branches:
       - main
@@ -91,9 +94,9 @@ on:
       - ".github/workflows/hub-queue.yml"
       # Every file the freshness check reads has to be able to start it.
       #
-      # `hub_queue.py check` scans four prose roots for generated blocks, its
-      # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md` and
-      # `knowledge/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
+      # `hub_queue.py check` scans six prose roots for generated blocks, its
+      # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md`,
+      # `knowledge/`, `NEWS.md` and `notes/evidence/theme-a/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
       # for the members cross-check, and re-renders the one configured target,
       # `knowledge/roadmap.md`. An input the client reads that no filter here
       # names is a guard that is green because it never executed: a pull request
@@ -116,6 +119,9 @@ on:
       - "knowledge/**"
       - "AGENTS.md"
       - "README.md"
+      # B-209's complete assertion grammar also reads NEWS and retained evidence.
+      - "NEWS.md"
+      - "notes/evidence/theme-a/**"
 
 # This workflow must never gain a write permission of any kind.
 #

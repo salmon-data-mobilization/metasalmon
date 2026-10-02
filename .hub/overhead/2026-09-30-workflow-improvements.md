@@ -1678,6 +1678,25 @@ Coordination, requested audit, verification, environment repair and passive CI
 waits overlap; they still do not establish a whole-run wasted-time percentage.
 
 
+### Next existing-handoff batch, about01:40–01:45 UTC
+
+The new canonical log route is verified in the hourly heartbeat. Root read only
+relevant latest workpad/log sections for triage; no old full-log reload was
+needed. Existing PR handoffs can still make progress while hub ready is empty.
+R224 adds off-CI test skips and R221 changes HUB, so they stay critical. R228 is
+a routine existing guard with a never-executed old Claude failure; readiness
+will request its first Codex review and current actual review without provider
+repairs. No new claim or tracker was needed.
+
+R241's necessary current-main integration had one linter-call conflict and four
+NEWS/site conflicts. Both guards and all scoped/incoming changed ASTs/tests
+survive;172offline checks pass, along with real lint/check and capture gates.
+One native NEWS build preserves588 non-NEWS records. Two initially incorrect
+AST test assumptions are root instrument rework. A dispatch attempted when all
+four agent slots were occupied created no agent; that coordination misstep is
+recorded without inventing a saved audit. No extra full package or model round
+is added merely for integration freshness.
+
 ### Existing handoff resumed without freshness churn, about01:45–01:51 UTC
 
 R228 was marked ready once with unchanged6833911. This requested its first
@@ -1697,3 +1716,34 @@ required review without source-identical publication; no aggregate causal
 time-saving estimate is inferred. R241 is a separate in-flight routine guard
 batch member; its newer appended measurements remain on its published branch
 until it lands, with the canonical prefix preserved.
+
+
+**Batch closeout adjustment:** R241's actual ce5dfa0 Claude/Codex reviews finished
+without substantive findings. Root's concurrent canonical B23 measurement append
+created one real log-only merge conflict. Both sections are preserved with the
+owned script/test blobs unchanged. This is avoidable bookkeeping rework caused
+by publishing closeout measurements before the log-bearing batch member landed.
+Defer the next factual log closeout until that member lands; no new log tracker,
+source rewrite, local full rerun, site rebuild or optional model round is added.
+Current-head functional CI remains required.
+
+
+**Final-gate read correction, about01:58–02:02 UTC:** the completed Codex status
+was mistaken for no findings. Its live inline P2 had existed since01:48:40 and
+reproduces an unblanked post-heading assertion bypass; Claude calling it a nit
+does not settle correctness. Root repaired13 reproduced failures with bounded
+block syntax;174offline checks pass before an independent frozen peer. This
+is useful review/implementation work plus avoidable gate-reading rework.
+Next gate reads actual threads alongside completion status before claiming
+findings are clear. A wrong REST path initially returned404; the correct
+review-comment endpoint recovered the known positive control, with no claim
+that the review was absent. No optional model round or local full/site build.
+
+
+**Frozen peer before publication:** the independent post-heading peer found
+the companion unpunctuated paragraph-END bypass before a source publication.
+Eight new controls reproduced it; a shared block pattern fixes both boundaries.
+All175 offline checks pass in0.562s, and25 independent public-lint controls pass
+with no residual. This is useful audit/verification, not bureaucracy. There
+was no superseded source-fix CI/full/site/model run; no causal saved-time
+estimate is inferred. Root will publish one actual repair with these receipts.

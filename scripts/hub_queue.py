@@ -27,10 +27,10 @@ scope exceeds its real scope is worse than no guard:
   * It cannot tell whether an item's *content* is true. It checks that the queue
     is well formed, internally consistent, and that the prose agrees with it.
     An item can be perfectly valid and describe work that finished last week.
-  * It does not check prose outside the generated markers. A hand-written
-    sentence restating a state fact is exactly the defect being migrated away
-    from, and this program cannot see it. Only moving the sentence inside
-    markers puts it under the check.
+  * Its hand-written prose check recognizes only complete paragraph/list-start
+    assertions of a known item's state, claimable flag or blocked_by set, in
+    the grammar declared in queue/README.md. It is not a general language or
+    history detector. Generated markers still have a separate freshness check.
 
 RETIRES WHEN
 ------------
@@ -242,7 +242,9 @@ DEFAULT_QUEUE_DIR = "queue/items"
 # Where `render` and `check` look for generated blocks. Kept as an explicit list
 # rather than a whole-repo walk so the set of files under the freshness check is
 # something a reader can enumerate.
-DEFAULT_PROSE_ROOTS = ("HUB.md", "AGENTS.md", "README.md", "knowledge")
+DEFAULT_PROSE_ROOTS = (
+    "HUB.md", "AGENTS.md", "README.md", "knowledge", "NEWS.md", "notes/evidence/theme-a"
+)
 
 # Directories never scanned for markers: `docs/` is pkgdown output, and the
 # queue itself is the source rather than a restatement of it.
@@ -2465,6 +2467,88 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
 # Prose files
 # --------------------------------------------------------------------------
 
+_PROSE_LIST_MARKER = r"(?:[-*+]|\d+[.)])[ \t]+"
+_PROSE_DECORATION = r"(?:\*\*|`)?"
+_PROSE_STATE = _PROSE_DECORATION + "(?:" + "|".join(map(re.escape, STATES)) + r")\b" + _PROSE_DECORATION
+_PROSE_ID = _PROSE_DECORATION + r"[BSQ]-\d+\b" + _PROSE_DECORATION
+# Headings and thematic breaks end a Markdown block without requiring a
+# blank line. Keep this bounded syntax separate from historical line wraps.
+_PROSE_BLOCK_END_PATTERN = (
+    r"^ {0,3}(?:#{1,6}(?:[ \t]+|$).*|(?:=+|-+)[ \t]*"
+    r"|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})\r?$"
+)
+_PROSE_BLOCK_END_RE = re.compile(_PROSE_BLOCK_END_PATTERN)
+QUEUE_FACT_SENTENCE_RE = re.compile(
+    r"^[ \t]*(?:" + _PROSE_LIST_MARKER + r")?" + _PROSE_DECORATION + r"(?P<id>[BSQ]-\d+)"
+    + _PROSE_DECORATION + r"\s+(?:"
+    + r"(?:is\s+(?:currently\s+)?|currently\s+is\s+)(?:"
+    + _PROSE_STATE + "|" + _PROSE_DECORATION + r"(?:not\s+)?claimable\b" + _PROSE_DECORATION
+    + r"|blocked\s+(?:on|by)\s+" + _PROSE_ID
+    + r"(?:\s*(?:,\s*(?:and\s+)?|and\s+)" + _PROSE_ID + r")*)"
+    + r"|has\s+(?:" + _PROSE_DECORATION + r"state" + _PROSE_DECORATION + r"\s*:\s*" + _PROSE_STATE
+    + "|" + _PROSE_DECORATION + r"claimable" + _PROSE_DECORATION + r"\s*:\s*"
+    + _PROSE_DECORATION + r"(?:true|false)\b" + _PROSE_DECORATION
+    + "|" + _PROSE_DECORATION + r"blocked_by" + _PROSE_DECORATION + r"\s*:\s*\[[^\]\n]*\]))"
+    + r"(?=[ \t]*(?:[.!]|\Z|\r?\n(?:[ \t]*\r?\n|[ \t]*" + _PROSE_LIST_MARKER
+    + "|" + _PROSE_BLOCK_END_PATTERN + r"|\Z)))",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+
+def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem]:
+    """B-209's limited grammar, declared first in queue/README.md.
+
+    Only paragraph/list starts asserting known item state, claimable
+    or blocked_by are recognized. No general natural-language scope is claimed.
+    Generated blocks retain their existing freshness check; fenced examples
+    describe syntax rather than current planning state. No per-file exemption.
+    RETIRES WHEN downstream prose no longer owns queue facts, or a structured
+    successor renderer makes this syntax guard unnecessary.
+    """
+    known = {item.id for item in items}
+    problems = []
+    for path in find_prose_files(root, DEFAULT_PROSE_ROOTS):
+        text = path.read_text(encoding="utf-8")
+        text = BLOCK_RE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+        fence = None
+        visible = []
+        for line in text.splitlines(keepends=True):
+            marker = MARKDOWN_FENCE_RE.match(line.rstrip("\r\n"))
+            if fence is not None:
+                if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= fence[1] \
+                        and not marker.group(2).strip():
+                    fence = None
+                visible.append("\n" if line.endswith("\n") else "")
+            elif marker and not (marker.group(1)[0] == "`" and "`" in marker.group(2)):
+                fence = (marker.group(1)[0], len(marker.group(1)))
+                visible.append("\n" if line.endswith("\n") else "")
+            else:
+                visible.append(line)
+        prose = "".join(visible)
+        # A wrapped historical sentence can begin its SECOND line with an id
+        # (backlog.md's export-of-349a443 example). A physical line is not a
+        # standalone assertion. Restrict reach to paragraph/list starts.
+        starts, offset, at_start = set(), 0, True
+        for line in prose.splitlines(keepends=True):
+            if at_start or re.match(r"^[ \t]*" + _PROSE_LIST_MARKER, line):
+                starts.add(offset)
+            at_start = not line.strip() or bool(_PROSE_BLOCK_END_RE.match(line.rstrip("\r\n")))
+            offset += len(line)
+        for match in QUEUE_FACT_SENTENCE_RE.finditer(prose):
+            line_start = prose.rfind("\n", 0, match.start("id")) + 1
+            if line_start not in starts:
+                continue
+            item_id = match.group("id").upper()
+            if item_id in known:
+                problems.append(Problem(
+                    relative(path, root), prose.count("\n", 0, match.start("id")) + 1,
+                    "queue-fact-in-prose",
+                    f"{item_id} has a standalone current queue assertion here. "
+                    "Link to its item or use the existing generated item block; "
+                    "the item owns state, claimable and blocked_by, even when this copy agrees today",
+                ))
+    return problems
+
 
 def find_prose_files(root: Path, roots: tuple[str, ...]) -> list[Path]:
     found: list[Path] = []
@@ -2525,6 +2609,7 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_solo(root)
         + validate_workpads(root, items)
         + validate_port_records(root, items)
+        + validate_queue_facts_in_prose(root, items)
         + validate_port_pair_presence(root, items)
     )
 

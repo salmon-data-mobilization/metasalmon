@@ -1290,6 +1290,11 @@ metasalmon (development version)
 
 ### Internal
 
+- Hub queue lint rejects a narrow set of standalone present-tense queue
+  facts in paragraph/list starts outside generated blocks (B-209): state,
+  claimability and blockers. Historical, conditional and attributed prose
+  stays readable; generated blocks keep their existing freshness check.
+
 - Hub queue lint checks landed records for every Python item named in the
   mirror debt passages, including ports filed without a dependency (B-394).
   R blockers remain excluded; existing window and follow-up landings are
