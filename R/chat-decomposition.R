@@ -30,7 +30,10 @@
 
 .ms_chat_new_session_id <- function(prefix = "mscur") {
   stamp <- format(Sys.time(), "%Y%m%d%H%M%S")
-  suffix <- paste(sample(c(letters[1:6], 0:9), 8L, replace = TRUE), collapse = "")
+  # tempfile supplies a process-specific nonce without reading or initializing
+  # R's statistical RNG, and creates no file. Hash to keep the existing eight
+  # hexadecimal character suffix; this is a session name, not a credential.
+  suffix <- digest::digest(tempfile(pattern = "mscur-"), algo = "xxhash32", serialize = FALSE)
   paste(prefix, stamp, suffix, sep = "-")
 }
 

@@ -21,6 +21,17 @@ at the repository root, one file per work item, and the claim protocol is in
 card is the one that is wrong. Read `queue/README.md` before editing anything
 under `queue/`.
 
+**Repository-local coherent-batch default (requested 2026-10-01; operative only
+after this policy merges):** This repository adopts `HUB.md` § *Coherent
+batches*: one PR may contain several separately claimed IDs in one coherent
+capability or substantial related-defect family, and that is the default where
+related eligible work exists. A substantial capability with one ID is ordinary;
+a narrow standalone or urgent fix remains valid with one brief scope reason in
+the lead workpad. One owner uses one lead implementation worktree and branch,
+with an exact per-ID handoff ref and short linked record; different owners stay
+isolated. Another member repository needs its own explicit `AGENTS.md` adoption.
+The mirror, semantic, guard, security, and release contracts below remain.
+
 ## Non-negotiable contracts (do not break without a logged decision)
 
 - **metasalmonpy mirrors this package — always.** (Brett, 2026-08-13.) Any
@@ -372,6 +383,7 @@ Rscript -e 'devtools::test()'                             # full suite (must sta
 testthat::test_file("tests/testthat/test-<area>.R", reporter = "summary")
 devtools::document()                                     # after roxygen changes
 Rscript scripts/build-pkgdown.R                          # after doc changes
+Rscript scripts/build-pkgdown.R --news-only              # when only NEWS changed
 ```
 
 ```sh

@@ -3,7 +3,9 @@
 # Build the pkgdown site into docs/, which is committed and published as the
 # package website (the `url` in _pkgdown.yml).
 #
-# Usage: Rscript scripts/build-pkgdown.R [--accept-toolchain-change]
+# Usage: Rscript scripts/build-pkgdown.R [--news-only | --accept-toolchain-change]
+# Use --news-only when only NEWS changed: build its pages and search index,
+# retaining the same toolchain and publication checks as a full build.
 #
 # It does two things that `pkgdown::build_site()` alone does not (hub item
 # B-141).
@@ -71,17 +73,21 @@ repo_root <- normalizePath(
 setwd(repo_root)
 
 options_given <- commandArgs(trailingOnly = TRUE)
-unknown_options <- setdiff(options_given, "--accept-toolchain-change")
+unknown_options <- setdiff(options_given, c("--accept-toolchain-change", "--news-only"))
 if (length(unknown_options) > 0L) {
   stop(
     sprintf(
-      "Unknown argument: %s\nUsage: Rscript scripts/build-pkgdown.R [--accept-toolchain-change]",
+      "Unknown argument: %s\nUsage: Rscript scripts/build-pkgdown.R [--news-only | --accept-toolchain-change]",
       paste(unknown_options, collapse = " ")
     ),
     call. = FALSE
   )
 }
 accept_toolchain_change <- "--accept-toolchain-change" %in% options_given
+news_only <- "--news-only" %in% options_given
+if (news_only && accept_toolchain_change) {
+  stop("A toolchain change requires a full build; do not combine --news-only with --accept-toolchain-change.", call. = FALSE)
+}
 
 # Root and .github/ Markdown files that pkgdown renders as pages. Each one must
 # be in one of these two vectors; see (1) above.
@@ -89,6 +95,7 @@ internal_sources <- c(
   "AGENTS.md",
   "CLAUDE.md",
   "HUB.md",
+  "REVIEW.md",
   ".github/PULL_REQUEST_TEMPLATE.md"
 )
 public_sources <- character()
@@ -197,11 +204,29 @@ if (length(toolchain_differs) > 0L) {
   )
 }
 
-pkgdown::build_site(
-  new_process = FALSE,
-  install = TRUE,
-  lazy = FALSE
-)
+if (news_only) {
+  pkgdown::build_news()
+  # build_site() normally makes the Markdown companion later, for every page.
+  # Use that same converter for NEWS alone so its two public formats agree.
+  pkg <- getFromNamespace("as_pkgdown", "pkgdown")(".")
+  if (!isFALSE(pkg$meta$`llm-docs`)) {
+    news_paths <- getFromNamespace("get_site_paths", "pkgdown")(pkg)
+    news_paths <- news_paths[grepl("^news/.*\\.html$", news_paths)]
+    for (path in news_paths) {
+      getFromNamespace("convert_md", "pkgdown")(
+        file.path(pkg$dst_path, path),
+        file.path(pkg$dst_path, sub("\\.html$", ".md", path)),
+        getFromNamespace("full_url", "pkgdown")(pkg, path)
+      )
+    }
+  }
+} else {
+  pkgdown::build_site(
+    new_process = FALSE,
+    install = TRUE,
+    lazy = FALSE
+  )
+}
 
 # pkgdown writes each page as .html and, for its llms.txt support, as .md.
 # Neither may stay public or in the search and sitemap indexes rebuilt below.
@@ -216,7 +241,7 @@ pkgdown::build_search()
 getFromNamespace("build_sitemap", "pkgdown")(".")
 
 markdown_paths <- list.files(
-  "docs",
+  if (news_only) "docs/news" else "docs",
   pattern = "\\.md$",
   recursive = TRUE,
   full.names = TRUE
