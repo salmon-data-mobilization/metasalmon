@@ -1974,3 +1974,77 @@ is introduced. Existing reviewed PRs remain separate.
   expect fewer spawns when no new work exists, without attributing savings yet.
   The claim checks are coordination/verification, auth diagnosis is environment
   repair, this operational adjustment is implementation, and waiting is passive.
+
+### First idle-check evaluation, 2026-10-02 from 07:26 UTC
+
+- The compact survey used 12 tool reads: three shell-tool calls, eight PR
+  metadata calls and one clock read. One shell call batched the two public
+  claim-tip queries; one audited B-350's claim contents. These categories are
+  subsets of the 12 reads, not additional calls. Canonical main, all eight PR
+  heads/states/activity and both claim tips were unchanged. CLI still returns
+  HTTP 401. No full review, site build, test or model reroll was started by the
+  idle survey, and it used zero agent starts solely for polling, versus three
+  in the preceding baseline. This is an observed reduction in agent starts;
+  baseline tool reads were not fully counted, so no elapsed-time percentage
+  or reduction in total tool reads is inferred.
+- B-350's verified original-owner beat `4135166` has lease 06:05:36 UTC;
+  configured grace ended at 07:05:36 UTC. Its work remains frozen, as does
+  B-223. No reassignment, authenticated renewal or reclamation was performed.
+- A separate useful diagnostic agent used four reads over 50 seconds to seek
+  Claude151's denied Git operation. Review and package artifact inventories
+  returned empty; neither current workflow declares an artifact upload, so the
+  package run was not a valid artifact reach control. First-page inventory
+  limits remain. No execution artifact or exact denied-command cause was
+  established beyond the existing safe `Bash:git` category.
+- The next small implementation will add fixed diagnostic categories for Git
+  directory/configuration options, keeping argument values private and denied
+  calls blocking. This is ordinary requested workflow work; it changes no
+  claim or permission policy. Its tests and review are separate from idle
+  survey effort. Record this evaluation and changed hold once; later unchanged
+  surveys need no new status-only checkpoint.
+
+### Safe denial diagnostics, 2026-10-02 about 07:30–08:02 UTC
+
+- Ordinary requested workflow work is published as metasalmon PR #262 at
+  `04624bc`, based on canonical `d07f727`. It classifies existing known Git
+  actions after supported leading directory/configuration options using only
+  fixed labels. Argument values stay private. Unknown/unsupported shapes stay
+  generic, compound commands stay unclassified, and every denial still blocks
+  completion. Permissions, review budgets, claims and policy are unchanged.
+  This does not establish the cause of PR #229's previous denial or authorize
+  another review rerun there. The CI-only helper requires no package parity port.
+- Implementation reproduced the missing option labels against the prior
+  source. Peer verification found invalid final config-key components; root
+  verification then found invalid section components. Both corrections carry
+  failing-before cases and real Git controls for valid numeric sections, empty
+  subsections and arbitrary middle subsection text. Seven focused test methods
+  pass on frozen source `7255667` and tests `a7e98c4`. The final independent
+  check also passes eight narrow controls, with completion and compound logic
+  unchanged. Earlier diagnostic and peer turns took 50s and 130s respectively;
+  these are useful diagnosis/verification, not idle polling. Later peer turns
+  and root implementation time were not reliably timed; do not add overlapping
+  agent durations or infer an active-time percentage from this record.
+- The NEWS-only site build initially stopped at its pinned-toolchain guard
+  because setting RSTUDIO_PANDOC alone still selected Pandoc 3.11. Selecting the
+  existing 3.8.3 executable through PATH and RSTUDIO_PANDOC passed without a
+  global configuration change. This is environment repair. Verification reached
+  the new NEWS record and preserved all 588 non-NEWS search records and five
+  favicon/manifest pairs. An initial relative-URL selector missed the absolute
+  URLs; reading the authority and using a positive control corrected that
+  verification instrument, with no source repair or second site build needed.
+- Coordination used one managed, isolated worktree and one ordinary feature
+  branch; no synthetic queue item or duplicate claim was created. The CLI token
+  remains invalid. The connected GitHub app published normal code/docs after
+  verifying blob hashes, tree, parent and public commit bytes. Six changed blobs
+  needed 46 bounded content reads; upload plus tree/commit creation took 8.7s.
+  Call count alone would overstate that wall-clock cost. Generated NEWS/search
+  bytes account for 44 of those reads. This transport is not a claim-ref
+  workaround. PR #262 is attached and labelled agent-run; its six applicable
+  workflows, including actual Claude execution, started naturally on opening.
+  No new model round was spent on an unchanged held PR.
+- Repeated freezes and peer handoffs exposed avoidable sequencing overhead:
+  next bounded parser change should finish the root's focused grammar controls
+  before dispatching its one frozen-source peer check. Keep independent review,
+  but avoid redispatch solely because those root checks happened late. Evaluate
+  this order on the next useful implementation; it changes no gate. Review/CI
+  waits are passive, and the new diagnostic's next-use benefit remains unmeasured.
