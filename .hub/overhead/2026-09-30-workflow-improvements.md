@@ -1947,3 +1947,30 @@ is introduced. Existing reviewed PRs remain separate.
   authentication repair remains an environment hold and waiting is passive.
   This one changed claim fact is recorded once. Unchanged hourly PR snapshots
   do not need new reports, documentation builds or review rerolls.
+
+### Idle-check adjustment and expired leases, 2026-10-02 about 06:26–06:32 UTC
+
+- Canonical main and all eight PR heads/activity are unchanged. The saved CLI
+  token is invalid; no GH_TOKEN/GITHUB_TOKEN, host or config-directory override
+  is present. The existing login and policy questions remain pending.
+- Live public B-223 tip `56611e3` still names its original holder. Lease and
+  grace ended at 06:25:03 UTC; no reassignment was observed. B-350 tip `4135166`
+  is still its original holder's attempt-3 beat, with lease ending 06:05:36 UTC
+  and grace ending 07:05:36 UTC. Both worktrees are frozen pending authenticated
+  ownership/renewal and their existing prerequisite decisions. These timestamp
+  observations do not establish that an item is free or authorize reclamation.
+- One small operational adjustment is saved through the automation tool: idle
+  blocked runs use compact auth/main/PR metadata checks, reuse unchanged workpad
+  dispositions, batch relevant claim-tip reads, and avoid repeated full audits,
+  documentation builds and status-only Git checkpoints. Subagents serve new
+  work when delegation saves time or improves verification. Claim, approval,
+  merge and review gates are unchanged. The automation remains active with the
+  same hourly schedule, target chat and prior prompt; the added paragraph was
+  read back and verified.
+- This idle-run baseline used three polling-only agent spawns, eight PR
+  snapshots and two fresh claim-record audits. Nested tool reads were not fully
+  counted, so snapshots are not labelled tool calls. Evaluate the next use by
+  counting actual reads, polling-only spawns and changed-fact checkpoint writes;
+  expect fewer spawns when no new work exists, without attributing savings yet.
+  The claim checks are coordination/verification, auth diagnosis is environment
+  repair, this operational adjustment is implementation, and waiting is passive.
