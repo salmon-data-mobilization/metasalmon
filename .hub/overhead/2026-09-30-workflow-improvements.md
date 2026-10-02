@@ -1747,3 +1747,47 @@ All175 offline checks pass in0.562s, and25 independent public-lint controls pass
 with no residual. This is useful audit/verification, not bureaucracy. There
 was no superseded source-fix CI/full/site/model run; no causal saved-time
 estimate is inferred. Root will publish one actual repair with these receipts.
+
+
+### Completed batch checkpoint, 2026-10-02 about02:17–02:45 UTC
+
+- R241/B-209 merged as1147062 from4ccb0c2 after all six current-head
+  workflows succeeded, R4.6.1 reported Status: OK, the valid Codex P2 was
+  fixed/resolved, and the prior actual Claude review had only nits. Later
+  accounting skips were not counted as actual reviews. The guard's
+  discrimination rule,175 offline checks and25 independent public-lint
+  controls meet its retirement condition; this checkpoint closes B-209.
+- Canonical main fast-forwarded; the complete log matched the landed
+  worktree byte-for-byte. The clean worktree had zero unique commits and was
+  removed/pruned, retaining its branch and the unrelated dirty B-384 workpad.
+- R223/B-256 integrated the settled main once. Focused44 assertions and one
+  native NEWS build (16.97s) passed, preserving588 ordered non-NEWS records.
+  The connected GitHub app published f597453 with the exact tested bdf81aa
+  tree and ordered parents, verified through public Git before a normal
+  fast-forward ref update. Commit metadata differs; no claim-ref workaround
+  was attempted. Actual Claude36956399185 completed successfully with two
+  nits; ready conversion waited until it finished, avoiding cancellation of
+  an active model run. First Codex reviews and final-head CI remain gates.
+- A single coherent batching-process proposal is prepared in
+  feature/hub-coherent-batches. Independent review found two real printed
+  guidance defects before publication: solo participation was incorrectly
+  presented as sufficient batch authority, and a handoff hold ended at local
+  branch integration rather than PR merge plus that ID's acceptance. Both
+  are being corrected together. No existing reviewed PR is repackaged.
+- Coordination is the claim/PR/checkpoint routing above. Source repairs are
+  implementation; focused/peer/CI evidence is verification; the requested
+  batching policy audit is requested audit work. GitHub CLI401 repair and
+  connected-app object publication are environment repair; user login and
+  CI/model waiting are passive waits. These overlap, so this checkpoint
+  does not claim a whole-run percentage or causal savings.
+- Avoidable instrument rework: a commit-fetch wrapper includes a huge diff
+  inside its metadata object; printing it produced an overbroad dump.
+  Public Git provides compact tree/parent proof. A whole-tree JSON export
+  also exceeded tool output limits; bounded reads preserved verified bytes.
+  UTF-8 byte length differs from string length, so blob SHA is the correct
+  identity check. Reuse ordinary Git publication after CLI recovery; the
+  connected app is a supported fallback, not a new claim transport.
+- Next measurement: one declared coherent capability/related-defect PR,
+  one detailed lead report and concise per-ID pointers, one integrated
+  review/test checkpoint, then per-ID closure at a meaningful checkpoint.
+  The policy proposal remains held for review; existing claim rules apply.
