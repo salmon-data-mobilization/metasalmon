@@ -119,6 +119,15 @@ closure_clear <- function(path) {
   invisible(path)
 }
 
+closure_capture_warnings <- function(expr) {
+  messages <- character()
+  value <- withCallingHandlers(expr, warning = function(warning) {
+    messages <<- c(messages, conditionMessage(warning))
+    invokeRestart("muffleWarning")
+  })
+  list(value = value, messages = messages)
+}
+
 test_that("the vocabulary field order matches the digest verifier exactly", {
   # The digest is over these ten values joined by "\r". If the producer's field
   # list and the verifier's ever diverge, every hash the producer writes is
@@ -347,6 +356,99 @@ test_that("a code-resolved procedure is a vocabulary term and never a review tar
   )
   expect_identical(nrow(.ms_eml_read_vocabulary(path, pkg, mapping)), 6L)
   expect_identical(nrow(.ms_eml_read_semantic_review(path, pkg, mapping)), 5L)
+})
+
+test_that("procedure gaps and incomplete evidence name their carrying code rows", {
+  path <- withr::local_tempdir()
+  make_closure_procedure_sdp(path)
+  closure_clear(path)
+  codes <- read_salmon_datapackage(path)$codes
+  procedure_iris <- codes$term_iri
+  code_keys <- function(rows) {
+    paste(rows$dataset_id, rows$table_id, rows$column_name, rows$code_value, sep = "/")
+  }
+
+  absent <- closure_capture_warnings(write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = closure_search_stub(),
+    quiet = TRUE
+  ))
+  gaps <- absent$value$gaps[absent$value$gaps$unresolved_iri %in% procedure_iris, , drop = FALSE]
+  carrying <- codes[match(gaps$unresolved_iri, codes$term_iri), , drop = FALSE]
+  expect_identical(nrow(gaps), 2L)
+  expect_identical(gaps$target_sdp_file, rep("codes.csv", 2L))
+  expect_identical(gaps$target_sdp_field, rep("term_iri", 2L))
+  expect_identical(gaps$table_id, carrying$table_id)
+  expect_identical(gaps$column_name, carrying$column_name)
+  expect_identical(gaps$code_value, carrying$code_value)
+  expect_identical(gaps$target_row_key, code_keys(carrying))
+  expect_true(all(grepl("term_iri", gaps$placement_rationale, fixed = TRUE)))
+  expect_false(any(grepl("method_iri", gaps$placement_rationale, fixed = TRUE)))
+  expect_true(any(grepl("term_iri", absent$messages, fixed = TRUE)))
+
+  requests <- render_ontology_term_request(gaps, scope = "smn", ask = FALSE)
+  expect_identical(nrow(requests), 2L)
+  expect_identical(requests$target_row_key, gaps$target_row_key)
+
+  procedure_search <- closure_procedure_stub(new.env())
+  short_definition <- function(query, role, sources) {
+    hits <- procedure_search(query, role = role, sources = sources)
+    hits$definition[hits$iri %in% procedure_iris] <- ""
+    hits
+  }
+  partial <- closure_capture_warnings(write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = short_definition,
+    quiet = TRUE
+  ))
+  incomplete <- partial$value$incomplete[
+    partial$value$incomplete$iri %in% procedure_iris, , drop = FALSE
+  ]
+  carrying <- codes[match(incomplete$iri, codes$term_iri), , drop = FALSE]
+  expect_identical(nrow(incomplete), 2L)
+  expect_identical(incomplete$target_sdp_file, rep("codes.csv", 2L))
+  expect_identical(incomplete$target_sdp_field, rep("term_iri", 2L))
+  expect_identical(incomplete$table_id, carrying$table_id)
+  expect_identical(incomplete$column_name, carrying$column_name)
+  expect_identical(incomplete$code_value, carrying$code_value)
+  expect_identical(incomplete$target_row_key, code_keys(carrying))
+  expect_true(any(grepl("term_iri", partial$messages, fixed = TRUE)))
+})
+
+test_that("every code row sharing one procedure IRI keeps its own gap address", {
+  path <- withr::local_tempdir()
+  make_closure_procedure_sdp(path)
+  closure_clear(path)
+  pkg <- read_salmon_datapackage(path)
+  codes <- pkg$codes
+  codes$term_iri[[2]] <- codes$term_iri[[1]]
+  # The fixture's structure descriptor is already complete; only this valid
+  # codes.csv value changes, so keep the descriptor and all keys intact.
+  readr::write_csv(codes, file.path(path, "metadata", "codes.csv"), na = "")
+
+  captured <- closure_capture_warnings(write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = closure_search_stub(),
+    quiet = TRUE
+  ))
+  gaps <- captured$value$gaps[
+    captured$value$gaps$unresolved_iri == codes$term_iri[[1]], , drop = FALSE
+  ]
+  expected_keys <- paste(codes$dataset_id, codes$table_id,
+                         codes$column_name, codes$code_value, sep = "/")
+  expect_identical(nrow(gaps), 2L)
+  expect_setequal(gaps$code_value, codes$code_value)
+  expect_setequal(gaps$target_row_key, expected_keys)
+  expect_true(all(gaps$target_sdp_field == "term_iri"))
+
+  # Rendering is row-for-row: one candidate request per carrying code address.
+  requests <- render_ontology_term_request(gaps, scope = "smn", ask = FALSE)
+  expect_identical(nrow(requests), 2L)
+  expect_setequal(requests$target_row_key, expected_keys)
+  expect_identical(length(unique(requests$request_body)), 2L)
 })
 
 test_that("both written files satisfy the validators that had no producer", {

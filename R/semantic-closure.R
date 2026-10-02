@@ -477,25 +477,83 @@
 #
 # Shared by the gap row and the incomplete-evidence row below, which describe the
 # same IRI in the same place and must not disagree about where that is.
-.ms_closure_target_context <- function(iri, targets, dictionary) {
+.ms_closure_target_context <- function(iri, targets, dictionary, codes) {
   rows <- targets[targets$iri == iri, , drop = FALSE]
   target <- if (nrow(rows) > 0L) rows[1, , drop = FALSE] else NULL
-  scope <- if (is.null(target)) "code" else .ms_closure_text(target$target_scope, "column")
-  field <- if (is.null(target)) {
-    "method_iri"
-  } else {
-    .ms_closure_text(target$target_sdp_field, "term_iri")
+  if (is.null(target)) {
+    # A measurement-only IRI is a code-resolved procedure. One IRI can occupy
+    # several code rows; report every address rather than borrowing a
+    # nonexistent codes.csv method_iri field or choosing the first code.
+    required <- c("dataset_id", "table_id", "column_name", "code_value", "term_iri")
+    if (is.null(codes) || !all(required %in% names(codes))) {
+      cli::cli_abort("A measurement IRI without a review target needs canonical codes.csv columns.")
+    }
+    matches <- .ms_closure_column(codes$term_iri) == iri
+    code_rows <- codes[matches, , drop = FALSE]
+    if (nrow(code_rows) == 0L) {
+      safe_iri <- .ms_cli_escape(iri)
+      cli::cli_abort("No codes.csv term_iri row carries measurement IRI {.val {safe_iri}}.")
+    }
+    code_rows <- code_rows[
+      order(
+        code_rows$dataset_id, code_rows$table_id,
+        code_rows$column_name, code_rows$code_value,
+        method = "radix"
+      ),
+      , drop = FALSE
+    ]
+    dataset_id <- .ms_closure_column(code_rows$dataset_id)
+    table_id <- .ms_closure_column(code_rows$table_id)
+    column_name <- .ms_closure_column(code_rows$column_name)
+    code_value <- .ms_closure_column(code_rows$code_value)
+    code_label <- if ("code_label" %in% names(code_rows)) {
+      .ms_closure_column(code_rows$code_label)
+    } else {
+      rep("", nrow(code_rows))
+    }
+    code_description <- if ("code_description" %in% names(code_rows)) {
+      .ms_closure_column(code_rows$code_description)
+    } else {
+      rep("", nrow(code_rows))
+    }
+    parent_label <- rep("", nrow(code_rows))
+    parent_description <- rep("", nrow(code_rows))
+    dict_keys <- c("dataset_id", "table_id", "column_name")
+    if (nrow(dictionary) > 0L && all(dict_keys %in% names(dictionary))) {
+      key <- function(rows) {
+        do.call(paste, c(lapply(rows[dict_keys], .ms_closure_column), sep = "\r"))
+      }
+      parent <- match(key(code_rows), key(dictionary))
+      if ("column_label" %in% names(dictionary)) {
+        parent_label <- .ms_closure_column(dictionary$column_label[parent])
+      }
+      if ("column_description" %in% names(dictionary)) {
+        parent_description <- .ms_closure_column(dictionary$column_description[parent])
+      }
+    }
+    return(tibble::tibble(
+      scope = "code",
+      sdp_file = "codes.csv",
+      field = "term_iri",
+      role = "method",
+      dataset_id = dataset_id,
+      table_id = table_id,
+      column_name = column_name,
+      code_value = code_value,
+      target_row_key = paste(dataset_id, table_id, column_name, code_value, sep = "/"),
+      column_label = parent_label,
+      column_description = parent_description,
+      target_label = ifelse(nzchar(code_label), code_label, code_value),
+      target_description = ifelse(nzchar(code_description), code_description, parent_description)
+    ))
   }
-  role <- if (is.null(target)) "method" else .ms_closure_text(target$dictionary_role, "variable")
-  dataset_id <- if (!is.null(target)) {
-    .ms_closure_text(target$dataset_id)
-  } else if ("dataset_id" %in% names(dictionary) && nrow(dictionary) > 0L) {
-    .ms_closure_text(dictionary$dataset_id[[1]])
-  } else {
-    ""
-  }
-  table_id <- if (is.null(target)) "" else .ms_closure_text(target$table_id)
-  column_name <- if (is.null(target)) "" else .ms_closure_text(target$column_name)
+
+  scope <- .ms_closure_text(target$target_scope, "column")
+  field <- .ms_closure_text(target$target_sdp_field, "term_iri")
+  role <- .ms_closure_text(target$dictionary_role, "variable")
+  dataset_id <- .ms_closure_text(target$dataset_id)
+  table_id <- .ms_closure_text(target$table_id)
+  column_name <- .ms_closure_text(target$column_name)
   dict_row <- NULL
   if (nzchar(column_name) && nrow(dictionary) > 0L &&
     all(c("table_id", "column_name") %in% names(dictionary))) {
@@ -509,19 +567,22 @@
       dict_row <- hit[1, , drop = FALSE]
     }
   }
-  list(
+  label <- if (is.null(dict_row)) "" else .ms_closure_text(dict_row$column_label)
+  description <- if (is.null(dict_row)) "" else .ms_closure_text(dict_row$column_description)
+  tibble::tibble(
     scope = scope,
+    sdp_file = if (identical(scope, "table")) "tables.csv" else "column_dictionary.csv",
     field = field,
     role = role,
     dataset_id = dataset_id,
     table_id = table_id,
     column_name = column_name,
-    label = if (is.null(dict_row)) "" else .ms_closure_text(dict_row$column_label),
-    description = if (is.null(dict_row)) {
-      ""
-    } else {
-      .ms_closure_text(dict_row$column_description)
-    }
+    code_value = NA_character_,
+    target_row_key = if (nzchar(column_name)) column_name else table_id,
+    column_label = label,
+    column_description = description,
+    target_label = label,
+    target_description = description
   )
 }
 
@@ -535,32 +596,25 @@
 # here: the first aborts, the second becomes an `incomplete` row. A gap row
 # asserts that a term is absent from the searched vocabularies, which is a claim
 # the term-request pipeline acts on.
-.ms_closure_gap_row <- function(iri, targets, dictionary, query, sources) {
-  context <- .ms_closure_target_context(iri, targets, dictionary)
+.ms_closure_gap_row <- function(iri, targets, dictionary, codes, query, sources) {
+  context <- .ms_closure_target_context(iri, targets, dictionary, codes)
   scope <- context$scope
   field <- context$field
   column_name <- context$column_name
   table_id <- context$table_id
-  label <- context$label
-  description <- context$description
   out <- tibble::tibble(
     dataset_id = context$dataset_id,
     table_id = table_id,
     column_name = column_name,
-    code_value = NA_character_,
+    code_value = context$code_value,
     target_scope = scope,
-    target_sdp_file = switch(
-      scope,
-      column = "column_dictionary.csv",
-      table = "tables.csv",
-      "codes.csv"
-    ),
+    target_sdp_file = context$sdp_file,
     target_sdp_field = field,
-    target_row_key = if (nzchar(column_name)) column_name else table_id,
+    target_row_key = context$target_row_key,
     dictionary_role = context$role,
     search_query = query,
-    column_label = label,
-    column_description = description,
+    column_label = context$column_label,
+    column_description = context$column_description,
     top_non_smn_source = "",
     top_non_smn_label = "",
     top_non_smn_iri = "",
@@ -572,14 +626,15 @@
     placement_recommendation = .ms_closure_placement_scope(iri),
     placement_confidence = NA_real_,
     placement_rationale = paste0(
-      "The package asserts this IRI in ", field, " and searching ",
+      "The package asserts this IRI in ", context$sdp_file, " ", field,
+      " at row ", context$target_row_key, " and searching ",
       paste(sources, collapse = "/"), " for it returned nothing, so either the ",
       "term is absent from the searched vocabularies or the IRI is wrong. Mint ",
       "the term, or supply a row through the `evidence` argument of ",
       "write_sdp_semantic_closure()."
     ),
-    target_label = label,
-    target_description = description,
+    target_label = context$target_label,
+    target_description = context$target_description,
     gap_detection_basis = "no_candidates",
     llm_decision = NA_character_,
     llm_confidence = NA_real_,
@@ -617,8 +672,11 @@
     "dataset_id",
     "table_id",
     "column_name",
+    "code_value",
     "target_scope",
+    "target_sdp_file",
     "target_sdp_field",
+    "target_row_key",
     "dictionary_role",
     "iri",
     "missing_fields",
@@ -631,16 +689,20 @@
 .ms_closure_incomplete_row <- function(iri,
                                        targets,
                                        dictionary,
+                                       codes,
                                        missing_fields,
                                        values,
                                        resolved) {
-  context <- .ms_closure_target_context(iri, targets, dictionary)
+  context <- .ms_closure_target_context(iri, targets, dictionary, codes)
   out <- tibble::tibble(
     dataset_id = context$dataset_id,
     table_id = context$table_id,
     column_name = context$column_name,
+    code_value = context$code_value,
     target_scope = context$scope,
+    target_sdp_file = context$sdp_file,
     target_sdp_field = context$field,
+    target_row_key = context$target_row_key,
     dictionary_role = context$role,
     iri = iri,
     # Radix: this string is a cell of a returned table and is compared by tests.
@@ -882,9 +944,13 @@
 #' @section Unresolvable IRIs become gaps, not errors:
 #' Evidence is resolved by re-running the package's own deterministic search
 #' ([find_terms()]) for each IRI and keeping the hit whose IRI matches. An IRI
-#' every searched source answered about and none of them has is reported as a
-#' row of `gaps` -- the shape [detect_semantic_term_gaps()] returns, plus an
-#' `unresolved_iri` column -- and both files are still written without it. That
+#' every searched source answered about and none of them has is reported in
+#' `gaps` -- the shape [detect_semantic_term_gaps()] returns, plus an
+#' `unresolved_iri` column -- and both files are still written without it. A
+#' code-resolved procedure has one gap row per `codes.csv` row carrying its IRI,
+#' with that row's keys and `term_iri` address. Rendering these gaps produces
+#' one candidate term request per carrying code row; review them before filing
+#' so several uses of one IRI do not become duplicate ontology issues. That
 #' is deliberate: an IRI absent from every searched vocabulary is an ontology
 #' gap to file through [render_ontology_term_request()] and
 #' [submit_term_request_issues()], not a reason to leave the user with no files
@@ -1006,6 +1072,10 @@ write_sdp_semantic_closure <- function(path,
   dictionary <- pkg$dictionary
   if (is.null(dictionary)) {
     dictionary <- tibble::tibble()
+  }
+  codes <- pkg$codes
+  if (is.null(codes)) {
+    codes <- tibble::tibble()
   }
   decisions <- .ms_closure_read_decisions(path)
 
@@ -1131,6 +1201,7 @@ write_sdp_semantic_closure <- function(path,
             iri,
             review_targets,
             dictionary,
+            codes,
             required_fields[!nzchar(values[required_fields])],
             values,
             resolved
@@ -1142,6 +1213,7 @@ write_sdp_semantic_closure <- function(path,
         iri,
         review_targets,
         dictionary,
+        codes,
         resolved$query,
         sources
       )
@@ -1353,7 +1425,7 @@ write_sdp_semantic_closure <- function(path,
     out[
       order(
         out$dataset_id, out$table_id, out$column_name,
-        out$target_sdp_field, out$unresolved_iri,
+        out$code_value, out$target_sdp_field, out$unresolved_iri,
         method = "radix", na.last = TRUE
       ),
       ,
@@ -1364,9 +1436,13 @@ write_sdp_semantic_closure <- function(path,
   }
 
   if (nrow(gaps) > 0L) {
+    missing_iris <- length(unique(gaps$unresolved_iri))
     cli::cli_warn(c(
-      "!" = "{nrow(gaps)} canonical measurement IRI{?s} could not be resolved from {.val {sources}} and {?is/are} absent from the reviewed vocabulary.",
-      .ms_cli_bullets(paste0(gaps$target_sdp_field, " = ", gaps$unresolved_iri)),
+      "!" = "{missing_iris} canonical measurement IRI{?s} could not be resolved from {.val {sources}} and {?is/are} absent from the reviewed vocabulary ({nrow(gaps)} package address{?es}).",
+      .ms_cli_bullets(paste0(
+        gaps$target_sdp_file, " ", gaps$target_sdp_field,
+        " [", gaps$target_row_key, "] = ", gaps$unresolved_iri
+      )),
       "i" = "Each is a row of the returned {.field gaps} table; pass it to {.fn render_ontology_term_request} to file a term request, or supply a row through {.arg evidence}."
     ))
   }
@@ -1374,7 +1450,7 @@ write_sdp_semantic_closure <- function(path,
   incomplete <- if (length(incomplete_rows) > 0L) {
     out <- dplyr::bind_rows(incomplete_rows)
     out[
-      order(out$iri, out$target_sdp_field, method = "radix"),
+      order(out$iri, out$target_sdp_field, out$target_row_key, method = "radix"),
       ,
       drop = FALSE
     ]
@@ -1383,10 +1459,13 @@ write_sdp_semantic_closure <- function(path,
   }
 
   if (nrow(incomplete) > 0L) {
+    incomplete_iris <- length(unique(incomplete$iri))
     cli::cli_warn(c(
-      "!" = "{nrow(incomplete)} canonical measurement IRI{?s} resolved to a term whose evidence is short of a required field, so the row was not written.",
+      "!" = "{incomplete_iris} canonical measurement IRI{?s} resolved to a term whose evidence is short of a required field, so the row was not written ({nrow(incomplete)} package address{?es}).",
       .ms_cli_bullets(paste0(
-        incomplete$iri, " is missing ", incomplete$missing_fields
+        incomplete$target_sdp_file, " ", incomplete$target_sdp_field,
+        " [", incomplete$target_row_key, "] = ", incomplete$iri,
+        " is missing ", incomplete$missing_fields
       )),
       # Said explicitly because the two warnings otherwise read alike, and the
       # difference decides what a reader should do next: a gap is a term to mint,
