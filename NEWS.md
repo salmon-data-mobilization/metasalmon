@@ -32,6 +32,14 @@ metasalmon (development version)
 
 ### Added
 
+* `capture_catalogue_query()` captures bounded public KNB/DataONE metadata
+  pages and a checksum-bearing query receipt, with explicit record/page/byte
+  limits, stable-count and duplicate-PID checks, and preserved incomplete
+  evidence on failure. It uses existing production endpoint configuration,
+  does not fetch source objects or accept semantics, and is an interim helper
+  rather than the full DatasetReceipt/source-fetch interface. Its bounded
+  public streaming transport requires the already imported httr2 >= 1.2.0.
+
 * **Model judgement runs outside the package: `write_semantic_review_packet()`
   writes a review packet for a harness to judge and
   `ingest_semantic_assessments()` reads its assessments back** (hub item
