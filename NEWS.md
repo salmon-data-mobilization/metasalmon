@@ -219,10 +219,10 @@ metasalmon (development version)
   optional spaces or tabs before `REVIEW` and around its colon, with ASCII case
   variants accepted. Stripping removes only spaces or tabs after the colon.
   Excluded line breaks or Unicode spaces stay in the value for strict malformed
-  IRI validation. XML output guards inspect decoded text and attributes for
-  that spelling, while retaining the prior exact, case-sensitive `REVIEW:`
-  whole-document scan; ordinary `review:` narrative remains valid (hub B-344,
-  Q63; Python mirror B-345).
+  IRI validation. EML/KNB output guards inspect decoded IRI-bearing XML values,
+  including escaped attribute tabs, and retain the prior exact, case-sensitive
+  `REVIEW:` whole-document scan; ordinary `Review:` narrative remains valid
+  (hub B-344, Q63; Python mirror B-345).
 
 * **The migration and tidy-data vignettes now tangle without executable code**
   (hub item B-133). Their 25 display-only examples each declare
@@ -1299,6 +1299,12 @@ metasalmon (development version)
   hub item B-161's question. The metasalmonpy half is hub item B-199.
 
 ### Internal
+
+* **The CI metasalmonpy checkout is excluded from R source tarballs** (hub item
+  B-268). `.Rbuildignore` now omits `.metasalmonpy-sibling`, the source of two
+  R CMD check NOTEs about hidden files and non-portable paths. CI still checks
+  out the sibling and exposes it through `METASALMONPY_PATH` for the parity
+  register guard. A focused source-build test verifies the tarball exclusion.
 
 * Hub queue lint refuses a dependency-linked Python port named in only one
   mirror debt passage (B-396). The intentional row-53 exception is scoped to
