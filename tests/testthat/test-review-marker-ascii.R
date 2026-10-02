@@ -83,21 +83,25 @@ test_that("strict validation rejects a former marker as a malformed IRI", {
   )
 })
 
-test_that("both serialized XML guards refuse the admitted hand-edited spelling", {
+test_that("both serialized XML guards refuse markers in emitted IRI fields", {
   skip_if_not_installed("emld")
   root <- make_eml_test_sdp(withr::local_tempdir())
   built <- suppressMessages(write_eml_from_sdp(root))
   eml <- xml2::read_xml(built$path)
-  title <- xml2::xml_find_first(eml, "//*[local-name()='title']")
-  original_title <- xml2::xml_text(title)
-  xml2::xml_set_text(title, "Review :unresolved")
+  value_iri <- xml2::xml_find_first(eml, "//*[local-name()='annotation']/*[local-name()='valueURI']")
+  xml2::xml_set_attr(value_iri, "label", "Review: a useful term label")
+  original_iri <- xml2::xml_text(value_iri)
   dictionary <- .ms_read_metadata_csv(file.path(root, "metadata", "column_dictionary.csv"))
+  expect_no_error(.ms_eml_validate_document_links(eml, dictionary, "demo-salmon-2026"))
+  xml2::xml_set_text(value_iri, "Review :unresolved")
   expect_error(
     .ms_eml_validate_document_links(eml, dictionary, "demo-salmon-2026"),
     "unresolved.*REVIEW"
   )
-  xml2::xml_set_text(title, original_title)
-  xml2::xml_set_attr(title, "q63", "Review\t:unresolved")
+  xml2::xml_set_text(value_iri, original_iri)
+  user_id <- xml2::xml_find_first(eml, "//*[local-name()='userId']")
+  expect_false(inherits(user_id, "xml_missing"))
+  xml2::xml_set_attr(user_id, "directory", "Review\t:unresolved")
   expect_match(as.character(eml), "Review&#9;:unresolved", fixed = TRUE)
   expect_error(
     .ms_eml_validate_document_links(eml, dictionary, "demo-salmon-2026"),
@@ -113,14 +117,9 @@ test_that("both serialized XML guards refuse the admitted hand-edited spelling",
     "urn:example:resource-map", "urn:example:metadata", "2026-01-01",
     members, config
   )
-  modified <- xml2::xml_find_first(ore, "//*[local-name()='modified']")
-  xml2::xml_set_text(modified, "Review :unresolved")
-  expect_error(
-    .ms_knb_validate_ore(ore, "urn:example:resource-map", members, config),
-    "local/review marker"
-  )
-  xml2::xml_set_text(modified, "2026-01-01")
-  xml2::xml_set_attr(modified, "q63", "Review\t:unresolved")
+  creator <- xml2::xml_find_first(ore, "//*[local-name()='creator']")
+  expect_false(inherits(creator, "xml_missing"))
+  xml2::xml_set_attr(creator, "rdf:resource", "Review\t:unresolved")
   expect_match(as.character(ore), "Review&#9;:unresolved", fixed = TRUE)
   expect_error(
     .ms_knb_validate_ore(ore, "urn:example:resource-map", members, config),
@@ -128,18 +127,114 @@ test_that("both serialized XML guards refuse the admitted hand-edited spelling",
   )
 })
 
+test_that("the XML guard inspects only emitter IRI locations", {
+  skip_if_not_installed("emld")
+  root <- make_eml_test_sdp(withr::local_tempdir())
+  built <- suppressMessages(write_eml_from_sdp(root))
+  eml <- xml2::read_xml(built$path)
+  eml_root <- xml2::xml_root(eml)
+  namespace <- "https://eml.ecoinformatics.org/eml-2.2.0"
+  original_location <- xml2::xml_attr(eml_root, "schemaLocation")
+
+  # schemaLocation has two URI tokens. The second is checked without erasing
+  # an excluded newline or non-ASCII prefix before the marker.
+  for (second_uri in c("Review :unresolved", "Review\t:unresolved")) {
+    xml2::xml_set_attr(
+      eml_root, "xsi:schemaLocation", paste(namespace, second_uri)
+    )
+    expect_true(.ms_document_has_review_iri(eml, "eml"))
+  }
+  for (first_prefix in c(" ", "\t")) {
+    xml2::xml_set_attr(
+      eml_root, "xsi:schemaLocation",
+      paste0(first_prefix, namespace, " Review\t:unresolved")
+    )
+    expect_true(.ms_document_has_review_iri(eml, "eml"))
+    xml2::xml_set_attr(
+      eml_root, "xsi:schemaLocation",
+      paste0(first_prefix, "Review :unresolved ", namespace)
+    )
+    expect_true(.ms_document_has_review_iri(eml, "eml"))
+  }
+  for (second_uri in c("\nReview:unresolved", paste0(intToUtf8(0x00A0L), "Review:unresolved"))) {
+    xml2::xml_set_attr(
+      eml_root, "xsi:schemaLocation", paste(namespace, second_uri)
+    )
+    expect_false(.ms_document_has_review_iri(eml, "eml"))
+  }
+  xml2::xml_set_attr(eml_root, "xsi:schemaLocation", original_location)
+  for (xpath in c(
+    "//*[local-name()='annotation']/*[local-name()='propertyURI']",
+    "//*[local-name()='distribution']/*[local-name()='online']/*[local-name()='url']",
+    "//*[local-name()='userId'][@directory='https://orcid.org']"
+  )) {
+    node <- xml2::xml_find_first(eml, xpath)
+    expect_false(inherits(node, "xml_missing"), info = xpath)
+    original <- xml2::xml_text(node)
+    xml2::xml_set_text(node, "Review :unresolved")
+    expect_true(.ms_document_has_review_iri(eml, "eml"), info = xpath)
+    xml2::xml_set_text(node, original)
+  }
+  ordinary_id <- xml2::xml_find_first(
+    eml, "//*[local-name()='dataset']/*[local-name()='alternateIdentifier']"
+  )
+  original_id <- xml2::xml_text(ordinary_id)
+  xml2::xml_set_text(ordinary_id, "Review :ordinary dataset ID")
+  expect_false(.ms_document_has_review_iri(eml, "eml"))
+  xml2::xml_set_text(ordinary_id, original_id)
+
+  dataset_node <- xml2::xml_find_first(eml, "//*[local-name()='dataset']")
+  code_definition <- xml2::xml_add_child(dataset_node, "codeDefinition")
+  .ms_eml_add_text(code_definition, "source", "Review :unresolved")
+  expect_true(.ms_document_has_review_iri(eml, "eml"))
+  xml2::xml_remove(code_definition)
+  other_entity <- xml2::xml_add_child(dataset_node, "otherEntity")
+  .ms_eml_add_text(
+    other_entity, "alternateIdentifier", "Review :unresolved",
+    attrs = c(system = "DataONE")
+  )
+  expect_true(.ms_document_has_review_iri(eml, "eml"))
+  xml2::xml_remove(other_entity)
+
+  original_package_id <- xml2::xml_attr(eml_root, "packageId")
+  xml2::xml_set_attr(eml_root, "packageId", "Review :unresolved")
+  expect_true(.ms_document_has_review_iri(eml, "eml"))
+  xml2::xml_set_attr(eml_root, "packageId", original_package_id)
+
+  config <- list(resolver = "https://example.org/resolve/")
+  members <- list(
+    list(role = "metadata", pid = "urn:example:metadata", path = "metadata/eml.xml"),
+    list(role = "data", pid = "urn:example:data", path = "data/counts.csv")
+  )
+  ore <- .ms_knb_build_ore(
+    "urn:example:resource-map", "urn:example:metadata", "2026-01-01",
+    members, config
+  )
+  description <- xml2::xml_find_first(ore, "//*[local-name()='Description']")
+  original_about <- xml2::xml_attr(description, "about")
+  xml2::xml_set_attr(description, "rdf:about", "Review :unresolved")
+  expect_true(.ms_document_has_review_iri(ore, "ore"))
+  xml2::xml_set_attr(description, "rdf:about", original_about)
+  identifier <- xml2::xml_find_first(ore, "//*[local-name()='identifier']")
+  xml2::xml_set_attr(identifier, "rdf:datatype", "Review\t:unresolved")
+  expect_true(.ms_document_has_review_iri(ore, "ore"))
+})
+
 test_that("ordinary review narratives survive public EML export", {
   skip_if_not_installed("emld")
   root <- make_eml_test_sdp(withr::local_tempdir())
   dataset_path <- file.path(root, "metadata", "dataset.csv")
   dataset <- readr::read_csv(dataset_path, show_col_types = FALSE)
-  narrative <- "Peer review: counts were cross-checked; data preview: complete."
+  title <- "Review: annual salmon counts"
+  narrative <- "Review: counts were independently checked. Peer review: complete."
+  dataset$title <- title
   dataset$description <- narrative
   readr::write_csv(dataset, dataset_path, na = "")
 
   built <- suppressMessages(write_eml_from_sdp(root))
   expect_true(file.exists(built$path))
   eml <- xml2::read_xml(built$path)
+  expect_match(as.character(eml), title, fixed = TRUE)
   expect_match(as.character(eml), narrative, fixed = TRUE)
 })
 

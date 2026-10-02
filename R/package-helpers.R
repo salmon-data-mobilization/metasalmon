@@ -3893,16 +3893,49 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   out
 }
 
-# EML and OAI-ORE guards scan a whole XML document. Inspect decoded node and
-# attribute values because the serializer escapes a tab in an attribute as
-# `&#9;`; a string scan alone would miss a ruled marker there. Keep the wider
-# inherited exact, case-sensitive `REVIEW:` serialized scan as a conservative
-# guard for marker text across markup. Ordinary `review:` prose is not a marker.
-.ms_document_has_review_iri <- function(document) {
-  text_values <- xml2::xml_text(xml2::xml_find_all(document, "//text()"))
-  attribute_values <- unlist(lapply(
-    xml2::xml_find_all(document, "//*[@*]"), xml2::xml_attrs
-  ), use.names = FALSE)
+# Inspect decoded values only where the EML/ORE emitters put IRIs. Scanning
+# every text node would mistake an abstract beginning "Review:" for an IRI;
+# scanning every attribute would do the same to a term label. The serializer
+# escapes an attribute tab as `&#9;`, so the decoded pass is still necessary.
+# Keep the inherited exact `REVIEW:` whole-document check for older markers.
+.ms_document_has_review_iri <- function(document, profile = c("eml", "ore")) {
+  profile <- match.arg(profile)
+  if (identical(profile, "eml")) {
+    text_xpath <- paste(c(
+      "//*[local-name()='annotation']/*[local-name()='propertyURI' or local-name()='valueURI']",
+      "//*[local-name()='codeDefinition']/*[local-name()='source']",
+      "//*[local-name()='distribution']/*[local-name()='online']/*[local-name()='url']",
+      "//*[local-name()='userId'][@directory='https://orcid.org']",
+      "//*[local-name()='otherEntity']/*[local-name()='alternateIdentifier'][@system='DataONE']"
+    ), collapse = " | ")
+    attribute_xpath <- paste(c(
+      "/*[local-name()='eml']/@packageId",
+      "/*[local-name()='eml']/@xsi:schemaLocation",
+      "//*[local-name()='userId']/@directory"
+    ), collapse = " | ")
+    text_values <- xml2::xml_text(xml2::xml_find_all(document, text_xpath))
+    attribute_values <- xml2::xml_text(xml2::xml_find_all(
+      document, attribute_xpath,
+      ns = c(xsi = "http://www.w3.org/2001/XMLSchema-instance")
+    ))
+    # schemaLocation is one namespace URI followed by its schema URI. Check
+    # the second URI without trimming a leading newline or non-ASCII space
+    # into Q63's narrower ASCII marker spelling.
+    schema_location <- xml2::xml_attr(xml2::xml_root(document), "schemaLocation")
+    if (!is.na(schema_location)) {
+      second_uri <- sub("^[ \t]*[^ \t]+[ \t]", "", schema_location, perl = TRUE)
+      if (!identical(second_uri, schema_location)) {
+        text_values <- c(text_values, second_uri)
+      }
+    }
+  } else {
+    attribute_values <- xml2::xml_text(xml2::xml_find_all(
+      document,
+      "//@rdf:about | //@rdf:resource | //@rdf:datatype",
+      ns = c(rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    ))
+    text_values <- character()
+  }
   any(.ms_is_review_iri(c(text_values, attribute_values))) ||
     grepl("REVIEW:", as.character(document), fixed = TRUE)
 }

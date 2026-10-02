@@ -2814,7 +2814,7 @@
     }
   }
 
-  if (.ms_document_has_review_iri(document)) {
+  if (.ms_document_has_review_iri(document, "eml")) {
     cli::cli_abort("Generated EML contains an unresolved {.val REVIEW:} marker.")
   }
   xml_text <- as.character(document)
