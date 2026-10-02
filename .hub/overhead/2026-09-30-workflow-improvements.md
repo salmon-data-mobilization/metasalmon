@@ -1893,3 +1893,41 @@ is introduced. Existing reviewed PRs remain separate.
 - This checkpoint records the B-256 and B-229 queue closures together with
   the measurements above. Publication remains a mechanical factual closeout;
   R261/Py95 stay draft while the class 7 decision is pending.
+
+### Verified correction and first review request, 2026-10-02 from 04:10 UTC
+
+- R229's real scope correction is published at `cb2a275`, verified through
+  public Git against local `8aa51ab`: tree `13b21ce`, sole parent `f3d77e6`.
+  Exactly eight files changed: prose, NEWS, workpad and their affected generated
+  pages/search. Article render took 4.78 seconds; NEWS build took 14.75 seconds.
+  The Markdown converter needed one corrected R string escape before writing.
+  That repair is implementation/tool rework; the builds and 656/658 preserved
+  ordered search records are verification. No package behavior or tests changed.
+- Source-push Claude run 36963678067 again posted only nits but failed its
+  verifier on one denied `Bash:git` call. It supplies no completed review.
+  After it finished, one authorized routine ready transition at about 04:18
+  requested the first Codex review. The ready event also naturally started
+  Claude run 36964005698. No failed-job rerun or extra source change was used;
+  actual review and current-head CI still gate a merge. Do not reroll that
+  event merely for a green verdict if its execution also fails.
+- R261 has all six applicable workflows green and actual Claude execution
+  completed with only nits. Py95's functional jobs pass; no actual review
+  receipt exists yet. Both are drafts pending the concrete class 7 decision.
+  Normalized PR metadata reported R261 `mergeable:false`, but an isolated
+  source merge-tree against `082e7de` exits zero with no conflict paths. The
+  label alone was not proof of a conflict. This control avoided an unnecessary
+  integration commit and another build/review cycle; no elapsed saving is
+  inferred. R229's source merge-tree is also clean against that base.
+- CLI authentication was rechecked read-only and still returns HTTP 401.
+  The prior login request remains pending. Existing owner identities and
+  claims are retained; no API claim-ref workaround or new claim was attempted.
+- Ready-event Claude run 36964005698 finished with its model step successful
+  (32 turns, nonzero usage) but execution verification failed on one denied
+  `Bash:git` call again. Its exact-head comment 5945546720 reports no blocking
+  issues and three formatting nits. Codex summary 5945525142 records both code
+  and security reviews completed on `cb2a275`; there are no inline threads.
+  R229 remains ready and unmerged because Claude execution is incomplete.
+  Do not spend further model rounds or change prose just to clear that signal.
+  A next diagnostic improvement should establish the denied Git operation's
+  safe command shape before changing a prompt or permission. The current
+  summary names only the tool; the cause is not established by that label.
