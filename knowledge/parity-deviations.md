@@ -204,7 +204,8 @@ rather than extracted. The **#118** defect is alive there in the same shape at
 decision replay on queue rebuild, `read_salmon_datapackage()` reading
 `semantic_suggestions.csv` back, the first consumer of the schema's
 `constraints.required`, and the #118 exemption at the line this paragraph names.
-`B-153` then closed the documentation half and moved the number, 2026-09-16. The
+`B-153` **landed 2026-09-16 as metasalmonpy #33**, `67fb486`, closing
+the documentation half and moving the number. The
 measurement above is kept as the dated measurement it was, not corrected in
 place: it is the evidence the port was owed, and rewriting it would leave the
 section asserting a gap with nothing showing there had been one.
@@ -762,8 +763,8 @@ pandas reads as float64, as it reads any integer column with a missing value,
 types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
 and `temporal` here.
 
-**Float-gap port landed — 2026-10-01, B-348.** metasalmonpy PR **#86**
-merged as `0021ade7c7d95d8af57297252fe72457af6f6e79`, porting Brett's
+**This one is closed.** `B-348` landed as metasalmonpy pull request **#86**
+on 2026-10-01, merge `0021ade7c7d95d8af57297252fe72457af6f6e79`, porting Brett's
 2026-09-25 ruling. Whole-number floats now use integer spelling inside the
 year-shape predicate; fractional values and numeric-looking text retain their
 existing verdicts. The CSV blank-cell control was shown RED, then passed with
@@ -987,7 +988,7 @@ console records no accept whose IRI names no term, by any route, as in R.
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
 an IRI.** Hub item **B-211** makes the scan keep one gap row per field of a
 metadata row. That is the rule metasalmonpy shipped first, as **B-212**
-(metasalmonpy pull request #49, `25dc7f3`). So a prose placeholder in
+(which **landed 2026-09-25 as metasalmonpy #49**, `25dc7f3`). So a prose placeholder in
 `observation_unit_iri` or a measurement IRI keeps its `placeholder` row and gets
 no `iri` row. `.ms_metadata_render_lines()` counted the footer's IRI gaps with
 `review$reason == "iri"`, so that field fell out of the count. When every IRI
@@ -1304,7 +1305,8 @@ from that tag: the six metadata schemas, the v0.3 profile and `sdp.rules.yaml`.
 `inst/extdata/sdp-bundle-manifest.json` names the tag and each file's SHA-256,
 and an offline test fails when the bundle, the manifest and the pin disagree.
 metasalmonpy pins `sdp-0.3.0` and vendors that release, with `sdp.rules.yaml`
-from a later commit (B-166), so it owes the same move: pin `sdp-0.3.2` and
+from a later commit (`B-166`, which **landed 2026-09-25 as metasalmonpy #52**,
+`4cc9ea8`), so it owes the same move: pin `sdp-0.3.2` and
 re-vendor every file its remote loader fetches from that tag. Moving the pin
 with only some of the files would reopen the split this change closed here, and
 a manifest test like this one catches that without a network. That port is

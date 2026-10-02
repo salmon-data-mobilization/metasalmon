@@ -1290,6 +1290,11 @@ metasalmon (development version)
 
 ### Internal
 
+- Hub queue lint checks landed records for every Python item named in the
+  mirror debt passages, including ports filed without a dependency (B-394).
+  R blockers remain excluded; existing window and follow-up landings are
+  recorded in the form the checker can read.
+
 * **The CI metasalmonpy checkout is excluded from R source tarballs** (hub item
   B-268). `.Rbuildignore` now omits `.metasalmonpy-sibling`, the source of two
   R CMD check NOTEs about hidden files and non-portable paths. CI still checks
