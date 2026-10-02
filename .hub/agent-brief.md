@@ -53,9 +53,10 @@ fail loudly when they move.
 |---|---|
 | running several agents at once without tripping the concurrency cap | the cap is `max_concurrent_claims` in `queue/config.yaml`; it applies per agent identity, and the identity is set by `HUB_SESSION_KEY`, documented by `./scripts/hub help` |
 | claiming, and what a rejected claim push means | `HUB.md` § *Claiming* |
-| which worktree to work in, and when one may be removed | `HUB.md` § *Isolation* |
+| which worktree to work in, including a same-owner batch, and when one may be removed | `HUB.md` § *Isolation* and § *Coherent batches* |
 | which checkout to run `hub` from, what a "STALE CHECKOUT" refusal means, and the check an orchestrator runs on a checkout before a brief names it | `HUB.md` § *Which checkout the queue is read from* |
 | where your report goes and what it must carry | `HUB.md` § *Reporting* |
+| grouping already-declared, individually claimed items in one pull request after adoption | `HUB.md` § *Coherent batches* |
 | pushing, opening a pull request, and whether it stays a draft | `HUB.md` § *Hand back* |
 | what you may merge, answer or mark ready, and on what conditions | `HUB.md` § *Which pull requests need Brett* |
 | what reaches Brett rather than the record | same section, under *Delegation is recorded* |
@@ -66,10 +67,9 @@ refusal names the rule it is enforcing: read it rather than working around it.**
 
 ## Scope, which is yours to hold
 
-Stay inside the item's `retires_when`. Anything you find that belongs to another
-item, name by queue id in your report and do **not** absorb. Anything with no
-item, describe as a candidate, with evidence. For a defect, capture
-failing-before and passing-after — the standard `HUB.md` § *Reporting* sets.
+Stay inside the item's `retires_when`. For related IDs and scope additions,
+follow `HUB.md` § *Coherent batches*; for evidence, follow § *Reporting*. Work
+with no item is a candidate, not part of this claim.
 
 ## You may spawn your own subagents
 

@@ -1,8 +1,8 @@
 id: B-209
 kind: defect
 title: Nothing fails when a card restates queue state in prose, so the top rule of queue/README.md is enforced only by review
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S15

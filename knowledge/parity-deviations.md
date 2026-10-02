@@ -125,6 +125,21 @@ also the only reason the twin has caught this one.
 
 ## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
 
+**Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
+pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
+its R half `B-342` landed in metasalmon pull request **#257**, merged as
+`c09a76bc7a0469d0d69025f940b7a3c4e86cdd00`. Both implement Q63's existing
+absolute-IRI shape in dictionary semantic fields and table IRI fields, with
+the supported constraint-list representation preserved. No new numbered
+parity row or term selection was made.
+
+**SSSOM tag-refusal port landed, 2026-10-01.** `B-353` landed as metasalmonpy
+pull request **#88**, merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`;
+its R half `B-352` landed in metasalmon pull request **#255**, merged as
+`13460ed0484b10082b89c4dec33820d70386ddac`. Both readers now refuse tagged
+metadata under Q62 while retaining literal bang text. This is the existing
+ruled port; no new numbered parity row is owed.
+
 **Development-version port, 2026-09-30: crosswalk review (B-120 → B-426).**
 NuSEDS-prefilled code IRIs now retain candidates and appear in the default
 console queue while they still hold their original prefill and have no recorded
@@ -189,7 +204,8 @@ rather than extracted. The **#118** defect is alive there in the same shape at
 decision replay on queue rebuild, `read_salmon_datapackage()` reading
 `semantic_suggestions.csv` back, the first consumer of the schema's
 `constraints.required`, and the #118 exemption at the line this paragraph names.
-`B-153` then closed the documentation half and moved the number, 2026-09-16. The
+`B-153` **landed 2026-09-16 as metasalmonpy #33**, `67fb486`, closing
+the documentation half and moving the number. The
 measurement above is kept as the dated measurement it was, not corrected in
 place: it is the evidence the port was owed, and rewriting it would leave the
 section asserting a gap with nothing showing there had been one.
@@ -227,6 +243,23 @@ no such column into a frame that lacked it. That predates the port. The B-215
 workpad found it by reading both sides, and the 2026-09-25 queue sweep measured
 it on `2405df2`, before the port, and on `f1f7230`, after it. Its metasalmonpy
 queue item is **B-252**.
+
+**Correction, 2026-09-30 (B-252): the source-only R premise was too broad.**
+Paired executable probes at R `3364b975` and Python `e81cacd` show that
+`create_sdp()` writes both `update_frequency` and `constraint_iri` under a
+schema omitting them: inference supplies those columns and both aligners
+preserve extras. R `validate_dictionary()` also synthesizes `constraint_iri`
+from truly absent input, independent of the schema. The measured port is the
+full Python writer's static normalization of dataset/table/codes inputs that
+genuinely lack an omitted optional field, plus table inference's static
+alignment of its minimal frame. [Python pull request 82](https://github.com/salmon-data-mobilization/metasalmonpy/pull/82)
+uses selected-schema alignment for these paths, preserving caller extras,
+reader normalization, and the dictionary validator's semantic-field contract.
+Its tests retain the original inference case as an extras-preservation control,
+execute all four setters and review write-back, and compare default output
+bytes with a pre-fix baseline. No parity-register row is spent. This records the
+proposed implementation and its evidence, not a landing; the port remains owed
+until that pull request merges.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
@@ -730,6 +763,15 @@ pandas reads as float64, as it reads any integer column with a missing value,
 types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
 and `temporal` here.
 
+**This one is closed.** `B-348` landed as metasalmonpy pull request **#86**
+on 2026-10-01, merge `0021ade7c7d95d8af57297252fe72457af6f6e79`, porting Brett's
+2026-09-25 ruling. Whole-number floats now use integer spelling inside the
+year-shape predicate; fractional values and numeric-looking text retain their
+existing verdicts. The CSV blank-cell control was shown RED, then passed with
+paired R behavior and current-head CI. R changes nothing. This dated receipt
+closes the separate float gap above without changing B-240's history or
+adding a numbered deviation.
+
 **This one is closed.** `B-240` landed as metasalmonpy pull request **#41**
 (`ace8eed`) on 2026-09-24, changing `infer_column_role()` in `dictionary.py`.
 `tests/test_year_shaped_measurement_role.py` is the port of the R test, and it
@@ -946,7 +988,7 @@ console records no accept whose IRI names no term, by any route, as in R.
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
 an IRI.** Hub item **B-211** makes the scan keep one gap row per field of a
 metadata row. That is the rule metasalmonpy shipped first, as **B-212**
-(metasalmonpy pull request #49, `25dc7f3`). So a prose placeholder in
+(which **landed 2026-09-25 as metasalmonpy #49**, `25dc7f3`). So a prose placeholder in
 `observation_unit_iri` or a measurement IRI keeps its `placeholder` row and gets
 no `iri` row. `.ms_metadata_render_lines()` counted the footer's IRI gaps with
 `review$reason == "iri"`, so that field fell out of the count. When every IRI
@@ -1105,16 +1147,18 @@ review target.** Hub item **B-171** added the R test of that name to
 to a measure as `sosa:usedProcedure`, so that its code values' `term_iri` land in
 the measurement set and in no review target. It is the first test to reach the
 role fallback in `.ms_closure_iri_roles()`, and a mutation of that fallback
-fails it. metasalmonpy has the same producer and the same fallback, `_iri_roles()`
-in `semantic_closure.py` (the fallback at `:504-507` on `f1f7230`), and
-`tests/test_semantic_closure.py` has no `usedProcedure` component, no
+fails it. At the 2026-09-25 measurement, metasalmonpy had the same producer and
+the same fallback, `_iri_roles()` in `semantic_closure.py` (at `:504-507` on
+`f1f7230`), and
+`tests/test_semantic_closure.py` had no `usedProcedure` component, no
 observation structure and no `example.org/methods` IRI: read by the B-171 run on
 `25dc7f3`, and again by the 2026-09-25 queue sweep on `f1f7230`. Its one
-set-difference test pins the other direction, `smn:Observation`. What is owed is
-the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
+set-difference test pinned the other direction, `smn:Observation`. What was owed
+was the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
 not a port and not a register row, because nothing behaves differently. It did
 not land in the same stream because a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is **B-264**.
+repository. Its metasalmonpy queue item is **B-264**; the test twin **landed
+2026-10-01 as metasalmonpy #81**, merge `430b568`, without a runtime change.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-30):
 the closure locates a code-resolved procedure in `codes.csv` `term_iri`.** Hub
@@ -1274,7 +1318,8 @@ from that tag: the six metadata schemas, the v0.3 profile and `sdp.rules.yaml`.
 `inst/extdata/sdp-bundle-manifest.json` names the tag and each file's SHA-256,
 and an offline test fails when the bundle, the manifest and the pin disagree.
 metasalmonpy pins `sdp-0.3.0` and vendors that release, with `sdp.rules.yaml`
-from a later commit (B-166), so it owes the same move: pin `sdp-0.3.2` and
+from a later commit (`B-166`, which **landed 2026-09-25 as metasalmonpy #52**,
+`4cc9ea8`), so it owes the same move: pin `sdp-0.3.2` and
 re-vendor every file its remote loader fetches from that tag. Moving the pin
 with only some of the files would reopen the split this change closed here, and
 a manifest test like this one catches that without a network. That port is

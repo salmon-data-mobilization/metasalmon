@@ -26,3 +26,30 @@ versions, licenses, and writer provenance in
 deterministic. This function does not turn semantic suggestions or variable
 decompositions into mappings; \code{mapping_sets = NULL} is therefore a no-op.
 }
+\examples{
+# Supply a reviewed SSSOM file. This temporary set illustrates the format.
+mapping_file <- tempfile(fileext = ".sssom.tsv")
+writeLines(c(
+  '#sssom_version: "1.1"',
+  "#curie_map:",
+  "#  exa: https://example.org/ontology-a/",
+  "#  exb: https://example.org/ontology-b/",
+  "#mapping_set_id: https://example.org/mappings/demo",
+  "#mapping_set_version: 1",
+  "#license: https://creativecommons.org/licenses/by/4.0/",
+  "#subject_source: https://example.org/ontology-a/",
+  "#subject_source_version: 1",
+  "#object_source: https://example.org/ontology-b/",
+  "#object_source_version: 1",
+  paste("subject_id", "subject_label", "predicate_id", "object_id",
+        "object_label", "mapping_justification", sep = "\t"),
+  paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+        "exb:spawner-count", "Spawner count",
+        "semapv:ManualMappingCuration", sep = "\t")
+), mapping_file, useBytes = TRUE)
+sdp_path <- tempfile("sdp-")
+dir.create(sdp_path)
+write_sdp_sssom(sdp_path, mapping_file)
+validate_sdp_sssom(sdp_path)
+unlink(c(mapping_file, sdp_path), recursive = TRUE)
+}
