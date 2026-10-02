@@ -214,6 +214,12 @@ metasalmon (development version)
 
 ### Fixed
 
+* The bundled NuSEDS dictionaries now describe `AREA` as a DFO sub-district
+  code, following NuSEDS's data dictionary and sub-district map (B-401). The
+  gold-standard cards no longer treat its lettered values as PFMA Subareas;
+  whether a sub-district vocabulary term is needed remains open. The
+  metasalmonpy and SDP-example corrections are B-402 and B-403.
+
 * `write_sdp_semantic_closure()` now points a code-resolved procedure's gap
   or incomplete-evidence row to the `codes.csv` `term_iri` cell that carries
   it, with its table, column, code value and full row key (hub item B-265).

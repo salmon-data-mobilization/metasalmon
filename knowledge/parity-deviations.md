@@ -1173,6 +1173,16 @@ difference or a new numbered row. **Why not in the same stream:** a hub claim
 covers one branch in one repository. The Python half is **B-266**, scoped to
 mirror the `codes.csv` `term_iri` address and the two RED-tested cases.
 
+**The development version after 0.5.0 adds a corrected NuSEDS `AREA`
+description to what the mirror is owed (2026-10-01).** Hub item **B-401**
+changes both metasalmon example dictionaries from PFMA Area to DFO sub-district,
+as defined by NuSEDS's own data dictionary and map. metasalmonpy's bundled
+`data/column_dictionary.csv` still calls `AREA` a PFMA Area. This is an owed
+data/documentation port, not a deliberate difference or a register row.
+It did not land in the same stream because a hub claim covers one branch in
+one repository. The metasalmonpy item is **B-402**; the
+independent specification-example correction is **B-403** in `smn-data-pkg`.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.** When
 `apply_salmon_dictionary(strict = FALSE)` cannot convert a column to its
