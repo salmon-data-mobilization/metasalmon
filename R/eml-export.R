@@ -2814,10 +2814,10 @@
     }
   }
 
-  xml_text <- as.character(document)
-  if (grepl("REVIEW:", xml_text, fixed = TRUE)) {
+  if (.ms_document_has_review_iri(document)) {
     cli::cli_abort("Generated EML contains an unresolved {.val REVIEW:} marker.")
   }
+  xml_text <- as.character(document)
   if (grepl("usedProcedure", xml_text, fixed = TRUE)) {
     cli::cli_abort(
       "The initial EML profile must not emit a procedure annotation."

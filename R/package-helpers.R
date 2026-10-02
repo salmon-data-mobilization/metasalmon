@@ -1407,7 +1407,7 @@ create_sdp <- function(
         }
         any(vapply(
           x[iri_cols],
-          function(col) any(grepl("^\\s*REVIEW\\s*:", as.character(col), ignore.case = TRUE), na.rm = TRUE),
+          function(col) any(.ms_is_review_iri(col)),
           logical(1)
         ))
       },
@@ -1678,7 +1678,7 @@ read_salmon_datapackage <- function(path) {
 
   issues <- purrr::map_dfr(iri_cols, function(field) {
     vals <- as.character(df[[field]])
-    rows <- which(!is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE))
+    rows <- which(.ms_is_review_iri(vals))
     if (length(rows) == 0) {
       return(tibble::tibble())
     }
@@ -1712,7 +1712,7 @@ read_salmon_datapackage <- function(path) {
     # whitespace-only text in an optional extension IRI is populated but
     # malformed and must not disappear through trimws().
     populated <- !is.na(vals) & vals != ""
-    marker <- !is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE)
+    marker <- .ms_is_review_iri(vals)
     rows <- which(populated & !marker & !.ms_absolute_iri_shape(vals))
     if (length(rows) == 0) {
       return(tibble::tibble())
@@ -1835,7 +1835,7 @@ read_salmon_datapackage <- function(path) {
     # and again as a malformed IRI.
     invalid <- which(
       populated &
-        !grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE) &
+        !.ms_is_review_iri(vals) &
         !.ms_sdp_extension_is_absolute_iri(vals)
     )
     for (row in invalid) {
@@ -3866,9 +3866,18 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   "REVIEW: "
 }
 
+# Q63's ASCII-only marker is shared by each IRI reader. The explicit letter
+# pairs and literal space/tab avoid locale-dependent case and whitespace rules.
+.ms_review_iri_pattern <- function() {
+  "^[ \t]*[Rr][Ee][Vv][Ii][Ee][Ww][ \t]*:"
+}
+
 .ms_is_review_iri <- function(x) {
-  text <- .ms_scalar_text(x)
-  nzchar(text) && grepl("^\\s*REVIEW\\s*:", text, ignore.case = TRUE)
+  if (length(x) == 0L) {
+    return(logical())
+  }
+  text <- as.character(x)
+  !is.na(text) & grepl(.ms_review_iri_pattern(), text, perl = TRUE)
 }
 
 .ms_strip_review_iri <- function(x) {
@@ -3876,8 +3885,28 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(x)
   }
   out <- as.character(x)
-  out <- gsub("^\\s*REVIEW\\s*:\\s*", "", out, ignore.case = TRUE)
+  marked <- .ms_is_review_iri(out)
+  out[marked] <- sub(
+    paste0(.ms_review_iri_pattern(), "[ \t]*"),
+    "", out[marked], perl = TRUE
+  )
   out
+}
+
+# EML and OAI-ORE guards scan a whole XML document. Inspect decoded node and
+# attribute values because the serializer escapes a tab in an attribute as
+# `&#9;`; a string scan alone would miss a ruled marker there. Keep the wider
+# serialized scan as a conservative guard for marker text across markup.
+.ms_document_has_review_iri <- function(document) {
+  text_values <- xml2::xml_text(xml2::xml_find_all(document, "//text()"))
+  attribute_values <- unlist(lapply(
+    xml2::xml_find_all(document, "//*[@*]"), xml2::xml_attrs
+  ), use.names = FALSE)
+  any(.ms_is_review_iri(c(text_values, attribute_values))) ||
+    any(grepl(
+      substring(.ms_review_iri_pattern(), 2L),
+      as.character(document), perl = TRUE
+    ))
 }
 
 .ms_mark_reviewed_dictionary_iris <- function(dict, original_dict, suggestions, strategy = c("top", "llm")) {

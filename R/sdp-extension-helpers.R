@@ -34,7 +34,7 @@
   value <- as.character(value)
   valid <- !.ms_sdp_extension_is_blank(value) &
     .ms_absolute_iri_shape(value) &
-    !grepl("^REVIEW:", value, ignore.case = TRUE)
+    !.ms_is_review_iri(value)
   web <- valid & grepl("^https?:", value, ignore.case = TRUE)
   # No `perl = TRUE`: this must resolve `[[:space:]]` the same way
   # `.ms_absolute_iri_shape()` above does, or an http IRI could clear the shape
