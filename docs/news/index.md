@@ -265,8 +265,18 @@
   EML/KNB output guards: optional spaces or tabs before `REVIEW` and
   around its colon, with ASCII case variants accepted. Stripping removes
   only spaces or tabs after the colon. Excluded line breaks or Unicode
-  spaces stay in the value for strict malformed IRI validation (hub
+  spaces stay in the value for strict malformed IRI validation. XML
+  output guards inspect decoded text and attributes for that spelling,
+  while retaining the prior exact, case-sensitive `REVIEW:`
+  whole-document scan; ordinary `review:` narrative remains valid (hub
   B-344, Q63; Python mirror B-345).
+
+- **The migration and tidy-data vignettes now tangle without executable
+  code** (hub item B-133). Their 25 display-only examples each declare
+  `purl = FALSE` in the chunk header, so R CMD check’s vignette-code
+  step no longer tries to read example package paths that the tangle
+  never created. The vignette guard’s two pinned exceptions are removed;
+  a new live chunk in either guide now fails the guard.
 
 - Strict validation now checks the absolute-IRI shape of every populated
   semantic IRI in the dictionary and every `*_iri` field in
@@ -1669,18 +1679,17 @@
   `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7
   display chunks tangle as live code and fail `R CMD check` at the first
   statement on R 4.3.3. The guard was shown failing on both before
-  anything else changed. Both stay as they are until hub item B-133
-  fixes them. Meanwhile the guard lists them as known offenders, each
-  pinned to the chunks that offend today. A new live chunk in either one
-  still fails, and so does an entry that has stopped offending.
+  anything else changed. B-133 then marked each display-only chunk with
+  `purl = FALSE` and removed both pinned exceptions. A new live chunk in
+  either guide now fails the guard.
 
   A test is needed because the check step that catches this stopped
   running by default in R 4.4.0, when
   `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so CI’s current R
-  stays green while `R CMD check` fails for a user on R 4.1 to 4.3,
-  which DESCRIPTION supports. *Retires when:* CI’s own check runs that
-  step again, which it cannot while the known-offender list has an
-  entry.
+  could stay green while `R CMD check` failed for a user on R 4.1 to
+  4.3, which DESCRIPTION supports. *Retires when:* CI’s own check runs
+  that step again; B-133 cleared the known-offender list that prevented
+  it.
 
 ## metasalmon 0.5.0
 

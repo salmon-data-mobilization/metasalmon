@@ -17,6 +17,8 @@
 # nothing checked it: migrating-to-sdp-0-3-0.Rmd and tidy-data-for-sdp.Rmd were
 # written afterwards in the shape it closed. Hub item B-164 added this file;
 # its workpad shows the test failing on both before anything else changed.
+# B-133 put `purl = FALSE` on each display-only chunk in those vignettes, then
+# removed their known-offender entries after the guard caught both as stale.
 #
 # WHY A TEST RATHER THAN THE CHECK. That step no longer runs by default. From
 # R 4.4.0 `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` defaults to true (it was false
@@ -50,67 +52,22 @@
 # *Retires when:* CI's own R CMD check runs "checking running R code from
 # vignettes" (`_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_: false` in
 # .github/workflows/R-CMD-check.yaml). The real step is then the guard, and this
-# model of it can go. That cannot happen while known_offenders below has an
-# entry, because the real step fails on every one.
+# model of it can go. B-133 removed the last known-offender entries, clearing
+# that prerequisite; the CI step still does not run by default.
 
-# Vignettes that break the rule today. Each is named with the queue item that
-# fixes it and pinned to the violation it had when it was recorded: the first
-# statement of every chunk that tangles as live code, and the count of live
-# expressions. An entry covers exactly that violation. A chunk that turns live in
-# a listed vignette fails the test just as it would in any other vignette, and
-# so does any other change to what the entry pins. A list of file names alone
-# would let such chunks through, which the Codex review of #157 caught. A listed
-# vignette that stops breaking the rule fails too, until its entry is deleted,
-# so no entry outlives its defect. A vignette that breaks the rule without being
-# listed fails as well, which is the check backlog #32 lacked.
+# Known offenders, each pinned to a queue item, its live chunks and expression
+# count. B-133 removed the last two entries. A newly offending vignette still
+# fails without an entry; a listed vignette that stops offending fails until its
+# entry is removed, so no exception outlives its defect.
 #
 # MAINTENANCE: delete an entry in the change that fixes its vignette, and trim
 # it in a change that fixes some of its chunks. Add an entry only for a defect
 # that has its own queue item, never to let a new vignette or a new chunk
 # through. The fix is one chunk option per chunk.
 #
-# *Retires when:* hub item B-133 declares purl = FALSE in these two vignettes'
-# display-only chunks and deletes both entries, their pinned violations with
-# them. The list is then empty, and stays empty.
-known_offenders <- list(
-  "migrating-to-sdp-0-3-0.Rmd" = list(
-    item = "B-133",
-    expressions = 50L,
-    chunks = c(
-      "tables <- readr::read_csv(\"weir-counts-sdp/metadata/tables.csv\", na = \"\")",
-      "tables$protocol_iri[tables$table_id == \"escapement\"] <-",
-      "readr::write_csv(tables, \"weir-counts-sdp/metadata/tables.csv\", na = \"\")",
-      "escapement <- readr::read_csv(\"weir-counts-sdp/data/escapement.csv\", na = \"\")",
-      "nuseds_enumeration_method_crosswalk()",
-      "sources_for_role(\"statistical_modifier\")",
-      "library(metasalmon)",
-      "library(metasalmon)",
-      "report <- migrate_sdp_methods(legacy_path, dry_run = TRUE)",
-      "report$tables",
-      "report$registry[c(\"method_label\", \"method_version\", \"citation\")]",
-      "report <- migrate_sdp_methods(legacy_path)",
-      "tables <- readr::read_csv(",
-      "names(readr::read_csv(",
-      "file.exists(file.path(legacy_path, \"metadata\", \"methods.csv\"))",
-      "validate_salmon_datapackage(legacy_path, require_iris = FALSE)",
-      "reviewed_dict <- read_salmon_datapackage(legacy_path)$dictionary",
-      "report <- migrate_sdp_methods(\"weir-counts-sdp\", dry_run = TRUE)"
-    )
-  ),
-  "tidy-data-for-sdp.Rmd" = list(
-    item = "B-133",
-    expressions = 18L,
-    chunks = c(
-      "tables <- readr::read_csv(\"escapement-sdp/metadata/tables.csv\", na = \"\")",
-      "validate_salmon_datapackage(\"escapement-sdp\", require_iris = FALSE)",
-      "wide <- tibble::tibble(",
-      "c(\"stream_id\", \"count_1998\", \"count_1999\", \"count_2000\")",
-      "long <- tidyr::pivot_longer(",
-      "pkg_path <- create_sdp(",
-      "wide_two <- tibble::tibble("
-    )
-  )
-)
+# The empty register remains for the guard's pinned-exception protocol. It
+# retires with the guard when CI itself runs the vignette-code step.
+known_offenders <- list()
 
 # The metasalmon source tree whose vignettes/ this run can read, or NA. Under
 # devtools::test() it is two levels above tests/testthat; under R CMD check the
@@ -406,8 +363,8 @@ test_that("the guard flags a vignette relying on a global chunk option, passes e
     # #32's fix, and the two other per-chunk declarations knitr honours.
     list("purl = FALSE in the chunk header", display_setup, shown("r, purl = FALSE"), FALSE),
     list("eval = FALSE in the chunk header", display_setup, shown("r, eval = FALSE"), FALSE),
-    # B-133's retirement condition names this as a fix. It is not: the setup
-    # chunk reaches the script, and the chunk after it is still live.
+    # B-133's original queue wording suggested this as a fix. It is not: the
+    # setup chunk reaches the script, and the chunk after it is still live.
     list(
       "the setup chunk purled instead",
       setup("r, include = FALSE", "knitr::opts_chunk$set(eval = FALSE)"),
