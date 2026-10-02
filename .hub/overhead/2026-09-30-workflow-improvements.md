@@ -1696,3 +1696,33 @@ AST test assumptions are root instrument rework. A dispatch attempted when all
 four agent slots were occupied created no agent; that coordination misstep is
 recorded without inventing a saved audit. No extra full package or model round
 is added merely for integration freshness.
+
+### Existing handoff resumed without freshness churn, about01:45–01:51 UTC
+
+R228 was marked ready once with unchanged6833911. This requested its first
+Codex code/security reviews and started a modern actual Claude review directly;
+no main integration or failed-job retry was needed. Both Codex reviews completed
+without findings; Claude36952424796 completed with zero denied tools and only
+three nits. Five functional same-head checks were green. The historical
+never-executed failed Claude job remained visible and supplied no coverage.
+Root selected the latest applicable review, verified the evidence and merged
+asdc11b0f6 at01:51:08 UTC under delegated dormant-forwarding-fix authority.
+
+Existing B23 closes with the nonexistent old argument spelling corrected to
+the actual computed field and the stale backlog account replaced by dated
+observation/landing evidence. No retiring provider repairs or extra model
+request were added. This next use shows a ready transition can start the
+required review without source-identical publication; no aggregate causal
+time-saving estimate is inferred. R241 is a separate in-flight routine guard
+batch member; its newer appended measurements remain on its published branch
+until it lands, with the canonical prefix preserved.
+
+
+**Batch closeout adjustment:** R241's actual ce5dfa0 Claude/Codex reviews finished
+without substantive findings. Root's concurrent canonical B23 measurement append
+created one real log-only merge conflict. Both sections are preserved with the
+owned script/test blobs unchanged. This is avoidable bookkeeping rework caused
+by publishing closeout measurements before the log-bearing batch member landed.
+Defer the next factual log closeout until that member lands; no new log tracker,
+source rewrite, local full rerun, site rebuild or optional model round is added.
+Current-head functional CI remains required.
