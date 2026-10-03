@@ -1,15 +1,15 @@
 # Which sources find_terms() searches, and how it reads the names it is given.
 #
-# Two rules metasalmonpy already had and this package now shares, each
-# demonstrated failing before the change:
+# R's role-source and source-normalization rules, each demonstrated failing
+# before the change. Python already has role sources and trim/lower/dedup;
+# missing-entry and closure convergence remains owed in its existing PR75:
 #
 #   * hub B-420 (Q70, ruled by Brett on 2026-09-26: "R moves"). A call that
 #     names a role and no sources searches that role's sources_for_role() list,
 #     as metasalmonpy's find_terms() does. It used to search the four sources the
 #     argument defaulted to, whatever the role, so a direct unit search never
 #     reached QUDT.
-#   * hub B-421. A named source list is normalised the way metasalmonpy's
-#     `_normalize_explicit_sources()` normalises it: each name trimmed and
+#   * hub B-421. A named source list is normalised: each name trimmed and
 #     lower-cased, a missing or empty name dropped, a repeat dropped after its
 #     first appearance. A capitalised name used to be searched as nothing here,
 #     and reported as a successful search that found nothing.
@@ -96,7 +96,7 @@ test_that("an unknown source name is kept, searched as nothing and reported (hub
   expect_identical(got$diagnostics, c("unknown", "ols"))
 })
 
-test_that("the source-name normaliser mirrors metasalmonpy's, code point for code point (hub B-421)", {
+test_that("source normalization keeps the shared whitespace and ordering controls (hub B-421)", {
   normalise <- metasalmon:::.ms_normalize_explicit_sources
 
   # First appearance wins and the caller's order is kept.

@@ -21,7 +21,8 @@ higher when they match preferred ontologies for the role, and when
 with no role, that is \code{c("smn", "gcdfo", "ols", "nvs")}. Options:
 \code{"smn"}, \code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"},
 \code{"worms"}, \code{"bioportal"}. A vector you supply is a strict allowlist, read
-consistently by this package: each name is trimmed and lower-cased, a missing
+consistently by this package: each name is trimmed and Unicode lower-cased
+independently of the session locale, a missing
 or empty name is dropped, and a repeated name is dropped after its first
 appearance, so \code{"SMN"} and \code{" smn "} both search smn. A name that is none
 of the options searches nothing, and an empty vector returns an empty

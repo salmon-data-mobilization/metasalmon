@@ -299,6 +299,12 @@ metasalmon (development version)
      configurable connect/read timeout does not bound the whole transfer.
 
 * **Source lists are normalised consistently across R's readers** (B-421).
+  Unicode lower-casing uses an explicit locale, so the session's `LC_CTYPE`
+  cannot change a supported source name or a review packet's recorded source
+  list. Shared dotted-I and Greek-final-sigma controls match Python's
+  lower-casing. `stringi` is now a declared runtime dependency for this fold;
+  this is not a claim that differing Unicode versions map every unknown name
+  identically.
   `find_terms()`, and the source policy that `suggest_semantics()` and
   `write_semantic_review_packet()` build (and so `infer_dictionary()`,
   `create_sdp()` and `chat_decomposition()`, which pass their sources to

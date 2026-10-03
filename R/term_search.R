@@ -145,15 +145,17 @@
 # trims it and lower-cased, a name that is missing or empty
 # after trimming dropped, and a repeat dropped after its first appearance, in
 # the caller's order (hub B-421). It used to be passed on as given, so a source
-# named in capitals was searched in Python and silently not here. `tolower()`
-# depends on the current locale: even an ASCII source such as GBIF can differ
-# from Python under Turkish LC_CTYPE. Locale-independent folding remains owed.
+# named in capitals was searched in Python and silently not here. Unicode
+# lower-casing uses an explicit locale so that ambient LC_CTYPE cannot change
+# a recognized source or the allowlist recorded in a review packet. The shared
+# Unicode test corpus also covers dotted I and context-sensitive final sigma;
+# this does not promise identical mappings across different Unicode versions.
 # metasalmonpy still needs the missing-entry
 # port: its released reader can turn `None` into a source called "none".
 .ms_normalize_explicit_sources <- function(sources) {
   names <- .ms_strip_python_whitespace(as.character(unlist(sources, use.names = FALSE)))
   foldable <- !is.na(names) & validUTF8(names)
-  names[foldable] <- tolower(names[foldable])
+  names[foldable] <- stringi::stri_trans_tolower(names[foldable], locale = "en")
   unique(names[!is.na(names) & nzchar(names)])
 }
 
@@ -199,7 +201,8 @@
 #'   with no role, that is `c("smn", "gcdfo", "ols", "nvs")`. Options:
 #'   `"smn"`, `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`,
 #'   `"worms"`, `"bioportal"`. A vector you supply is a strict allowlist, read
-#'   consistently by this package: each name is trimmed and lower-cased, a missing
+#'   consistently by this package: each name is trimmed and Unicode lower-cased
+#'   independently of the session locale, a missing
 #'   or empty name is dropped, and a repeated name is dropped after its first
 #'   appearance, so `"SMN"` and `" smn "` both search smn. A name that is none
 #'   of the options searches nothing, and an empty vector returns an empty
