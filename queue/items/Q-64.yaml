@@ -1,0 +1,12 @@
+id: Q-64
+kind: question
+title: 'What smn:Characteristic and smn:alevin become, and which first-batch composed definitions need revised wording'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-science
+stream: S9
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett answers the still-open parts (c), (d), and (e) of Q64 in knowledge/questions.md; parts (a) and (b) remain recorded as ruled on 2026-09-25. The same ruling records a named owner in the repository that can finish every selected consequence beyond source-backed card and definition wording, including any class deprecation or reparenting, property replacement, or OWL-to-SKOS stage migration. B-238 remains the existing commons card owner and B-232 the existing ontology definition owner only while both items stay open through these rulings; neither can retire early and then be treated as a blocked post-ruling updater. The question retires when rulings and consequence owners are recorded, before those implementation writes land.'

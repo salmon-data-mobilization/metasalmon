@@ -1,0 +1,12 @@
+id: Q-73
+kind: question
+title: 'Which remaining B-232 concept meanings and representation choices should the commons cards carry'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-science
+stream: S9
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett answers every independent part of Q73 in knowledge/questions.md, using the source-backed commons decision packet and cards as evidence rather than treating their draft sentences as approved. The ruling names a runnable owner in the repository that can finish every selected ontology or vocabulary migration beyond definition wording. B-238 remains the existing commons card owner and B-232 the existing ontology definition owner only while both items stay open through these rulings; neither can retire early and then be treated as a blocked post-ruling updater. Q64 continues to own its open parts, Q-48 the taxonomic-assignment pattern, and Q-61 the Run sense, so this item creates no second answer to them. The question retires when all its parts and consequence owners are recorded, before implementation lands.'
