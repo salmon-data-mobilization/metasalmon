@@ -1,7 +1,7 @@
 id: B-278
 kind: defect
 title: 'detect_semantic_term_gaps() reads the commons gap register (okf-check.py --gaps) and feeds the term-request pipeline'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
