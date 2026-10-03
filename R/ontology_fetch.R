@@ -7,7 +7,9 @@
 #' @param accept Accept header; defaults to turtle with RDF/XML fallback.
 #' @param cache_dir Directory to store cached ontology and headers. Defaults to
 #'   a persistent user cache path.
-#' @param fallback_urls Optional fallback ontology URLs tried if the primary `url` fails.
+#' @param fallback_urls Optional fallback ontology URLs tried if the primary `url`
+#'   fails. The implicit SMN fallback is used only with the default `url`;
+#'   callers naming another URL must explicitly supply its fallback URLs.
 #' @param timeout_seconds Numeric timeout in seconds for each HTTP request.
 #' @return Path to the cached ontology file (character string).
 #' @examples
@@ -24,6 +26,12 @@ fetch_salmon_ontology <- function(
     fallback_urls = c(
       "https://w3id.org/smn"
     )) {
+
+  # The default mirror serves SMN, so it must not answer a request for another
+  # ontology. Keep explicit fallback choices and the public formals unchanged.
+  if (missing(fallback_urls) && !identical(url, "https://w3id.org/smn/")) {
+    fallback_urls <- character()
+  }
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
   ttl_file <- file.path(cache_dir, "salmon-ontology.ttl")

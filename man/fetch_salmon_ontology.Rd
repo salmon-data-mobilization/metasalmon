@@ -22,7 +22,9 @@ a persistent user cache path.}
 
 \item{timeout_seconds}{Numeric timeout in seconds for each HTTP request.}
 
-\item{fallback_urls}{Optional fallback ontology URLs tried if the primary \code{url} fails.}
+\item{fallback_urls}{Optional fallback ontology URLs tried if the primary \code{url}
+fails. The implicit SMN fallback is used only with the default \code{url};
+callers naming another URL must explicitly supply its fallback URLs.}
 }
 \value{
 Path to the cached ontology file (character string).

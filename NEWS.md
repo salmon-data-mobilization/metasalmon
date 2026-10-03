@@ -219,6 +219,10 @@ metasalmon (development version)
 
 ### Fixed
 
+* `fetch_salmon_ontology()` no longer tries the implicit SMN mirror when a
+  caller names another ontology URL. Explicit fallbacks and the public
+  argument defaults are preserved (B-333; Python counterpart B-334).
+
 * The bundled NuSEDS dictionaries now describe `AREA` as a DFO sub-district
   code, following NuSEDS's data dictionary and sub-district map (B-401). The
   gold-standard cards no longer treat its lettered values as PFMA Subareas;
