@@ -1,7 +1,8 @@
 # fetch_salmon_ontology(), with httr::GET() stubbed so no request leaves the
 # process. Each rule here was demonstrated failing on the function as it stood
-# before the change that introduced the rule, and metasalmonpy's
-# `tests/test_ontology_fetch.py` pins the same rules on its side:
+# before the change that introduced the rule, and the matching legacy rules are pinned by metasalmonpy's
+# `tests/test_ontology_fetch.py`; the clarified Q71 behavior is still owed
+# in the existing Python ontology-fetch stream:
 #
 #   * hub B-333 (metasalmonpy B-334): the default fallback serves smn, so it is
 #     tried for the default url only.
@@ -318,7 +319,7 @@ test_that("the cache file names are the ones metasalmonpy writes (hub B-335)", {
 
 test_that("the default url is smn's, the one metasalmonpy defaults to (Q71 clause 1)", {
   expect_identical(formals(fetch_salmon_ontology)$url, "https://w3id.org/smn/")
-  expect_null(formals(fetch_salmon_ontology)$fallback_urls)
+  expect_identical(formals(fetch_salmon_ontology)$fallback_urls, quote(c("https://w3id.org/smn")))
 })
 
 test_that("a copy holds exactly the bytes the server sent", {
@@ -388,4 +389,51 @@ test_that("the cache key is taken from UTF-8 bytes in any locale", {
   latin1 <- iconv(rawToChar(c(charToRaw("https://example.org/ontologie/unit"), as.raw(0xe9))), "latin1", "latin1")
   Encoding(latin1) <- "latin1"
   expect_identical(key(latin1), "6bf05a094db6a6b1")
+})
+
+
+test_that("a cached body without an ETag accepts an uncontradicted 304 (Q71)", {
+  cache_dir <- withr::local_tempdir()
+  cached <- of_fetch(stats::setNames(list(of_ok(of_smn, "BODY")), of_smn), cache_dir = cache_dir)$value
+  got <- of_fetch(stats::setNames(list(function(sent) of_answer(of_smn, 304L)), of_smn),
+                  cache_dir = cache_dir, fallback_urls = character())
+  expect_identical(got$value, cached)
+  expect_length(got$warnings, 0L)
+})
+
+test_that("matching-cache warning treats external error braces as text (Q71)", {
+  cache_dir <- withr::local_tempdir()
+  cached <- of_fetch(stats::setNames(list(of_ok(of_smn, "BODY")), of_smn), cache_dir = cache_dir)$value
+  got <- of_fetch(stats::setNames(list(function(sent) stop("offline {literal}")), of_smn),
+                  cache_dir = cache_dir, fallback_urls = character())
+  expect_identical(got$value, cached)
+  expect_length(got$warnings, 1L)
+  expect_match(got$warnings, "offline {literal}", fixed = TRUE)
+})
+
+
+test_that("failed validator cleanup keeps replacement cache ineligible (Q71)", {
+  cache_dir <- withr::local_tempdir()
+  of_fetch(stats::setNames(list(of_ok(of_smn, "V1", etag = '"v1"')), of_smn), cache_dir = cache_dir)
+  real_unlink <- base::unlink
+  failed <- testthat::with_mocked_bindings(
+    of_fetch(stats::setNames(list(of_ok(of_smn, "V2")), of_smn),
+             cache_dir = cache_dir, fallback_urls = character()),
+    unlink = function(x, ...) {
+      if (any(grepl("[.](etag|last_modified)$", x))) return(1L)
+      real_unlink(x, ...)
+    }, .package = "base"
+  )
+  expect_s3_class(failed$value, "error")
+  offline <- of_fetch(stats::setNames(list(of_unreachable), of_smn), cache_dir = cache_dir,
+                      fallback_urls = character())
+  expect_s3_class(offline$value, "error")
+  expect_null(offline$sent[[1]][["If-None-Match"]])
+  # Once cleanup works, a fresh body with no validators must send none later.
+  fresh <- of_fetch(stats::setNames(list(of_ok(of_smn, "V3")), of_smn), cache_dir = cache_dir)
+  expect_identical(of_body(fresh$value), "V3")
+  again <- of_fetch(stats::setNames(list(of_unreachable), of_smn), cache_dir = cache_dir,
+                    fallback_urls = character())
+  expect_identical(again$value, fresh$value)
+  expect_null(again$sent[[1]][["If-None-Match"]])
 })

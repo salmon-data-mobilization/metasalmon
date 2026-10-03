@@ -95,7 +95,7 @@ test_that("fetch_salmon_ontology returns a ttl path", {
   expect_match(basename(path), "^[0-9a-f]{16}\\.ttl$")
 })
 
-test_that("fetch_salmon_ontology falls back to stale cache when refresh fails", {
+test_that("fetch_salmon_ontology warns on matching cache when refresh fails", {
   cache_dir <- withr::local_tempdir()
   url <- "http://127.0.0.1:9/smn"
   # Establish provenance through the public fetcher rather than seeding a

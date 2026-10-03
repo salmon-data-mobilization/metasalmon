@@ -9,7 +9,7 @@ fetch_salmon_ontology(
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
   timeout_seconds = 30,
-  fallback_urls = NULL
+  fallback_urls = c("https://w3id.org/smn")
 )
 }
 \arguments{
@@ -23,19 +23,22 @@ a persistent user cache path.}
 \item{timeout_seconds}{Numeric timeout in seconds for each HTTP request. It
 bounds both the connection and the whole transfer.}
 
-\item{fallback_urls}{URLs tried in order when \code{url} fails. \code{NULL} (the
-default) tries \code{"https://w3id.org/smn"} when \code{url} is the default and none
-otherwise: that fallback serves smn, so a call for any other ontology must
-not be answered by it. \code{character()} tries none.}
+\item{fallback_urls}{URLs tried in order when \code{url} fails. The implicit SMN
+fallback is used only when \code{url} is the default; callers naming another
+ontology must explicitly supply its fallback URLs. \code{NULL} or \code{character()}
+explicitly tries none.}
 }
 \value{
 Path to the cached copy that the answering URL returned (character
 string), which holds exactly the bytes that URL sent: it is not decoded,
-re-encoded or given a final newline. If every URL fails, the call raises an
-error naming the URLs and
-the last failure, even when a copy fetched by an earlier call is cached: a
-copy that could not be refreshed is not returned. That copy is left on
-disk.
+re-encoded or given a final newline. If every URL fails to refresh, a
+matching copy from an attempted URL and the requested \code{accept} is returned
+with a warning, provided it is not known to be stale. Unrelated, legacy,
+invalidated or mismatching copies are never used. A replacement response
+or contradictory ETag invalidates the previous representation, even when
+storing its replacement fails. The old body stays on disk for inspection
+with a \code{.invalid} marker until a successful replacement makes it reusable.
+Without an eligible matching copy the call errors with the last failure.
 }
 \description{
 Downloads an ontology, by default the Salmon Domain Ontology (smn), using

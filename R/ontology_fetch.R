@@ -19,43 +19,40 @@
 #' @param accept Accept header; defaults to turtle with RDF/XML fallback.
 #' @param cache_dir Directory to store cached ontology and headers. Defaults to
 #'   a persistent user cache path.
-#' @param fallback_urls URLs tried in order when `url` fails. `NULL` (the
-#'   default) tries `"https://w3id.org/smn"` when `url` is the default and none
-#'   otherwise: that fallback serves smn, so a call for any other ontology must
-#'   not be answered by it. `character()` tries none.
+#' @param fallback_urls URLs tried in order when `url` fails. The implicit SMN
+#'   fallback is used only when `url` is the default; callers naming another
+#'   ontology must explicitly supply its fallback URLs. `NULL` or `character()`
+#'   explicitly tries none.
 #' @param timeout_seconds Numeric timeout in seconds for each HTTP request. It
 #'   bounds both the connection and the whole transfer.
 #' @return Path to the cached copy that the answering URL returned (character
 #'   string), which holds exactly the bytes that URL sent: it is not decoded,
-#'   re-encoded or given a final newline. If every URL fails, the call raises an
-#'   error naming the URLs and
-#'   the last failure, even when a copy fetched by an earlier call is cached: a
-#'   copy that could not be refreshed is not returned. That copy is left on
-#'   disk.
+#'   re-encoded or given a final newline. If every URL fails to refresh, a
+#'   matching copy from an attempted URL and the requested `accept` is returned
+#'   with a warning, provided it is not known to be stale. Unrelated, legacy,
+#'   invalidated or mismatching copies are never used. A replacement response
+#'   or contradictory ETag invalidates the previous representation, even when
+#'   storing its replacement fails. The old body stays on disk for inspection
+#'   with a `.invalid` marker until a successful replacement makes it reusable.
+#'   Without an eligible matching copy the call errors with the last failure.
 #' @export
 fetch_salmon_ontology <- function(
     url = "https://w3id.org/smn/",
     accept = "text/turtle, application/rdf+xml;q=0.8",
     cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
     timeout_seconds = 30,
-    fallback_urls = NULL) {
+    fallback_urls = c("https://w3id.org/smn")) {
 
-  # The default fallback serves smn, so it belongs to the default url alone. It
-  # used to follow any url, and a call for gcdfo whose url failed returned smn's
-  # body under no warning (hub B-333; metasalmonpy's twin is B-334). "The
-  # default" is read from this function's own formals, so it cannot drift from
-  # the signature.
-  if (is.null(fallback_urls)) {
-    fallback_urls <- if (identical(url, formals(sys.function())[["url"]])) {
-      "https://w3id.org/smn"
-    } else {
-      character()
-    }
+  # Keep the canonical public formals and explicit caller choices (B333).
+  # The implicit mirror serves SMN and cannot answer for another ontology.
+  if (missing(fallback_urls) && !identical(url, "https://w3id.org/smn/")) {
+    fallback_urls <- character()
   }
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
   urls <- c(url, fallback_urls)
   last_error <- NA_character_
+  cached_entries <- list()
 
   for (u in urls) {
     entry <- .ms_ontology_cache_entry(cache_dir, u, accept)
@@ -65,7 +62,8 @@ fetch_salmon_ontology <- function(
     # shared by every URL and representation in `cache_dir`, so a `304` could
     # answer for another URL's or another representation's body.
     headers <- c(Accept = accept)
-    if (file.exists(entry$body)) {
+    if (.ms_ontology_cache_usable(entry)) {
+      cached_entries[[length(cached_entries) + 1L]] <- entry
       etag <- if (file.exists(entry$etag)) .ms_read_cached_header(entry$etag) else NA_character_
       if (!is.na(etag)) {
         headers <- c(headers, `If-None-Match` = etag)
@@ -86,7 +84,7 @@ fetch_salmon_ontology <- function(
       silent = TRUE
     )
     if (inherits(res, "try-error")) {
-      last_error <- conditionMessage(attr(res, "condition"))
+      last_error <- .ms_redact_secrets(conditionMessage(attr(res, "condition")))
       next
     }
 
@@ -96,19 +94,34 @@ fetch_salmon_ontology <- function(
     }
     # A `304` can only confirm a copy this URL returned. With none cached it is
     # this URL's failure, and the next URL is tried.
-    if (identical(status, 304L) && file.exists(entry$body)) {
+    if (identical(status, 304L) && .ms_ontology_cache_usable(entry)) {
+      received_etag <- httr::headers(res)[["etag"]]
+      sent_etag <- as.list(headers)[["If-None-Match"]]
+      # A contradictory validator does not confirm this representation. Weak
+      # and strong spelling of the same opaque tag are equivalent for GET.
+      if (!is.null(received_etag) && !is.null(sent_etag) &&
+          !identical(sub("^W/", "", received_etag), sub("^W/", "", sent_etag))) {
+        .ms_ontology_cache_invalidate(entry)
+        last_error <- "HTTP 304 with a mismatching ETag"
+        next
+      }
       return(entry$body)
     }
     last_error <- paste("HTTP", status)
   }
 
-  # Every URL failed. A copy cached by an earlier call is not returned, however
-  # it got there (hub B-422; Q71 clause 2, ruled by Brett on 2026-09-26). It
-  # used to come back as an ordinary value under a warning, which is a failure
-  # read as a success, and metasalmonpy already raised here. The last failure
-  # is named as metasalmonpy names it: the condition's message, or
-  # `HTTP <status>`, where this used to paste the response object and print
-  # nothing.
+  # A failed refresh is not evidence of staleness (Brett, Q71, 2026-10-03).
+  # Recheck eligibility because a later attempt can invalidate the same entry.
+  for (entry in cached_entries) {
+    if (.ms_ontology_cache_usable(entry)) {
+      cached_path <- entry$body
+      cli::cli_warn(c(
+        "Failed to refresh Salmon ontology; using cached copy at {.path {cached_path}}.",
+        .ms_cli_bullets(paste0("Last fetch error: ", last_error), "i")
+      ))
+      return(cached_path)
+    }
+  }
   stop(
     "Failed to fetch ontology from provided URLs: ", paste(urls, collapse = ", "),
     "; last error: ", last_error
@@ -164,12 +177,19 @@ fetch_salmon_ontology <- function(
 # copy and stored a body that was not valid UTF-8 as the text "NA".
 # metasalmonpy writes the same bytes the same way (`atomic_io.atomic_write()`).
 .ms_ontology_cache_store <- function(entry, res) {
+  # Receiving a full replacement makes the nominated old body unsuitable.
+  # Persist that fact before decoding or writing so an interrupted refresh
+  # cannot revive it on the next offline call (RFC 9111, section 4.3.3).
+  .ms_ontology_cache_invalidate(entry)
   content <- httr::content(res, as = "raw")
 
   # The old validators describe the old body, so they go first: a failure
   # part-way through leaves a copy with no validators, which is fetched in full
   # next time, rather than a new body paired with an old body's validators.
   unlink(c(entry$etag, entry$last_modified), force = TRUE)
+  if (any(file.exists(c(entry$etag, entry$last_modified)))) {
+    cli::cli_abort("Failed to reset cached ontology validators.")
+  }
 
   temp_ttl <- tempfile(tmpdir = dirname(entry$body), fileext = ".ttl")
   on.exit(unlink(temp_ttl, force = TRUE), add = TRUE)
@@ -180,8 +200,25 @@ fetch_salmon_ontology <- function(
 
   .ms_ontology_store_validator(httr::headers(res)[["etag"]], entry$etag)
   .ms_ontology_store_validator(httr::headers(res)[["last-modified"]], entry$last_modified)
+  unlink(paste0(entry$body, ".invalid"), force = TRUE)
+  if (file.exists(paste0(entry$body, ".invalid"))) {
+    cli::cli_abort("Failed to complete cached ontology replacement.")
+  }
 
   entry$body
+}
+
+# A marker belongs to exactly one URL/Accept entry. Retain superseded bytes
+# for inspection but exclude both that body and its validators from reuse.
+# The marker retires when a successful replacement stores the complete body
+# and validator set; cache age alone never creates one.
+.ms_ontology_cache_usable <- function(entry) {
+  file.exists(entry$body) && !file.exists(paste0(entry$body, ".invalid"))
+}
+
+.ms_ontology_cache_invalidate <- function(entry) {
+  writeBin(charToRaw("superseded\n"), paste0(entry$body, ".invalid"))
+  invisible(entry)
 }
 
 # A validator file is the header value's bytes and a newline, written in
