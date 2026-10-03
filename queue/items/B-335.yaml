@@ -1,7 +1,7 @@
 id: B-335
 kind: defect
 title: 'fetch_salmon_ontology() caches every url and representation as salmon-ontology.ttl with one set of validators, so two fetches into one cache_dir overwrite each other'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
