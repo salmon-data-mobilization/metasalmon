@@ -1,0 +1,13 @@
+id: B-422
+kind: defect
+title: 'fetch_salmon_ontology() warns and returns a matching cache after failed refresh, but rejects mismatching or known-stale copies under Q-71'
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'IN METASALMON, if every attempted URL fails to refresh, fetch_salmon_ontology() returns an eligible body cached for an attempted URL and the requested Accept with a warning. It never returns unrelated, unqualified legacy, mismatching or otherwise known-stale bodies. A failed refresh alone does not prove a matching body stale; a replacement response or contradictory validator makes the old representation ineligible on subsequent calls as well. Focused tests pin matching transport/503 warning controls, URL/Accept isolation, known-stale refusal and recovery after a successful replacement; the roxygen and NEWS describe this behavior. Brett clarified Q-71 part (2) in chat on 2026-10-03: "For Q71, if the cache matches the requested ontology and refresh fails, continue with a warning. Do not use unrelated, mismatching or otherwise known-stale caches." This supersedes PR209/211''s interpretation of the 2026-09-26 quote as an unconditional error after failed refresh. Reconcile the existing PR211 rather than opening a duplicate; preserve B-333/B-335 checkpoints and claims. The mirror obligation remains in the existing ontology-fetch stream.'
