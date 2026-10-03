@@ -159,6 +159,73 @@ test_that("the vendored SDP bundle is internally consistent and uses the current
   )
 })
 
+# Give this network test its own timeout without changing the package loader's
+# default, which is also used by ordinary callers. Capture the original fetch
+# error before `.ms_load_sdp_schema()` turns it into a user-facing CLI error.
+load_live_sdp_schema_for_test <- function(fetch = metasalmon:::.ms_fetch_remote_sdp_schema,
+                                          timeout = 30) {
+  force(fetch)
+  fetch_error <- NULL
+  testthat::local_mocked_bindings(
+    .ms_fetch_remote_sdp_schema = function(base_url) {
+      tryCatch(
+        fetch(base_url, timeout = timeout),
+        error = function(e) {
+          fetch_error <<- e
+          stop(e)
+        }
+      )
+    },
+    .package = "metasalmon"
+  )
+
+  schema <- tryCatch(
+    metasalmon:::.ms_load_sdp_schema(source = "remote", refresh = TRUE, quiet = TRUE),
+    error = function(e) e
+  )
+  if (inherits(schema, "error")) {
+    # Only an httr2 transport failure with no HTTP response proves that the
+    # live fetch could not complete. A 404 has a response and must stay red.
+    # Retires if this live check uses a guaranteed local upstream fixture.
+    if (inherits(fetch_error, "httr2_failure") && is.null(fetch_error$resp)) {
+      testthat::skip(paste("Could not fetch the live SDP bundle:", conditionMessage(fetch_error)))
+    }
+    stop(schema)
+  }
+  schema
+}
+
+test_that("the live SDP check distinguishes transport failure from a missing path", {
+  withr::defer(metasalmon:::.ms_load_sdp_schema(
+    source = "vendored", refresh = TRUE, quiet = TRUE
+  ))
+  valid_bundle <- function(base_url, timeout) {
+    expect_identical(timeout, 30)
+    metasalmon:::.ms_load_vendored_sdp_schema()
+  }
+  expect_identical(load_live_sdp_schema_for_test(fetch = valid_bundle)$source, "remote")
+
+  transport_failure <- function(...) {
+    stop(structure(
+      list(message = "simulated connection timeout", call = NULL),
+      class = c("httr2_failure", "error", "condition")
+    ))
+  }
+  expect_condition(
+    load_live_sdp_schema_for_test(fetch = transport_failure),
+    class = "skip",
+    regexp = "connection timeout"
+  )
+
+  missing_path <- function(...) {
+    httr2::resp_check_status(httr2::response(status_code = 404L))
+  }
+  expect_error(
+    load_live_sdp_schema_for_test(fetch = missing_path),
+    "Unable to load remote SDP Frictionless schema bundle"
+  )
+})
+
 test_that("the live upstream SDP bundle loads", {
   # The gap that let the profile-identifier drift go unnoticed: nothing ever
   # exercised a successful remote fetch, because the whole suite pins
@@ -172,7 +239,7 @@ test_that("the live upstream SDP bundle loads", {
     metasalmon:::.ms_load_sdp_schema(source = "vendored", refresh = TRUE, quiet = TRUE)
   })
 
-  schema <- metasalmon:::.ms_load_sdp_schema(refresh = TRUE, quiet = TRUE)
+  schema <- load_live_sdp_schema_for_test()
 
   expect_identical(schema$source, "remote")
   expect_identical(schema$profile_uri, schema$rules$profile)
@@ -266,12 +333,11 @@ test_that("the pinned upstream ref serves the vendored SDP bundle byte for byte"
   # same functions `.ms_fetch_remote_sdp_schema()` reads, so a resource added
   # to the bundle is covered without editing this test.
   #
-  # This is deliberately NOT the shape of the live-bundle test above (hub item
-  # B-132). That test proves only that the host resolves, then fetches under a
-  # hard-coded 2 s timeout. This one sets a generous timeout of its own, and it
-  # skips only when the network or the service fails: a transport error, a 429
-  # or a 5xx. A 404 fails, because it means the pin names a ref or a path that
-  # does not exist. Any byte difference fails too.
+  # Both this test and the live-bundle test above (hub item B-132) use a
+  # generous timeout of their own. The live-bundle test skips only a transport
+  # failure with no HTTP response. This byte comparison also skips a 429 or
+  # 5xx service response. A 404 fails in both tests, because it means the pin
+  # names a ref or a path that does not exist. Any byte difference fails here.
   #
   # *Retires when:* the loader stops fetching a remote bundle, or stops falling
   # back to the vendored one. Either way there is no longer a second copy for
