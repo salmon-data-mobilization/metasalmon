@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S11 — Vignettes and user-facing walkthroughs"
-description: "Keep metasalmon vignettes and metasalmonpy guides current, and add the missing walkthroughs: KNB golden path, R semantic review, methods annotation, and an executable end-to-end NuSEDS run. Seeded by the 2026-08-13 staleness audit."
+description: "Keep metasalmon vignettes and metasalmonpy guides current. Record the dated staleness audit and historical walkthrough plan; current work-item state lives in the queue."
 status: draft
 tags: [vignettes, docs, teaching]
 psc:
@@ -16,29 +16,39 @@ below with file:line citations verified at audit time). Standing rule: the
 **mirror contract applies to docs** — metasalmonpy guides update in lockstep
 with the vignettes that cover the same workflow.
 
-**Status: slices 1 and 2 have landed** (PR #46, `ac6b722`, plus the 0.3.0
-staleness sweep) — `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd`
-exist and the audit's code defects, framing, and coverage gaps below are fixed.
-Slices 3–6 remain.
+**Implementation recorded 2026-09-30:** the R walkthrough lives
+at `vignettes/semantic-review.Rmd`, linked from the quickstart and pkgdown Guides
+index, and `tidyr` is declared in Suggests for the tidy-data examples. Python's
+existing `guides/semantic-review.qmd` already covers the mirrored 0.5.0 review
+flow; this R guide supplies its missing twin. The audit's observations remain
+below as measurements of those earlier trees. Current work-item state,
+blockers and completion evidence live in `queue/` (start at `queue/README.md`),
+not in this historical audit and slice plan.
 
-**Two named remainders survive inside the landed slices** (re-checked
-2026-08-21) — carried up here because "LANDED" on a slice line has been read as
+## Follow-up audit snapshot (2026-08-21)
+
+**Status recorded at that checkpoint: slices 1 and 2 had landed** (PR #46,
+`ac6b722`, plus the 0.3.0
+staleness sweep) — `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd`
+existed and the audit's code defects, framing, and coverage gaps below were fixed.
+Slices 3–6 remained in the plan at that date.
+
+**Two named remainders were observed inside the landed slices** (re-checked
+2026-08-21) — retained here because "LANDED" on a slice line had been read as
 "nothing left in it":
 
-- **Slice 2: `tidyr` is still not in `DESCRIPTION`.** Zero matches. The
-  vignette that teaches `pivot_longer` therefore names a package the installed
-  package does not declare. It is display-only, so nothing errors — which is
-  why it has survived two sweeps.
-- **Slice 1: `guides/github-access.qmd` still has no runnable example**, and
-  the blocker is a decision, not work: **Brett has to name a public CSV
-  repository** to point it at. Every current example targets a private DFO
-  repo. Nobody can unblock this by trying harder.
+- **Slice 2: `tidyr` was absent from `DESCRIPTION`.** The audit recorded zero
+  matches. The display-only `pivot_longer` vignette therefore named an
+  undeclared package, without producing an execution error.
+- **Slice 1: `guides/github-access.qmd` had no runnable example.** The audit
+  recorded a decision blocker: Brett needed to name a public CSV repository
+  because the examples at that date targeted a private DFO repository.
 
 ## Audit verdicts (2026-08-13; metasalmon 0.2.6, metasalmonpy 0.1.6)
 
 **A dated record, largely discharged — do not read these as current defects.**
 Everything below was true at 0.2.6/0.1.6; slices 1–2 fixed nearly all of it.
-**Three** findings survive, re-checked 2026-08-21: the
+**Three** findings were recorded as outstanding in the 2026-08-21 follow-up: the
 `tidyr`-not-in-DESCRIPTION half of the tidy-data bullet, the
 `github-access.qmd` runnable example, and the KNB-vignette split (slice 3).
 *(This line said "two" and omitted the second, while slice 1 below recorded it
@@ -69,8 +79,8 @@ Corrections are flagged inline.
   contradicts it, nothing documents it — `NEWS.md:73-77` names hand-authored
   packages, and the hand-authored-package vignette says nothing).
   *(Mostly fixed: `primary_key` and `pivot_longer` are taught in
-  `tidy-data-for-sdp.Rmd` and the token in `faq.Rmd`. **Still true:** `tidyr`
-  is not in `DESCRIPTION`.)*
+  `tidy-data-for-sdp.Rmd` and the token in `faq.Rmd`. **Still true at the
+  2026-08-21 follow-up:** `tidyr` was not in `DESCRIPTION`.)*
 - **S8 exposure (update in lockstep when the method model lands):**
   *(Fixed in the 0.3.0 sweep: the "document methods in your column
   descriptions" line is gone and the glossary now says five I-ADOPT
@@ -91,22 +101,23 @@ Corrections are flagged inline.
   *(Corrected: that family no longer exists — 0.3.0 removed it — and the
   export count is now 53. The 27 figure has not been recounted since.)*
 
-## Slices, in order
+## Slice plan recorded 2026-08-21, in order (historical)
 
 1. **Staleness fixes — LANDED**, except the `github-access.qmd` runnable
-   example, which still needs Brett to name a public CSV repo: validation framing in the two
+   example, which then needed Brett to name a public CSV repo: validation framing in the two
    vignettes; the two code defects; a missing-value entry in `faq.Rmd` and a
    note in the hand-authored-package vignette; `primary_key` taught where
    `tables.csv` is hand-built; metasalmonpy `parity.qmd` gains an explicit
    "not yet in Python" list; a public runnable example for
-   `github-access.qmd` (needs a public CSV repo — ask Brett which).
+   `github-access.qmd` (at that checkpoint, a public CSV repo required Brett's
+   choice).
 2. **Tidy-data preparation vignette + migration/breaking-changes page —
    LANDED** as `tidy-data-for-sdp.Rmd` and `migrating-to-sdp-0-3-0.Rmd`:
    `pivot_longer` workflow, `primary_key` selection, and the 0.2.4/0.2.6/0.3.0
    migration steps that used to live only in NEWS.
 3. **KNB Golden Path vignette (after S3):** extract
    `post-review-package-publication.Rmd:354-490` (§10 — the densest 137
-   lines in the vignette set, currently invisible in the pkgdown articles
+   lines in the vignette set, then invisible in the pkgdown articles
    index) into a dedicated end-to-end vignette: eml-mapping, dry-run
    manifest, staging rehearsal (S3), live deposit, DOI. `setup.Rmd`'s
    DataONE JWT section links to it.
@@ -119,7 +130,7 @@ Corrections are flagged inline.
    packages updated in the same release. **Re-scope before starting** — slice
    2's `migrating-to-sdp-0-3-0.Rmd` already teaches the three placements and
    the new slot, and the R glossary is updated (five I-ADOPT components, the
-   "document methods in your column descriptions" line gone). What is left is
+   "document methods in your column descriptions" line gone). What remained then was
    the Python glossary and whatever annotation guidance the migration framing
    does not cover.
 
@@ -141,16 +152,17 @@ Corrections are flagged inline.
    references to the example CSVs exist and none validates a package built from
    them.
 
-   **It cannot end green today, and that is the point.** The 30-row example
-   fails `validate_salmon_datapackage()` in both modes (#98); the 173-row one
-   returns a 0-row issues tibble while the spec validator reports 27 errors
-   (#95, and [S1](s1-validation-authority.md)). So this slice either lands
-   *after* those are fixed, or lands first and asserts the current failure
-   exactly — which is a legitimate choice and has to be a stated one, because a
-   walkthrough that documents its own failure needs to say so on the page.
+   **At the 2026-08-21 check it could not end green.** The 30-row example
+   failed `validate_salmon_datapackage()` in both modes (#98); the 173-row one
+   returned a 0-row issues tibble while the spec validator reported 27 errors
+   (#95, and [S1](s1-validation-authority.md)). The plan allowed this slice to
+   land *after* those failures were fixed, or to land first and assert the
+   observed failures exactly. The latter alternative required the walkthrough
+   to state its failure explicitly.
 
-   **Depends on [S12](s12-fraser-coho-gold-standard.md):** which example it
-   executes is S12's open artifact decision, not this slice's to make.
+   **Dependency recorded at that checkpoint: [S12](s12-fraser-coho-gold-standard.md).**
+   Which example it would execute was S12's open artifact decision, not this
+   slice's to make. Current decisions and blockers are recorded in the queue.
    *Done when:* the walkthrough runs in CI against the chosen bundled example,
    the docs render its real output rather than a transcript, and a drift in
    `create_sdp()`'s behaviour turns the build red.

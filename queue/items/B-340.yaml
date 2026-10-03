@@ -1,7 +1,7 @@
 id: B-340
 kind: defect
 title: 'R''s semantic closure takes the text of an !expr tag in the EML sidecar as the path it writes to, where the ruled behaviour is to refuse'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -53,7 +53,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' # Create a simple package
 #' resources <- list(main_table = mtcars)
 #' dataset_meta <- tibble::tibble(
@@ -70,9 +69,8 @@
 #' dict <- infer_dictionary(mtcars, dataset_id = "test-1", table_id = "main_table")
 #' write_salmon_datapackage(
 #'   resources, dataset_meta, table_meta, dict,
-#'   path = tempdir()
+#'   path = tempfile("sdp-example-")
 #' )
-#' }
 write_salmon_datapackage <- function(
     resources,
     dataset_meta,
@@ -233,10 +231,19 @@ write_salmon_datapackage <- function(
   declared_spec_version <- dataset_meta$spec_version[1]
   if (!is.na(declared_spec_version) && nzchar(trimws(declared_spec_version)) &&
       !identical(trimws(declared_spec_version), sdp_schema$version)) {
-    cli::cli_warn(c(
-      "{.file dataset.csv} declares {.val {declared_spec_version}} but the loaded SDP schema is {.val {sdp_schema$version}}.",
-      "i" = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
-    ))
+    if (.ms_sdp_same_minor_version(trimws(declared_spec_version), sdp_schema$version)) {
+      # A patch release keeps the profile, so this is a note, not a problem:
+      # every package written before a patch re-vendor would otherwise warn.
+      cli::cli_inform(c(
+        "i" = "{.file dataset.csv} declares {.val {declared_spec_version}}; the loaded SDP schema is {.val {sdp_schema$version}}, a patch release of the same profile.",
+        " " = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{.file dataset.csv} declares {.val {declared_spec_version}} but the loaded SDP schema is {.val {sdp_schema$version}}.",
+        "i" = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
+      ))
+    }
   }
 
   # Every URI written here comes from the one loaded, self-consistent bundle,
@@ -811,7 +818,6 @@ write_salmon_datapackage <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' resources <- list(
 #'   catches = data.frame(
 #'     station_id = c("A", "B"),
@@ -829,15 +835,14 @@ write_salmon_datapackage <- function(
 #' artifacts <- infer_salmon_datapackage_artifacts(
 #'   resources,
 #'   dataset_id = "demo-1",
-#'   seed_semantics = TRUE,
-#'   seed_verbose = TRUE
+#'   seed_semantics = FALSE,
+#'   seed_verbose = FALSE
 #' )
 #'
 #' dict <- artifacts$dict
 #' table_meta <- artifacts$table_meta
 #' codes <- artifacts$codes
 #' dataset_meta <- artifacts$dataset_meta
-#' }
 infer_salmon_datapackage_artifacts <- function(
     resources,
     dataset_id = "dataset-1",
@@ -955,7 +960,11 @@ infer_salmon_datapackage_artifacts <- function(
     suggest_args <- c(suggest_args, llm_review$suggest_args)
     dict <- do.call(suggest_semantics, suggest_args)
 
-    semantic_suggestions <- attr(dict, "semantic_suggestions", exact = TRUE)
+    semantic_suggestions <- .ms_mark_crosswalk_suggestions(
+      attr(dict, "semantic_suggestions", exact = TRUE),
+      artifact_context$crosswalk_prefills
+    )
+    attr(dict, "semantic_suggestions") <- semantic_suggestions
     semantic_llm_assessments <- attr(dict, "semantic_llm_assessments", exact = TRUE)
   }
 
@@ -1108,17 +1117,18 @@ infer_salmon_datapackage_artifacts <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
 #' fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 #'
 #' pkg <- create_sdp(
 #'   fraser_coho,
+#'   path = tempfile("fraser-coho-sdp-"),
 #'   dataset_id = "fraser-coho-2024",
 #'   table_id = "escapement",
-#'   overwrite = FALSE
+#'   seed_semantics = FALSE,
+#'   seed_verbose = FALSE,
+#'   check_updates = FALSE
 #' )
-#' }
 create_sdp <- function(
     resources,
     path = NULL,
@@ -1496,11 +1506,10 @@ create_sdp <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Read a package
-#' pkg <- read_salmon_datapackage("path/to/package")
-#' pkg$resources$main_table
-#' }
+#' # Read the bundled example package without a network call.
+#' example_path <- system.file("extdata", package = "metasalmon")
+#' pkg <- read_salmon_datapackage(example_path)
+#' names(pkg$resources)
 read_salmon_datapackage <- function(path) {
   if (!dir.exists(path)) {
     cli::cli_abort("Directory {.path {path}} does not exist")
@@ -1687,6 +1696,36 @@ read_salmon_datapackage <- function(path) {
   issues
 }
 
+# The strict package gate sweeps the same tables.csv *_iri columns as the
+# REVIEW-marker collector above. Method/protocol placements already have an
+# unconditional shape check; excluding them here keeps one issue per bad cell.
+# A blank or recognized marker stays with its existing reporting path.
+.ms_collect_malformed_table_iri_issues <- function(df, source_name) {
+  if (!is.data.frame(df) || nrow(df) == 0) {
+    return(tibble::tibble())
+  }
+
+  iri_cols <- setdiff(grep("_iri$", names(df), value = TRUE), c("method_iri", "protocol_iri"))
+  purrr::map_dfr(iri_cols, function(field) {
+    vals <- as.character(df[[field]])
+    # Exact empty values belong to existing missing-field checks. Parsed
+    # whitespace-only text in an optional extension IRI is populated but
+    # malformed and must not disappear through trimws().
+    populated <- !is.na(vals) & vals != ""
+    marker <- !is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE)
+    rows <- which(populated & !marker & !.ms_absolute_iri_shape(vals))
+    if (length(rows) == 0) {
+      return(tibble::tibble())
+    }
+    tibble::tibble(
+      message = sprintf(
+        "%s row %s field %s is not an absolute IRI.",
+        source_name, rows, field
+      )
+    )
+  })
+}
+
 .ms_validation_row_context <- function(df, row, id_fields = character()) {
   id_fields <- intersect(id_fields, names(df))
   if (length(id_fields) == 0) {
@@ -1791,10 +1830,12 @@ read_salmon_datapackage <- function(path) {
   for (field in present) {
     vals <- as.character(meta[[field]])
     populated <- !is.na(vals) & nzchar(trimws(vals))
-    # `REVIEW:` markers have their own dedicated reporting path.
+    # The marker collector owns every spelling it currently recognizes. Keep
+    # this exclusion aligned so a placement is not reported once as a marker
+    # and again as a malformed IRI.
     invalid <- which(
       populated &
-        !grepl("^REVIEW:", trimws(vals), ignore.case = TRUE) &
+        !grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE) &
         !.ms_sdp_extension_is_absolute_iri(vals)
     )
     for (row in invalid) {
@@ -2003,6 +2044,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       .ms_collect_review_placeholder_issues(pkg$dataset, "metadata/dataset.csv", id_fields = "dataset_id"),
       .ms_collect_review_placeholder_issues(pkg$tables, "metadata/tables.csv", id_fields = c("table_id", "file_name")),
       .ms_collect_missing_table_observation_unit_iri_issues(pkg$tables),
+      .ms_collect_malformed_table_iri_issues(pkg$tables, "metadata/tables.csv"),
       .ms_collect_review_placeholder_issues(pkg$dictionary, "metadata/column_dictionary.csv", id_fields = c("table_id", "column_name")),
       .ms_collect_review_placeholder_issues(pkg$codes, "metadata/codes.csv", id_fields = c("table_id", "column_name", "code_value")),
       # #49: a blank schema-required field is the placeholder state minus the
@@ -2057,7 +2099,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         ifelse(nrow(final_review_issues) == 1, "", "s")
       ),
       .ms_cli_bullets(preview, "x"),
-      "i" = "Resolve placeholder metadata, blank schema-required fields, blank table observation-unit IRIs, and any REVIEW-prefixed IRIs before strict validation."
+      "i" = "Resolve placeholder metadata, blank schema-required fields, blank or malformed table IRIs, and any REVIEW-prefixed IRIs before strict validation."
     )
     if (nrow(final_review_issues) > length(preview)) {
       abort_lines <- c(
@@ -3287,6 +3329,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     row <- suggestions[i, , drop = FALSE]
     scope <- row$target_scope[[1]] %||% NA_character_
     if (!identical(scope, "code")) {
+      return(TRUE)
+    }
+    # A crosswalk-filled slot is a deliberate review target even when the raw
+    # code has no description beyond its own value. The prefill provenance is
+    # narrower than the ordinary context heuristic below.
+    if ("prefill_origin" %in% names(row) &&
+        identical(.ms_scalar_text(row$prefill_origin), "nuseds_crosswalk")) {
       return(TRUE)
     }
     .ms_code_target_has_review_context(row)

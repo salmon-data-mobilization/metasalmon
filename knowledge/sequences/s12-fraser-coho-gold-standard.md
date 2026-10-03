@@ -129,10 +129,14 @@ seed_semantics = FALSE)`.
 - **#48 / #49 — [S1](s1-validation-authority.md).** An exemplar validated by a
   gate that under-checks is an exemplar of nothing. S12 wants S1's conformance
   test as its evidence, not a green console line.
-- **Two real ontology gaps, and both should be term requests rather than
-  bundle prose. Both now have a ruled destination** (Brett, 2026-08-24,
-  [Q8](../questions.md): *"I agree with your recommendation PFMA Sub areas go to
-  gcdfo."*):
+- **The geographic and species columns require different decisions.** DFO's
+  [NuSEDS data dictionary](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Data_Dictionary_NuSEDS_EN.csv)
+  defines `AREA` as a sub-district, and its
+  [sub-district map](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Map%20of%20Areas.pdf)
+  names the four codes in this extract. The
+  [commons card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/main/concepts/nuseds-area-is-a-subdistrict.md)
+  records the source comparison and an open term gap. Neither column's
+  eventual term is selected here:
   - **Species → an external taxonomy.** The column's only value is `Coho`. PR #27
     **withdrew** its species scheme, and species concepts are never minted in
     `gcdfo` (Brett, 2026-08-17) — so there is no term in either ontology today,
@@ -141,30 +145,22 @@ seed_semantics = FALSE)`.
     the commons already carries a card on Pacific salmonid taxonomic
     authorities) is the open implementation question, and it is not an ontology
     gap in the mint-a-term sense.
-  - **PFMA subareas → `gcdfo`.** `AREA` holds `29F`, `29G`, `29J`, `29K` —
-    **subareas**. gcdfo PR #86 minted the **48 Areas** and deliberately not
-    Schedule 2's 604 numbered Subareas, with a `skos:scopeNote` saying so. The
-    vocabulary is complete for Areas and honestly silent here, so the gap is
-    real. It goes to gcdfo because gcdfo already owns
-    `gcdfo:PacificFisheryManagementAreaScheme`, and splitting one regulatory
-    vocabulary across repositories for a temporary priority ordering would
-    fracture it permanently.
+  - **`AREA` → DFO Pacific Region sub-district.** Its `29F`, `29G`, `29J` and
+    `29K` values are lettered sub-district codes; PFMA Subareas under the
+    [Regulations](https://laws-lois.justice.gc.ca/eng/regulations/SOR-2007-77/FullText.html)
+    use numbered forms such as `29-1`. [Q8](../questions.md) sends actual PFMA
+    Subareas to `gcdfo`, but does not make these NuSEDS values Subareas. The
+    commons gap records the missing sub-district term. Whether the gold standard
+    needs a `gcdfo` term for it, and the authoritative source and scope for any
+    such vocabulary, remain open for Brett's appraisal.
 
-  **This is also the whole of the gcdfo carve-out** ([Q5](../questions.md),
-  Brett, 2026-08-24: *"Carve out what the gold standard needs."*): the subarea
-  mint is carved out of gcdfo's de-prioritisation, nothing else is, and
-  `psc-salmon-vocabularies` stays fully de-prioritised. **Still to decide, by
-  this card:** whether the mint covers the four Subareas this example holds or
-  all 604 of Schedule 2. Four is enough for the gold standard and leaves a
-  vocabulary that is complete for Areas and arbitrary for Subareas; 604 is a
-  transcription task with a published, contiguous source. Say which, and say it
-  in the term request rather than leaving it to whoever implements.
-
-  Both requests belong in `salmon-knowledge-commons`' gap register and then
-  through `detect_semantic_term_gaps()` → `render_ontology_term_request()` →
-  `submit_term_request_issues()`. Note **#97**: that detector returns zero gaps
-  when retrieval returned zero candidates, which is precisely the shape both of
-  these have — so filing them today is manual work, and #97 is why.
+  [Q5](../questions.md) carves out only what the gold standard demonstrably
+  needs from `gcdfo`; the former claim that its `AREA` values required PFMA
+  Subareas supplied no such need. `psc-salmon-vocabularies` remains de-prioritised.
+  If the sub-district gap warrants a term request, carry the source-backed need
+  through the commons gap register and the term-request pipeline. Note **#97**:
+  the detector returns zero gaps when retrieval returned zero candidates, so
+  that route currently needs manual handling.
 
 ## Dependencies
 

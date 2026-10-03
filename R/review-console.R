@@ -213,7 +213,8 @@
 #' Review semantic suggestions in the console
 #'
 #' Builds a re-runnable review queue from suggestions that already exist. One
-#' entry per unfilled semantic slot, each with its ranked shortlist and the
+#' entry per unfilled semantic slot, plus NuSEDS crosswalk-prefilled code slots
+#' that still hold their original prefill, each with its ranked shortlist and the
 #' exact [accept_suggestion()] call that decides it -- printing that call is the
 #' feature: paste it into a script and the decision becomes reproducible,
 #' which the spreadsheet workflow this replaces never was.
@@ -228,7 +229,8 @@
 #'   `semantic_suggestions` attribute, or the artifact list returned by
 #'   `infer_salmon_datapackage_artifacts()`.
 #' @param include_filled Logical; if `TRUE`, also queue slots that already hold
-#'   a final (non-`REVIEW:`) IRI. Defaults to `FALSE`.
+#'   a final (non-`REVIEW:`) IRI. NuSEDS crosswalk-prefilled code slots with a
+#'   saved shortlist are shown by default until decided. Defaults to `FALSE`.
 #' @param max_candidates Maximum candidates shown per slot. `Inf` shows all.
 #' @param columns Optional character vector restricting the queue to these
 #'   column names.
@@ -486,13 +488,32 @@ review_semantics <- function(x,
     # row match) is kept: dropping it would hide work, and the console labels
     # it "current: <unknown>" so the user can see why.
     unfilled <- is.na(review$current_value) | .ms_review_is_unfilled(review$current_value)
+    # A NuSEDS code prefill holds a final IRI but still needs review against
+    # the saved alternatives. Only producer-stamped provenance, matching the
+    # value still on disk, gets this exception. A caller's final IRI or a later
+    # manual edit is not pulled back into the default queue.
+    prefill_origin <- if ("prefill_origin" %in% names(suggestions)) {
+      as.character(suggestions$prefill_origin)
+    } else {
+      rep(NA_character_, nrow(suggestions))
+    }
+    prefill_iri <- if ("prefill_iri" %in% names(suggestions)) {
+      as.character(suggestions$prefill_iri)
+    } else {
+      rep(NA_character_, nrow(suggestions))
+    }
+    crosswalk_pending <- !is.na(prefill_origin) &
+      prefill_origin == "nuseds_crosswalk" &
+      !is.na(prefill_iri) &
+      !is.na(review$current_value) &
+      review$current_value == prefill_iri
     # A recorded decision takes a slot out of the queue even though rejecting
     # leaves the field blank -- "blank" and "undecided" are different states,
     # and only `include_filled = TRUE` shows the decided ones again. A
     # hand-picked accept (`source = "user"`) is recorded with a decision, so
     # this is also what drops it.
     decided <- review$slot_id %in% unique(review$slot_id[!is.na(review$decision)])
-    source_row <- which(unfilled & !decided)
+    source_row <- which((unfilled | crosswalk_pending) & !decided)
     review <- review[source_row, , drop = FALSE]
   }
 

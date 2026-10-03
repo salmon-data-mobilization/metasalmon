@@ -146,9 +146,13 @@ here.</p>
 
 <p>Evidence is resolved by re-running the package's own deterministic search
 (<code><a href="find_terms.html">find_terms()</a></code>) for each IRI and keeping the hit whose IRI matches. An IRI
-every searched source answered about and none of them has is reported as a
-row of <code>gaps</code> – the shape <code><a href="detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> returns, plus an
-<code>unresolved_iri</code> column – and both files are still written without it. That
+every searched source answered about and none of them has is reported in
+<code>gaps</code> – the shape <code><a href="detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> returns, plus an
+<code>unresolved_iri</code> column – and both files are still written without it. A
+code-resolved procedure has one gap row per <code>codes.csv</code> row carrying its IRI,
+with that row's keys and <code>term_iri</code> address. Rendering these gaps produces
+one candidate term request per carrying code row; review them before filing
+so several uses of one IRI do not become duplicate ontology issues. That
 is deliberate: an IRI absent from every searched vocabulary is an ontology
 gap to file through <code><a href="render_ontology_term_request.html">render_ontology_term_request()</a></code> and
 <code><a href="submit_term_request_issues.html">submit_term_request_issues()</a></code>, not a reason to leave the user with no files

@@ -10,7 +10,7 @@ test_that("SDP schema loader falls back loudly to vendored schema", {
     "using vendored schemas"
   )
 
-  expect_equal(schema$version, "sdp-0.3.0")
+  expect_equal(schema$version, "sdp-0.3.2")
   # The contract is that the bundle agrees with itself, not that it matches a
   # constant compiled into metasalmon.
   expect_equal(schema$profile_uri, schema$rules$profile)
@@ -52,10 +52,13 @@ test_that("remote schema source and SDP profile identifier remain distinct", {
   withr::defer(options(old_options))
 
   # The base URL is pinned to the spec release tag this package implements,
-  # not `main`: advancing the pin is part of implementing a new spec version.
+  # never `main`, because advancing the pin is part of implementing a new spec
+  # version. sdp-0.3.2 is the first release carrying the Q-51 ruling, and Brett
+  # ruled on 2026-09-23 that the pin names a tag rather than a commit (hub item
+  # B-198). The reasoning is beside the pin in R/schema-helpers.R.
   expect_identical(
     metasalmon:::.ms_default_sdp_schema_base_url(),
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.2"
   )
   expect_identical(
     metasalmon:::.ms_sdp_profile_url(),
@@ -174,6 +177,149 @@ test_that("the live upstream SDP bundle loads", {
   expect_identical(schema$source, "remote")
   expect_identical(schema$profile_uri, schema$rules$profile)
   expect_true(nzchar(schema$version))
+})
+
+test_that("the vendored SDP bundle matches its manifest, with no network", {
+  # Hub item B-198. The pin in `.ms_sdp_schema_pinned_base_url()` and the
+  # vendored bundle must hold the same bytes (the comment beside the pin says
+  # why), and the byte-for-byte test below can check that only online, so a
+  # re-vendor made offline, or checked by a suite that skips network tests,
+  # would go unchecked. inst/extdata/sdp-bundle-manifest.json names the tag the
+  # bundle was copied from and the SHA-256 of each file, and this test holds
+  # the bundle, the manifest and the pin to one another offline:
+  # - a partial re-vendor, or a later hand edit, fails that file's hash;
+  # - a file the loader reads with no manifest entry fails the path set, so a
+  #   resource added to the loader has to be vendored and hashed with it;
+  # - a pin moved without a re-vendor, or a re-vendor without the pin, fails
+  #   the tag.
+  #
+  # *Retires when:* inst/extdata stops vendoring a copy of an upstream spec
+  # release, because the hashes are what make "a copy" checkable. The pin
+  # clause alone retires sooner, if the loader stops fetching a remote bundle.
+  manifest_path <- system.file("extdata", "sdp-bundle-manifest.json", package = "metasalmon")
+  expect_true(nzchar(manifest_path) && file.exists(manifest_path))
+  manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+
+  # The same functions `.ms_fetch_remote_sdp_schema()` and
+  # `.ms_load_vendored_sdp_schema()` read, so the list cannot drift from them.
+  paths <- c(
+    unname(metasalmon:::.ms_sdp_metadata_schema_paths()),
+    metasalmon:::.ms_sdp_profile_path(),
+    metasalmon:::.ms_sdp_rules_path()
+  )
+  expect_length(manifest$files, length(paths))
+  expect_setequal(names(manifest$files), paths)
+  for (path in paths) {
+    vendored <- system.file("extdata", path, package = "metasalmon")
+    if (!nzchar(vendored) || !file.exists(vendored)) {
+      fail(paste("There is no vendored copy of", path))
+      next
+    }
+    expect_identical(
+      digest::digest(file = vendored, algo = "sha256", serialize = FALSE),
+      manifest$files[[path]],
+      label = paste("sha256 of the vendored", path)
+    )
+  }
+
+  # The pin names the manifest's tag, in the repository the manifest names.
+  expect_identical(
+    metasalmon:::.ms_sdp_schema_pinned_base_url(),
+    paste0(
+      sub("^https://github[.]com/", "https://raw.githubusercontent.com/", manifest$source),
+      "/", manifest$tag
+    )
+  )
+  expect_match(manifest$commit, "^[0-9a-f]{40}$")
+  # The bundle declares the version its tag names. The spec's release workflow
+  # refuses a tag whose files say another version, and this is the value every
+  # package metasalmon writes with a blank `spec_version` declares.
+  expect_identical(metasalmon:::.ms_load_vendored_sdp_schema()$version, manifest$tag)
+})
+
+test_that("the pinned upstream ref serves the vendored SDP bundle byte for byte", {
+  # Hub item B-198. `.ms_load_sdp_schema()` defaults to `source = "auto"`: it
+  # loads the REMOTE bundle at the pinned ref first, and falls back to the
+  # vendored copy only when that fetch fails. So an offline session gets the
+  # vendored copy and every other session gets the pinned ref. If the two
+  # differ, one package validates against a different schema depending on the
+  # network. That had happened twice before this test existed. The
+  # sdp.rules.yaml re-vendor for B-106 (2026-09-15) left the sdp-0.3.0 pin
+  # serving the older rules. Then the Q-51 temporal pattern (re-vendored by
+  # B-198) was served to every online session in its pre-ruling form by that
+  # same tag. Re-vendoring and advancing the pin are one change, and this test
+  # makes them one.
+  #
+  # FAILING-BEFORE, measured 2026-09-23 in two stages. Values are git blob ids,
+  # checkable upstream with `git rev-parse <ref>:<path>`. On the unchanged tree
+  # at the sdp-0.3.0 pin, one file differed: schema/sdp.rules.yaml (pinned
+  # 608467c6, vendored 489d46a0 since B-106). With the dataset schema
+  # re-vendored but the pin not yet moved, a second file differed too:
+  # schema/frictionless/metadata/dataset.schema.json (pinned 9fe231f6, vendored
+  # 0d0d2855). The second stage is the state the item warned could go green.
+  # Measured again 2026-09-27, when the pin moved to the sdp-0.3.2 tag: with
+  # either half done without the other, three files differed here (the dataset
+  # schema, the v0.3 profile and sdp.rules.yaml). The manifest test above now
+  # catches both halves offline.
+  #
+  # Every path the remote loader fetches is compared. The list comes from the
+  # same functions `.ms_fetch_remote_sdp_schema()` reads, so a resource added
+  # to the bundle is covered without editing this test.
+  #
+  # This is deliberately NOT the shape of the live-bundle test above (hub item
+  # B-132). That test proves only that the host resolves, then fetches under a
+  # hard-coded 2 s timeout. This one sets a generous timeout of its own, and it
+  # skips only when the network or the service fails: a transport error, a 429
+  # or a 5xx. A 404 fails, because it means the pin names a ref or a path that
+  # does not exist. Any byte difference fails too.
+  #
+  # *Retires when:* the loader stops fetching a remote bundle, or stops falling
+  # back to the vendored one. Either way there is no longer a second copy for
+  # the first to disagree with.
+  skip_on_cran()
+  skip_if_offline("raw.githubusercontent.com")
+  withr::local_options(
+    metasalmon.sdp_schema_url = NULL,
+    metasalmon.sdp_schema_base_url = NULL
+  )
+
+  base_url <- metasalmon:::.ms_default_sdp_schema_base_url()
+  paths <- c(
+    unname(metasalmon:::.ms_sdp_metadata_schema_paths()),
+    metasalmon:::.ms_sdp_profile_path(),
+    metasalmon:::.ms_sdp_rules_path()
+  )
+  sha256 <- function(bytes) digest::digest(bytes, algo = "sha256", serialize = FALSE)
+
+  for (path in paths) {
+    request <- httr2::request(paste0(base_url, "/", path))
+    request <- httr2::req_timeout(request, 30)
+    request <- httr2::req_user_agent(request, "metasalmon tests")
+    request <- httr2::req_error(request, is_error = function(resp) FALSE)
+    response <- tryCatch(httr2::req_perform(request), httr2_failure = function(e) e)
+    if (inherits(response, "httr2_failure")) {
+      skip(paste0("Could not fetch ", path, ": ", conditionMessage(response)))
+    }
+    status <- httr2::resp_status(response)
+    if (status == 429L || status >= 500L) {
+      skip(sprintf("raw.githubusercontent.com answered %d for %s", status, path))
+    }
+    if (!identical(status, 200L)) {
+      fail(sprintf(
+        "The pinned ref answered HTTP %d for %s. A 404 means the pin names a ref or a path that does not exist.",
+        status, path
+      ))
+      next
+    }
+
+    vendored <- system.file("extdata", path, package = "metasalmon")
+    expect_true(file.exists(vendored), label = paste("vendored copy of", path))
+    expect_identical(
+      sha256(httr2::resp_body_raw(response)),
+      sha256(readBin(vendored, "raw", n = file.size(vendored))),
+      label = paste("sha256 of", path, "at the pinned ref")
+    )
+  }
 })
 
 test_that("a bundle with no usable version is rejected", {
@@ -373,4 +519,34 @@ test_that("a metadata resource with an unusable schema rejects the bundle", {
     list(name = "sdp_dataset", schema = "https://example.org/dataset.schema.json")
   )
   expect_silent(metasalmon:::.ms_validate_sdp_schema(ok))
+})
+
+test_that("SDP versions that differ only in the patch number name one profile", {
+  same <- metasalmon:::.ms_sdp_same_minor_version
+
+  expect_true(same("sdp-0.3.0", "sdp-0.3.2"))
+  expect_true(same("sdp-0.3.10", "sdp-0.3.2"))
+  expect_true(same("sdp-0.3.2", "sdp-0.3.2"))
+
+  # A minor or major difference is a different profile, and minor 30 is not 3.
+  expect_false(same("sdp-0.2.0", "sdp-0.3.2"))
+  expect_false(same("sdp-1.3.2", "sdp-0.3.2"))
+  expect_false(same("sdp-0.30.0", "sdp-0.3.0"))
+  # Leading zeros do not make a different number.
+  expect_true(same("sdp-0.03.0", "sdp-0.3.2"))
+  # Components beyond R's integer range are compared as digits, without the
+  # NA that integer coercion would make of both, and without a warning.
+  expect_no_warning(
+    expect_false(same("sdp-2147483648.3.0", "sdp-2147483649.3.2"))
+  )
+  expect_no_warning(
+    expect_true(same("sdp-2147483648.3.0", "sdp-2147483648.3.2"))
+  )
+
+  # Anything that is not sdp-<major>.<minor>.<patch> counts as a real difference.
+  expect_false(same("0.3.0", "sdp-0.3.2"))
+  expect_false(same("sdp-0.3", "sdp-0.3.2"))
+  expect_false(same("sdp-0.3.0-rc1", "sdp-0.3.2"))
+  expect_false(same(NA_character_, "sdp-0.3.2"))
+  expect_false(same(c("sdp-0.3.0", "sdp-0.3.1"), "sdp-0.3.2"))
 })

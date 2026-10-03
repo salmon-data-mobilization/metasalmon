@@ -434,24 +434,23 @@ options and recommends one. That decision is Brett's; its lifecycle state is in
 
    **PFMA Subareas are ruled into gcdfo (Brett, 2026-08-24).** Hub
    [Q8](../questions.md): *"I agree with your recommendation PFMA Sub areas go
-   to gcdfo."* The scheme above is complete for the 48 Areas and explicitly
-   silent about Schedule 2's 604 numbered Subareas — and the gold-standard Fraser
-   coho example's `AREA` column holds Subareas (`29F`, `29G`, `29J`, `29K`), so
-   the silence is now a gap with an owner. It goes to gcdfo because gcdfo already
-   owns `gcdfo:PacificFisheryManagementAreaScheme`, and splitting one regulatory
-   vocabulary across repositories to suit a temporary priority ordering fractures
-   it permanently. The paired half of the same ruling: **species go to an
-   external taxonomy**, never to gcdfo and no longer to `smn` either, since PR
-   #27 withdrew that scheme.
+   to gcdfo."* That routing applies to the numbered Subareas in Schedule 2,
+   not to the Fraser coho example's `AREA` values `29F`, `29G`, `29J`, `29K`.
+   DFO's [NuSEDS dictionary](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Data_Dictionary_NuSEDS_EN.csv)
+   calls the field a sub-district, and its
+   [map](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Map%20of%20Areas.pdf)
+   names those four codes as sub-districts. The paired half of the Q8 ruling:
+   **species go to an external taxonomy**, never to gcdfo and no longer to
+   `smn` either, since PR #27 withdrew that scheme.
 
-   **This mint is also the whole of the gcdfo carve-out** (Brett, 2026-08-24, hub
-   [Q5](../questions.md): *"Carve out what the gold standard needs."*). gcdfo is
-   not de-prioritised in full and not re-opened in full; the Subarea mint is
-   carved out and nothing else is, and `psc-salmon-vocabularies` stays fully
-   de-prioritised. **The scope is the open half:** four Subareas (what the
-   example holds) or all 604 (what Schedule 2 numbers contiguously). Owner for
-   that call is [S12](s12-fraser-coho-gold-standard.md), which holds the
-   evidence; the request routes into gcdfo through this step's term-request path.
+   **The earlier use of PFMA Subareas as the gcdfo carve-out for this gold
+   standard was therefore unsupported.** [Q5](../questions.md) keeps Brett's
+   instruction to *"Carve out what the gold standard needs"* and keeps other
+   `gcdfo` work and `psc-salmon-vocabularies` de-prioritised. Whether a DFO
+   sub-district term belongs in the carve-out is open for Brett's appraisal,
+   using the [commons gap card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/main/concepts/nuseds-area-is-a-subdistrict.md)
+   and [S12](s12-fraser-coho-gold-standard.md) as evidence. This step's
+   term-request path applies once the need and source are established.
 
    **The A1 caveat survives the ruling, and got sharper.** Minting the PFMA
    vocabulary does not make `DFO_AREA`'s values members of it, and #67's close
