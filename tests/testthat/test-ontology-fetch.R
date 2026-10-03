@@ -8,8 +8,8 @@
 #   * hub B-335 (metasalmonpy B-336): each cached copy and its validators are
 #     keyed by the URL that returned them and the accept they were fetched
 #     under, with one naming scheme in both packages.
-#   * hub B-422 (Q71 clause 2, ruled by Brett on 2026-09-26): when every URL
-#     fails the call raises, even with a copy cached.
+#   * hub B-422 (Q71 clarified by Brett on 2026-10-03): a failed refresh
+#     warns and returns only a matching body not known to be stale.
 #   * The follow-ups that converged the two fetchers' remaining differences on
 #     2026-09-26: a copy holds exactly the bytes the server sent, and the
 #     timeout bounds both the connection and the transfer.
@@ -76,9 +76,17 @@ of_fetch <- function(routes, ...) {
     route(sent)
   }
   testthat::local_mocked_bindings(GET = get, .package = "httr")
-  value <- tryCatch(fetch_salmon_ontology(...), error = function(e) e)
+  warnings <- character()
+  value <- tryCatch(withCallingHandlers(
+    fetch_salmon_ontology(...),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  ), error = function(e) e)
   list(
     value = value,
+    warnings = warnings,
     urls = vapply(requests, function(r) r$url, character(1)),
     sent = lapply(requests, function(r) r$sent),
     options = lapply(requests, function(r) r$options)
@@ -114,7 +122,7 @@ test_that("the default url still reaches the default fallback (hub B-333 control
       of_fetch(routes, cache_dir = cache_dir)
     }
     expect_identical(got$urls, c(of_smn, of_smn_fallback))
-    expect_identical(of_body(got$value), "SMN BODY")
+    expect_identical(if (is.character(got$value)) of_body(got$value) else NULL, "SMN BODY")
   }
 
   # Named fallbacks are tried for any url, and character() names none.
@@ -228,33 +236,64 @@ test_that("a 304 with no cached copy is that url's failure, not a copy (hub B-33
   expect_identical(of_body(got$value), "SMN BODY")
 })
 
-test_that("every url failing raises even when a copy is cached (hub B-422, Q71 clause 2)", {
-  # This used to warn "using cached copy" and return the copy as an ordinary
-  # value. Brett ruled on 2026-09-26 that R raises, as metasalmonpy does.
+test_that("failed refresh warns and uses only a matching cache (Q71, B-422)", {
   cache_dir <- withr::local_tempdir()
-  cached <- of_fetch(stats::setNames(list(of_ok(of_smn, "SMN BODY", etag = '"smn-1"')), of_smn), cache_dir = cache_dir)$value
+  cached <- of_fetch(stats::setNames(list(of_ok(of_smn, "SMN BODY", etag = '"smn-1"')), of_smn),
+                     cache_dir = cache_dir)$value
+  for (failure in list(of_unreachable, function(sent) of_answer(of_smn, 503L))) {
+    got <- of_fetch(stats::setNames(list(failure), of_smn), cache_dir = cache_dir,
+                    fallback_urls = character())
+    expect_identical(got$value, cached)
+    expect_length(got$warnings, 1L)
+    expect_match(paste(got$warnings, collapse = "\n"), "using cached copy", fixed = TRUE)
+    expect_identical(if (is.character(got$value)) of_body(got$value) else NULL, "SMN BODY")
+  }
 
-  got <- of_fetch(
-    stats::setNames(list(of_unreachable, of_unreachable), c(of_smn, of_smn_fallback)),
-    cache_dir = cache_dir
-  )
+  # No eligible matching body still errors and names the actual failure.
+  got <- of_fetch(stats::setNames(list(function(sent) of_answer(of_smn, 503L)), of_smn),
+                  cache_dir = withr::local_tempdir(), fallback_urls = character())
   expect_s3_class(got$value, "error")
-  expect_identical(
-    conditionMessage(got$value),
-    "Failed to fetch ontology from provided URLs: https://w3id.org/smn/, https://w3id.org/smn; last error: Could not resolve host (stub)"
-  )
-  # The copy stays where it was; it is only not returned.
-  expect_identical(of_body(cached), "SMN BODY")
+  expect_match(conditionMessage(got$value), "last error: HTTP 503", fixed = TRUE)
+})
 
-  # An HTTP status is named as metasalmonpy names it.
-  got <- of_fetch(
-    stats::setNames(list(function(sent) of_answer(of_smn, 404L), function(sent) of_answer(of_smn_fallback, 503L)), c(of_smn, of_smn_fallback)),
-    cache_dir = cache_dir
+test_that("a contradictory 304 makes its old cache ineligible on later calls (Q71)", {
+  cache_dir <- withr::local_tempdir()
+  of_fetch(stats::setNames(list(of_ok(of_smn, "V1", etag = '"v1"')), of_smn), cache_dir = cache_dir)
+  got <- of_fetch(stats::setNames(list(function(sent) of_answer(of_smn, 304L, etag = '"v2"')), of_smn),
+                  cache_dir = cache_dir, fallback_urls = character())
+  expect_s3_class(got$value, "error")
+  got <- of_fetch(stats::setNames(list(of_unreachable), of_smn), cache_dir = cache_dir,
+                  fallback_urls = character())
+  expect_s3_class(got$value, "error")
+  expect_null(got$sent[[1]][["If-None-Match"]])
+
+  # A fresh successful response repairs the invalidated entry.
+  got <- of_fetch(stats::setNames(list(of_ok(of_smn, "V3", etag = '"v3"')), of_smn), cache_dir = cache_dir)
+  expect_identical(of_body(got$value), "V3")
+  again <- of_fetch(stats::setNames(list(of_unreachable), of_smn), cache_dir = cache_dir,
+                    fallback_urls = character())
+  expect_identical(again$value, got$value)
+  expect_length(again$warnings, 1L)
+  expect_identical(again$sent[[1]][["If-None-Match"]], '"v3"')
+})
+
+test_that("failed replacement storage cannot revive the superseded body (Q71)", {
+  cache_dir <- withr::local_tempdir()
+  cached <- of_fetch(stats::setNames(list(of_ok(of_smn, "V1", etag = '"v1"')), of_smn),
+                     cache_dir = cache_dir)$value
+  failed <- testthat::with_mocked_bindings(
+    of_fetch(stats::setNames(list(of_ok(of_smn, "V2", etag = '"v2"')), of_smn),
+             cache_dir = cache_dir, fallback_urls = character()),
+    file.rename = function(...) FALSE, .package = "base"
   )
-  expect_identical(
-    conditionMessage(got$value),
-    "Failed to fetch ontology from provided URLs: https://w3id.org/smn/, https://w3id.org/smn; last error: HTTP 503"
-  )
+  expect_s3_class(failed$value, "error")
+  # The atomic body write preserves the old bytes for inspection, but they
+  # have been superseded and must no longer be used by the fetcher.
+  expect_identical(of_body(cached), "V1")
+  got <- of_fetch(stats::setNames(list(of_unreachable), of_smn), cache_dir = cache_dir,
+                  fallback_urls = character())
+  expect_s3_class(got$value, "error")
+  expect_null(got$sent[[1]][["If-None-Match"]])
 })
 
 test_that("the cache file names are the ones metasalmonpy writes (hub B-335)", {
