@@ -2671,3 +2671,101 @@ The complete176377-byte overhead-log prefix is unchanged. Queue/port closeout
 uses the existing canonical hub route and introduces no parity-register row.
 Closeout queue lint, generated-block check, diff whitespace and OKF capture
 passed; capture reported zero errors and warnings.
+
+
+### B333+B335 requested fetch checkpoints and publication overlap, 2026-10-03
+
+Brett explicitly directed the R B333+B335 batch in this chat on 2026-10-03:
+recheck, promote under R15, claim with the normal identity, preserve URL/Accept
+isolation and Q71 behavior, keep tests-only/fix checkpoints, and report to Alan.
+B266/B402 were not restarted. R15 promotion8b6559041b3cb736630d74f8869b9e0046fc067a
+changed only the two existing queue states; lint, generated-block freshness
+and diff whitespace passed. Normal inherited-session holder a-c1bbb42efa975289
+claimed B333 at ab6a374b084cf3667a989b3fab93910be77d01df. A premature B335
+attempt exited3 under max_concurrent_claims1 with no claim write; after B333
+handoff, B335 claimed normally at9bb93682f2ec0914e0d293339cf59b69cf7f503d.
+
+One native auxiliary checkout, salmon-data-mobilization-metasalmon-B-333,
+holds lead branch agent/B-333/a-c1bbb42efa975289 and detailed B333 workpad plus
+short linked B335 workpad. B335 reused it. No token copy/override, second
+implementation worktree or new tracker was introduced. The live handoffs are
+B333 9ed43ab24ce99d2d043faa9df5e8fb8e0c21bd24 and B335 f3348c876c75c084d2bd09273f3d321732ff5d73. Both claims stay held;
+queue retirement remains pending source merge and each item's verification.
+
+Published source checkpoints, retained separately in the lead ancestry:
+
+| Item | Tests-only | Fix | Focused before/after |
+| --- | --- | --- | --- |
+| B333 | 174783c3a7b2689bb40573881c62e257f519fb98 | 2da4c1a8ea0fbe4195e724b00e7ef7432d26c7a5 | 2 expected assertion failures, 7 controls passed; then 9 passed |
+| B335 | ce457677459a586ed0e8e1596421717547ec57c6 | a2f32fa9cb778ee42f4f0986e0667a11ceba8735 | 26 expected failures, 27 passed, zero errors/skips; then 56 passed |
+
+B335 tests-only production blob ae31ae60798e6c135071d2d25be84394bd41039f is
+exactly B333's completed production. Final tree3ef23105bc24a6a9219604433dcd4dfc873938c1,
+fetch blob b23b7eaf77d871be80a43f418b0d1e0b4c4d6913 and test blob
+6a050d05d37ec604d6ef35c39e94de1342dfb735 stayed frozen for peer verification.
+Both exact agent/B333 and agent/B335 handoff refs were read back at the final
+fix. B333's earlier completion remains an ancestor of the lead; no local
+B335 branch was needed for its direct commit-to-remote handoff alias.
+
+The fix retains public formals and explicit fallback choices. An implicit SMN
+fallback belongs only to the default URL. Cached bodies and both validators
+belong to each requested URL/Accept pair; orphan headers cannot produce a hit,
+a fresh200 drops validators it omits, and an all-fail cached return must belong
+to an attempted pair. The existing matching-cache warning/return assertion was
+retained with a public-fetch fixture, replacing an unqualified legacy filename.
+New canonical-byte helpers were added to the existing collation guard.
+No ontology IRI choice, model call, version or parity-register row changed.
+Python B334/B336 remain separate blocked mirror obligations.
+
+Local R4.5.2, testthat3.3.2 and digest0.6.39: first B333 RED command1.48s;
+combined B333 GREEN/documentation block3.86s, with individual times unmeasured.
+B335 complete RED-count extraction1.66s, first53-assertion GREEN2.91s and final
+56-assertion GREEN2.20s. Collation9 and CLI safety11 assertions passed in the
+combined guard/documentation block4.04s. These are command samples, not complete
+phase durations. No heavy local full suite, package check or full site build ran.
+
+A read-only peer independently passed B3339 assertions and six extra controls.
+On the frozen final source it passed all56 isolation assertions in1.31s and
+all22 validation-helper assertions in1.30s, zero failures/errors/skips, with
+three existing semantic-field warnings. The validation file used external
+mocked HEAD/GET responses and a temporary user-cache directory; its existing
+live-probe instrument was bypassed only in that scoped offline run. This is
+not live ontology reach. Four paired golden keys plus unknown-encoding UTF8
+under C locale passed. No peer source/claim/ref writes occurred.
+
+Actual scope conflict: PR211 already names B333/B335 alongside B420/B421/B422.
+HUB forbids another PR for an included ID. Canonical main still has the old
+matching-cache failure behavior; PR209/PR211 quote Brett's separate Q71 stale
+ruling. This batch preserves the canonical failure behavior and does not
+implement unclaimed B422, change the default ontology, or alter the S16 branch.
+Alan was notified; duplicate publication, full hosted/R-capable Cloud gates
+and merge stay held for an explicit PR211 disposition. No completed Claude
+review, hosted full gate or merge is claimed for these checkpoint branches.
+The parent owns admission of any fresh Cloud verifier.
+
+Coordination rework observed: oversized context output needed narrower reads;
+a read_thread limit40 call was rejected (maximum10), and one non-JSON error
+message reached a JSON parser. An unmatched shell glob and a guessed workflow
+filename caused read failures. The cap1 claim miss was avoidable by reading the
+existing cap before attempting both claims. The first C-locale positive-control
+fixture errored in MIME guessing on its Unicode response URL; using the URI
+form corrected the instrument without changing production for that error.
+These are coordination/instrumentation corrections, not dependency repair.
+
+Next-use adjustment: before promotion/claims for named IDs, inspect the current
+open-PR ID inventory alongside queue/claim evidence. Published legacy work may
+have no claim and still make a second PR invalid. One existing metadata read
+can expose that overlap before implementation; no new scanner, policy or
+tracking surface is needed. Evaluate the next pickup by whether this avoids a
+late publication hold and duplicated scope, while preserving normal ownership.
+This is the single proposed adjustment from this round; it has not yet had a
+next-use measurement. Separate sequential claims already saved a second
+implementation worktree, but no measured time saving is attributed to that.
+
+Implementation, focused verification, requested workflow audit, coordination,
+environment repair and passive waits remain separate categories. No environment
+installation/auth repair or intentional sleep occurred. Whole-run active phase
+time was not instrumented, so a bureaucracy/wasted-time percentage remains
+unmeasured. Partial subprocess durations are not that denominator. The complete
+181454-byte prior log, SHA25657ab1dd3369a565fff9614e900c9d4001160b100a3354f500968dde644452aa8,
+is preserved byte for byte.
