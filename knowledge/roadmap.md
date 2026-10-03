@@ -269,18 +269,19 @@ Ordering that is not optional, independent of who is executing:
   agreeing about *which file was wrong* and all four being wrong about it, which
   no check that "the three numbers match" can catch. **Read the three files, not
   a description of them**, this bullet included.
-- **gcdfo is carved out for the gold standard, and for nothing else** (Brett,
+- **gcdfo is carved out for what the gold standard demonstrably needs** (Brett,
   2026-08-24, hub [Q5](questions.md)): *"Carve out what the gold standard
-  needs."* The carve-out is currently **one item — PFMA subareas** for the
-  173-row example's `AREA` column (`29F`, `29G`, `29J`, `29K`), which
-  [Q8](questions.md) sends to gcdfo because it already owns
-  `gcdfo:PacificFisheryManagementAreaScheme`. Everything else in gcdfo stays
-  de-prioritised and `psc-salmon-vocabularies` stays fully de-prioritised.
-  Species goes to an external taxonomy, not to gcdfo. **Still to decide, and it
-  is a scope question rather than a priority one:** whether the mint is the four
-  Subareas the example holds or all 604 in SOR/2007-77 Schedule 2 — owner
-  [S12](sequences/s12-fraser-coho-gold-standard.md), routed through
-  [S9 step 7](sequences/s9-ontology-alignment.md).
+  needs."* The former example, PFMA Subareas for the 173-row extract's `AREA`
+  values `29F`, `29G`, `29J` and `29K`, was based on a wrong reading: the
+  [NuSEDS dictionary](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Data_Dictionary_NuSEDS_EN.csv)
+  and [map](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Map%20of%20Areas.pdf)
+  identify those as DFO sub-districts. [Q8](questions.md) still sends actual
+  PFMA Subareas to `gcdfo`; it does not bind this column to them. Whether the
+  gold standard needs a sub-district term from `gcdfo`, and on what authority,
+  remains open in the [commons gap card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/main/concepts/nuseds-area-is-a-subdistrict.md)
+  and [S12](sequences/s12-fraser-coho-gold-standard.md). Other `gcdfo` work
+  remains de-prioritised, `psc-salmon-vocabularies` stays fully de-prioritised,
+  and species goes to an external taxonomy.
 - **The model call leaves the packages in two releases, additive first**
   (Brett, 2026-09-25, hub [Q67](questions.md)). The exporter and ingester land
   in both packages in one train, with the in-package model call deprecated and
@@ -376,6 +377,21 @@ port had landed there and been documented (B-126, then B-153).
 
 ### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tagged `v0.5.0` 2026-09-24)
 
+**Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
+pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
+its R half `B-342` landed in metasalmon pull request **#257**, merged as
+`c09a76bc7a0469d0d69025f940b7a3c4e86cdd00`. Both implement Q63's existing
+absolute-IRI shape in dictionary semantic fields and table IRI fields, with
+the supported constraint-list representation preserved. No new numbered
+parity row or term selection was made.
+
+**SSSOM tag-refusal port landed, 2026-10-01.** `B-353` landed as metasalmonpy
+pull request **#88**, merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`;
+its R half `B-352` landed in metasalmon pull request **#255**, merged as
+`13460ed0484b10082b89c4dec33820d70386ddac`. Both readers now refuse tagged
+metadata under Q62 while retaining literal bang text. This is the existing
+ruled port; no new numbered parity row is owed.
+
 > **The number is now true, and it is the first time in this stream that it has
 > been.** S10's implementation completed 2026-08-22 — all eight chunks A–H
 > merged — but every chunk landed *unversioned* because what number the finished
@@ -411,6 +427,11 @@ port had landed there and been documented (B-126, then B-153).
 > can do, so a surface nobody can find is not delivered. **The next window that
 > ships a workflow should be split the same way from the start**, rather than
 > discovering the documentation half after the behaviour has merged.
+
+**Landed records for the window halves:** `B-126` **landed 2026-09-16 as
+metasalmonpy #28**, `d471dd0`; `B-153` **landed 2026-09-16 as metasalmonpy
+#33**, `67fb486`. These are the two existing merged changes described above,
+recorded in the same form as later port landings.
 
 | Version | Date | One line |
 |---|---|---|
@@ -539,6 +560,22 @@ which is the drift the release index exists to catch, so the rule is stated here
 rather than only the instance: **a new mirror debt is recorded in both places in
 the same change.**
 
+**B-120 adds crosswalk review to the development version (2026-09-30).**
+The Python port is **B-426**, following B-327's packet implementation to avoid
+competing edits to its active branches. It owes candidate discovery for only
+package-filled code IRIs, default console visibility until a decision, and
+preserved prefill provenance through assessment ingestion. The specification
+and regression are in backlog #120 and `test-review-console.R`; this is port
+debt, not a new parity-register row. Versions remain unchanged.
+
+**B-256 restores R's existing GitHub error remedies (2026-09-30).** No Python
+port is owed: on metasalmonpy `main` at `e81cacd`,
+[`read_github_csv()`](https://github.com/salmon-data-mobilization/metasalmonpy/blob/e81cacd7670b65da74abf87504a2ea1dd7c7498b/github_io.py#L63-L85)
+already handles 401/403/404 before `raise_for_status()`, and its request helper
+returns those responses. R now lets those statuses reach its existing PAT,
+SSO and missing-path guidance. No version or intentional parity difference
+changes.
+
 *(The count is gone from this passage on purpose, as of 2026-09-16, and from its
 lead as of 2026-09-23, when "Four more debts" was still standing over five ids,
 beside a clause calling B-165 "the only one of the four" whose entry belongs
@@ -551,6 +588,23 @@ in one direction, and the second where the omitted item was named in the very
 file this index is supposed to agree with. A number in prose that counts a list
 is a copy of that list, and the copy is what rots — so the list is now the only
 place the count lives.)*
+
+**The development version adds a further debt (2026-09-27): the `sdp-0.3.2`
+bundle and the remote schema pin, hub item `B-199`.** metasalmon moved its remote
+pin from the `sdp-0.3.0` tag to `sdp-0.3.2`, the first smn-data-pkg release
+carrying the Q-51 ruling, and re-vendored every file its loader reads from that
+tag in the same change, with a manifest naming the tag and each file's SHA-256
+(hub item **B-198**). metasalmonpy owes the same move: the same tag, and a
+re-vendor that brings its whole bundle to the same bytes. The two pins must name
+one ref. The semantic review conformance fixtures, which this change regenerated
+because a packet records the vendored bundle's version, now pin `sdp-0.3.2`.
+metasalmonpy does not vendor them yet, and its packet half (B-327) can match them
+only once B-199 has landed. The debt is specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. There, register **row 38** was amended in place to record
+the window rather than a new number being spent. It did not land in the same
+stream for the structural reason every entry above shares: a hub claim covers one
+branch in one repository. Recorded here and in the register in the same change,
+as the rule above requires.
 
 **The 2026-09-16 changelog-window rule is metasalmon-only in this stream, and
 this is the record the mirror contract requires for that.** `AGENTS.md`'s
@@ -589,6 +643,21 @@ metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
 2026-09-25 as metasalmonpy #46**, `2405df2`.
+
+**The recorded-accept marker also owes a separate mirror port:** a caller's
+retrieval candidate with `source = "user"` must remain ontology-gap evidence;
+only an accept actually recorded by `apply_sdp_semantics()` is hand-picked.
+The R/Python pair is **B-249** and **B-250**, specified in the corresponding
+port passage of [`parity-deviations.md`](parity-deviations.md). The two current
+implementations key the exclusion the same way; this is an owed port, with
+no deliberate difference to register.
+
+**The REVIEW-marker ruling owes the Python widening too:** strict validation,
+the EDH gate and `review_metadata()` must cover the same four metadata files.
+Brett's 2026-09-23 ruling is recorded under **B-177**; its mirror port is
+**B-230**. The register's port passage specifies the same widening and explains
+why it is a port rather than a numbered difference. No ontology term choice
+or new ruling is made here.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
@@ -690,7 +759,8 @@ one branch in one repository. Its metasalmonpy half is `B-247`, which **landed
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
 an IRI.** Hub item **B-211** keeps one gap row per field, as metasalmonpy's
-**B-212** already did, and counts the footer's IRI gaps by field rather than by
+**B-212** (which **landed 2026-09-25 as metasalmonpy #49**, `25dc7f3`)
+already did, and counts the footer's IRI gaps by field rather than by
 reason. So an IRI field holding a placeholder still counts, and the
 `review_semantics()` pointer still prints. metasalmonpy's footer still counts
 by reason, measured on `main` `25dc7f3`, so the fix is owed there as a port,
@@ -757,12 +827,36 @@ metasalmonpy queue item is `B-261`.
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
 review target.** Hub item **B-171** added the R test that pins this direction of
-the semantic closure's two canonical sets. metasalmonpy has the same producer
-and the same fallback and no such test, so what is owed there is the twin, not a
-port and not a register row. It is specified under *What metasalmon 0.5.0 owes
+the semantic closure's two canonical sets. At the 2026-09-25 measurement,
+metasalmonpy had the same producer and fallback and no such test, so what was
+owed there was the twin, not a port and not a register row. It is specified
+under *What metasalmon 0.5.0 owes
 the mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
-`B-264`.
+`B-264`; the test twin **landed 2026-10-01 as metasalmonpy #81**, merge
+`430b568`, without a runtime change.
+
+**The development version after 0.5.0 adds a closure-address port to what the
+mirror is owed (2026-09-30).** Hub item **B-265** makes R's gap and
+incomplete-evidence rows for a code-resolved procedure name each carrying
+`codes.csv` `term_iri` row, including two code rows that share one IRI. The
+Python producer at main `d68383c` named nonexistent `codes.csv` `method_iri`.
+The matching change is a port, not a register row, and is specified under *What
+metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
+same stream:** a hub claim covers one branch in one repository. The Python
+half is `B-266`, which **landed 2026-10-03 as metasalmonpy #96**, merge
+`552bfa2`, with every carrying code address and the RED/GREEN test twins.
+
+**The development version after 0.5.0 adds a NuSEDS `AREA` description port to
+what the mirror is owed (2026-10-01).** Hub item **B-401** corrects both
+metasalmon example dictionaries: NuSEDS defines `AREA` as a DFO sub-district,
+not a PFMA Area. metasalmonpy's bundled copy at main `552bfa2` had the former
+description; this was an owed port, not a chosen difference or register row, specified under
+*What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in
+the same stream:** a hub claim covers one branch in one repository. The Python
+half is `B-402`, which **landed 2026-10-03 as metasalmonpy #97**, merge
+`24b6472`, with its two corrected AREA cells matching R. `B-403` owns the
+separate `smn-data-pkg` example.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.**
@@ -873,7 +967,9 @@ because none of its readers can. Measured 2026-09-23 against its `main` at
 - both rules reads go through `_rules_scalars()`, a regular-expression scan
   with no YAML library (`sdp_schema.py:383` and `:406`);
 - the SSSOM header goes through `_parse_yaml_subset()` (`sssom.py:456`), which
-  B-189 is to pin.
+  `B-189` **landed 2026-09-25 as metasalmonpy #51**, `012d04b`, pinning that
+  the reader never evaluates the tag. This landing updates the follow-up status
+  of the dated 2026-09-23 observation above.
 
 With PyYAML 6.0.1 an `!expr` tag raises `ConstructorError` from both loaders,
 and nothing runs.
@@ -942,11 +1038,14 @@ kept that while taking R's default options offline. It is owed as a port, not a
 register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. Recorded there and here in the same change, as the rule
 above requires. `B-215` **landed 2026-09-25 as metasalmonpy #47**, `ed5e22e`.
-One part of that behaviour was not ported and is owed: under a selected schema
-that does not declare a bundled field, `normalize_*()` still hands the writers
-that field, and they write it where R writes only the declared columns. It is
-specified in the same section of `parity-deviations.md`, and its metasalmonpy
-queue item is `B-252`.
+One part of that behaviour was not ported and is owed as `B-252`. The paired
+R/Python probes narrowed it to direct dataset/table/codes inputs that genuinely
+lack an optional field omitted by the selected schema, plus table inference's
+minimal frame. Both writers preserve fields already present, including the
+inference-supplied `update_frequency` and `constraint_iri`; R's
+`.ms_align_cols()` keeps such extras after the declared columns. The dated
+2026-09-30 correction in `parity-deviations.md` records the exact field examples,
+probes, and proposed Python pull request 82 fix.
 
 **`B-164` owes metasalmonpy nothing, because the shape it guards against has
 nowhere to live there.** The R guard fails when a vignette relies on a global
@@ -1036,10 +1135,11 @@ re-cut before release. The fix — a CI check comparing
 current version so older snapshots stay free to diverge — is logged in that
 repo's `docs/tech-debt.md` with its retirement condition.
 
-### smn-data-pkg (SDP spec) — current **sdp-0.3.0**
+### smn-data-pkg (SDP spec) — current **sdp-0.3.2**
 
 | Version | Date | One line |
 |---|---|---|
+| sdp-0.3.2 | 2026-09-26; tag and release 2026-09-27, on `6806319` | The dataset licence is recommended, not required; a method term qualifies through a `skos:broader` path to a `sosa:Procedure`; descriptor field entries may carry the dictionary's semantic keys; `temporal_start`/`temporal_end` accept an ISO 8601 UTC instant; the release workflow. `sdp-0.3.1` was filed but never tagged, and its entries ship here |
 | sdp-0.3.0 | 2026-08-14 | **Breaking:** methods leave the column dictionary (three placements, no registry); `statistical_modifier_iri` added; frozen-profile versioning (v0.3 URL) |
 | sdp-0.2.0 | tag cut 2026-08-14; **no changelog heading of its own** — see below | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |
 | 0.1.1 | 2026-01-14 (malformed in changelog) | I-ADOPT component columns in `column_dictionary.csv` |
@@ -1062,20 +1162,32 @@ Both `sdp-0.2.0` and `sdp-0.3.0` annotated tags were cut 2026-08-14
 and pushed — they carry metasalmon's pinned remote schema source, which is
 why they exist — but neither has a corresponding GitHub Release object
 (remaining release mechanics are S6 item 3 / S1 cross-repo work).
+*(Corrected 2026-09-27: smn-data-pkg's release workflow published the
+`sdp-0.3.0` GitHub Release on 2026-09-26 without moving the tag, and cut
+`sdp-0.3.2` as a tag and a release together. `sdp-0.2.0` still has no release
+object.)*
 
 **The spec-version spread — four consumers, three eras, and two of them
-current.** Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
+current** (one from when `sdp-0.3.2` was cut on 2026-09-27 until B-198 moved
+metasalmon to it). Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
 row re-checked 2026-08-22 after S10 chunk A. No single repo can
 see this table, which is the reason the hub carries it.
+*(Re-checked 2026-09-27, when `sdp-0.3.2` was cut: both packages'
+`dataset.schema.json` on `main` is still byte-identical to `sdp-0.3.0`'s and
+differs from `sdp-0.3.2`'s, so neither is current until B-198 and B-199 land;
+the shipped examples declare `sdp-0.3.2` at its tag.)* *(Re-checked 2026-09-27
+for B-198: the eight files metasalmon's schema loader reads are byte-identical
+to `sdp-0.3.2`'s and its pin names that tag, so it is current; metasalmonpy is not
+until B-199.)*
 
 | Consumer | Declares or pins | Current? |
 |---|---|---|
-| `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes** |
-| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. `sdp.rules.yaml` is the one exception to the tag copy: B-166 re-vendored it from smn-data-pkg `main` (metasalmonpy #52, `4cc9ea8`), as metasalmon #120 did, so metasalmonpy's nine vendored files are byte-identical to metasalmon's (measured 2026-09-25) | **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
-| `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.2.0"` | No |
+| `metasalmon` | Vendors **sdp-0.3.2** since B-198: every file the schema loader reads (the six metadata schemas, the v0.3 profile and `sdp.rules.yaml`) is byte-identical to the tag, `inst/extdata/sdp-bundle-manifest.json` names the tag and each file's SHA-256, and the remote pin names the same tag; stamps `sdp-0.3.2` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | **Yes** |
+| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. `sdp.rules.yaml` is the one exception to the tag copy: B-166 re-vendored it from smn-data-pkg `main` (metasalmonpy #52, `4cc9ea8`), as metasalmon #120 did, so metasalmonpy's nine vendored files are byte-identical to metasalmon's (measured 2026-09-25, and true until B-198 moved metasalmon's to `sdp-0.3.2`) | **No** since `sdp-0.3.2`: B-199 re-vendors from that tag. Until then **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
+| `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.3.2"` at the `sdp-0.3.2` tag | Yes |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
 
-Two things the spread made visible, one of them now resolved. First —
+Two things the spread made visible, both now resolved. First —
 resolved at S10 chunk A (2026-08-22): the vendored Python bundle used to carry
 `schema/frictionless/metadata/methods.schema.json`, a file the spec repo **no
 longer has** since sdp-0.3.0 removed that registry, so metasalmonpy validated
@@ -1083,11 +1195,10 @@ against a schema with no upstream. The chunk-A bundle swap removed it, the pin
 and the bundle moved together exactly as the retirement condition required,
 and `PARITY.md` rows 27 and 38 are marked converged; metasalmonpy's
 `SDP_METHODS_COLUMNS` is now a frozen legacy contract for *reading* 0.2.x-era
-packages, not a read of any schema. Second, **the
-spec repo ships examples of the version it superseded**, so the normative
-document and its own demonstrations disagree — a smn-data-pkg defect that
-belongs in that repo's tracker, noted here only because the hub is where the
-mismatch is visible.
+packages, not a read of any schema. Second — resolved at `sdp-0.3.2`
+(2026-09-27): **the spec repo shipped examples of the version it superseded**,
+so the normative document and its own demonstrations disagreed. smn-data-pkg
+#11 moved both examples to `sdp-0.3.2`, the version their tag names.
 
 **Local checkout note (resolved 2026-08-13):** the dirty
 state was abandoned metasmn-rename leftovers — preserved on local branch
@@ -1368,8 +1479,8 @@ materially new workflow, with nothing renamed, removed, or changed in
 documented return shape. **#58 (condition classes) wanted a breaking bump and
 was deliberately left out of it** — judged 2026-08-25, on the grounds that ~450
 mechanical call-site edits share no code with the review flow and bundling them
-would make both harder to review. So #58 and #59 are what remain of S5, and the
-breaking-release story they want is still ahead rather than spent. Two narrow
+would make both harder to review. #59 was likewise outside 0.5.0 and landed
+separately in PR #243 on 2026-10-01. Two narrow
 byte changes ship inside the minor and are stated in the NEWS entry rather than
 implied: `semantic_suggestions.csv` gains a `decision_reason` column, and an
 in-memory SSSOM mapping set carrying a typed column renders canonically through
@@ -1444,6 +1555,8 @@ ships without them, but says something it cannot fully back. **One solid arrow
 is marked conditional** — it is drawn as a hard block because that is the
 current plan of record, and it survives only under some rulings of
 [OD-2](#od-2--what-does-the-knb-test-environment-mean).
+For current S5 work and claimability, see [the hub queue](https://github.com/salmon-data-mobilization/metasalmon/blob/main/queue/README.md);
+the S5 diagram line below records dated release history.
 
 ```
                                           ▼ hard — OD-2 ruled A, 2026-08-22
@@ -1462,9 +1575,9 @@ S9 ontology conventions + alignment ── implementation evidence exists, with
                                        alpha.3 merged (MR !5, 2026-08-16) and
                                        is still untagged
 S2 correctness debt          ── independent
-S5 review flow (next minor)  ── independent (#60 → #74 internally); #74's
-                                semantic half landed 2026-08-25 (M1–M3),
-                                M4/M5 + #58/#59 remain
+S5 review flow (0.5.0)     ── independent (#60 → #74 internally); M1–M5
+                                and #74 shipped 2026-08-25; #59 landed
+                                separately 2026-10-01
 S7 architecture + curation   ── independent, largest
 S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 after S3; review vignette with S5;
@@ -1555,7 +1668,12 @@ release half of that gate is satisfied.
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md) · **Updated 2026-09-08:** seven-chapter Day 1 published at `190df307`, with actual human graph/dictionary review before tools, one 173×14 Fraser Coho source, and released R 0.5.0/Python 0.4.0 pins. Five Day 2 chapters are published at `27e0ced`, with local technical checks, CI deployment, public download verification and browser checks passed; see the [curriculum evidence and draft SDO guidance](workshop-curriculum-and-sdo-guidance-2026-09-08.md). Local teaching artifacts support the curriculum while domain review, independent-validator compatibility, live free-provider rehearsal, and the verified KNB test record remain outstanding. Neither the site deployment nor the new contribution exercises close those conditions.
-- [S5 — R-native review flow, **shipped as 0.5.0**](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8; the "next minor" turned out to be **0.5.0**, tagged `v0.5.0` 2026-08-25 with a GitHub Release) · **M1–M5 all landed 2026-08-25**, and **#74 is closed** (#60's accessor clause with it; its other clauses stand). `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **What remains of this stream: #58 and #59 only.** **Mirror delivered 2026-09-16, in two halves:** B-126 ported the behaviour (metasalmonpy #28) and B-153 wrote the documentation half and moved metasalmonpy to 0.5.0, closing the `0.4.0→0.5.0` window; `PARITY.md` **row 31** was **amended in place** by #28, because its "verified identical to R's output for all three strategies" went false at `v0.5.0` and nothing there would have said so. The behavioural half alone did not make the number true, and that is the stream's last lesson: this release's bar is a *documentation* claim, and for twenty-two days metasalmonpy exported all eleven calls and named none of them in its semantic-review guide. The amendment text was drafted in [parity-deviations.md](parity-deviations.md)
+- [S5 — R-native review flow, **shipped as 0.5.0**](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8; the "next minor" turned out to be **0.5.0**, tagged `v0.5.0` 2026-08-25 with a GitHub Release) · **M1–M5 all landed 2026-08-25**, including #60's accessor clause with #74. `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **Mirror delivered 2026-09-16, in two halves:** B-126 ported the behaviour (metasalmonpy #28) and B-153 wrote the documentation half and moved metasalmonpy to 0.5.0, closing the `0.4.0→0.5.0` window; `PARITY.md` **row 31** was **amended in place** by #28, because its "verified identical to R's output for all three strategies" went false at `v0.5.0` and nothing there would have said so. The behavioural half alone did not make the number true, and that is the stream's last lesson: this release's bar is a *documentation* claim, and for twenty-two days metasalmonpy exported all eleven calls and named none of them in its semantic-review guide. The amendment text was drafted in [parity-deviations.md](parity-deviations.md)
+  **B-60 R packaging scope (recorded 2026-09-30):** executable Rd examples,
+  R-only namespace/author metadata hygiene, and an R export naming convention
+  change no runtime behaviour or SDP contract. These R packaging mechanics
+  need no Python code port; the detailed rationale is in the
+  [S5 card](sequences/s5-review-flow.md).
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
