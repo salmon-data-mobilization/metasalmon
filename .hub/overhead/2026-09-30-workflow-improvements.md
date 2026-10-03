@@ -2842,3 +2842,58 @@ outside this bounded Q71 repair. PythonPR75 still owes matching warning and
 invalidation behavior under corrected B423. No merge, completed Claude review,
 full gate, Python parity closure or queue done state is claimed. Parent Alan
 receives the exact checkpoint/ref report; existing pending approvals remain.
+
+
+### Actual review follow-up, 2026-10-03 at 22:32 UTC
+
+The compact idle check found actionable actual Claude reviews at PR209526f07b
+(nits) and PR211176c7c4 (one important documentation finding). Both heads'
+hosted checks completed successfully before follow-up pushes. The important
+finding was verified, not accepted on the bot's authority: Python main
+24b64720 still has the old unqualified/text-writing fetcher, while unmerged
+PR75acc1a57 carries the proposed keyed/raw-byte/default-SMN changes. Its Q71
+warning/invalidation port remains owed, and its configurable per-read timeout
+is not R's whole-transfer timeout.
+
+PR211 follow-up a4ceea30bcabafbe0b6792b63e176ff29757a111 corrects false
+present-tense parity in NEWS, roxygen, comments and test descriptions; moves
+custom-URL fallback behavior under Breaking changes; and supersedes this
+checkout's old B333 hold. Independent peer caught two remaining wording
+claims, then cleared them. Executable R text and test assertion text are
+unchanged. Three test descriptions changed; both Rd files regenerated. All
+123898 released NEWS bytes and all four original B333/B335 checkpoint
+ancestors remain preserved. No full local test, check or site build repeated.
+
+PR209 follow-up 9e77dadd343593b2934819b73c5dcb11de264126 corrects the old actual
+Codex ownership finding: linked findings are filed, not already being worked.
+Queue states and claims are unchanged. Three Claude prose nits were corrected;
+the legacy in-flight/icebox claim-status nit was left honest rather than
+manufacturing claims. Queue lint/check, diff check and OKF capture pass with
+zero diagnostics. Factual bot answer4175182957 records the correction without
+requesting another review. A peer merge-gate audit classifies this records PR
+as delegated; implementation PR211 retains its public-default merge gate and
+separate B421 locale-folding finding. New-head hosted gates remain required.
+
+Coordination: zero claim/handoff mutations, zero new PRs, two useful audit
+agents (one also made a disjoint two-file documentation edit), zero polling-
+only agents. B333/B335/B422 held tips remain 9ed43ab, f3348c8 and 9434bd8;
+original B333/B335 source refs/checkpoints were not touched. The unrelated
+dirty B384 workpad is preserved. PR metadata readbacks used compact check
+summaries after an oversized initial review read. One compact parent-status
+read showed Alan active; the checkpoint report is sent under Brett's existing
+report-back authorization, without another task or writer.
+
+Implementation here is documentation repair, separate from requested mirror
+and merge-gate audit; verification is byte/code/assertion preservation, peer,
+queue/capture and generated-reference checks. Environment repair: none.
+Intentional passive waits: none; CI/review waits are background and still
+pending on the new heads. The trigger-to-clock interval at 22:32:38 was ten
+minutes, not an active-effort partition, so it cannot support a wasted-time
+percentage. Several oversized reads and a second roxygen regeneration after
+residual wording corrections were avoidable rework; useful evidence checking
+is not counted as bureaucracy. Two meaningful PR fix commits and this durable
+measurement are not status-only checkpoints.
+
+The prior next-use experiment (both packages' implementing acceptance clauses
+in the initial ruling pass) has no new ruling/pickup sample here and remains
+to be evaluated. No new tracking surface or policy change was introduced.
