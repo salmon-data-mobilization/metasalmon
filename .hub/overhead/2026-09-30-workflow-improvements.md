@@ -2769,3 +2769,131 @@ time was not instrumented, so a bureaucracy/wasted-time percentage remains
 unmeasured. Partial subprocess durations are not that denominator. The complete
 181454-byte prior log, SHA25657ab1dd3369a565fff9614e900c9d4001160b100a3354f500968dde644452aa8,
 is preserved byte for byte.
+
+
+### Q71 clarification and existing-PR reconciliation, 2026-10-03
+
+Authority: Brett said in this chat, "For Q71, if the cache matches the
+requested ontology and refresh fails, continue with a warning. Do not use
+unrelated, mismatching or otherwise known-stale caches. Reconcile PR209/211
+and B422 with this ruling, preserving the B333/B335 checkpoints and existing
+claims." The default-SMN ruling is unchanged. Failed refresh alone is not
+proof of staleness; no TTL was invented.
+
+Canonical B422 record/promotion: 75a4131ada0e55db6310bdedfe3e1027566b73a1,
+under the existing R15 grant (solo, P2, explicit retirement, no blockers or
+remaining decision). Normal holder a-c1bbb42efa975289 successfully claimed it.
+Terminal held handoff: 9434bd8e77997aef95123b3df7c7922a8247abb5.
+Its exact agent/B-422/a-c1bbb42efa975289 ref and existing PR211 both point to
+176c7c4ad4ae0f938abbd3115cf7fc88d231ed42; tree
+2e7f7fbb0a7ec642c0cf33f17620b78c99330a2f. Queue retirement remains pending.
+
+PR209 head 526f07b6977c8ac8a353291627356e720d3f7b7a records the superseding
+Q71 interpretation, corrected B422, the same-stream B423 Python acceptance,
+and the S2 explanation of the still-owed PR75 port (measured acc1a57).
+PR209 precedes PR211 in merge order. Both existing PR titles/bodies are
+reconciled; no duplicate PR, branch rewrite or other claim transfer occurred.
+B333/B335 terminal tips are unchanged at 9ed43ab24ce99d2d043faa9df5e8fb8e0c21bd24
+and f3348c876c75c084d2bd09273f3d321732ff5d73. Their worktree and both source
+refs remain at a2f32fa; all four original tests-only/fix commits are ancestors
+of PR211 through an ordinary merge, without edits to the checkpoints.
+
+Q71 tests-only 3bae7af9e3d2e58595bc8a56da1efd48a60ba76c demonstrated
+12 failures/67 passes/zero errors against the unconditional-error candidate.
+After the first fix, peer found old-validator cleanup failure could pair a
+new body with old headers. A new regression demonstrated 3 failures/87 passes;
+checking cleanup before clearing invalidation repaired it. Final local:
+90 fetch +56 preserved isolation +9 collation +11 CLI assertions pass, zero
+failures/errors/skips. Independent peer reproduced those, executed the exact
+matching warning/return validation fixture offline (two assertions), and
+found no remaining substantive Q71 issue after repair. Final R fetch blob:
+c9149fdc20a1ab7229647b28ffd6aa47f33fcf69. No live ontology reach was claimed.
+
+Coordination measurements: one new claim and one handoff; zero changes to
+existing claims; zero new PRs; two useful read-only agents, zero polling-only
+spawns. PR inventory was checked before publication and existing PR211 was
+updated, evaluating the previous pickup-overlap adjustment without another
+tracker. No time saving is attributed beyond the observed absence of duplicate
+publication. Implementation and requested contract/mirror audit time were not
+separately instrumented; no full active-time denominator exists, so a wasted-
+time percentage would be invented. Focused subprocess blocks observed roughly
+1-3 seconds each; these are partial runtime measurements, not total effort.
+Verification included queue lint/check, capture with zero errors/warnings,
+focused RED/GREEN, source freeze, independent peer, ancestry/ref readback and
+released-NEWS preservation. Environment repair: none. Intentional passive
+waits: none; hosted CI/reviews were still in progress at 22:15 UTC.
+
+Rework: an unpublished merge parser used a greedy conflict-marker suffix and
+truncated NEWS history; the diff-stat and canonical suffix control caught it.
+The full file was restored before publication, with all 123898 released-history
+bytes preserved. A few oversized orientation/status outputs and one read from
+the wrong worktree added avoidable reads. No test/approval/review gate was
+relaxed to recover. Source/storage audit is requested useful work, not counted
+as bureaucracy merely because it is review.
+
+Next small adjustment: include both packages' implementing acceptance clauses
+in the initial ruling-doc pass before that pass is committed. The second B423
+acceptance commit here was avoidable after the initial mirror audit; measure
+that next use by extra documentation commits/reads, not a new dashboard.
+
+Holds: current-head full R suite, strict package check/site rendering and
+actual hosted reviews; original B421 locale-folding finding4115693924 remains
+outside this bounded Q71 repair. PythonPR75 still owes matching warning and
+invalidation behavior under corrected B423. No merge, completed Claude review,
+full gate, Python parity closure or queue done state is claimed. Parent Alan
+receives the exact checkpoint/ref report; existing pending approvals remain.
+
+
+### Actual review follow-up, 2026-10-03 at 22:32 UTC
+
+The compact idle check found actionable actual Claude reviews at PR209526f07b
+(nits) and PR211176c7c4 (one important documentation finding). Both heads'
+hosted checks completed successfully before follow-up pushes. The important
+finding was verified, not accepted on the bot's authority: Python main
+24b64720 still has the old unqualified/text-writing fetcher, while unmerged
+PR75acc1a57 carries the proposed keyed/raw-byte/default-SMN changes. Its Q71
+warning/invalidation port remains owed, and its configurable per-read timeout
+is not R's whole-transfer timeout.
+
+PR211 follow-up a4ceea30bcabafbe0b6792b63e176ff29757a111 corrects false
+present-tense parity in NEWS, roxygen, comments and test descriptions; moves
+custom-URL fallback behavior under Breaking changes; and supersedes this
+checkout's old B333 hold. Independent peer caught two remaining wording
+claims, then cleared them. Executable R text and test assertion text are
+unchanged. Three test descriptions changed; both Rd files regenerated. All
+123898 released NEWS bytes and all four original B333/B335 checkpoint
+ancestors remain preserved. No full local test, check or site build repeated.
+
+PR209 follow-up 9e77dadd343593b2934819b73c5dcb11de264126 corrects the old actual
+Codex ownership finding: linked findings are filed, not already being worked.
+Queue states and claims are unchanged. Three Claude prose nits were corrected;
+the legacy in-flight/icebox claim-status nit was left honest rather than
+manufacturing claims. Queue lint/check, diff check and OKF capture pass with
+zero diagnostics. Factual bot answer4175182957 records the correction without
+requesting another review. A peer merge-gate audit classifies this records PR
+as delegated; implementation PR211 retains its public-default merge gate and
+separate B421 locale-folding finding. New-head hosted gates remain required.
+
+Coordination: zero claim/handoff mutations, zero new PRs, two useful audit
+agents (one also made a disjoint two-file documentation edit), zero polling-
+only agents. B333/B335/B422 held tips remain 9ed43ab, f3348c8 and 9434bd8;
+original B333/B335 source refs/checkpoints were not touched. The unrelated
+dirty B384 workpad is preserved. PR metadata readbacks used compact check
+summaries after an oversized initial review read. One compact parent-status
+read showed Alan active; the checkpoint report is sent under Brett's existing
+report-back authorization, without another task or writer.
+
+Implementation here is documentation repair, separate from requested mirror
+and merge-gate audit; verification is byte/code/assertion preservation, peer,
+queue/capture and generated-reference checks. Environment repair: none.
+Intentional passive waits: none; CI/review waits are background and still
+pending on the new heads. The trigger-to-clock interval at 22:32:38 was ten
+minutes, not an active-effort partition, so it cannot support a wasted-time
+percentage. Several oversized reads and a second roxygen regeneration after
+residual wording corrections were avoidable rework; useful evidence checking
+is not counted as bureaucracy. Two meaningful PR fix commits and this durable
+measurement are not status-only checkpoints.
+
+The prior next-use experiment (both packages' implementing acceptance clauses
+in the initial ruling pass) has no new ruling/pickup sample here and remains
+to be evaluated. No new tracking surface or policy change was introduced.
