@@ -20,7 +20,6 @@ the whole semantic pipeline) is the one that silently loses meaning; do it first
 Independent of S1 — can run in parallel. **Mirror rule:** each fix lands in
 metasalmonpy in the same stream.
 
-
 ### Q71 ontology-fetch clarification, 2026-10-03
 
 Brett's clarified cache behavior applies to both packages: continue with a

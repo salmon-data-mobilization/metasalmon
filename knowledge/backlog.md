@@ -8708,7 +8708,7 @@ says was intended.
 measured by this filing on 2026-09-25, on metasalmon `main` at `41146fc` and
 metasalmonpy `main` at `ba1b54a`. Every stubbed run was repeated at each
 package's `v0.5.0` tag, metasalmon `af84689` and metasalmonpy `67fb486`, with
-the same results, except the plain stale-copy run in the `Q-71` entry, which
+the same results, except the plain failed-refresh fallback run in the `Q-71` entry, which
 ran on `main` only. Line numbers are `main`'s. The package runs loaded
 `git archive` exports rather than any checkout. R was 4.5.2, with httr 1.4.8
 and testthat 3.3.2, loading metasalmon through `pkgload::load_all()`. Python was
@@ -8959,15 +8959,16 @@ Found while four metasalmonpy convergence items were built for S16 step 1 (B-360
 - **B-384 — the validator's phrase anchor (metasalmon `R/semantic-bundle-validators.R:607-645`).** `.ms_semantic_validator_chunk_has_anchor()` extracts the leading token with `sub("^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$", "\\1", x, perl = TRUE)` and no dot-all flag. On a chunk with a newline the pattern cannot reach the end of the text, so `sub()` returns the whole chunk. The underscore-or-hyphen guard that follows then rejects the anchor **when any later line contains `_` or `-`**. Measured: `Spawner count by visual survey` gives `Spawner`; the same text plus a second line holding `table_2` gives the whole chunk and fails; adding `(?s)` gives `Spawner` again. **It does not fail every multi-line chunk.** `Catch count was observed.` followed by `Protocol.` has no `_` or `-` anywhere, and it still anchors on its normalised text (the second Codex review of metasalmon #196). The B-360 run found it, and copied the quirk to metasalmonpy on purpose as `multiline_chunk_phrase_anchor_quirk`. That is why B-385 exists.
 - **B-386 — metasalmonpy's HTML reader.** `_TextExtractor` in `llm_review.py` collects every text node through `handle_data()`, including `<script>`, `<style>` and `<head>` text. R's `.ms_context_text_from_html()` reads only `.//body` text that is `not(ancestor::script) and not(ancestor::style)`. Register row 62 covers library-specific extraction in general; this is the largest practical difference under it, reported by the B-364 run.
 
-### The 2026-09-26 findings from the B-327 port
+### The 2026-09-26 findings from metasalmonpy pull request 72
 
 metasalmonpy pull request 72 (B-327) ported metasalmon's half of the
 review-packet contract (B-326, metasalmon pull request 194) and mirrored it
 exactly, defects included, so that the shared conformance fixtures match. It
 reported seven findings as claims; the coordinator re-ran the port's suites and
 its cross-language test before filing them. Brett said on 2026-09-26 to fix them
-now rather than leave them filed (*"yes or just fix them now"*), so each is owned
-by an item already being worked, and each fix carries its own failing-before test.
+now rather than leave them filed (*"yes or just fix them now"*). Each finding is
+filed under the linked items below; each implementing fix must carry its own
+failing-before test.
 
 1. **metasalmon counts the `propose_new_term` alias as a downgrade.**
    `identical(aliases[harness_decision] %||% NA, decision)` never holds, because
