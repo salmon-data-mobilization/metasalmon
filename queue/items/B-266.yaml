@@ -1,7 +1,7 @@
 id: B-266
 kind: defect
 title: 'metasalmonpy''s semantic closure gives a code-resolved procedure''s gap and incomplete-evidence rows the same nonexistent codes.csv method_iri address, the mirror half of B-265'
-state: ready
+state: done
 claimable: true
 repo: metasalmonpy
 venue: claude-code

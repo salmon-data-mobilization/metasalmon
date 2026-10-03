@@ -840,11 +840,12 @@ claim covers one branch in one repository. Its metasalmonpy queue item is
 mirror is owed (2026-09-30).** Hub item **B-265** makes R's gap and
 incomplete-evidence rows for a code-resolved procedure name each carrying
 `codes.csv` `term_iri` row, including two code rows that share one IRI. The
-Python producer still names nonexistent `codes.csv` `method_iri`. The matching
-change is a port, not a register row, and is specified under *What
+Python producer at main `d68383c` named nonexistent `codes.csv` `method_iri`.
+The matching change is a port, not a register row, and is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. The Python
-half is `B-266`.
+half is `B-266`, which **landed 2026-10-03 as metasalmonpy #96**, merge
+`552bfa2`, with every carrying code address and the RED/GREEN test twins.
 
 **The development version after 0.5.0 adds a NuSEDS `AREA` description port to
 what the mirror is owed (2026-10-01).** Hub item **B-401** corrects both

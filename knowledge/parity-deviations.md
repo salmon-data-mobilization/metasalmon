@@ -1167,11 +1167,16 @@ gap and incomplete-evidence rows with every carrying code row's dataset,
 table, column, code value and target key. An IRI shared by two code rows gets
 two address rows; `render_ontology_term_request()` renders two candidate
 requests, which must be reviewed before filing to avoid duplicate issues.
-Warnings and placement rationales name `term_iri`. metasalmonpy's closure
-still has the same invented address; this is an owed port, not a chosen
-difference or a new numbered row. **Why not in the same stream:** a hub claim
+Warnings and placement rationales name `term_iri`. At Python main `d68383c`,
+metasalmonpy's closure had the same invented address; this was an owed port,
+not a chosen difference or a new numbered row. **Why not in the same stream:** a hub claim
 covers one branch in one repository. The Python half is **B-266**, scoped to
-mirror the `codes.csv` `term_iri` address and the two RED-tested cases.
+mirror the `codes.csv` `term_iri` address and the two RED-tested cases. **This
+one is closed.** `B-266` **landed 2026-10-03 as metasalmonpy #96**, merge
+`552bfa2`: both controls failed before the port, and the final focused closure
+file passed all 53 tests. The extras dependency leg exercised the YAML-gated
+controls; shared IRIs retain every carrying address and separate request
+drafts. The port adds no numbered deviation row.
 
 **The development version after 0.5.0 adds a corrected NuSEDS `AREA`
 description to what the mirror is owed (2026-10-01).** Hub item **B-401**

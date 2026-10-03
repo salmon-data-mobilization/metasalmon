@@ -2513,3 +2513,83 @@ implementation, package verification, local environment repair or explicit
 passive sleep is claimed. Bad Python layout/orientation path assumptions and
 oversized instruction/config reads are additional instrument rework. Preserve
 all earlier measurements; this append changes no policy or review gate.
+### B266 verified port, delegated merge and yield result, 2026-10-02
+
+B266's local owner published source `c805c1235b94ce8b3c053654bae418b4f263be41`
+and handed it back through the normal client, tip
+`ec10ff100b9cc92bf6300fcadb25d480ae9dcd1a`. The terminal claim remains held;
+no release, transfer or borrowed identity was used. Python PR96 was attached,
+marked ready as a one-PR batch, and merged under the standing delegated
+already-ruled behavior-port class after its gates passed. GitHub records
+merge `552bfa245aceaf83d20d381706f9a9a81056dcc7` at 2026-10-03 00:02:33 UTC
+(2026-10-02 Pacific). The exact head was required by the merge command.
+The PR body records the delegation before merge; no PR write followed it.
+The canonical queue done mark and both required port-landed passages close
+the factual record. No numbered parity row or policy changed.
+
+Useful implementation corrects gap and incomplete-evidence addresses to every
+actual carrying codes.csv term_iri row. Shared IRIs keep separate addresses
+and request drafts, parent lookups include the dataset key, warnings name the
+real field, and canonical gap ordering matches R's code-value-first,
+missing-last order. No ontology term was selected or changed. B199, S16 and
+unrelated B402 were preserved. One root wrote the source; one independent
+read-only peer checked the frozen candidate and final correction.
+
+Verification receipts are distinct from coordination:
+
+- Baseline production unchanged: the public procedure controls failed three
+  cases (gap and incomplete field, and shared-IRI row count), 0.61s.
+- First candidate: three focused passes, 0.39s; whole closure file 49 passes,
+  no skips, 1.00s. The peer found a real ordering mismatch against R source.
+  An inverted-order control reproduced it: one failure/one pass, 0.26s.
+- After that correction and fail-closed/qualified-parent controls, the frozen
+  closure file passed 53 tests, no failures/errors/skips, 1.00s. The final
+  peer found no remaining substantive issue. Focused pytest time across the
+  five invocations was 3.26s; this is partial tool time, not total work time.
+- Hosted run37079729306 at the exact source head: extras job111077359992
+  reported 1903 passed, 9 skipped, 218 warnings and 319 subtests (51.59s).
+  Core job111077359914 and bare job111077359741 each reported 1742 passed,
+  170 skipped, 217 warnings and 278 subtests (75.91s and 52.08s).
+  The actual core/extras sentinels checked absence/presence of yaml, lxml,
+  openpyxl, pypdf and xlrd. B266's YAML-gated public controls ran in extras;
+  aggregate quiet logs do not establish every individual skip's reason.
+  Parity job111077359998 passed 308 tests (6.16s). Both distributions built,
+  with four nonfatal setuptools namespace-package discovery warnings. B266
+  changed no packaging configuration; these warnings are not zero-warning
+  coverage. Documentation build and changelog-window checks also passed.
+  PR documentation deployment was skipped by design.
+- Actual Codex code review completed on c805c12 at 23:59:37 UTC, summary
+  comment5963354128, with the bot's completed-without-findings reaction.
+  Inline findings and human review threads were empty. No extra review was
+  requested. Python has no configured Claude workflow; no Claude completion
+  is inferred. R B265's prior review is not substituted for this Python review.
+
+The active continuation snapshot tested the prior yield adjustment on the
+comparable operation: seven nested reads, zero output polls, shell3.772s.
+The prior eight-read envelope included one extra poll. Retain the ten-second
+initial yield for this short snapshot. The evidence is one eliminated call,
+not a measured saved-time or wasted-time percentage. Separate the subsequent
+useful source/CI/review/merge reads from that polling comparison.
+
+Coordination rework included too-small source-read budgets, one mixed-cwd
+R-source lookup, and a CI extraction that matched job-name prefixes on every
+line instead of the log payload. The bounded CI auditor corrected the latter
+by removing the first two tab fields before filtering the cached logs; no
+package test was rerun to repair the instrument. The peer correction is
+useful verification and implementation rework, not paperwork waste. Requested
+workflow measurement lives in this existing log. No local environment repair,
+heavy local full suite/build, extra credential setup, polling-only agent or
+explicit passive sleep occurred in the implementation continuation. Hosted
+execution is recorded separately from local test time. Whole-run category
+percentages remain unavailable without a complete active-time denominator.
+
+The clean canonical Python checkout fast-forwarded to 552bfa2. The completed
+B266 worktree had zero unique commits and only generated pytest/bytecode
+ignored files; it was removed and pruned after verification. Both branches
+remain. Other worktrees and their dirty/unpublished work were preserved.
+The local member workpad stays as its source-verification receipt; publication,
+review and closeout status are appended here rather than generating another
+source-identical member commit and another CI/review cycle. This operating
+choice changes no gate. The complete 171002-byte log prefix is preserved.
+Closeout queue lint and generated-block check pass; OKF capture reports zero
+errors and warnings, and the final diff whitespace check passes.
