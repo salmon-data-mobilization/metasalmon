@@ -167,3 +167,39 @@ test_that("an explicit source list reaches search_fn normalised (hub B-421)", {
   expect_identical(policy$mode, "explicit")
   expect_identical(policy$sources, c("smn", "gcdfo"))
 })
+
+# Ambient case-folding is injected because an installed Turkish locale does
+# not expose this defect on every libc/R combination. The lower-case strings
+# are positive controls: a correct normalized dispatch still reaches them.
+test_that("source normalization does not consult ambient locale case folding (B-421)", {
+  turkish_lower <- function(x) {
+    x <- chartr("I", "\u0131", x)
+    x <- chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", x)
+    Encoding(x) <- "UTF-8"
+    x
+  }
+  got <- testthat::with_mocked_bindings(
+    list(
+      names = metasalmon:::.ms_normalize_explicit_sources(c("GBIF", "BIOPORTAL", "gbif")),
+      dispatch = ft_searched(sources = c("GBIF", "BIOPORTAL"))
+    ),
+    tolower = turkish_lower, .package = "base"
+  )
+  expect_identical(got$names, c("gbif", "bioportal"))
+  expect_identical(got$dispatch$searched, c("gbif", "bioportal"))
+  expect_identical(got$dispatch$diagnostics, c("gbif", "bioportal"))
+})
+
+test_that("shared Unicode lowercase controls survive C locale source normalization (B-421)", {
+  input <- c(" GBIF ", "BIOPORTAL", "\u0130", "\u039f\u03a3", "\u00c9XAMPLE", NA, "", "gbif")
+  expected <- c("gbif", "bioportal", "i\u0307", "\u03bf\u03c2", "\u00e9xample")
+  # These outputs were checked against Python lower(), including its dotted-I
+  # expansion and context-sensitive final sigma. This is a shared corpus, not
+  # a claim that different Unicode-library versions agree on every code point.
+  normalise <- metasalmon:::.ms_normalize_explicit_sources
+  expect_identical(normalise(input), expected)
+  withr::with_locale(c(LC_CTYPE = "C"), {
+    expect_identical(normalise(input), expected)
+    expect_identical(metasalmon:::.ms_semantic_source_policy(input)$sources, expected)
+  })
+})
