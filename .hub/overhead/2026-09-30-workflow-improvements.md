@@ -2593,3 +2593,81 @@ source-identical member commit and another CI/review cycle. This operating
 choice changes no gate. The complete 171002-byte log prefix is preserved.
 Closeout queue lint and generated-block check pass; OKF capture reports zero
 errors and warnings, and the final diff whitespace check passes.
+
+### B402 small port and bounded delegation follow-through, 2026-10-02
+
+The next live ready scan returned B223, B350 and B402 in 3.667s. B223 retains
+unpublished work awaiting B340's shared YAML helper; B350 retains its quote
+compatibility decision. Their workpads and branches were preserved rather
+than treating lease eligibility as an instruction to duplicate their work.
+B402 was ready, unblocked and unclaimed, and became the independent lane.
+
+The existing queue_scout used its own historical explicit HUB_SESSION_KEY
+`metasalmon:01a0ef90-3d80-77f2-9fd0-f75a4b388fc8:/root/queue_scout`, selecting
+cached holder a-16638a45c615a2f8. The shared inherited CODEX_SESSION_ID names
+root, whose holder is a-c1bbb42efa975289; that inherited value alone is not
+proof of a distinct subagent identity. No token was copied, overridden or
+transferred. Normal claim6b8c4b01a8303b08d9536481a4de0a82cb93ac49 advanced to
+handoff f4614c7e32a738c46db8ae3425bf9d3fbee9df2a and remains held. One agent
+wrote the isolated source; root checked the frozen diff and handled readiness,
+review gates and the ordinary delegated already-settled data-port merge.
+
+Python PR97, attached to this chat, merged source
+`e7480b2383a4013c970bf2f2605728f7fac0877a` as
+`24b64720efe69e200c885e97b952b726c5cb1180` at 2026-10-03 00:21:01 UTC
+(2026-10-02 Pacific). Exact-head matching was required. The PR body recorded
+the delegation before merge, the last PR write. Only the AREA label and
+description changed in the 17-row CSV; the entire result matches merged R
+B401 byte for byte, SHA256
+`62baa71f7893bb6916e10c0113f932c32257db2f3887a63beef9a0372c06803a`.
+Implementation and independent peer checks retained all other cells and rows.
+The retirement says exact row/grep, so no test duplicating this reversible
+edit or heavy local suite/build was added. The source, Unreleased changelog
+and initial workpad shared one member commit; later status lives here.
+
+Hosted run37081081143 on that head passed: core1742/170skipped/217warnings/
+278subtests (42.86s), extras1903/9skipped/218warnings/319subtests (90.46s),
+bare the core counts (76.50s), and R parity308 (5.98s). Actual core/extras
+dependency-sentinel completion was read. Documentation build and changelog
+window also passed; PR deploy was skipped. Actual Codex code review completed
+at 00:17:16 UTC, summary5963503370, with the completed-without-findings
+reaction and empty review/human threads. No additional review or human
+approval question was requested; no Claude completion is inferred for Python.
+
+The next-use CI extraction stripped the first two tab fields before matching
+the log payload. One shell invocation used five CLI reads (run metadata plus
+four jobs), returned 255 output tokens and took 7.028s. All four actual pytest
+summary lines were positive controls. The plain actual sentinel-completion
+messages were read alongside their echoed source lines; the echoed print
+statements are not completion evidence. This avoids the earlier prefix-matching
+output flood. Keep the payload-first extraction and require actual output
+messages when applying it again; no helper, tracker or policy was added.
+
+Partial subagent coordination command durations: status0.989s, claim4.903s,
+worktree0.088s, push1.756s, PRcreation2.267s, label1.981s and handoff3.388s,
+approximately15.4s across those seven commands. The roughly one-minute source
+edit/CSV-verification interval also included workpad preparation, so it does
+not isolate implementation from documentation time. One obsolete frozen-helper
+path failed immediately before using the canonical hub client; this is
+coordination rework, not package or dependency repair. Root's frozen CSV peer
+command took0.171s. These partial samples do not yield a whole-item bureaucracy
+or wasted-time percentage, and coordination is not all waste.
+
+Passive waiting is separate: two collaboration waits timed out at their
+requested60s limits, one ended on a message with unmeasured duration, and two
+explicit review sleeps returned120.019s combined. No polling-only agent was
+spawned. Source verification, hosted gate inspection and the requested workflow
+audit are useful work; no local environment installation or full-gate repair
+occurred. The small port still needs identity, publication and review steps,
+so creating more workflow machinery for it would add overhead. Retain the
+short workpad, one source commit, frozen peer, concise status closeout and
+existing review gates for the next comparable item. Claimable discovery alone
+does not clear an existing dependency or unresolved decision.
+
+Canonical Python fast-forwarded to24b6472. The completed B402 worktree was
+clean with zero unique commits and zero ignored files, then removed/pruned;
+its branches remain. Other worktrees and dirty/unpublished work were preserved.
+The complete176377-byte overhead-log prefix is unchanged. Queue/port closeout
+uses the existing canonical hub route and introduces no parity-register row.
+Closeout queue lint, generated-block check, diff whitespace and OKF capture
+passed; capture reported zero errors and warnings.

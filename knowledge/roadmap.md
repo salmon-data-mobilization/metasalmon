@@ -850,12 +850,13 @@ half is `B-266`, which **landed 2026-10-03 as metasalmonpy #96**, merge
 **The development version after 0.5.0 adds a NuSEDS `AREA` description port to
 what the mirror is owed (2026-10-01).** Hub item **B-401** corrects both
 metasalmon example dictionaries: NuSEDS defines `AREA` as a DFO sub-district,
-not a PFMA Area. metasalmonpy's bundled copy still has the former description;
-this is an owed port, not a chosen difference or register row, specified under
+not a PFMA Area. metasalmonpy's bundled copy at main `552bfa2` had the former
+description; this was an owed port, not a chosen difference or register row, specified under
 *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in
 the same stream:** a hub claim covers one branch in one repository. The Python
-half is `B-402`; `B-403` owns the separate `smn-data-pkg`
-example.
+half is `B-402`, which **landed 2026-10-03 as metasalmonpy #97**, merge
+`24b6472`, with its two corrected AREA cells matching R. `B-403` owns the
+separate `smn-data-pkg` example.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.**

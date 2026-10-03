@@ -1182,11 +1182,16 @@ drafts. The port adds no numbered deviation row.
 description to what the mirror is owed (2026-10-01).** Hub item **B-401**
 changes both metasalmon example dictionaries from PFMA Area to DFO sub-district,
 as defined by NuSEDS's own data dictionary and map. metasalmonpy's bundled
-`data/column_dictionary.csv` still calls `AREA` a PFMA Area. This is an owed
-data/documentation port, not a deliberate difference or a register row.
+`data/column_dictionary.csv` at main `552bfa2` still called `AREA` a PFMA Area.
+This was an owed data/documentation port, not a deliberate difference or a
+register row.
 It did not land in the same stream because a hub claim covers one branch in
 one repository. The metasalmonpy item is **B-402**; the
 independent specification-example correction is **B-403** in `smn-data-pkg`.
+**This one is closed.** `B-402` **landed 2026-10-03 as metasalmonpy #97**,
+merge `24b6472`. The complete Python dictionary now matches R's B-401 file
+byte for byte, changing only the AREA label and description; semantic IRI
+cells are unchanged.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.** When

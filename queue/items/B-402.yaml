@@ -1,7 +1,7 @@
 id: B-402
 kind: defect
 title: 'metasalmonpy describes the NuSEDS AREA column as a Pacific Fishery Management Area code too, the mirror half of B-401'
-state: ready
+state: done
 claimable: true
 repo: metasalmonpy
 venue: either
