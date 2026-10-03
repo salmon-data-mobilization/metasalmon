@@ -55,5 +55,6 @@ the extensions \code{.etag} and \code{.last_modified}. Fetches of different URLs
 representations into one \code{cache_dir} therefore never overwrite each other,
 a conditional request carries only the validators that the URL it is sent
 to returned under the same \code{accept}, and a \code{304} answer returns that URL's
-own copy. metasalmonpy names its cache files the same way.
+own copy. The matching metasalmonpy cache layout is still owed in its
+ontology-fetch stream (B-334/B-336 and PR75).
 }

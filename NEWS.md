@@ -3,6 +3,16 @@ metasalmon (development version)
 
 ### Breaking changes
 
+* **A custom ontology URL no longer implicitly falls back to smn** (B-333).
+  `fetch_salmon_ontology()` keeps its public fallback default
+  `c("https://w3id.org/smn")`, but uses that implicit fallback only for the
+  default `url = "https://w3id.org/smn/"`. A custom URL that fails now errors
+  unless its caller explicitly supplies fallback URLs or it has an eligible
+  matching cache. It previously could return smn's body for another ontology.
+  Named fallbacks are tried as before; explicit `NULL` and `character()` name
+  none. The package's own callers already name their fallbacks. The Python
+  mirror remains owed in B-334 and the existing unmerged PR75.
+
 * **`find_terms()` searches the sources a role calls for when you name a role
   and no sources** (hub item B-420; ruled by Brett on 2026-09-26,
   `knowledge/questions.md` Q70: R moves). `sources` now defaults to `NULL`,
@@ -243,28 +253,18 @@ metasalmon (development version)
   replacement storage cannot revive it on a later offline call. Its bytes
   remain available for inspection with a `.invalid` marker until a successful
   replacement clears that marker. Without an eligible matching copy the call
-  errors. No freshness time limit or public argument is added. This corrects
-  PR211's earlier unconditional-error interpretation and retains the matching
-  warning/return regression. The Python ontology-fetch stream owes the same
+  errors. No freshness time limit or public argument is added. The Python
+  ontology-fetch stream owes the same
   behavior before parity is complete.
 
 * **`fetch_salmon_ontology()` no longer answers a request for one ontology with
   another's body, or one representation's request with another's** (hub items
-  B-333 and B-335; metasalmonpy's twins are B-334 and B-336, and the two
-  packages now apply one rule and one cache layout). Each is pinned by
+  B-333 and B-335; the Python mirror remains owed in B-334/B-336 and the
+  existing unmerged PR75). Each is pinned by
   `tests/testthat/test-ontology-fetch.R`, which stubs `httr::GET()` and failed
   before the change.
 
-  1. **The default fallback is tried for the default url only.**
-     The public fallback default stays `c("https://w3id.org/smn")`, and is
-     implicit only when `url` is the default `"https://w3id.org/smn/"`.
-     That fallback serves smn, and it used to be tried after any url, so a call
-     for gcdfo whose url failed returned smn's body with no warning. Named
-     `fallback_urls` are tried as before; explicit `NULL` and `character()`
-     still name none.
-     The package's own callers were never affected, because each names its own
-     fallbacks.
-  2. **Each URL and representation has its own cached copy and validators.**
+  1. **Each URL and representation has its own cached copy and validators.**
      Every body used to be written to `salmon-ontology.ttl` in `cache_dir`,
      beside one `etag.txt` and one `last_modified.txt`. So fetching smn and then
      gcdfo into one directory left gcdfo at the path the smn call had returned,
@@ -283,21 +283,22 @@ metasalmon (development version)
      directly under `cache_dir`, which by default is the persistent
      `file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology")`
      -- are no longer read, and you can delete them.
-  3. **A `304` with no cached copy is that url's failure**, and the next url is
+  2. **A `304` with no cached copy is that url's failure**, and the next url is
      tried. It used to stop the call with "Not Modified (HTTP 304)".
-  4. **A copy holds exactly the bytes the server sent.** The body used to be
+  3. **A copy holds exactly the bytes the server sent.** The body used to be
      decoded as UTF-8 and written back with `writeLines()`, so every copy gained
      a final newline and a body that was not valid UTF-8 was stored as the two
      characters `NA`. The copy is now the raw body, still written to a
      temporary file in `cache_dir` and renamed into place, and a validator file
      is the header's bytes and a newline, written in binary so that it is the
-     same file on every platform. metasalmonpy now stores the same bytes the
-     same way -- it used to decode a text type sent with no charset as
-     ISO-8859-1 and rewrite it -- so a `cache_dir` either package writes holds
-     the same files. `timeout_seconds` is unchanged: it bounds both the
-     connection and the whole transfer, the rule metasalmonpy has now taken.
+     same file on every platform. The matching Python storage remains owed in
+     the existing unmerged PR75; its default branch still decodes a text type
+     sent with no charset as ISO-8859-1 and rewrites it. `timeout_seconds` is
+     unchanged in R: it bounds both connection and whole transfer. Python's
+     default branch uses a fixed 15 s per request, and PR75's proposed
+     configurable connect/read timeout does not bound the whole transfer.
 
-* **Source names are read the way metasalmonpy reads them** (hub item B-421).
+* **Source lists are normalised consistently across R's readers** (B-421).
   `find_terms()`, and the source policy that `suggest_semantics()` and
   `write_semantic_review_packet()` build (and so `infer_dictionary()`,
   `create_sdp()` and `chat_decomposition()`, which pass their sources to
@@ -310,15 +311,16 @@ metasalmon (development version)
   was reported as a source that did not answer. An injected `search_fn`, the
   bundle-review payload and a review packet's recorded `explicit_allowlist` now
   see the normalised list, as they do in metasalmonpy. A name that is none of
-  the sources is still kept and searches nothing. metasalmonpy's half of the
-  change makes it drop a missing entry (`None`, NaN) where it used to search a
-  source called `"none"`. Pinned by `tests/testthat/test-find-terms-sources.R`.
+  the sources is still kept and searches nothing. The pending metasalmonpy
+  port in PR75 must also drop missing entries (`None`, NaN); its default branch
+  still turns `None` into a source called `"none"`.
+  Pinned by `tests/testthat/test-find-terms-sources.R`.
 
   `write_sdp_semantic_closure()` reads its `sources` by the same rule. It had
   its own, `trimws()` and `unique()` with no lower-casing, so `" SMN"` and
   `"smn"` were two sources there and a no-break space survived; metasalmonpy's
-  closure had a third rule of its own. All three readers in each package now
-  read a list one way, and the two packages read it the same way. A list with
+  closure has a third rule of its own. All three R readers now read a list one
+  way; the corresponding Python reader port remains owed in PR75. A list with
   no name left is still refused. Pinned by `tests/testthat/test-semantic-closure.R`,
   which failed before the change.
 * The bundled NuSEDS dictionaries now describe `AREA` as a DFO sub-district

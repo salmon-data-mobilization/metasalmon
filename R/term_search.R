@@ -141,16 +141,15 @@
   }, character(1), USE.NAMES = FALSE)
 }
 
-# A source list the caller named, read the way metasalmonpy's
-# `_normalize_explicit_sources()` (term_search.py) reads one: each name trimmed
-# as `str.strip()` trims it and lower-cased, a name that is missing or empty
+# A source list the caller named: each name trimmed as Python's `str.strip()`
+# trims it and lower-cased, a name that is missing or empty
 # after trimming dropped, and a repeat dropped after its first appearance, in
 # the caller's order (hub B-421). It used to be passed on as given, so a source
-# named in capitals was searched in Python and silently not here. Lower-casing
-# agrees with Python's exactly over ASCII, which is every name a source has;
-# for a non-ASCII name, which names no source in either package, R's
-# `tolower()` may fold differently. metasalmonpy's copy also drops a missing
-# entry (`None` or NaN) rather than searching a source called "none".
+# named in capitals was searched in Python and silently not here. `tolower()`
+# depends on the current locale: even an ASCII source such as GBIF can differ
+# from Python under Turkish LC_CTYPE. Locale-independent folding remains owed.
+# metasalmonpy still needs the missing-entry
+# port: its released reader can turn `None` into a source called "none".
 .ms_normalize_explicit_sources <- function(sources) {
   names <- .ms_strip_python_whitespace(as.character(unlist(sources, use.names = FALSE)))
   foldable <- !is.na(names) & validUTF8(names)
@@ -200,7 +199,7 @@
 #'   with no role, that is `c("smn", "gcdfo", "ols", "nvs")`. Options:
 #'   `"smn"`, `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`,
 #'   `"worms"`, `"bioportal"`. A vector you supply is a strict allowlist, read
-#'   as metasalmonpy reads it: each name is trimmed and lower-cased, a missing
+#'   consistently by this package: each name is trimmed and lower-cased, a missing
 #'   or empty name is dropped, and a repeated name is dropped after its first
 #'   appearance, so `"SMN"` and `" smn "` both search smn. A name that is none
 #'   of the options searches nothing, and an empty vector returns an empty

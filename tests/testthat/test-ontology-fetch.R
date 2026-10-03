@@ -1,19 +1,19 @@
 # fetch_salmon_ontology(), with httr::GET() stubbed so no request leaves the
 # process. Each rule here was demonstrated failing on the function as it stood
-# before the change that introduced the rule, and the matching legacy rules are pinned by metasalmonpy's
-# `tests/test_ontology_fetch.py`; the clarified Q71 behavior is still owed
-# in the existing Python ontology-fetch stream:
+# before the change that introduced the rule. The matching behavior and
+# regression coverage remain owed in the existing metasalmonpy ontology-fetch
+# stream (PR75); these tests establish R's behavior:
 #
 #   * hub B-333 (metasalmonpy B-334): the default fallback serves smn, so it is
 #     tried for the default url only.
 #   * hub B-335 (metasalmonpy B-336): each cached copy and its validators are
 #     keyed by the URL that returned them and the accept they were fetched
-#     under, with one naming scheme in both packages.
+#     under; the same naming scheme is owed in Python.
 #   * hub B-422 (Q71 clarified by Brett on 2026-10-03): a failed refresh
 #     warns and returns only a matching body not known to be stale.
-#   * The follow-ups that converged the two fetchers' remaining differences on
-#     2026-09-26: a copy holds exactly the bytes the server sent, and the
-#     timeout bounds both the connection and the transfer.
+#   * R's exact-byte storage and timeout controls: a copy holds exactly the
+#     bytes the server sent, and the timeout bounds both connection and transfer.
+#     The Python port is pending; its per-read timeout needs separate appraisal.
 
 of_smn <- "https://w3id.org/smn/"
 of_smn_fallback <- "https://w3id.org/smn"
@@ -297,9 +297,9 @@ test_that("failed replacement storage cannot revive the superseded body (Q71)", 
   expect_null(got$sent[[1]][["If-None-Match"]])
 })
 
-test_that("the cache file names are the ones metasalmonpy writes (hub B-335)", {
+test_that("cache file names pin the layout owed in the Python port (hub B-335)", {
   # The first 16 hexadecimal digits of the SHA-256 of the UTF-8 bytes of the
-  # url, a newline and the accept. metasalmonpy's test pins the same four.
+  # url, a newline and the accept. The Python port owes these four golden keys.
   key <- function(url, accept) sub("\\.ttl$", "", basename(metasalmon:::.ms_ontology_cache_entry(tempdir(), url, accept)$body))
   expect_identical(key(of_smn, "text/turtle, application/rdf+xml;q=0.8"), "5891e28fd43e0292")
   expect_identical(key(of_smn_fallback, "text/turtle, application/rdf+xml;q=0.8"), "5188e73de1bcc279")
@@ -317,7 +317,7 @@ test_that("the cache file names are the ones metasalmonpy writes (hub B-335)", {
   expect_setequal(list.files(cache_dir), c("5891e28fd43e0292.ttl", "5891e28fd43e0292.etag", "5891e28fd43e0292.last_modified"))
 })
 
-test_that("the default url is smn's, the one metasalmonpy defaults to (Q71 clause 1)", {
+test_that("the default url is smn's, as Q71 clause 1 requires", {
   expect_identical(formals(fetch_salmon_ontology)$url, "https://w3id.org/smn/")
   expect_identical(formals(fetch_salmon_ontology)$fallback_urls, quote(c("https://w3id.org/smn")))
 })
@@ -326,8 +326,8 @@ test_that("a copy holds exactly the bytes the server sent", {
   # The body used to be decoded as UTF-8 and written back with writeLines(), so
   # every copy gained a final newline, a CRLF body gained a bare LF, and a body
   # that was not valid UTF-8 was stored as the two characters "NA".
-  # metasalmonpy decoded a text type sent with no charset as ISO-8859-1. Both
-  # now store the bytes as sent; its twin test sends the same four bodies.
+  # metasalmonpy still decodes a text type sent with no charset as ISO-8859-1.
+  # Its pending port owes these four raw-body controls.
   bodies <- list(
     no_final_newline = charToRaw(enc2utf8("@prefix smn: <https://w3id.org/smn/> .\nsmn:Unit\u00e9 a smn:Thing .")),
     latin1 = as.raw(c(0x63, 0x61, 0x66, 0xe9, 0x0a)),
@@ -344,7 +344,7 @@ test_that("a copy holds exactly the bytes the server sent", {
   }
 })
 
-test_that("a validator is stored as the header's bytes and a newline, in both packages", {
+test_that("a validator is stored as the header's bytes and a newline", {
   cache_dir <- withr::local_tempdir()
   got <- of_fetch(
     stats::setNames(list(of_ok(of_smn, "SMN BODY", etag = '"e"', last_modified = "Mon, 01 Jan 2024 00:00:00 GMT")), of_smn),
@@ -356,7 +356,8 @@ test_that("a validator is stored as the header's bytes and a newline, in both pa
 })
 
 test_that("timeout_seconds bounds both the connection and the transfer", {
-  # The rule metasalmonpy ported on 2026-09-26: it took a fixed 15 s.
+  # R bounds the whole transfer; metasalmonpy still uses a fixed 15 s per request
+  # on main, and its proposed per-read timeout is not a whole-transfer bound.
   got <- of_fetch(stats::setNames(list(of_ok(of_smn, "SMN BODY")), of_smn), cache_dir = withr::local_tempdir())
   expect_identical(got$options[[1]]$timeout_ms, 30000)
   expect_identical(got$options[[1]]$connecttimeout, 30)
@@ -375,8 +376,8 @@ test_that("timeout_seconds bounds both the connection and the transfer", {
 test_that("the cache key is taken from UTF-8 bytes in any locale", {
   # A URL read without a declared encoding is a string of unknown encoding.
   # Under a C locale, enc2utf8() wrote its non-ASCII bytes out as the text
-  # "<c3><a9>", so the key differed from the one metasalmonpy computes for the
-  # same URL (0f607d2dd94734a9 against 6bf05a094db6a6b1, measured 2026-09-26).
+  # "<c3><a9>", so the key differed from hashing the same requested UTF-8 bytes
+  # directly (0f607d2dd94734a9 against 6bf05a094db6a6b1).
   url <- rawToChar(c(charToRaw("https://example.org/ontologie/unit"), as.raw(c(0xc3, 0xa9))))
   expect_identical(Encoding(url), "unknown")
   key <- function(u) {

@@ -13,7 +13,8 @@
 #' representations into one `cache_dir` therefore never overwrite each other,
 #' a conditional request carries only the validators that the URL it is sent
 #' to returned under the same `accept`, and a `304` answer returns that URL's
-#' own copy. metasalmonpy names its cache files the same way.
+#' own copy. The matching metasalmonpy cache layout is still owed in its
+#' ontology-fetch stream (B-334/B-336 and PR75).
 #'
 #' @param url Ontology URL. Default is the canonical SMN namespace root.
 #' @param accept Accept header; defaults to turtle with RDF/XML fallback.
@@ -134,15 +135,15 @@ fetch_salmon_ontology <- function(
 # 16 hexadecimal digits -- 64 bits, which keeps a deep cache path well inside
 # Windows' 260-character limit and makes a collision among the handful of URLs
 # one directory holds negligible -- of the SHA-256 of the UTF-8 bytes of the
-# URL, a newline and the accept. metasalmonpy's `_cache_entry()`
-# (ontology_fetch.py) computes the same name, and
-# `tests/testthat/test-ontology-fetch.R` pins four inputs its twin also pins.
+# URL, a newline and the accept. The four golden inputs in
+# `tests/testthat/test-ontology-fetch.R` define the layout that the pending
+# metasalmonpy B-336 port must also implement.
 #
 # The bytes are taken from each part on its own, never through `paste0()` or
 # `enc2utf8()` on a string of unknown encoding: under a non-UTF-8 locale both
 # translate such a string through the native encoding, which wrote its
-# non-ASCII bytes out as the text "<c3><a9>" and gave a key metasalmonpy does
-# not compute.
+# non-ASCII bytes out as the text "<c3><a9>" and gave a key different from
+# hashing the requested UTF-8 bytes directly.
 .ms_ontology_cache_entry <- function(cache_dir, url, accept) {
   key <- substr(
     digest::digest(
@@ -175,7 +176,7 @@ fetch_salmon_ontology <- function(
 # aborted call leaves the previous copy whole. It used to be decoded as UTF-8
 # and written back with `writeLines()`, which added a final newline to every
 # copy and stored a body that was not valid UTF-8 as the text "NA".
-# metasalmonpy writes the same bytes the same way (`atomic_io.atomic_write()`).
+# Exact-byte storage remains owed in the metasalmonpy ontology-fetch stream.
 .ms_ontology_cache_store <- function(entry, res) {
   # Receiving a full replacement makes the nominated old body unsuitable.
   # Persist that fact before decoding or writing so an interrupted refresh
@@ -222,8 +223,8 @@ fetch_salmon_ontology <- function(
 }
 
 # A validator file is the header value's bytes and a newline, written in
-# binary so that it is the same file on every platform and from either
-# package; metasalmonpy writes it the same way.
+# binary so that it is the same file on every platform. The metasalmonpy port
+# must preserve these bytes too; that port is still pending.
 .ms_ontology_store_validator <- function(value, path) {
   if (!is.null(value) && nzchar(value)) {
     writeBin(c(charToRaw(value), charToRaw("\n")), path)
