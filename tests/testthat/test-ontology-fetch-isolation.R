@@ -236,3 +236,25 @@ test_that("B335 preserves the separately governed matching-cache failure policy"
   expect_length(failed$warnings, 1L)
   expect_match(failed$warnings, "using cached copy")
 })
+
+test_that("B335 cache identity preserves UTF-8 bytes under C locale", {
+  cache <- withr::local_tempdir()
+  withr::local_locale(c(LC_CTYPE = "C"))
+  # Construct non-ASCII data without non-ASCII R source. Both declarations name
+  # the same URL; a locale translation of combined strings used to corrupt keys.
+  utf8 <- paste0("https://example.org/caf", intToUtf8(233L))
+  latin1 <- iconv(utf8, from = "UTF-8", to = "latin1")
+  Encoding(latin1) <- "latin1"
+  testthat::local_mocked_bindings(GET = function(url, ...) {
+    # Real HTTP response URLs are URIs; keep MIME's URL handling outside this
+    # requested-IRI cache-key check under the deliberately non-UTF-8 locale.
+    fetch_test_response("https://example.org/caf%C3%A9", body = "ontology")
+  }, .package = "httr")
+  first <- fetch_salmon_ontology(url = utf8, accept = "text/turtle",
+                                 cache_dir = cache, fallback_urls = character())
+  second <- fetch_salmon_ontology(url = latin1, accept = "text/turtle",
+                                  cache_dir = cache, fallback_urls = character())
+  expect_identical(first, second)
+  expect_equal(basename(first), "d691f4dd9a38cbbc.ttl")
+  expect_equal(readLines(first), "ontology")
+})

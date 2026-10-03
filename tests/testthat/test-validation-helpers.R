@@ -92,17 +92,27 @@ test_that("fetch_salmon_ontology returns a ttl path", {
   testthat::skip_if_not(reachable, "w3id.org is not reachable from this environment")
   path <- fetch_salmon_ontology()
   expect_true(file.exists(path))
-  expect_match(path, "salmon-ontology\\.ttl$")
+  expect_match(basename(path), "^[0-9a-f]{16}\\.ttl$")
 })
 
 test_that("fetch_salmon_ontology falls back to stale cache when refresh fails", {
   cache_dir <- withr::local_tempdir()
-  ttl_file <- file.path(cache_dir, "salmon-ontology.ttl")
-  writeLines("cached", ttl_file)
+  url <- "http://127.0.0.1:9/smn"
+  # Establish provenance through the public fetcher rather than seeding a
+  # legacy filename whose URL/Accept identity cannot be known.
+  testthat::local_mocked_bindings(GET = function(url, ...) {
+    structure(list(url = url, status_code = 200L,
+                   headers = list(`content-type` = "text/turtle"),
+                   content = charToRaw("cached")), class = "response")
+  }, .package = "httr")
+  ttl_file <- fetch_salmon_ontology(url = url, cache_dir = cache_dir,
+                                    fallback_urls = character())
+  testthat::local_mocked_bindings(GET = function(...) stop("offline stub"),
+                                   .package = "httr")
 
   expect_warning(
     path <- fetch_salmon_ontology(
-      url = "http://127.0.0.1:9/smn",
+      url = url,
       cache_dir = cache_dir,
       fallback_urls = character(),
       timeout_seconds = 1

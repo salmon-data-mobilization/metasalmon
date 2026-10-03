@@ -219,6 +219,13 @@ metasalmon (development version)
 
 ### Fixed
 
+* `fetch_salmon_ontology()` isolates cached bodies, ETags and Last-Modified
+  validators by requested URL and Accept header. Fetching another ontology or
+  representation no longer overwrites a returned path, and a primary cannot
+  reuse a fallback's validators or body. Unqualified legacy files are not
+  reused. Matching-cache failure behavior is unchanged (B-335; Python
+  counterpart B-336).
+
 * `fetch_salmon_ontology()` no longer tries the implicit SMN mirror when a
   caller names another ontology URL. Explicit fallbacks and the public
   argument defaults are preserved (B-333; Python counterpart B-334).

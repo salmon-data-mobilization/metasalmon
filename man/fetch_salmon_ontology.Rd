@@ -32,6 +32,12 @@ Path to the cached ontology file (character string).
 \description{
 Downloads the Salmon Domain Ontology using HTTP content negotiation and caches
 the response using ETag / Last-Modified headers when available.
+Each requested URL and Accept header has its own cached body and validators.
+A returned path is therefore not overwritten by a fetch for another URL or
+representation. Unqualified legacy cache files are not reused because their
+URL and representation cannot be established. The matching-cache failure
+policy is unchanged: if every attempted URL fails, a matching cached copy is
+returned with a warning.
 }
 \examples{
 \dontrun{
