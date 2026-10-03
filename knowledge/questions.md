@@ -1971,21 +1971,33 @@ real, which is why this is a question: it changes the default of an exported R
 function, and what an existing call that names a role and no sources returns.
 **Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-70`.
 
-### Q71 — Which ontology should `fetch_salmon_ontology()` fetch by default, and what should it return when every URL fails and a copy is cached? — ANSWERED 2026-09-26 (Brett)
+### Q71 — Which ontology should `fetch_salmon_ontology()` fetch by default, and what should it return when every URL fails and a copy is cached? — ANSWERED 2026-09-26; CLARIFIED 2026-10-03 (Brett)
 
-**Ruling:** *"Q71: smn should be the default starting point so python changes
-and make R error on a cached copy thats stale."* — Brett, 2026-09-26, in chat,
-taking the filing's recommendation on both parts.
+**Earlier ruling, retained as provenance:** *"Q71: smn should be the default
+starting point so python changes and make R error on a cached copy thats
+stale."* — Brett, 2026-09-26, in chat. PR209 and PR211 interpreted the second
+part as an error after every failed refresh, even with a matching cache. That
+interpretation is superseded by the clarification below; failed refresh alone
+does not establish that a matching cached body is stale.
+
+**Clarification:** *"For Q71, if the cache matches the requested ontology and
+refresh fails, continue with a warning. Do not use unrelated, mismatching or
+otherwise known-stale caches."* — Brett, 2026-10-03, in chat.
 
 **What it changes:** (1) metasalmonpy's `fetch_salmon_ontology()` fetches smn by
 default, from metasalmon's default URL with the fallback that goes with it
-(`B-423`). (2) When every URL fails, R's raises instead of returning a cached
-copy (`B-422`). "Stale" is read as any cached copy the call could not refresh;
-if a freshness window was meant, `B-422`'s condition is corrected rather than
-the item closed. The defects beside them, `B-333` to `B-336`, and metasalmonpy's
-dead `data/ontology` submodule, `B-337`, land in the same two pull requests.
+(`B-423`); this part is unchanged. (2) R returns an eligible body cached for an
+attempted URL and the requested `Accept` with a warning when refresh fails
+(`B-422`). Unrelated, unqualified legacy, mismatching or otherwise known-stale
+bodies are ineligible. A replacement response or a contradictory validator
+makes the old representation ineligible on subsequent calls as well. This
+ruling adds no freshness interval: inability to refresh by itself is not
+staleness. The clarification requires reconciling the existing PR211 with this
+behavior, preserving the `B-333`/`B-335` tests-only and fix checkpoints and
+existing claims. The related
+Python work stays in the existing ontology-fetch stream.
 
-**As filed:**
+**As filed, retained as history rather than the current ruling:**
 **Unblocks:** two differences neither register records, and what replaces
 metasalmonpy's default URL, which no longer answers. (1) R's defaults fetch smn
 and metasalmonpy's fetch gcdfo, each with a fallback URL for its own ontology.

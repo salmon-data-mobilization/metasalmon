@@ -8681,7 +8681,8 @@ apart from the package rename in `91d993a`.
   in the cache directory as an earlier session would leave it: the call
   completed normally and returned that copy. The only signal was an
   `rlang_warning` reading "Failed to refresh Salmon ontology; using cached copy
-  at …", and nothing on the returned value marks it stale. metasalmonpy raises
+  at …"; the failed refresh does not establish that the cached body is stale.
+  metasalmonpy raises
   `RuntimeError` whether or not a copy is cached (`ontology_fetch.py:105-110`).
   Measured with `requests.get` stubbed the same way and a copy in the cache
   directory, it raised and left the copy on disk. R's documentation says nothing
@@ -8698,9 +8699,17 @@ apart from the package rename in `91d993a`.
   `fetch_salmon_ontology()`. Read as a statement about this function, the row's
   R half would be wrong, because R's fetcher does not raise when a copy is
   cached. R's own index fetchers do call it, with caches under `tempdir()`, so
-  there the stale path can only return a copy fetched earlier in the same R
-  session, when an index is rebuilt with `refresh = TRUE`; that was read and
-  not run.
+  there the failed-refresh fallback can only return a copy fetched earlier in
+  the same R session, when an index is rebuilt with `refresh = TRUE`; that was
+  read and not run.
+
+  **Ruling clarification, 2026-10-03:** Brett requires a warning and continued
+  use when the cached body matches the requested ontology and refresh fails;
+  unrelated, mismatching or otherwise known-stale bodies must not be used. The
+  2026-09-25 measurements above describe the earlier implementation, not proof
+  that every body it could not refresh was stale. PR209/211's later reading of
+  the 2026-09-26 quote as an unconditional failed-refresh error is superseded.
+  The exact ruling is in the Q71 Answered entry in [questions.md](questions.md).
 - *The default fallback is used whatever `url` a caller passes* (`B-333`,
   `B-334`). In both packages the default `fallback_urls` belongs to the default
   ontology, and it is tried after any `url` the caller names. Measured with the
@@ -8744,7 +8753,7 @@ apart from the package rename in `91d993a`.
   way in both, with a stub that answers `304` to any validator: a call whose
   `url` failed and whose fallback answered stored the fallback's ETag, the next
   call sent it to the `url` in `If-None-Match`, and the `url`'s `304` then
-  returned the fallback's body as the `url`'s. In R the stale-copy path above
+  returned the fallback's body as the `url`'s. In R the failed-refresh path above
   also serves the one file for any `url`: with gcdfo cached there, a call for
   the default smn, with every request failing, returned the gcdfo body under
   the warning "Failed to refresh Salmon ontology; using cached copy".
