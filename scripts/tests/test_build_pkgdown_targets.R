@@ -188,7 +188,7 @@ run_test <- function() {
   write_file(root, "vignettes/one.Rmd", c(
     readLines(file.path(root, "vignettes/one.Rmd"), warn = FALSE),
     "B430_ARTICLE_CHANGED",
-    "```{r}",
+    "```{r, echo=FALSE}",
     "assign('index_paths', 'articles/poison.html', envir = .GlobalEnv)",
     "assign('.b430_article_leak', TRUE, envir = .GlobalEnv)",
     "cat('B430_FIRST_ARTICLE_CHUNK_RAN')",
@@ -245,7 +245,7 @@ run_test <- function() {
   write_file(root, "vignettes/two.Rmd", c(
     readLines(file.path(root, "vignettes/two.Rmd"), warn = FALSE),
     "B430_SECOND_ARTICLE_CHANGED",
-    "```{r}",
+    "```{r, echo=FALSE}",
     "stopifnot(!exists('.b430_article_leak', envir = .GlobalEnv, inherits = FALSE))",
     "cat('B430_SECOND_ARTICLE_ISOLATED')",
     "```"

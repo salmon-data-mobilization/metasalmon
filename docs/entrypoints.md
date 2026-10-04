@@ -55,7 +55,8 @@ Short map of the package's public starts and their canonical implementations.
   Use vignette stems and canonical Rd topic names; repeat either selector for
   multiple pages. Selected pages, their Markdown companions and search are
   rebuilt under the recorded toolchain. Use a full build for new pages,
-  navigation or site configuration changes.
+  navigation or site configuration changes, including article title changes
+  that alter menu labels on other pages.
 - NEWS only: `Rscript scripts/build-pkgdown.R --news-only`.
 
 ## Test

@@ -3188,3 +3188,93 @@ the next genuine bounded docs task and retain the existing full build for new
 pages/navigation/configuration, rather than extending selectors into a new
 framework. A complete cross-agent active-effort denominator still was not
 captured; no defensible wasted-time percentage is claimed from calendar gaps.
+
+### B430 review and available-work audit, 2026-10-04
+
+Actual Claude review on eb53851 reports zero important findings and five nits.
+A bounded peer verified article titles feed pkgdown's site-wide article menus;
+full builds are therefore explicitly required for title changes affecting those
+menus. The selector pre-resolution workaround now states what would retire it.
+These are source-comment/entrypoint clarifications: comparing parsed builder
+expressions against fix 1f4d619 proves the executable AST is unchanged. The
+other suggestions concern deliberate canonical topic names, mixed bullet style
+and optional stronger llms composition coverage. No new local build/full suite
+was added for these comments. The tests-only and fix commits remain intact.
+
+The first publication head's hosted fixture passes all 37 controls on
+R4.6.1/pkgdown2.2.1/Pandoc3.8.3; the toy records its own running toolchain and
+never accepts a change to metasalmon's committed toolchain. Its strict hosted
+R4.6.1 check uses error_on=warning and finishes with zero errors/warnings/notes.
+Ready conversion was a batch of one after Claude completed, avoiding an
+in-progress review cancellation. The ready-triggered successful Claude job
+explicitly reused that verified completed nits verdict; it is not a new review.
+Current-head CI and completed Codex findings still govern the eventual merge.
+Their final receipts belong in the PR body rather than a status-only Git head.
+
+A read-only queue scout covered all 325 canonical items with B430's live claim
+and done B266/B402 as positive controls. B223/B350 are the only ready-list
+outputs, but have existing partial work or explicit decision holds. Fifteen
+icebox items pass only the mechanical solo/severity/retirement/done-blocker
+screen. No independent core pickup survives ownership/authority checks: B423
+belongs to open conflicting Python75, B420 to R211, B325 leaves timing to Brett,
+and other promising items retain explicit choices. No queue state, duplicate
+claim, partial branch or another owner's scope was changed. This is a dated
+bounded audit; the live queue and workpads remain the authority. Alan received
+the checkpoint/claim/result report and the existing-owner conflict finding.
+
+Coordination proxies remain zero new approval questions, zero polling-only
+agent spawns and one root claim. Passive hosted review/check waits use bounded
+checks; no workpad/status commit is made merely because a poll is unchanged.
+The clarification push will be bundled with any valid Codex correction rather
+than split into a publication for each nit. This retains the already-selected
+batching habit; no approval/claim/review gate or tracking framework changed.
+
+### B430 substantive review repair, 2026-10-04
+
+Codex's completed eb53851 review found a valid P2 beyond Claude's nits: selected
+articles rendered without separate-process isolation and could clobber the
+wrapper's variables or leak state to each other. The peer verified pinned
+pkgdown/callr source: full-site articles use fresh processes, and callr carries
+the active current-source temporary library paths. This is useful defect
+verification, not bureaucratic waste. The repair stays within the existing
+full-build behavior condition and strengthens regression coverage.
+
+The implementation helper is preparing a separate tests-only RED checkpoint
+and fix while the root preserves the existing claim and original checkpoints.
+The two source-comment/entrypoint clarifications are bundled into the same
+publication. The earlier AST-equality receipt applies to those comments before
+this executable repair; it does not claim the subsequent process fix leaves
+the AST unchanged. No new claim, approval question, identity, tracker or full
+local MetaSalmon suite/site run is needed. New frozen proof and actual review
+receipts will be recorded after the repair, with hosted gates still required.
+
+### B430 repair frozen and measured, 2026-10-04
+
+Separate review checkpoints: tests-only 2ffca36 reproduces a real selected
+chunk clobbering index_paths, making the old builder fail on poison.html after
+a successful initial toy full site (7.3s RED). Fix 72fd116 restores fresh
+article processes while retaining the current-source temporary library.
+The helper's pinned fixture passes 40 controls in 17.3s. Root spotted an oracle
+weakness: source echo contained the same marker being asserted as executed.
+Hiding echo in the two probes makes marker matches output-only; this stronger
+fixture passes all 40 controls, zero skips. The peer independently reviewed
+both the functional fix and oracle correction, with no duplicate build.
+This necessary regression recheck resolves a concrete remaining risk rather
+than expanding an optional validation loop.
+
+Root's independent real-site build on 72fd116 took 19.16s, kept the same eight
+selected/derived changes and again preserved 217 unrelated file bytes and 644
+ordered unrelated search records. Both markers reached HTML/Markdown/search.
+The earlier 18.26s trial preceded the isolation correction; the 0.90s difference
+is not attributed causally to process isolation because ordinary run variance
+was not measured. The useful result remains no unrelated-output cleanup.
+
+Implementation/verification work includes this actual behavior defect and test
+oracle repair. Coordination is one bundled review-fix publication with no new
+claim or approval question; original checkpoints and terminal held claim stay
+intact. Source/comment, entrypoint and proof edits are collected before that
+push. The next Codex request is for a pushed substantive fix, within the existing
+review cap, not a reroll of the same finding. Claude's verified nits verdict is
+retained; a workflow that reuses it is not described as a fresh review. New
+current-head hosted gates remain passive required verification, and their
+receipts are recorded in the PR body without a status-only commit.
