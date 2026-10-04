@@ -1,7 +1,7 @@
 id: B-420
 kind: defect
 title: 'R''s find_terms() searches the role''s sources_for_role() list when a caller names a role and no sources, as Brett ruled on Q-70'
-state: icebox
+state: done
 claimable: true
 repo: metasalmon
 venue: claude-code

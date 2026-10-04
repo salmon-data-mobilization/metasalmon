@@ -20,6 +20,7 @@ Imports:
     jsonlite,
     cli,
     rlang,
+    stringi,
     dplyr (>= 1.1.0),
     glue,
     purrr,

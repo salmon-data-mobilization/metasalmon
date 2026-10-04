@@ -1115,3 +1115,39 @@ test_that("a failure in the third write leaves the first two unchanged", {
   expect_identical(read_bytes(first$files[["vocabulary"]]), before_vocabulary)
   expect_identical(readLines(mapping_path, warn = FALSE), before_mapping)
 })
+
+test_that("the closure reads its source list the way find_terms() does (hub B-421)", {
+  # write_sdp_semantic_closure() used to apply its own rule: trimws() and
+  # unique(), with no lower-casing, so " SMN" and "smn" were two sources and a
+  # no-break space survived. It now reads the list with
+  # `.ms_normalize_explicit_sources()`, as find_terms() and the source policy
+  # do, and metasalmonpy's closure takes the same rule from
+  # `_normalize_explicit_sources()`.
+  path <- withr::local_tempdir()
+  make_eml_test_sdp(path)
+  closure_clear(path)
+
+  seen <- list()
+  stub <- closure_search_stub()
+  spy <- function(query, role = NA_character_, sources = NULL, ...) {
+    seen[[length(seen) + 1L]] <<- sources
+    stub(query, role = role, sources = sources)
+  }
+  write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = spy,
+    sources = c(" SMN", "smn", "\u00a0Gcdfo", NA),
+    quiet = TRUE
+  )
+  expect_gt(length(seen), 0L)
+  for (sources in seen) {
+    expect_identical(sources, c("smn", "gcdfo"))
+  }
+
+  # A list that normalises to nothing is refused before anything is read.
+  expect_error(
+    write_sdp_semantic_closure(path, search_fn = spy, sources = c(" ", NA, "\u3000"), quiet = TRUE),
+    "must name at least one vocabulary source"
+  )
+})

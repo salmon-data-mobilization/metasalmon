@@ -8999,3 +8999,15 @@ failing-before test.
 7. **A metasalmonpy review record cannot be concatenated with another.** It
    carries its findings as a DataFrame in `attrs`, and `pd.concat()` compares
    the inputs' `attrs`, the hazard `B-370` fixed in the retriever. `B-425`.
+
+### B-430 — bounded docs updates need a full site build and unrelated-file cleanup
+
+**Spot-verified, 2026-10-04.** `scripts/build-pkgdown.R` accepts a full build or
+`--news-only`; article and reference targets are rejected as unknown arguments.
+The full branch calls `pkgdown::build_site(lazy = FALSE)`. During B-278 on
+metasalmon pull request 263, the pinned build rewrote 98 unrelated tracked
+files and added one unrelated redirect. The implementation retained ten
+affected/build-record files and restored the rest. At this observation date,
+the [published measurement and receipt](https://github.com/salmon-data-mobilization/metasalmon/blob/0f86ff3148645985e5fae6cadc903b36edc189d9/.hub/overhead/2026-09-30-workflow-improvements.md#L3006)
+are in PR 263's appended log and have not landed on main. The queue item owns
+the implementation and retirement condition.
