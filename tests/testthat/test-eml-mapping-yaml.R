@@ -230,3 +230,51 @@ test_that("native scanner errors before tag resolution retain fallback", {
   writeLines("%TAG !metasalmon-eml-probe! tag:yaml.org,2002:\n---\nx: !foo value", sidecar)
   expect_error(.ms_closure_mapping_paths(sidecar), "unsupported YAML tag")
 })
+
+test_that("long required mapping keys cannot hide an unsupported tag", {
+  forms <- list(
+    block = function(key) paste0("a: 1\n", key, ": 2\n"),
+    flow = function(key) paste0("{a: 1, ", key, ": 2}\n")
+  )
+  for (form in forms) {
+    for (key_length in c(10L, 1000L, 1010L)) {
+      key <- strrep("k", key_length)
+      unknown <- form(paste("!foo", key))
+      # Reach control: these are valid authored keys, including the required
+      # block key after `a`. Only the disposable prefix pushes it over the
+      # native implicit-key bound; the original must still be refused.
+      expect_type(suppressWarnings(yaml::yaml.load(unknown, eval.expr = FALSE)), "list")
+      sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+      writeLines(unknown, sidecar)
+      expect_error(.ms_eml_read_mapping_yaml(sidecar), "unsupported YAML tag")
+
+      for (literal in c(paste("!!str", key),
+                        paste0('"!foo ', key, '"'),
+                        paste("Good !foo", key))) {
+        text <- form(literal)
+        expected <- yaml::yaml.load(text, eval.expr = FALSE)
+        writeLines(text, sidecar)
+        expect_identical(.ms_eml_read_mapping_yaml(sidecar), expected)
+      }
+    }
+  }
+})
+
+test_that("probe overflow preserves original malformed-key fallback", {
+  sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+  text <- paste0("a: 1\n", strrep("k", 1100L), ": 2\nnext: !foo value\n")
+  # This overflow is already in the untouched input, before the later tag.
+  # A disposable explicit-key probe must not make malformed source valid.
+  expect_error(yaml::yaml.load(text, eval.expr = FALSE), "while scanning a simple key")
+  writeLines(text, sidecar)
+  expect_identical(.ms_closure_mapping_paths(sidecar),
+                   list(vocabulary = "metadata/semantic_vocabulary.csv",
+                        review = "reviewed_semantic_selections.csv"))
+
+  # Literal keys can overflow only after probe insertion too. Pass those
+  # literals without losing the real tag after them or repairing later syntax.
+  literal <- paste0('"!foo ', strrep("k", 1000L), '"')
+  text <- paste0("a: 1\n", literal, ": 2\nnext: !foo [unterminated\n")
+  writeLines(text, sidecar)
+  expect_error(.ms_closure_mapping_paths(sidecar), "unsupported YAML tag")
+})
