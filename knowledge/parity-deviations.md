@@ -152,6 +152,14 @@ manual edits or applied decisions close the default slot. B-426 follows B-327
 because its active packet branches edit the same Python paths. The release
 index links this debt; it is an owed port, not a deliberate register difference.
 
+**Development-version port, 2026-10-04: Q62 undefined tag handles (B-429).**
+R's B-340 reader refuses `path: !e!foo value`; Python main `d04982b` still takes
+the default-path fallback after B-341's merged fix. [B-429](../queue/items/B-429.yaml)
+completes [Q62's ruled refusal](questions.md), with native-parser
+[evidence](backlog.md) and sequencing in [roadmap.md](roadmap.md). The unrelated
+malformed/nonmapping fallback is retained. This is owed port completion, with
+no new deliberate difference or numbered register row.
+
 *(The heading keeps its wording deliberately. It is a citation target: this file,
 the release index in [`roadmap.md`](roadmap.md), and the retirement conditions of
 queue items **B-126** and **B-165** all cite this section by name, and renaming

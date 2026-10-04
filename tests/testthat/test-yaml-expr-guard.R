@@ -53,13 +53,15 @@ yaml_reader_fns <- c("yaml.load", "read_yaml", "yaml.load_file")
 # cannot find, a changed call shape) fails instead of passing over nothing.
 # Delete an entry when its read is deleted; add one when a read is added.
 known_yaml_read_fns <- c(
+  ".ms_eml_mapping_native_directive_start",
   ".ms_sssom_parse_metadata",
   "write_eml_from_sdp",
   ".ms_knb_sdp_artifact_paths",
   ".ms_knb_build_plan",
   ".ms_fetch_remote_sdp_schema",
   ".ms_load_vendored_sdp_schema",
-  ".ms_closure_mapping_paths"
+  ".ms_eml_read_mapping_yaml",
+  ".ms_eml_mapping_has_unknown_tag"
 )
 
 # `yaml::read_yaml`, `yaml:::read_yaml`, or a bare `read_yaml`, as a function
@@ -619,7 +621,7 @@ test_that("the vendored SDP rules read never evaluates an !expr tag", {
 test_that("the semantic closure's sidecar read never evaluates an !expr tag", {
   # R/semantic-closure.R, `.ms_closure_mapping_paths()`. The declared paths it
   # returns choose where write_sdp_semantic_closure() writes, so the tag is put
-  # on one of them: it must come back as the text it is.
+  # on one of them: Q62 now refuses it, but it must still never run.
   probe <- yaml_expr_probe()
   sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
   writeLines(
@@ -634,10 +636,6 @@ test_that("the semantic closure's sidecar read never evaluates an !expr tag", {
   )
   withr::local_options(yaml.eval.expr = TRUE)
 
-  paths <- .ms_closure_mapping_paths(sidecar)
-
+  expect_error(.ms_closure_mapping_paths(sidecar), "unsupported YAML tag")
   expect_false(file.exists(probe$sentinel))
-  # Parsed, not fallen back to the defaults: the declared path is honoured.
-  expect_identical(paths$vocabulary, "metadata/declared-vocabulary.csv")
-  expect_identical(paths$review, probe$text)
 })

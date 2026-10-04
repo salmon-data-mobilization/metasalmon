@@ -1,0 +1,13 @@
+id: B-429
+kind: defect
+title: 'Refuse an undefined YAML tag handle before Python semantic closure writes'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: either
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'PORT OF BRETT Q-62, RULED 2026-09-25: refuse unknown tags on every EML sidecar read rather than silently replacing declared closure paths with defaults. On metasalmonpy main after B-341 PR93, an undefined handle such as path: !e!foo value raises PyYAML ParserError before a tagged node event, and _first_unsupported_sidecar_tag() returns None; write_sdp_semantic_closure() therefore still falls back. The public writer refuses that native undefined-handle case with an error naming metadata/eml-mapping.yml, writes neither closure file and leaves the sidecar unchanged. Pin RED on the merged B-341 source and GREEN after the fix, plus known core tags, bare !, quoted lookalikes and unrelated malformed/nonmapping fallback controls. R B-340 PR258 already refuses this case and pins the counterpart in the same stream. No new ontology choice, public signature, frozen row, version or numbered parity-register amendment is needed. This follow-up records a post-merge finding rather than reopening B-341 or quietly patching its merged branch.'

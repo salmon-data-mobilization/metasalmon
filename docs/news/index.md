@@ -315,6 +315,14 @@
 
 ### Fixed
 
+- **Semantic closure refuses unknown YAML tags in its EML sidecar before
+  writing either closure file** (hub item B-340; Q62). The refusal names
+  `metadata/eml-mapping.yml` and leaves that sidecar unchanged. Untagged
+  declared paths, recognized standard YAML tags and literal bang text
+  retain their meaning; the existing malformed/nonmapping fallback stays
+  in place. Expression evaluation remains disabled. This is the R half
+  of B-340/B-341, with no new parity deviation.
+
 - **A matching ontology cache remains usable with a warning after failed
   refresh** (B-422; Brett’s Q71 clarification, 2026-10-03). A transport
   or server failure alone does not prove that copy stale. Only bodies

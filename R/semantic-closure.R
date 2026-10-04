@@ -750,8 +750,15 @@
   }
   # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
   mapping <- tryCatch(
-    yaml::read_yaml(mapping_file, eval.expr = FALSE),
-    error = function(e) NULL
+    .ms_eml_read_mapping_yaml(mapping_file),
+    error = function(e) {
+      # Q62 tag refusal must reach the public writer before any file install.
+      # Preserve the earlier fallback for malformed YAML and read failures.
+      if (inherits(e, "metasalmon_eml_mapping_tag")) {
+        stop(e)
+      }
+      NULL
+    }
   )
   # `is.list()`, not `is.null()`: a sidecar that parses to a YAML SCALAR rather
   # than a mapping reached `mapping[["semantic_vocabulary"]]` and raised

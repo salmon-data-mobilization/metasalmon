@@ -3410,3 +3410,131 @@ canonical main exactly (`3cee1407b6b43d24a56395b1dc37650183e67a57`), and the
 actual B262 delta passes `git diff --check 7654339 HEAD`. The unpublished local
 merge receipt was qualified before handoff; no unrelated generated source was
 rewritten, and no published checkpoint was amended.
+### B340 refusal repair and final handoff integration, 2026-10-04
+
+**Useful implementation.** The final Claude finding refined the long-key case
+from a first mapping key to a required key after `a: 1`. On frozen `733e170`,
+the exact 1000-character tagged key is native-valid but the detector returns
+FALSE; the public writer creates or overwrites both closure files and rewrites
+the sidecar. Short-key and first-key controls refuse. Tests-only `3c26c66`
+retains the RED: 364 passes, ten failures, no errors/warnings/skips. Repair
+`2b9808e` uses native key/separator positions for a disposable explicit key,
+checks untouched-input overflow, and keeps the real read and original bytes.
+It closes the mechanism rather than shifting the prefix boundary. A first
+inline-separator candidate failed the long-literal-before-real-tag control;
+separating the disposable value line corrected that concrete failure.
+
+**Verification and requested audit.** Frozen GREEN was 425 focused assertions,
+zero failures/errors/warnings/skips in 4.758s. Independent `ontology_fetch_peer`
+added 44 native/control assertions, no substantive finding; its 0.08s measures
+assertion execution, not total review effort. The first settled-main integration
+`5d34fb7` retained main plus every owned hunk and passed 456 focused assertions
+in 5.182s. Its one accepted NEWS-only build took 13.921s, coordinated after
+R229 released the local build slot. The reader remains frozen at `4125f5ce`;
+all original checkpoints and both new RED/GREEN commits remain ancestors.
+
+**Necessary final integration.** R229 merged on 2026-10-04 at 20:01:20 UTC as
+`5a2076a`, with pushed queue closeout `39524ab`. One ordinary merge of that
+actual main into B340 conflicted only in `docs/search.json`. All 51 R files
+have identical parsed expressions to `5d34fb7` (32 top-level closure
+expressions), and every test blob is unchanged, so no focused/full suite or
+source peer was repeated. One necessary pinned NEWS-only build took 16.132s
+under R4.5.2/pkgdown2.2.0/Pandoc3.8.3. Ordered-index curation retains 666
+identities and 665 unchanged records, replacing only the development Fixed
+text; duplicate/list-valued identities and incoming B262 wording survive.
+NEWS is main plus the original 482-byte B340 entry. Index passes 68 exports /
+64 topics (2.068s); parity has 64 matching rows, OKF capture has zero
+diagnostics, and five icon/manifest links resolve through seven exact main
+asset pairs. B429 remains the owed Python port; holder and terminal tip
+`428346de` are unchanged.
+
+**Coordination and instruments.** Root's bounded live scout recorded 14 shell
+reads, one ready inventory, two PR lists, one batch-tip read and three cached
+content reads, with zero claims, builds, reviews or polling-only agents in
+that scout. These are scout counts, not whole-iteration totals. Root's wrong
+inferred `salmon-agent-locks` URL failed before any write; actual
+`queue/config.yaml` identified `hub-locks`, and both tips were then verified
+unchanged. That is one bounded coordination-instrument correction, not an
+authentication failure. Earlier B340 preparation had a heading assertion stop
+before writes, a 0.369s ambient-Pandoc preflight stop before generation, and an
+index run with ambient deprecation warnings; the existing pinned executable
+then passed without an install or global environment change.
+
+**Existing gates and waits.** R229 current-head CI `37229826123` passed strict
+R4.6.1 with zero errors/warnings/notes. Claude model/verifier jobs skipped;
+those skips were not new reviews, and the earlier failed-run substitution is
+recorded in its PR body. Publication was held for that required CI and ordered
+merge. B262's clean, no-ignored, zero-unique worktree was removed while its
+branch and terminal claim were retained. B223 resumes only after R258 lands;
+B350 retains its consequential decision boundary. Passive waiting and active
+effort were not comprehensively timed, so no whole-run waste percentage is
+inferred. This substantive append preserves the entire 230015-byte canonical
+prefix, SHA-256 `464681b87ec6da03a4a6f4069695968f0da7ffe24a93916706f72e2f63795765`.
+
+
+## B340 actual review: required sequence-key repair — 2026-10-04
+
+**Implementation.** Actual Claude comment 5984038702 on published `acd5e2b`
+identified a required tagged flow-sequence key after a preceding mapping pair.
+Independent native/public reproduction confirms the bypass: the disposable
+probe reports closing `]` at 2:1037 rather than its separator at 2:1038, so
+absent outputs are created or existing sentinels overwritten and the sidecar
+rewritten. This is a real Q62 refusal defect, not an administrative hold.
+Separate tests-only RED `946da7a5a69d33baa4a9a99e767eb1f9ab762167` retains the
+prior reader `4125f5ce`; 432 assertions pass and ten fail, zero errors,
+warnings or skips, 5.528s R elapsed / 6.106s process. Minimum fix GREEN
+`6fb1d1364ce17057ad13ef4386c9fa20aa0b0a2c` changes only the disposable native
+probe. Native key start makes the candidate explicit; native mapping-value
+positions identify a literal collection's separator without a custom scanner.
+The real reader expression and untouched bytes/eval.expr FALSE remain exact.
+
+**Verification and requested audit.** Focused GREEN: 493 assertions, zero
+failures/errors/warnings/skips, 6.266s R elapsed / 6.383s process. Independent
+implementation reviewer `ontology_fetch_peer` checked exact reader blob
+`2658d4883713a464a27a4cbaafc9a59c251b26a9` with 90 additional assertions,
+1.465s R elapsed / 1.932s process. All four public absent/sentinel cases
+preserve every output and sidecar byte. Scalar and nested collection keys,
+repeated literal retries, known/literal/flow acceptance, native results and
+four originally malformed fallback controls pass. Every captured native call
+has eval.expr FALSE. No substantive finding remains on this source freeze.
+All prior source checkpoints, B429 and original terminal holder `428346de`
+remain; no claim or identity changed.
+
+**Factual documentation.** Actual Codex code/security review 5983971966
+completed on `acd5e2b`; its P1 roadmap finding correctly identified the missing
+B429 sequencing note. Python main `d04982b` retains that undefined-handle
+fallback. Q62 already decides refusal, so the roadmap and nonnumbered parity
+owed-port notes record the existing obligation under Brett's 2026-10-04
+standing delegation, without a new numbered difference or approval question.
+No NEWS/site input changed in this review correction. Existing generated
+outputs remain exact; no repeated NEWS/full-site build is needed.
+
+**Remote gates and coordination.** Previous publication `acd5e2b` passed
+hosted provider-isolated full tests and strict R4.6.1 check, run 37231379689 /
+job 111521549819, zero errors/warnings/notes. Actual Claude 37231412031 model
+and verifier ran successfully; its residual finding above is repaired rather
+than treated as a nit. The normal ready-event concurrency cancelled
+37231379730 and a different job skipped; neither is a completed review.
+A repaired publication still requires its own hosted CI. No manual model
+request, unavailable-bot retry or permission question was added. Three existing
+helpers performed disjoint implementation, independent replay and factual
+notes; zero polling-only helpers and zero status-only checkpoints. One batched
+public tip read confirms B340 `428346de` and B223 `56611e3` unchanged. Root's
+wide parity-row read caused truncated output and was narrowed; this bounded
+instrument correction is not environment repair or substantive verification.
+Passive waits and total active effort were not comprehensively timed, so no
+whole-run waste percentage is inferred.
+
+This substantive append preserves all 234142 preceding bytes, SHA-256
+`a8e9e7f82ef3c666d4966082abaef8d6b0309793112e46da22667c52149f7939`. The approved substitution removed old
+administrative questions while actual review findings still drove RED/GREEN
+repairs and independent proof. Reuse that exact proof on unchanged source;
+current-head CI remains separate. This evaluation changes no review or claim
+gate and starts no second tracker.
+
+**Factual-note gates.** OKF capture reports zero diagnostics and the register
+guard retains 64 matching numbered rows. An independent Python main d04982b
+probe reproduces the native undefined-handle ParserError/default-path fallback
+and passes seven mapping controls using existing Python3.9.6/PyYAML6.0.3. One
+inherited urllib3 warning is recorded; no environment install/repair or new
+policy decision was involved. Source and generated outputs stay frozen.
