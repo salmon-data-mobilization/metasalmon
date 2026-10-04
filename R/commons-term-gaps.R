@@ -116,7 +116,9 @@
   for (field in .ms_commons_gap_fields()) {
     column <- paste0("commons_", field)
     out[[column]] <- if (field == "blocked_by") {
-      lapply(rows, function(row) unlist(row[[field]], use.names = FALSE))
+      # character(0), rather than unlist(list())'s NULL, preserves [] as an
+      # empty dependency array when a returned row is serialized to JSON.
+      lapply(rows, function(row) as.character(unlist(row[[field]], use.names = FALSE)))
     } else if (field == "verified") {
       vapply(rows, `[[`, logical(1), field)
     } else {
@@ -136,7 +138,10 @@
 .ms_commons_row_from_gap <- function(gaps, i) {
   row <- lapply(.ms_commons_gap_fields(), function(field) {
     value <- gaps[[paste0("commons_", field)]][[i]]
-    if (field == "blocked_by") return(as.list(value))
+    if (field == "blocked_by") {
+      if (is.null(value)) .ms_commons_gap_abort("blocked_by cannot be null in a rendered commons row.")
+      return(as.list(value))
+    }
     if (length(value) == 1L && is.na(value)) return(NULL)
     value
   })

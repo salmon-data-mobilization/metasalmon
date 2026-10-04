@@ -33,7 +33,7 @@ test_that("commons register records retain order, duplicates, and honest evidenc
   for (field in setdiff(commons_fields, "commons_hold_reason")) {
     original <- sub("^commons_", "", field)
     if (original == "blocked_by") {
-      expect_identical(gaps[[field]], lapply(raw, function(r) unlist(r[[original]], use.names = FALSE)))
+      expect_identical(gaps[[field]], lapply(raw, function(r) as.character(unlist(r[[original]], use.names = FALSE))))
     } else if (original == "verified") {
       expect_identical(gaps[[field]], vapply(raw, `[[`, FALSE, original))
     } else {
@@ -52,6 +52,9 @@ test_that("commons register records retain order, duplicates, and honest evidenc
   for (field in missing_evidence) expect_true(all(is.na(gaps[[field]])), info = field)
   expect_identical(gaps$target_label, gaps$commons_title)
   expect_identical(gaps$search_query, gaps$commons_title)
+  # An empty source array must not become null in the returned row's JSON.
+  serialized <- jsonlite::fromJSON(jsonlite::toJSON(gaps[1L, "commons_blocked_by"], auto_unbox = TRUE, null = "null"), simplifyVector = FALSE)
+  expect_identical(serialized[[1L]]$commons_blocked_by, list())
   expect_true(all(gaps$gap_detection_basis == "commons_register"))
   expect_identical(names(detect_semantic_term_gaps(dict = tibble::tibble())), prefix)
 })
@@ -84,6 +87,8 @@ test_that("commons holds remain visible and cannot be revived by renderer contro
   incomplete <- tampered
   incomplete$commons_concept <- NULL
   expect_error(render_ontology_term_request(incomplete, scope = "smn"), "commons_gaps")
+  tampered$commons_blocked_by[1L] <- list(NULL)
+  expect_error(render_ontology_term_request(tampered, scope = "smn"), "commons_gaps")
   expect_true(any(grepl("blocked; conflicted", gaps$commons_hold_reason, fixed = TRUE)))
 })
 
