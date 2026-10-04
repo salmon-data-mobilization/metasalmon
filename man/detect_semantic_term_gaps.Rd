@@ -9,7 +9,8 @@ detect_semantic_term_gaps(
   suggestions = NULL,
   include_target_scopes = c("column", "code", "table", "dataset"),
   include_dictionary_roles = NULL,
-  min_score = NA_real_
+  min_score = NA_real_,
+  commons_gaps = NULL
 )
 }
 \arguments{
@@ -31,6 +32,12 @@ the gap scan (for example \code{c("variable", "property", "entity")}).}
 
 \item{min_score}{Optional minimum score filter. Rows with score below this value
 are ignored when score is available.}
+
+\item{commons_gaps}{Optional path to the JSON file emitted by
+\verb{salmon-knowledge-commons/scripts/okf-check.py . --gaps}. File paths only;
+mutually exclusive with \code{dict} and \code{suggestions}. SDP-only filters must
+retain their defaults on this path. Malformed records fail rather than
+being coerced or dropped.}
 }
 \value{
 A tibble with one row per unresolved semantic target. The existing
@@ -51,6 +58,9 @@ Key columns:
 \code{top_non_smn_score};
 \item \code{non_smn_sources}, \code{candidate_count}, \code{placement_recommendation},
 \code{placement_confidence}, \code{placement_rationale}.
+Commons rows use \code{gap_detection_basis = "commons_register"}; their
+\code{commons_blocked_by} column is a list of concept identifiers and
+\code{commons_verified} is logical. The default SDP result columns are unchanged.
 }
 }
 \description{
@@ -67,6 +77,15 @@ It is designed to support a practical workflow:
 \item render request payloads with \code{render_ontology_term_request()};
 \item optionally submit issues with \code{submit_term_request_issues()}.
 }
+
+Commons input retains every register row in source order, including
+multiple gaps on one concept. The usual gap columns retain their types,
+with dataset, candidate and LLM evidence missing. They are followed by
+\code{commons_} columns for all fifteen emitted fields and \code{commons_hold_reason}.
+Only open, unheld rows explicitly targeted to SMN or GCDFO can become a
+new request. Proposed/rejected, do-not-mint, blocked, conflicted, contested,
+evidence-needed, unsupported-target and deprecated-card rows remain visible
+on hold. Draft/unverified cards remain draft provenance, not approval.
 }
 \examples{
 suggestions <- tibble::tibble(

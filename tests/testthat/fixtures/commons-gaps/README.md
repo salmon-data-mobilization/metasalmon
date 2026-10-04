@@ -17,6 +17,7 @@ rejected, new-scheme, and deprecated-card controls absent from this excerpt.
 The test file creates malformed controls from these fixtures in temporary
 files. No fixture is an instruction to reopen a gap or publish an issue.
 
-Both files are shared byte-identically with metasalmonpy for B-279.
+The byte-identical metasalmonpy port is owed under B-279; this fixture does
+not establish that Python behavior has landed.
 Retire these fixtures only when replacing this reader contract with a newly
 reviewed export schema and matching fixtures in both packages.

@@ -2897,3 +2897,67 @@ measurement are not status-only checkpoints.
 The prior next-use experiment (both packages' implementing acceptance clauses
 in the initial ruling pass) has no new ruling/pickup sample here and remains
 to be evaluated. No new tracking surface or policy change was introduced.
+
+### Locale repair and next paired pickup, 2026-10-03 at 23:53 UTC
+
+The compact check found PR209 merged as
+65f91676665b78b61e2f49e367a1ad91745190c6, then canonical main was fast-forwarded.
+The clean completed auxiliary checkout was removed only after verifying no
+unique commits or untracked/ignored files; its branch was retained. No new
+merge was performed by this run. The unrelated dirty B384 workpad remains.
+
+B421 was promoted under the standing R15 grant and claimed with normal holder
+a-c1bbb42efa975289. Its existing PR211/worktree was reused. Tests-only
+46fae4ef8e15cfe423600ba55d2b809fd2b2504f gives six failures, 85 passes and no
+errors/skips. Repair ae70e581add6e0d9335055b0f04f4cf23d5a8d3f explicitly uses
+stringi Unicode lowercase with locale en and declares that runtime dependency.
+All 257 focused assertions pass, including source folding, fetch isolation,
+Q71, collation and CLI safety. Independent peer checked supported-source and
+shared Unicode controls under C, English UTF-8 and Turkish UTF-8, preserving
+ambient locale and invalid UTF-8 handling. The actual Mac Turkish GBIF failure
+did not reproduce; the injected ambient-fold control and real dotted-I/final-
+sigma mismatches are distinguished honestly. Universal Unicode-version parity
+is not claimed: 27 newer-character ICU14/Python16 differences predate this fix.
+
+B421's exact handoff alias agent/B-421/a-c1bbb42efa975289 points to ae70e58;
+terminal claim tip is 24721c09ec3f16510e3626fe66401de18bf246f8. Original
+B333/B335 tests/fix checkpoints and their held claims, plus B422's claim,
+are preserved. Q71/fetch source and assertions are byte-identical to a4ceea3.
+The actual old Codex finding received factual answer4175419894; no reroll or
+person contact occurred. Hosted checks on ae70e58 passed. Claude accounting
+job37162456691 reused the earlier verified nits verdict and ran no new model
+review; its green status is not described as a fresh completed review. PR211
+still requires Brett's merge because B420 changes a public default.
+
+Coordination: one B421 claim/handoff, no changes to existing held claims, zero
+new PRs for this repair and no extra implementation checkout. A parent report
+was sent under the existing explicit authorization. B278/B279 were subsequently
+promoted in separate R15-citing commits after checking their queue records,
+claim absence, worktrees and open PR inventory. B278 is claimed normally until
+2026-10-04T03:42:45Z; B279 remains unclaimed until the sequential handoff. Useful
+peer/schema/port-planning delegates were used; polling-only delegates: zero.
+The shared harness gives the child the root identity, so distinct simultaneous
+claims are unavailable here. No identity override or duplicate claim was used.
+
+Implementation is the one source-fold change and declared dependency, separate
+from requested Unicode/parity audit. Verification includes honest RED/GREEN,
+independent locale checks, byte/ref preservation and hosted CI; no full local
+gate or site rebuild repeated. Environment/instrument repair: an unavailable
+PyYAML import stopped the first promotion wrapper before mutation; lack of
+set-e let later commands continue ineffectively. The retry used builtin text
+validation and set-e without installing anything. An unpublished mock fixture
+encoding error was corrected before tests-only publication. Guessed R/Python
+paths and an absent commons schema glob caused avoidable reads; rg identified
+the actual files. A guessed public claims-repository URL returned 404 and
+changed nothing; subsequent ownership reads use the configured hub client.
+Intentional passive waits: zero. These observations are not
+a complete active-time denominator, so no wasted-time percentage is invented.
+
+The previous adjustment was used: both packages' implementing acceptance
+clauses were included in the first B421 documentation pass. One final roxygen
+pass and one fix/docs commit sufficed; there was no second companion-docs
+commit or duplicate PR. This is one observed use, not a causal time-saving
+estimate. Next use is the B278/B279 reader pair: agree the fixture, lifecycle
+holds and acceptance mapping before either implementation, then mirror that
+one contract. Record mismatches/rework rather than add another tracker or
+change a claim, review or approval gate. B266/B402 were not restarted.

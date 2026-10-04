@@ -58,6 +58,10 @@ test_that("commons register records retain order, duplicates, and honest evidenc
 
 test_that("commons holds remain visible and cannot be revived by renderer controls", {
   all <- c(commons_export()$gaps, commons_export(commons_fixture("synthetic-controls.json"))$gaps)
+  combined <- all[[1L]]
+  combined$blocked_by <- list("concepts/example")
+  combined$conflicts <- "Synthetic control: two authorities disagree about this draft concept."
+  all <- c(all, list(combined))
   gaps <- detect_semantic_term_gaps(commons_gaps = commons_write(list(gaps = all)))
   expect_true(any(gaps$commons_hold_reason == ""))
   for (reason in c("proposed", "rejected", "do-not-mint", "blocked", "conflicted", "contested", "evidence-needed", "unsupported-target", "deprecated-card")) {
@@ -73,6 +77,13 @@ test_that("commons holds remain visible and cannot be revived by renderer contro
     controlled <- do.call(render_ontology_term_request, c(list(gaps = gaps, ask = FALSE)[setdiff(c("gaps", "ask"), names(args))], args))
     expect_identical(controlled$request_scope, requests$request_scope)
   }
+  tampered <- gaps
+  tampered$commons_hold_reason <- ""
+  tampered$placement_recommendation <- "smn"
+  expect_identical(render_ontology_term_request(tampered, ask = TRUE)$request_scope, requests$request_scope)
+  incomplete <- tampered
+  incomplete$commons_concept <- NULL
+  expect_error(render_ontology_term_request(incomplete, scope = "smn"), "commons_gaps")
   expect_true(any(grepl("blocked; conflicted", gaps$commons_hold_reason, fixed = TRUE)))
 })
 
@@ -127,11 +138,14 @@ test_that("commons reader rejects malformed envelopes and invalid typed lifecycl
     list(card_status = "unknown"), list(context = "unknown"), list(verified = "false"),
     list(title = c("one", "two")), list(concept = 2), list(note = "short"),
     list(blocked_by = "concepts/example"), list(blocked_by = list(2)),
-    list(conflicts = "short"), list(evidence_needed = "short"), list(proposal = 2)
+    list(blocked_by = NULL), list(verified = 0), list(conflicts = "short"),
+    list(evidence_needed = "short"), list(proposal = 2),
+    list(state = "proposed", proposal = "relative/path")
   )
   for (change in mutations) {
-    row <- utils::modifyList(base, change)
-    expect_error(detect_semantic_term_gaps(commons_gaps = commons_write(list(gaps = list(row)))), "commons_gaps")
+    row <- base
+    for (field in names(change)) row[field] <- change[field]
+    expect_error(detect_semantic_term_gaps(commons_gaps = commons_write(list(gaps = list(row)))), "commons_gaps", info = names(change))
   }
   for (field in c("concept", "title", "context", "registry", "status", "mint_target", "state", "note", "card_status", "verified", "blocked_by")) {
     row <- base
