@@ -152,13 +152,14 @@ manual edits or applied decisions close the default slot. B-426 follows B-327
 because its active packet branches edit the same Python paths. The release
 index links this debt; it is an owed port, not a deliberate register difference.
 
-**Development-version port, 2026-10-04: Q62 undefined tag handles (B-429).**
-R's B-340 reader refuses `path: !e!foo value`; Python main `d04982b` still takes
-the default-path fallback after B-341's merged fix. [B-429](../queue/items/B-429.yaml)
-completes [Q62's ruled refusal](questions.md), with native-parser
-[evidence](backlog.md) and sequencing in [roadmap.md](roadmap.md). The unrelated
-malformed/nonmapping fallback is retained. This is owed port completion, with
-no new deliberate difference or numbered register row.
+**Development-version Q62 undefined-handle port landed, 2026-10-04.**
+`B-429` landed as metasalmonpy pull request **#99**, merged as
+`91fc4207883430ef9856275d2008e426584cf6a7` from `818466b8`. Native undefined
+handles now refuse before closure/sidecar writes, matching the landed R B-340
+reader. Known core tags, bare `!`, literal text and unrelated malformed/nonmapping
+fallback remain. This completes [Q62's ruled refusal](questions.md), with
+native-parser [evidence](backlog.md) and the source-backed landing in
+[roadmap.md](roadmap.md); no new deliberate difference or numbered row is added.
 
 *(The heading keeps its wording deliberately. It is a citation target: this file,
 the release index in [`roadmap.md`](roadmap.md), and the retirement conditions of

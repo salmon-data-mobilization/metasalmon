@@ -992,14 +992,17 @@ and Brett ruled it on 2026-09-25: refuse on every path, recorded in
 difference nor changes it, and the closure path's refusal is `B-340` in this
 package and `B-341` in metasalmonpy.
 
-**Q62 closure port completion.** [B-429](../queue/items/B-429.yaml)
-covers the undefined YAML tag handle found after B-341 merged. For
-`path: !e!foo value`, Python falls back to default closure paths while R's
-B-340 reader refuses; [the dated reproduction](backlog.md) records the
-native parser boundary. Complete this Python port after B-340's shared reader
-lands, in the same stream, preserving unrelated malformed/nonmapping fallback.
-This implements [Brett's Q62 ruling](questions.md) without a new deliberate
-parity difference or numbered register row; the queue item owns retirement.
+**Q62 closure port landed, 2026-10-04.** `B-429` landed as metasalmonpy
+pull request **#99**, merged as `91fc4207883430ef9856275d2008e426584cf6a7`.
+The native undefined handle `path: !e!foo value` now refuses before either
+closure output or sidecar bytes change, matching R's landed B-340 reader.
+Tests-only `19e84519` and fix `818466b8` preserve unrelated malformed/nonmapping
+fallback and known/core/bare/literal behavior. This completes
+[Brett's Q62 ruling](questions.md) without a new deliberate parity difference
+or numbered register row; [the dated reproduction](backlog.md) remains evidence.
+R's three EML/KNB consumer reads landed in pull request **#266**, merged as
+`b98b289969dcd0a149f8b752259978e20353a33c`, retaining the original B-223 partial
+`47e54e98` and its honest six-failure RED.
 
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the

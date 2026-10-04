@@ -1,8 +1,8 @@
 id: B-223
 kind: defect
 title: 'An !expr tag in the EML sidecar reaches published EML as its text in R, where metasalmonpy refuses the sidecar'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 severity: P3
