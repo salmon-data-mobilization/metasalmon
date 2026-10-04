@@ -130,6 +130,21 @@ test_that("commons path accepts only a file and rejects incompatible SDP inputs"
   expect_error(detect_semantic_term_gaps(commons_gaps = fixture, min_score = 0.5), "SDP")
 })
 
+test_that("malformed commons diagnostics redact secrets and keep braces literal", {
+  path <- tempfile(fileext = ".json")
+  writeLines('{"gaps": [API_KEY=synthetic-secret {1+1}]}', path)
+  error <- tryCatch(detect_semantic_term_gaps(commons_gaps = path), error = identity)
+  expect_s3_class(error, "error")
+  message <- conditionMessage(error)
+  expect_match(message, "commons_gaps", fixed = TRUE)
+  expect_false(grepl("synthetic-secret", message, fixed = TRUE))
+  expect_match(message, "[REDACTED]", fixed = TRUE)
+  writeLines('{"gaps": [{1+1}]}', path)
+  braced_error <- tryCatch(detect_semantic_term_gaps(commons_gaps = path), error = identity)
+  expect_s3_class(braced_error, "error")
+  expect_match(conditionMessage(braced_error), "{1+1}", fixed = TRUE)
+})
+
 test_that("commons reader rejects malformed envelopes and invalid typed lifecycle fields", {
   for (text in c("{", "[]", "{}", '{"gaps":null}', '{"gaps":{}}', '{"gaps":1}', '{"gaps":[null]}', '{"gaps":[[]]}')) {
     path <- tempfile(fileext = ".json")

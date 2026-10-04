@@ -14,7 +14,7 @@
   # external data, and must never become a cli interpolation template.
   cli::cli_abort(c(
     "Invalid `commons_gaps` export.",
-    "x" = .ms_cli_escape(detail)
+    "x" = .ms_cli_escape(.ms_redact_secrets(detail))
   ))
 }
 
