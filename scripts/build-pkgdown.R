@@ -10,6 +10,8 @@
 # Article names are vignette stems; reference names are canonical Rd topic
 # names. Both selectors may be repeated. Use a full build for site-wide changes
 # such as a new page, navigation, or a changed toolchain.
+# Article title changes also need a full build: pkgdown uses those titles in
+# navigation menus on other pages, which a selected build leaves intact.
 #
 # It does two things that `pkgdown::build_site()` alone does not (hub item
 # B-141).
@@ -126,6 +128,8 @@ if (selected_build) {
   # pkgdown::build_reference(topics=) silently filters names it does not know.
   # Resolve both selectors before any page is written, including when a caller
   # supplies one valid name beside an invalid one.
+  # Retires when pkgdown rejects unknown article/reference selectors, including
+  # mixed valid/invalid selections, before any output is written.
   selected_pkg <- pkgdown::as_pkgdown(".")
   missing_articles <- setdiff(article_targets, selected_pkg$vignettes$name)
   missing_reference <- setdiff(reference_targets, selected_pkg$topics$name)
@@ -315,7 +319,8 @@ if (news_only) {
   if (length(article_targets) > 0L) {
     pkgdown::build_articles_index()
     for (name in article_targets) {
-      pkgdown::build_article(name, lazy = FALSE, new_process = FALSE)
+      # Keep pkgdown's per-article process boundary: chunks may assign globals.
+      pkgdown::build_article(name, lazy = FALSE, new_process = TRUE)
     }
   }
   if (length(reference_targets) > 0L) {

@@ -191,6 +191,7 @@ run_test <- function() {
     "```{r}",
     "assign('index_paths', 'articles/poison.html', envir = .GlobalEnv)",
     "assign('.b430_article_leak', TRUE, envir = .GlobalEnv)",
+    "cat('B430_FIRST_ARTICLE_CHUNK_RAN')",
     "```"
   ))
   write_file(root, "man/example_topic.Rd", c(
@@ -210,6 +211,9 @@ run_test <- function() {
                     fixed = TRUE)), paste("selected article content", path))
     check(any(grepl("B430_SOURCE_CHANGED", readLines(file.path(root, "docs", path)),
                     fixed = TRUE)), paste("selected article uses current package source", path))
+    check(any(grepl("B430_FIRST_ARTICLE_CHUNK_RAN",
+                    readLines(file.path(root, "docs", path)), fixed = TRUE)),
+          paste("selected article executes isolation probe", path))
   }
   for (path in c("reference/example_topic.html", "reference/example_topic.md")) {
     check(any(grepl("B430_REFERENCE_CHANGED", readLines(file.path(root, "docs", path)),
@@ -243,6 +247,7 @@ run_test <- function() {
     "B430_SECOND_ARTICLE_CHANGED",
     "```{r}",
     "stopifnot(!exists('.b430_article_leak', envir = .GlobalEnv, inherits = FALSE))",
+    "cat('B430_SECOND_ARTICLE_ISOLATED')",
     "```"
   ))
   run_builder(root, c("--article=one", "--article=two"))
@@ -252,6 +257,9 @@ run_test <- function() {
                   fixed = TRUE)) &&
           search_has(root, "/articles/two.html", "B430_SECOND_ARTICLE_CHANGED"),
         "repeated selectors update each named article and search")
+  check(any(grepl("B430_SECOND_ARTICLE_ISOLATED",
+                  readLines(file.path(root, "docs/articles/two.html")),
+                  fixed = TRUE)), "second article executes without first-article globals")
   check(same_snapshot(
     selected, repeated,
     except = c("articles/two.html", "articles/two.md", "search.json"),
