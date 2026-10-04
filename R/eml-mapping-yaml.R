@@ -138,17 +138,75 @@
   # while quoted/plain/comment/block literal text remains literal. Syntax
   # errors before an unreached tag retain the existing malformed-input fallback.
   # The diagnostic is native, without user error.label or custom handler errors.
-  # Literal bangs need one disposable parse plus the untouched real read.
+  # Literal bangs normally need one disposable parse plus the untouched read.
   # Directive groups additionally need one native segment proof per document
   # boundary. Each document/prelude is visited at most twice in those proofs,
   # rather than reparsing the full sidecar per candidate. No size/count limit.
-  # Both probes retire when yaml exposes original tags or native tag refusal.
-  suppressWarnings(tryCatch({
-    yaml::yaml.load(paste(lines, collapse = "\n"), eval.expr = FALSE)
-    FALSE
-  }, error = function(e) {
-    grepl("found undefined tag handle", conditionMessage(e), fixed = TRUE)
-  }))
+  # Both probes, including the overflow retry below, retire when yaml exposes
+  # original tags or native tag refusal.
+  parse_probe <- function(probe_lines) {
+    suppressWarnings(tryCatch(
+      yaml::yaml.load(paste(probe_lines, collapse = "\n"), eval.expr = FALSE),
+      error = identity
+    ))
+  }
+  required_key <- function(error) {
+    if (!inherits(error, "error") ||
+        !grepl("could not find expected ':'", conditionMessage(error), fixed = TRUE)) {
+      return(NULL)
+    }
+    match <- regexec(
+      paste0("while scanning a simple key at line ([0-9]+), column ([0-9]+)",
+             " could not find expected ':' at line ([0-9]+), column ([0-9]+)"),
+      conditionMessage(error)
+    )
+    parts <- regmatches(conditionMessage(error), match)[[1L]]
+    if (length(parts) == 5L) as.integer(parts[2:5]) else NULL
+  }
+  original_checked <- FALSE
+  original_key <- NULL
+  source_line <- seq_along(lines)
+  repeat {
+    probe <- parse_probe(lines)
+    if (!inherits(probe, "error")) return(FALSE)
+    if (grepl("found undefined tag handle", conditionMessage(probe), fixed = TRUE)) {
+      return(TRUE)
+    }
+    key <- required_key(probe)
+    if (is.null(key)) return(FALSE)
+    if (!original_checked) {
+      original_key <- required_key(parse_probe(source_lines))
+      original_checked <- TRUE
+    }
+    # Never repair a required-key overflow already present before this point
+    # in the untouched input: native parsing did not reach a later tag there.
+    # The line map retains native source positions when a probe key is split.
+    if (!is.null(original_key) && original_key[[1L]] <= source_line[[key[[1L]]]]) {
+      return(FALSE)
+    }
+    # Only the disposable prefix overflowed. An explicit key has no implicit
+    # key length bound. Use libyaml's own node position, preserving every tag,
+    # quote and escape byte; do not shorten the prefix or change the real read.
+    line <- lines[[key[[1L]]]]
+    column <- key[[2L]]
+    separator <- key[[4L]]
+    if (key[[3L]] != key[[1L]] || substr(line, separator, separator) != ":") {
+      return(FALSE)
+    }
+    # Keep the value separator on its own line too: `? key: value` can still
+    # construct an implicit mapping inside the explicit key. libyaml reports
+    # this separator's position; no quote/colon scanner chooses it for us.
+    explicit <- c(paste0(
+      if (column == 1L) "" else substr(line, 1L, column - 1L),
+      "? ", substr(line, column, separator - 1L)
+    ), paste0(strrep(" ", column - 1L), substring(line, separator)))
+    position <- key[[1L]]
+    lines <- append(lines[-position], explicit, after = position - 1L)
+    source_line <- append(source_line[-position], rep(source_line[[position]], 2L),
+                          after = position - 1L)
+    # A long literal key may precede a real tag, so let native parsing reach
+    # the next node rather than treating this overflow itself as tag evidence.
+  }
 }
 
 .ms_eml_read_mapping_yaml <- function(mapping_file) {
