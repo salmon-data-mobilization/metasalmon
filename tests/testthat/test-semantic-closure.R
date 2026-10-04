@@ -1290,3 +1290,42 @@ test_that("long required tagged keys are refused before any closure write", {
     }
   }
 })
+
+test_that("required tagged sequence keys cannot change closure output bytes", {
+  for (key_length in c(10L, 1000L)) {
+    for (sentinel in c(FALSE, TRUE)) {
+      path <- withr::local_tempdir()
+      make_eml_test_sdp(path)
+      closure_clear(path)
+      sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+      text <- paste0(
+        "semantic_vocabulary:\n  path: metadata/declared-vocabulary.csv\n",
+        "semantic_review:\n  path: declared-review.csv\n",
+        "a: 1\n!foo [", strrep("k", key_length), "]: 2\n"
+      )
+      expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+      writeLines(text, sidecar)
+      targets <- c(file.path(path, "metadata", "declared-vocabulary.csv"),
+                   file.path(path, "declared-review.csv"))
+      if (sentinel) for (target in targets) writeLines("ORIGINAL-SENTINEL", target)
+      before <- readBin(sidecar, "raw", n = file.info(sidecar)$size)
+      target_bytes <- if (sentinel) lapply(targets, function(target) {
+        readBin(target, "raw", n = file.info(target)$size)
+      }) else NULL
+      result <- tryCatch(write_sdp_semantic_closure(
+        path, evidence = closure_reviewed_evidence(),
+        search_fn = closure_search_stub(), quiet = TRUE
+      ), error = identity)
+      expect_s3_class(result, "metasalmon_eml_mapping_tag")
+      expect_identical(readBin(sidecar, "raw", n = file.info(sidecar)$size), before)
+      if (sentinel) {
+        for (i in seq_along(targets)) expect_identical(
+          readBin(targets[[i]], "raw", n = file.info(targets[[i]])$size),
+          target_bytes[[i]]
+        )
+      } else {
+        expect_false(any(file.exists(targets)))
+      }
+    }
+  }
+})

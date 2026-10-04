@@ -278,3 +278,45 @@ test_that("probe overflow preserves original malformed-key fallback", {
   writeLines(text, sidecar)
   expect_error(.ms_closure_mapping_paths(sidecar), "unsupported YAML tag")
 })
+
+test_that("required flow-sequence keys retain native unknown-tag refusal", {
+  sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+  for (key_length in c(10L, 1000L)) {
+    key <- strrep("k", key_length)
+    text <- paste0("a: 1\n!foo [", key, "]: 2\n")
+    # Native reach control: the 1000-character collection key is valid before
+    # the disposable tag prefix moves the scanner's problem mark inside it.
+    expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+    expect_true(.ms_eml_mapping_has_unknown_tag(text))
+    writeLines(text, sidecar)
+    expect_error(.ms_eml_read_mapping_yaml(sidecar), "unsupported YAML tag")
+
+    for (accepted in c(paste0("!!seq [", key, "]"),
+                       paste0('["!foo ', key, '"]'))) {
+      text <- paste0("a: 1\n", accepted, ": 2\n")
+      expected <- yaml::yaml.load(text, eval.expr = FALSE)
+      expect_false(.ms_eml_mapping_has_unknown_tag(text))
+      writeLines(text, sidecar)
+      expect_identical(.ms_eml_read_mapping_yaml(sidecar), expected)
+    }
+  }
+
+  # A literal collection key can overflow in the disposable probe as well.
+  # Passing that key must still let native parsing reach the later real tag.
+  text <- paste0('a: 1\n["!foo ', strrep("k", 1000L), '"]: 2\n',
+                 "next: !foo value\n")
+  expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+  writeLines(text, sidecar)
+  expect_error(.ms_eml_read_mapping_yaml(sidecar), "unsupported YAML tag")
+})
+
+test_that("original malformed sequence keys retain ordinary fallback", {
+  text <- paste0("a: 1\n[", strrep("k", 1100L), "]: 2\nnext: !foo value\n")
+  expect_error(yaml::yaml.load(text, eval.expr = FALSE), "while scanning a simple key")
+  expect_false(.ms_eml_mapping_has_unknown_tag(text))
+  sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+  writeLines(text, sidecar)
+  expect_identical(.ms_closure_mapping_paths(sidecar),
+                   list(vocabulary = "metadata/semantic_vocabulary.csv",
+                        review = "reviewed_semantic_selections.csv"))
+})
