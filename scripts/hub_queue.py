@@ -27,10 +27,10 @@ scope exceeds its real scope is worse than no guard:
   * It cannot tell whether an item's *content* is true. It checks that the queue
     is well formed, internally consistent, and that the prose agrees with it.
     An item can be perfectly valid and describe work that finished last week.
-  * It does not check prose outside the generated markers. A hand-written
-    sentence restating a state fact is exactly the defect being migrated away
-    from, and this program cannot see it. Only moving the sentence inside
-    markers puts it under the check.
+  * Its hand-written prose check recognizes only complete paragraph/list-start
+    assertions of a known item's state, claimable flag or blocked_by set, in
+    the grammar declared in queue/README.md. It is not a general language or
+    history detector. Generated markers still have a separate freshness check.
 
 RETIRES WHEN
 ------------
@@ -242,7 +242,9 @@ DEFAULT_QUEUE_DIR = "queue/items"
 # Where `render` and `check` look for generated blocks. Kept as an explicit list
 # rather than a whole-repo walk so the set of files under the freshness check is
 # something a reader can enumerate.
-DEFAULT_PROSE_ROOTS = ("HUB.md", "AGENTS.md", "README.md", "knowledge")
+DEFAULT_PROSE_ROOTS = (
+    "HUB.md", "AGENTS.md", "README.md", "knowledge", "NEWS.md", "notes/evidence/theme-a"
+)
 
 # Directories never scanned for markers: `docs/` is pkgdown output, and the
 # queue itself is the source rather than a restatement of it.
@@ -2216,6 +2218,69 @@ def port_passage_facts(lines, spans, anchors):
     return named, records
 
 
+PORT_PAIR_EXEMPTIONS = {
+    "B-179": {
+        "present": PORT_ROADMAP_FILE,
+        "absent": PORT_REGISTER_FILE,
+        "reason": "The sidecar divergence and its landing are recorded in register row 53, outside the port section.",
+        "retires_when": "B-179 is also named in the register's port section, or that row is moved into the port section.",
+    },
+}
+
+
+def validate_port_pair_presence(root: Path, items: list[Item]) -> list[Problem]:
+    """B-396: a dependency-linked mirror port named in one passage needs both.
+
+    The existing record validator diagnoses missing files/sections; this check
+    compares names only after both passages can be read. Neither landing truth
+    nor dependency-free port classification is its subject (the latter is
+    B-394). No title/prose phrase classification is introduced.
+
+    RETIRES WHEN both passages render their port inventory from the same
+    structured source, and the rendering check proves they contain that source.
+    Every exception records its direction, reason and retirement above.
+    """
+    by_id = {item.id: item for item in items}
+    anchors = {item.id for item in items if item.raw.get("repo") == MIRROR_REPO}
+    ports = {
+        item_id for item_id in anchors
+        if isinstance(by_id[item_id].raw.get("blocked_by"), list)
+        and any(blocker in by_id and by_id[blocker].raw.get("repo") == MIRRORED_REPO
+                for blocker in by_id[item_id].raw["blocked_by"])
+    }
+    if not ports:
+        return []
+    names = {}
+    for display in (PORT_REGISTER_FILE, PORT_ROADMAP_FILE):
+        path = root / display
+        if not path.is_file():
+            return []  # validate_port_records emits port-passage-missing.
+        lines = path.read_text(encoding="utf-8").splitlines()
+        spans = port_passage_spans(display, lines)
+        if not spans:
+            return []  # The same existing missing-passage diagnostic applies.
+        names[display], _ = port_passage_facts(lines, spans, anchors)
+
+    problems = []
+    for item_id in sorted(ports):
+        present = [display for display in names if item_id in names[display]]
+        if len(present) != 1:
+            continue
+        source = present[0]
+        missing = next(display for display in names if display != source)
+        exemption = PORT_PAIR_EXEMPTIONS.get(item_id, {})
+        if (exemption.get("present") == source and exemption.get("absent") == missing
+                and exemption.get("reason", "").strip() and exemption.get("retires_when", "").strip()):
+            continue
+        problems.append(Problem(
+            source, names[source][item_id][0], "port-pair-missing",
+            f"{item_id} is a mirror port named here but not in {missing}'s mirror debt passage. "
+            "Record it in both passages in the same change, or give the intentional "
+            "exception a scoped reason and retirement in PORT_PAIR_EXEMPTIONS",
+        ))
+    return problems
+
+
 def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
     """A port the queue calls done must not still read as owed. Hub item B-202.
 
@@ -2239,17 +2304,14 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * a landed record with no owner is refused (`port-landed-orphan`),
         because nothing can check it against the queue.
 
-    WHAT A PORT IS comes from the queue, not from the prose: an item whose
-    `repo` is metasalmonpy and whose `blocked_by` names a metasalmon item, which
-    is how every port the two passages list as a debt was filed, measured
-    2026-09-25 -- the mirror half, blocked by the R half it copies. That keeps the rule to the ids the passages name as the
-    debt itself. The ids they name as blockers or R halves (B-49, B-112, B-115,
-    B-116) are metasalmon items, and B-126 and B-153, the closed 0.4.0->0.5.0
-    window's two halves, have no metasalmon blocker, so none of them is read as
-    owing a record. Reading the role from the prose instead would mean a phrase
-    list ("Queued as", "its metasalmonpy queue item is", "its half is", ...)
-    that the next entry's wording escapes silently; the queue already records
-    which id in a pair is the debt.
+    WHAT A PORT IS: a queue item whose `repo` is metasalmonpy and which either
+    names a metasalmon blocker or is named in either debt passage. B-394 found
+    B-234 was filed with an empty `blocked_by`, so the dependency-only rule
+    silently stopped checking it. Dependency fields record sequencing, not
+    whether a passage owes a landing record. Read ids and queue repositories;
+    do not guess the role from phrases in the title or surrounding prose.
+    Blockers and R halves remain excluded by their repository. Historical
+    mirror ports mentioned in these passages also need their landed records.
 
     WHAT A LANDED RECORD IS: `LANDED_RECORD_RE`, written after the port's own id
     in the same paragraph. In the register that is the closure paragraph the
@@ -2263,9 +2325,8 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * whether the record is TRUE. It catches the shape, as
         `check-parity-registers.py` does, not the substance: a closure paragraph
         naming the wrong pull request, sha or date passes.
-      * whether a port named in one passage is named in the other. Each passage
-        is checked for what it says; one that never mentions a port cannot be
-        stale about it.
+      * whether a port named in one passage is named in the other. B-396's
+        validate_port_pair_presence checks that independently.
       * the ORDER of a record and its port's mentions. Any record for a port
         counts for every mention of it in the passage, and a file's matching
         sections are read as one passage, so a debt paragraph written below its
@@ -2277,18 +2338,16 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * a debt the passage describes without naming its item's id. The rule
         reads ids, so an entry that says "it is owed there as a port" and names
         nothing is invisible to it.
-      * mirror work that is not a port by the queue's test: an item with no
-        metasalmon blocker, such as B-201 or B-189, and an R-side follow-up such
-        as B-177. A landed record credited to one of them is still refused while
-        its item is not done; only the "done without a record" direction needs
-        the item to be a port.
+      * mirror work with no metasalmon blocker that neither passage names.
+        Neither passage makes a claim about that item, so there is nothing
+        to check. R-side follow-ups remain outside the mirror-port rule.
       * queue state that is itself wrong. The queue is the authority here, so
         an item left in `review` after its pull request merged reads as owed
         and passes.
 
-    It runs only when the queue holds a port, so the unit-test fixtures, which
-    hold none, need no register. When one exists, a missing file or a passage
-    that cannot be found is `port-passage-missing` rather than a skip.
+    A queue with no dependency-linked port and no mirror id in either passage
+    needs no register. Otherwise both passages are required; a missing file
+    or section is `port-passage-missing`, never a silent skip.
 
     RETIRES WHEN: a port's landed record stops being hand-written prose -- for
     instance when the item records its pull request and both passages render
@@ -2305,6 +2364,19 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
         halves = [b for b in blocked_by if b in by_id and by_id[b].raw.get("repo") == MIRRORED_REPO]
         if halves:
             ports[item_id] = halves
+    # Discover named mirror ports before deciding whether these passages are
+    # required. The same parsed facts then drive validation below. An unrelated
+    # fixture with no port still needs no documentation scaffold.
+    passages = {}
+    for display in (PORT_REGISTER_FILE, PORT_ROADMAP_FILE):
+        path = root / display
+        if path.is_file():
+            lines = path.read_text(encoding="utf-8").splitlines()
+            spans = port_passage_spans(display, lines)
+            named, records = port_passage_facts(lines, spans, anchors)
+            passages[display] = (spans, named, records)
+            for item_id in named.keys() & anchors:
+                ports.setdefault(item_id, [])
     if not ports:
         return []
 
@@ -2328,8 +2400,7 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                 )
             )
             continue
-        lines = path.read_text(encoding="utf-8").splitlines()
-        spans = port_passage_spans(display, lines)
+        spans, named, records = passages[display]
         if not spans:
             problems.append(
                 Problem(
@@ -2344,7 +2415,6 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                 )
             )
             continue
-        named, records = port_passage_facts(lines, spans, anchors)
         owned = {owner for owner, _, _ in records if owner is not None}
         for item_id, mentions in named.items():
             if item_id in ports and by_id[item_id].state == "done" and item_id not in owned:
@@ -2353,8 +2423,10 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                         display,
                         mentions[0],
                         "port-landed-unrecorded",
-                        f"{item_id} is a port (the {MIRROR_REPO} half of "
-                        f"{', '.join(ports[item_id])}) and its item is done, but this "
+                        f"{item_id} is a {MIRROR_REPO} port"
+                        + (f" (the {MIRROR_REPO} half of {', '.join(ports[item_id])})"
+                           if ports[item_id] else " named in the mirror debt passages")
+                        + " and its item is done, but this "
                         "passage has no landed record for it, so it still reads as "
                         f"owed (it is named at line(s) {', '.join(map(str, mentions))}). "
                         "Add one after the id, in the same paragraph: "
@@ -2394,6 +2466,88 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
 # --------------------------------------------------------------------------
 # Prose files
 # --------------------------------------------------------------------------
+
+_PROSE_LIST_MARKER = r"(?:[-*+]|\d+[.)])[ \t]+"
+_PROSE_DECORATION = r"(?:\*\*|`)?"
+_PROSE_STATE = _PROSE_DECORATION + "(?:" + "|".join(map(re.escape, STATES)) + r")\b" + _PROSE_DECORATION
+_PROSE_ID = _PROSE_DECORATION + r"[BSQ]-\d+\b" + _PROSE_DECORATION
+# Headings and thematic breaks end a Markdown block without requiring a
+# blank line. Keep this bounded syntax separate from historical line wraps.
+_PROSE_BLOCK_END_PATTERN = (
+    r"^ {0,3}(?:#{1,6}(?:[ \t]+|$).*|(?:=+|-+)[ \t]*"
+    r"|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})\r?$"
+)
+_PROSE_BLOCK_END_RE = re.compile(_PROSE_BLOCK_END_PATTERN)
+QUEUE_FACT_SENTENCE_RE = re.compile(
+    r"^[ \t]*(?:" + _PROSE_LIST_MARKER + r")?" + _PROSE_DECORATION + r"(?P<id>[BSQ]-\d+)"
+    + _PROSE_DECORATION + r"\s+(?:"
+    + r"(?:is\s+(?:currently\s+)?|currently\s+is\s+)(?:"
+    + _PROSE_STATE + "|" + _PROSE_DECORATION + r"(?:not\s+)?claimable\b" + _PROSE_DECORATION
+    + r"|blocked\s+(?:on|by)\s+" + _PROSE_ID
+    + r"(?:\s*(?:,\s*(?:and\s+)?|and\s+)" + _PROSE_ID + r")*)"
+    + r"|has\s+(?:" + _PROSE_DECORATION + r"state" + _PROSE_DECORATION + r"\s*:\s*" + _PROSE_STATE
+    + "|" + _PROSE_DECORATION + r"claimable" + _PROSE_DECORATION + r"\s*:\s*"
+    + _PROSE_DECORATION + r"(?:true|false)\b" + _PROSE_DECORATION
+    + "|" + _PROSE_DECORATION + r"blocked_by" + _PROSE_DECORATION + r"\s*:\s*\[[^\]\n]*\]))"
+    + r"(?=[ \t]*(?:[.!]|\Z|\r?\n(?:[ \t]*\r?\n|[ \t]*" + _PROSE_LIST_MARKER
+    + "|" + _PROSE_BLOCK_END_PATTERN + r"|\Z)))",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+
+def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem]:
+    """B-209's limited grammar, declared first in queue/README.md.
+
+    Only paragraph/list starts asserting known item state, claimable
+    or blocked_by are recognized. No general natural-language scope is claimed.
+    Generated blocks retain their existing freshness check; fenced examples
+    describe syntax rather than current planning state. No per-file exemption.
+    RETIRES WHEN downstream prose no longer owns queue facts, or a structured
+    successor renderer makes this syntax guard unnecessary.
+    """
+    known = {item.id for item in items}
+    problems = []
+    for path in find_prose_files(root, DEFAULT_PROSE_ROOTS):
+        text = path.read_text(encoding="utf-8")
+        text = BLOCK_RE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+        fence = None
+        visible = []
+        for line in text.splitlines(keepends=True):
+            marker = MARKDOWN_FENCE_RE.match(line.rstrip("\r\n"))
+            if fence is not None:
+                if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= fence[1] \
+                        and not marker.group(2).strip():
+                    fence = None
+                visible.append("\n" if line.endswith("\n") else "")
+            elif marker and not (marker.group(1)[0] == "`" and "`" in marker.group(2)):
+                fence = (marker.group(1)[0], len(marker.group(1)))
+                visible.append("\n" if line.endswith("\n") else "")
+            else:
+                visible.append(line)
+        prose = "".join(visible)
+        # A wrapped historical sentence can begin its SECOND line with an id
+        # (backlog.md's export-of-349a443 example). A physical line is not a
+        # standalone assertion. Restrict reach to paragraph/list starts.
+        starts, offset, at_start = set(), 0, True
+        for line in prose.splitlines(keepends=True):
+            if at_start or re.match(r"^[ \t]*" + _PROSE_LIST_MARKER, line):
+                starts.add(offset)
+            at_start = not line.strip() or bool(_PROSE_BLOCK_END_RE.match(line.rstrip("\r\n")))
+            offset += len(line)
+        for match in QUEUE_FACT_SENTENCE_RE.finditer(prose):
+            line_start = prose.rfind("\n", 0, match.start("id")) + 1
+            if line_start not in starts:
+                continue
+            item_id = match.group("id").upper()
+            if item_id in known:
+                problems.append(Problem(
+                    relative(path, root), prose.count("\n", 0, match.start("id")) + 1,
+                    "queue-fact-in-prose",
+                    f"{item_id} has a standalone current queue assertion here. "
+                    "Link to its item or use the existing generated item block; "
+                    "the item owns state, claimable and blocked_by, even when this copy agrees today",
+                ))
+    return problems
 
 
 def find_prose_files(root: Path, roots: tuple[str, ...]) -> list[Path]:
@@ -2455,6 +2609,8 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_solo(root)
         + validate_workpads(root, items)
         + validate_port_records(root, items)
+        + validate_queue_facts_in_prose(root, items)
+        + validate_port_pair_presence(root, items)
     )
 
     baseline: int | None = None

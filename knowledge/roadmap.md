@@ -269,18 +269,19 @@ Ordering that is not optional, independent of who is executing:
   agreeing about *which file was wrong* and all four being wrong about it, which
   no check that "the three numbers match" can catch. **Read the three files, not
   a description of them**, this bullet included.
-- **gcdfo is carved out for the gold standard, and for nothing else** (Brett,
+- **gcdfo is carved out for what the gold standard demonstrably needs** (Brett,
   2026-08-24, hub [Q5](questions.md)): *"Carve out what the gold standard
-  needs."* The carve-out is currently **one item — PFMA subareas** for the
-  173-row example's `AREA` column (`29F`, `29G`, `29J`, `29K`), which
-  [Q8](questions.md) sends to gcdfo because it already owns
-  `gcdfo:PacificFisheryManagementAreaScheme`. Everything else in gcdfo stays
-  de-prioritised and `psc-salmon-vocabularies` stays fully de-prioritised.
-  Species goes to an external taxonomy, not to gcdfo. **Still to decide, and it
-  is a scope question rather than a priority one:** whether the mint is the four
-  Subareas the example holds or all 604 in SOR/2007-77 Schedule 2 — owner
-  [S12](sequences/s12-fraser-coho-gold-standard.md), routed through
-  [S9 step 7](sequences/s9-ontology-alignment.md).
+  needs."* The former example, PFMA Subareas for the 173-row extract's `AREA`
+  values `29F`, `29G`, `29J` and `29K`, was based on a wrong reading: the
+  [NuSEDS dictionary](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Data_Dictionary_NuSEDS_EN.csv)
+  and [map](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Map%20of%20Areas.pdf)
+  identify those as DFO sub-districts. [Q8](questions.md) still sends actual
+  PFMA Subareas to `gcdfo`; it does not bind this column to them. Whether the
+  gold standard needs a sub-district term from `gcdfo`, and on what authority,
+  remains open in the [commons gap card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/main/concepts/nuseds-area-is-a-subdistrict.md)
+  and [S12](sequences/s12-fraser-coho-gold-standard.md). Other `gcdfo` work
+  remains de-prioritised, `psc-salmon-vocabularies` stays fully de-prioritised,
+  and species goes to an external taxonomy.
 - **The model call leaves the packages in two releases, additive first**
   (Brett, 2026-09-25, hub [Q67](questions.md)). The exporter and ingester land
   in both packages in one train, with the in-package model call deprecated and
@@ -376,6 +377,21 @@ port had landed there and been documented (B-126, then B-153).
 
 ### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tagged `v0.5.0` 2026-09-24)
 
+**Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
+pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
+its R half `B-342` landed in metasalmon pull request **#257**, merged as
+`c09a76bc7a0469d0d69025f940b7a3c4e86cdd00`. Both implement Q63's existing
+absolute-IRI shape in dictionary semantic fields and table IRI fields, with
+the supported constraint-list representation preserved. No new numbered
+parity row or term selection was made.
+
+**SSSOM tag-refusal port landed, 2026-10-01.** `B-353` landed as metasalmonpy
+pull request **#88**, merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`;
+its R half `B-352` landed in metasalmon pull request **#255**, merged as
+`13460ed0484b10082b89c4dec33820d70386ddac`. Both readers now refuse tagged
+metadata under Q62 while retaining literal bang text. This is the existing
+ruled port; no new numbered parity row is owed.
+
 > **The number is now true, and it is the first time in this stream that it has
 > been.** S10's implementation completed 2026-08-22 — all eight chunks A–H
 > merged — but every chunk landed *unversioned* because what number the finished
@@ -411,6 +427,11 @@ port had landed there and been documented (B-126, then B-153).
 > can do, so a surface nobody can find is not delivered. **The next window that
 > ships a workflow should be split the same way from the start**, rather than
 > discovering the documentation half after the behaviour has merged.
+
+**Landed records for the window halves:** `B-126` **landed 2026-09-16 as
+metasalmonpy #28**, `d471dd0`; `B-153` **landed 2026-09-16 as metasalmonpy
+#33**, `67fb486`. These are the two existing merged changes described above,
+recorded in the same form as later port landings.
 
 | Version | Date | One line |
 |---|---|---|
@@ -547,6 +568,14 @@ preserved prefill provenance through assessment ingestion. The specification
 and regression are in backlog #120 and `test-review-console.R`; this is port
 debt, not a new parity-register row. Versions remain unchanged.
 
+**B-256 restores R's existing GitHub error remedies (2026-09-30).** No Python
+port is owed: on metasalmonpy `main` at `e81cacd`,
+[`read_github_csv()`](https://github.com/salmon-data-mobilization/metasalmonpy/blob/e81cacd7670b65da74abf87504a2ea1dd7c7498b/github_io.py#L63-L85)
+already handles 401/403/404 before `raise_for_status()`, and its request helper
+returns those responses. R now lets those statuses reach its existing PAT,
+SSO and missing-path guidance. No version or intentional parity difference
+changes.
+
 *(The count is gone from this passage on purpose, as of 2026-09-16, and from its
 lead as of 2026-09-23, when "Four more debts" was still standing over five ids,
 beside a clause calling B-165 "the only one of the four" whose entry belongs
@@ -614,6 +643,21 @@ metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
 2026-09-25 as metasalmonpy #46**, `2405df2`.
+
+**The recorded-accept marker also owes a separate mirror port:** a caller's
+retrieval candidate with `source = "user"` must remain ontology-gap evidence;
+only an accept actually recorded by `apply_sdp_semantics()` is hand-picked.
+The R/Python pair is **B-249** and **B-250**, specified in the corresponding
+port passage of [`parity-deviations.md`](parity-deviations.md). The two current
+implementations key the exclusion the same way; this is an owed port, with
+no deliberate difference to register.
+
+**The REVIEW-marker ruling owes the Python widening too:** strict validation,
+the EDH gate and `review_metadata()` must cover the same four metadata files.
+Brett's 2026-09-23 ruling is recorded under **B-177**; its mirror port is
+**B-230**. The register's port passage specifies the same widening and explains
+why it is a port rather than a numbered difference. No ontology term choice
+or new ruling is made here.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
@@ -715,7 +759,8 @@ one branch in one repository. Its metasalmonpy half is `B-247`, which **landed
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
 an IRI.** Hub item **B-211** keeps one gap row per field, as metasalmonpy's
-**B-212** already did, and counts the footer's IRI gaps by field rather than by
+**B-212** (which **landed 2026-09-25 as metasalmonpy #49**, `25dc7f3`)
+already did, and counts the footer's IRI gaps by field rather than by
 reason. So an IRI field holding a placeholder still counts, and the
 `review_semantics()` pointer still prints. metasalmonpy's footer still counts
 by reason, measured on `main` `25dc7f3`, so the fix is owed there as a port,
@@ -777,7 +822,13 @@ and that no reviewer ever selected a code-resolved procedure. It is owed there
 as a documentation port, not a register row, and is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its
-metasalmonpy queue item is `B-261`.
+metasalmonpy queue item is `B-261`, whose guide port was under review in
+metasalmonpy pull request 79 on 2026-09-30 and landed as `9304851` on
+2026-10-01. B-262's check on 2026-09-30 of Python `main`
+`e81cacd` also found the same reviewer gloss in `semantic_closure.py`'s header
+and target-context comments. Those two comment corrections remain owed:
+pull request 79 changed the guide only, and its handed-off claim is not
+extended by this R documentation change.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
@@ -790,6 +841,28 @@ the mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-264`; the test twin **landed 2026-10-01 as metasalmonpy #81**, merge
 `430b568`, without a runtime change.
+
+**The development version after 0.5.0 adds a closure-address port to what the
+mirror is owed (2026-09-30).** Hub item **B-265** makes R's gap and
+incomplete-evidence rows for a code-resolved procedure name each carrying
+`codes.csv` `term_iri` row, including two code rows that share one IRI. The
+Python producer at main `d68383c` named nonexistent `codes.csv` `method_iri`.
+The matching change is a port, not a register row, and is specified under *What
+metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
+same stream:** a hub claim covers one branch in one repository. The Python
+half is `B-266`, which **landed 2026-10-03 as metasalmonpy #96**, merge
+`552bfa2`, with every carrying code address and the RED/GREEN test twins.
+
+**The development version after 0.5.0 adds a NuSEDS `AREA` description port to
+what the mirror is owed (2026-10-01).** Hub item **B-401** corrects both
+metasalmon example dictionaries: NuSEDS defines `AREA` as a DFO sub-district,
+not a PFMA Area. metasalmonpy's bundled copy at main `552bfa2` had the former
+description; this was an owed port, not a chosen difference or register row, specified under
+*What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in
+the same stream:** a hub claim covers one branch in one repository. The Python
+half is `B-402`, which **landed 2026-10-03 as metasalmonpy #97**, merge
+`24b6472`, with its two corrected AREA cells matching R. `B-403` owns the
+separate `smn-data-pkg` example.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.**
@@ -900,7 +973,9 @@ because none of its readers can. Measured 2026-09-23 against its `main` at
 - both rules reads go through `_rules_scalars()`, a regular-expression scan
   with no YAML library (`sdp_schema.py:383` and `:406`);
 - the SSSOM header goes through `_parse_yaml_subset()` (`sssom.py:456`), which
-  B-189 is to pin.
+  `B-189` **landed 2026-09-25 as metasalmonpy #51**, `012d04b`, pinning that
+  the reader never evaluates the tag. This landing updates the follow-up status
+  of the dated 2026-09-23 observation above.
 
 With PyYAML 6.0.1 an `!expr` tag raises `ConstructorError` from both loaders,
 and nothing runs.
@@ -916,6 +991,15 @@ and Brett ruled it on 2026-09-25: refuse on every path, recorded in
 **queue item `B-223`, separate from B-142**, which neither introduced the
 difference nor changes it, and the closure path's refusal is `B-340` in this
 package and `B-341` in metasalmonpy.
+
+**Q62 closure port completion.** [B-429](../queue/items/B-429.yaml)
+covers the undefined YAML tag handle found after B-341 merged. For
+`path: !e!foo value`, Python falls back to default closure paths while R's
+B-340 reader refuses; [the dated reproduction](backlog.md) records the
+native parser boundary. Complete this Python port after B-340's shared reader
+lands, in the same stream, preserving unrelated malformed/nonmapping fallback.
+This implements [Brett's Q62 ruling](questions.md) without a new deliberate
+parity difference or numbered register row; the queue item owns retirement.
 
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
@@ -1677,6 +1761,12 @@ sequence from them.
 ---
 
 ## Process notes worth keeping
+
+**B-430's named site builds are repository tooling.** The optional article and
+reference selectors operate on R's pkgdown sources and committed site; they
+change no package behavior, semantic fixture or release number. There is no
+Python package port or new parity ruling. Python's Quarto site already supports
+rendering one guide, used for the B-279 guide verification in metasalmonpy #98.
 
 **A green suite was not the signal it looked like.** Three 0.2.0 findings were
 invisible to 21k lines of tests because the suite pinned the vendored schema,

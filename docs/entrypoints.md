@@ -9,6 +9,13 @@ Short map of the package's public starts and their canonical implementations.
   inventory and generated help live in `R/configuration.R`
 - Main workflow: `create_sdp()` -> infer artifacts -> seed semantics -> write SDP
 - Review workflow: `read_salmon_datapackage()` -> validate/edit -> rebuild EDH XML
+- R review walkthrough: `vignettes/semantic-review.Rmd`, linked from the
+  quickstart and pkgdown Guides index; queue decisions and the four setters.
+- Commons gap intake: `detect_semantic_term_gaps(commons_gaps = "gaps.json")`
+  -> `render_ontology_term_request(ask = FALSE)` ->
+  `submit_term_request_issues(dry_run = TRUE)`; reader and source-based holds
+  live in `R/commons-term-gaps.R`. Export and preview instructions are in
+  `vignettes/post-review-package-publication.Rmd`.
 - Reviewed suggestion merge: `apply_semantic_suggestions()`; `"reviewed"`
   applies accepted review decisions, `"llm"` applies accepted LLM selections
   (an `llm_selected` row with `llm_decision == "accept"`), and both preserve
@@ -49,12 +56,21 @@ Short map of the package's public starts and their canonical implementations.
 - Package: `R CMD build .`
 - Site: `Rscript scripts/build-pkgdown.R` (full rebuild, then removes non-public
   agent guidance from the generated sitemap)
+- Existing pages only: `Rscript scripts/build-pkgdown.R --article=glossary --reference=semantic_suggestions`.
+  Use vignette stems and canonical Rd topic names; repeat either selector for
+  multiple pages. Selected pages, their Markdown companions and search are
+  rebuilt under the recorded toolchain. Use a full build for new pages,
+  navigation or site configuration changes, including article title changes
+  that alter menu labels on other pages.
+- NEWS only: `Rscript scripts/build-pkgdown.R --news-only`.
 
 ## Test
 
 - Full suite: `Rscript -e 'devtools::test()'`
 - Release check: `R CMD check metasalmon_<version>.tar.gz`
 - Fast package smoke: `Rscript -e 'pkgload::load_all(quiet = TRUE); testthat::test_file("tests/testthat/test-package-helpers.R", reporter = "summary")'`
+- Site builder fixture: `Rscript scripts/tests/test_build_pkgdown_targets.R`
+  (disposable package; exercises selected pages, search, Markdown and guards).
 
 ## Public Wiring
 

@@ -104,6 +104,61 @@
   unique(queries)
 }
 
+# The code points Python's `str.isspace()` accepts, which are what
+# `str.strip()` removes: 29, listed under Python 3.13.11 (Unicode 15.1), and the
+# same for every Python metasalmonpy supports, because U+180E, the last one to
+# move, left Unicode's whitespace category in 6.3. `trimws()` removes four of
+# them by default. A PCRE class cannot stand in for the list: R compiles a
+# pattern for ASCII-only input in byte mode, where any code point above 255 is
+# a compilation error.
+.ms_python_whitespace_code_points <- c(
+  0x09:0x0D, 0x1C:0x20, 0x85, 0xA0, 0x1680, 0x2000:0x200A,
+  0x2028, 0x2029, 0x202F, 0x205F, 0x3000
+)
+
+# Trims from both ends of each string what Python's `str.strip()` would. A
+# string that is not valid UTF-8 comes back as given: Python cannot hold one,
+# so there is nothing to mirror, and it names no source either way.
+.ms_strip_python_whitespace <- function(x) {
+  vapply(x, function(value) {
+    if (is.na(value) || identical(Encoding(value), "bytes")) {
+      return(value)
+    }
+    # Only a string declared latin1 is converted. `enc2utf8()` on a string of
+    # unknown encoding in a non-UTF-8 locale writes each non-ASCII byte out as
+    # the text "<xx>", which turned a no-break space into eight characters
+    # under `LC_ALL=C` rather than removing it.
+    utf8 <- if (identical(Encoding(value), "latin1")) enc2utf8(value) else value
+    if (!validUTF8(utf8)) {
+      return(value)
+    }
+    points <- utf8ToInt(utf8)
+    kept <- which(!points %in% .ms_python_whitespace_code_points)
+    if (length(kept) == 0L) {
+      return("")
+    }
+    intToUtf8(points[kept[[1L]]:kept[[length(kept)]]])
+  }, character(1), USE.NAMES = FALSE)
+}
+
+# A source list the caller named: each name trimmed as Python's `str.strip()`
+# trims it and lower-cased, a name that is missing or empty
+# after trimming dropped, and a repeat dropped after its first appearance, in
+# the caller's order (hub B-421). It used to be passed on as given, so a source
+# named in capitals was searched in Python and silently not here. Unicode
+# lower-casing uses an explicit locale so that ambient LC_CTYPE cannot change
+# a recognized source or the allowlist recorded in a review packet. The shared
+# Unicode test corpus also covers dotted I and context-sensitive final sigma;
+# this does not promise identical mappings across different Unicode versions.
+# metasalmonpy still needs the missing-entry
+# port: its released reader can turn `None` into a source called "none".
+.ms_normalize_explicit_sources <- function(sources) {
+  names <- .ms_strip_python_whitespace(as.character(unlist(sources, use.names = FALSE)))
+  foldable <- !is.na(names) & validUTF8(names)
+  names[foldable] <- stringi::stri_trans_tolower(names[foldable], locale = "en")
+  unique(names[!is.na(names) & nzchar(names)])
+}
+
 #' Find candidate terms across external vocabularies
 #'
 #' Lightweight meta-search helper for IRIs. Uses public APIs when available.
@@ -137,12 +192,21 @@
 #' @param query Character search string (e.g., `"spawner count"`, `"temperature"`).
 #' @param role Optional I-ADOPT role hint for ranking and source selection. One of:
 #'   `"variable"` (compound term), `"property"` (characteristic),
-#'   `"entity"` (thing measured), `"constraint"` (qualifier), `"method"`, or `"unit"`.
-#'   When specified, sources are optimized for the role and results are ranked higher
-#'   when they match preferred ontologies for that role.
-#' @param sources Character vector of vocabulary sources to query. Options:
-#'   `"smn"`, `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
-#'   Default is `c("smn", "gcdfo", "ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
+#'   `"entity"` (thing measured), `"constraint"` (qualifier),
+#'   `"statistical_modifier"`, `"method"`, or `"unit"`. Results are ranked
+#'   higher when they match preferred ontologies for the role, and when
+#'   `sources` is `NULL` the role also chooses which sources are searched.
+#' @param sources Character vector of vocabulary sources to query, or `NULL`
+#'   (the default) to query the sources [sources_for_role()] names for `role`;
+#'   with no role, that is `c("smn", "gcdfo", "ols", "nvs")`. Options:
+#'   `"smn"`, `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`,
+#'   `"worms"`, `"bioportal"`. A vector you supply is a strict allowlist, read
+#'   consistently by this package: each name is trimmed and Unicode lower-cased
+#'   independently of the session locale, a missing
+#'   or empty name is dropped, and a repeated name is dropped after its first
+#'   appearance, so `"SMN"` and `" smn "` both search smn. A name that is none
+#'   of the options searches nothing, and an empty vector returns an empty
+#'   tibble.
 #' @param expand_query Logical. If `TRUE` (default), applies role-aware query expansion
 #'   (Phase 4) to generate additional query variants based on the role context.
 #'   For example, unit queries get abbreviation expansions, method queries get
@@ -177,8 +241,9 @@
 #' # Search specifically for property terms
 #' property_terms <- find_terms("temperature", role = "property")
 #'
-#' # Search for units with QUDT preference
-#' unit_terms <- find_terms("kilogram", role = "unit", sources = sources_for_role("unit"))
+#' # Search for units: with no sources named, the unit role searches
+#' # sources_for_role("unit"), which puts QUDT first
+#' unit_terms <- find_terms("kilogram", role = "unit")
 #'
 #' # Search for taxa using taxon resolvers
 #' taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms"))
@@ -191,8 +256,19 @@
 #' }
 find_terms <- function(query,
                        role = NA_character_,
-                       sources = c("smn", "gcdfo", "ols", "nvs"),
+                       sources = NULL,
                        expand_query = TRUE) {
+  # An omitted source list is the role's, as it is in metasalmonpy's
+  # `find_terms()` and as `suggest_semantics()` already resolved it here (hub
+  # B-420; Q70, ruled by Brett on 2026-09-26: R moves). With no role that is the
+  # four sources this argument used to default to, so a call without a role
+  # searches what it always did. A list the caller names is read the way
+  # metasalmonpy reads it (hub B-421).
+  sources <- if (is.null(sources)) {
+    sources_for_role(role)
+  } else {
+    .ms_normalize_explicit_sources(sources)
+  }
   if (length(sources) == 0 || is.na(query) || query == "") {
     return(.empty_terms(role))
   }

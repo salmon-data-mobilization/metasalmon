@@ -1,0 +1,13 @@
+id: B-424
+kind: defect
+title: 'Fix the review-packet defects the B-327 port found on the metasalmon side, before the 0.6.0 tag'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMON, four defects the B-327 port found, and mirrored so the shared fixtures would match, are fixed, each pinned by a test that fails before the fix, and the shared fixtures are regenerated. (1) The ingester counts the propose_new_term alias as a downgrade, because identical() on a named subset never holds, so the row_errors case records five. (2) A code under a measurement column gets constraint, entity and method targets that share one slot id, so the in-memory exporter aborts on a duplicate unit key and the package path keeps only the first role''s shortlist. (3) .ms_warn_pruning_recorded_decisions() returns early when there is no semantic_suggestions.csv, so a review/ record is pruned silently. (4) NEWS says the in-package model call is deprecated "below" but carries no deprecation bullet. B-380, the retry-query identifier check, lands in the same pull request, and the retry_dead_ends fixture README''s identifier-like claim is true after it or is corrected. Merged after metasalmonpy pull request 72 (B-327), with B-425 immediately after, because metasalmonpy''s parity job tests against metasalmon main. Brett, 2026-09-26, in chat: "yes or just fix them now", of the findings metasalmonpy pull request 72 (B-327) reported.'

