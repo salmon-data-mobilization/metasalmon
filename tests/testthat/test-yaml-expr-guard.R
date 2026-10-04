@@ -506,7 +506,9 @@ test_that("the KNB plan builder refuses an !expr tag without evaluating it", {
   # exported dry run. The builder's next step is stopped so that this test sees
   # the builder's own read and no other: that step leads to the inventory and
   # EML export, whose reads are pinned by the two tests above. The stub must
-  # not be reached once the sidecar tag is refused.
+  # not be reached once the sidecar tag is refused. Retires when: nothing after
+  # the builder's read parses YAML, or the read no longer precedes archive
+  # construction.
   probe <- yaml_expr_probe()
   package_path <- make_knb_test_sdp(withr::local_tempdir())
   tag_fixture_sidecar(package_path, probe)

@@ -23,6 +23,7 @@ b223_expr_tag <- function(root) {
 
 test_that("EML export refuses an unknown local tag in its sidecar", {
   # emld is checked before write_eml_from_sdp() reaches this YAML read.
+  # Retires when: emld is a hard dependency, or the read precedes that check.
   skip_if_not_installed("emld")
   package_path <- make_eml_test_sdp(withr::local_tempdir())
   sidecar <- b223_tag_eml_sidecar(package_path, "!unknown X")
@@ -53,6 +54,9 @@ test_that("KNB plan builder refuses a local tag before making an archive", {
   root <- withr::local_tempdir()
   package_path <- make_knb_test_sdp(root)
   sidecar <- b223_tag_eml_sidecar(package_path, "!unknown X")
+  # Isolate the builder's read from later inventory/export YAML readers.
+  # Retires when: none of those later steps reads YAML, or the builder's read
+  # no longer precedes archive construction.
   local_mocked_bindings(
     .ms_knb_write_sdp_archive = function(...) {
       stop(errorCondition(
@@ -93,18 +97,29 @@ b223_sidecar_consumers <- function(package_path) {
 
 b223_file_bytes <- function(path) readBin(path, "raw", n = file.info(path)$size)
 
-test_that("all sidecar consumers refuse tags before changing output bytes", {
-  skip_if_not_installed("emld")
-  withr::local_options(yaml.eval.expr = TRUE)
-  archive_reached <- FALSE
-  local_mocked_bindings(
-    .ms_knb_write_sdp_archive = function(...) {
-      archive_reached <<- TRUE
-      stop(errorCondition("Archive construction was reached.",
-                          class = "b223_archive_reached"))
-    }, .package = "metasalmon"
-  )
-  for (consumer in c("eml", "inventory", "plan")) {
+b223_skip_eml_consumer <- function(consumer) {
+  if (identical(consumer, "eml")) {
+    # Only the EML writer needs emld before this read. Retires when: emld is a
+    # hard dependency, or the read precedes the writer's dependency check.
+    skip_if_not_installed("emld")
+  }
+}
+
+for (consumer in c("eml", "inventory", "plan")) {
+  test_that(paste(consumer, "refuses tags before changing output bytes"), {
+    b223_skip_eml_consumer(consumer)
+    withr::local_options(yaml.eval.expr = TRUE)
+    archive_reached <- FALSE
+    # Keep later YAML reads from hiding a failure of the builder's own read.
+    # Retires when: no later step reads YAML, or this read no longer
+    # precedes archive construction.
+    local_mocked_bindings(
+      .ms_knb_write_sdp_archive = function(...) {
+        archive_reached <<- TRUE
+        stop(errorCondition("Archive construction was reached.",
+                            class = "b223_archive_reached"))
+      }, .package = "metasalmon"
+    )
     for (expression in c(FALSE, TRUE)) {
       for (existing_output in c(FALSE, TRUE)) {
         root <- withr::local_tempdir()
@@ -133,62 +148,70 @@ test_that("all sidecar consumers refuse tags before changing output bytes", {
         }
       }
     }
-  }
-})
+  })
 
-test_that("all sidecar consumers preserve untagged core and literal behavior", {
-  skip_if_not_installed("emld")
-  archive_reached <- FALSE
-  local_mocked_bindings(
-    .ms_knb_write_sdp_archive = function(...) {
-      archive_reached <<- TRUE
-      stop(errorCondition("Archive construction was reached.",
-                          class = "b223_archive_reached"))
-    }, .package = "metasalmon"
-  )
-  accepted <- c(
-    untagged = "Counts were compiled using the documented monitoring workflow.",
-    core = "!!str 'Counts were compiled using the documented monitoring workflow.'",
-    literal = "'!unknown literal text'"
-  )
-  for (tag in accepted) {
-    package_path <- make_knb_test_sdp(withr::local_tempdir())
-    sidecar <- b223_tag_eml_sidecar(package_path, tag)
-    before <- b223_file_bytes(sidecar)
-    calls <- b223_sidecar_consumers(package_path)
-    eml <- suppressMessages(calls$eml())
-    expect_true(file.exists(eml$path))
-    expect_true(isTRUE(eml$validation))
-    if (identical(tag, accepted[["literal"]])) {
-      expect_match(eml$xml, "!unknown literal text", fixed = TRUE)
-    }
-    inventory <- calls$inventory()
-    expect_identical(
-      unname(inventory[["sdp_artifact:metadata/semantic_vocabulary.csv"]]),
-      normalizePath(file.path(package_path, "metadata", "semantic_vocabulary.csv"),
-                    mustWork = TRUE)
-    )
+  test_that(paste(consumer, "preserves untagged core and literal behavior"), {
+    b223_skip_eml_consumer(consumer)
     archive_reached <- FALSE
-    result <- tryCatch(calls$plan(), error = identity)
-    # This positive control establishes the plan's read completed, reaching
-    # the exact next step which must remain unreached for unknown tags.
-    expect_s3_class(result, "b223_archive_reached")
-    expect_true(archive_reached)
-    expect_identical(b223_file_bytes(sidecar), before)
-  }
-})
+    # Stop at the exact next step after the builder's read; later readers must
+    # not establish this positive control. Retires when: no later step reads
+    # YAML, or the builder's read no longer precedes archive construction.
+    local_mocked_bindings(
+      .ms_knb_write_sdp_archive = function(...) {
+        archive_reached <<- TRUE
+        stop(errorCondition("Archive construction was reached.",
+                            class = "b223_archive_reached"))
+      }, .package = "metasalmon"
+    )
+    accepted <- c(
+      untagged = "Counts were compiled using the documented monitoring workflow.",
+      core = "!!str 'Counts were compiled using the documented monitoring workflow.'",
+      literal = "'!unknown literal text'"
+    )
+    for (tag in accepted) {
+      package_path <- make_knb_test_sdp(withr::local_tempdir())
+      sidecar <- b223_tag_eml_sidecar(package_path, tag)
+      before <- b223_file_bytes(sidecar)
+      calls <- b223_sidecar_consumers(package_path)
+      if (identical(consumer, "eml")) {
+        eml <- suppressMessages(calls$eml())
+        expect_true(file.exists(eml$path))
+        expect_true(isTRUE(eml$validation))
+        if (identical(tag, accepted[["literal"]])) {
+          expect_match(eml$xml, "!unknown literal text", fixed = TRUE)
+        }
+      } else if (identical(consumer, "inventory")) {
+        inventory <- calls$inventory()
+        expect_identical(
+          unname(inventory[["sdp_artifact:metadata/semantic_vocabulary.csv"]]),
+          normalizePath(file.path(package_path, "metadata", "semantic_vocabulary.csv"),
+                        mustWork = TRUE)
+        )
+      } else {
+        archive_reached <- FALSE
+        result <- tryCatch(calls$plan(), error = identity)
+        # This positive control establishes the plan's read completed, reaching
+        # the exact next step which must remain unreached for unknown tags.
+        expect_s3_class(result, "b223_archive_reached")
+        expect_true(archive_reached)
+      }
+      expect_identical(b223_file_bytes(sidecar), before)
+    }
+  })
 
-test_that("all sidecar consumers retain ordinary malformed YAML errors", {
-  skip_if_not_installed("emld")
-  archive_reached <- FALSE
-  local_mocked_bindings(
-    .ms_knb_write_sdp_archive = function(...) {
-      archive_reached <<- TRUE
-      stop(errorCondition("Archive construction was reached.",
-                          class = "b223_archive_reached"))
-    }, .package = "metasalmon"
-  )
-  for (consumer in c("eml", "inventory", "plan")) {
+  test_that(paste(consumer, "retains ordinary malformed YAML errors"), {
+    b223_skip_eml_consumer(consumer)
+    archive_reached <- FALSE
+    # A later reader must not supply the expected parser error for this read.
+    # Retires when: no later step reads YAML, or this read no longer
+    # precedes archive construction.
+    local_mocked_bindings(
+      .ms_knb_write_sdp_archive = function(...) {
+        archive_reached <<- TRUE
+        stop(errorCondition("Archive construction was reached.",
+                            class = "b223_archive_reached"))
+      }, .package = "metasalmon"
+    )
     package_path <- make_knb_test_sdp(withr::local_tempdir())
     sidecar <- file.path(package_path, "metadata", "eml-mapping.yml")
     text <- paste(readLines(sidecar), collapse = "\n")
@@ -212,5 +235,5 @@ test_that("all sidecar consumers retain ordinary malformed YAML errors", {
     expect_false(archive_reached)
     expect_identical(b223_file_bytes(sidecar), before)
     expect_identical(b223_file_bytes(output), output_before)
-  }
-})
+  })
+}
