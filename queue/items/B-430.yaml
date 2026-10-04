@@ -1,7 +1,7 @@
 id: B-430
 kind: defect
 title: 'Bounded article and reference updates require a full site build and manual cleanup of unrelated generated files'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
