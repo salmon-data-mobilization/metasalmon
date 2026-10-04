@@ -15,9 +15,10 @@
 # is IRIs the EML measurement and method paths emit, so it includes
 # code-resolved `sosa:usedProcedure` IRIs and excludes a table's
 # `observation_unit_iri`. The review-target set is slots a reviewer decided, so
-# it includes `observation_unit_iri` and excludes a code-resolved procedure,
-# which no reviewer ever selected as a slot. In the package's own bundled Fraser
-# coho example the difference is exactly one row: `smn:Observation` is a review
+# it includes `observation_unit_iri` and excludes a code-resolved procedure.
+# The ledger has no slot for that procedure: it is reached through code values
+# in the data rather than a field the review-target set reads. In the bundled
+# Fraser coho example the difference is exactly one row: `smn:Observation` is a review
 # target and not a vocabulary term.
 #
 # GAP, NOT ABORT -- ruled by Brett 2026-09-12. An IRI the searched sources
@@ -470,8 +471,9 @@
 
 # Where an IRI sits in the package: the review target that selected it, the
 # dictionary row behind that target, and the defaults for an IRI that is in the
-# measurement set only -- a code-resolved `sosa:usedProcedure`, which no reviewer
-# ever selected as a slot and so has no target row to read.
+# measurement set only -- a code-resolved `sosa:usedProcedure`. The ledger has
+# no slot for it: the procedure is reached through code values in the data,
+# rather than a field the review-target set reads, so there is no target row.
 #
 # Shared by the gap row and the incomplete-evidence row below, which describe the
 # same IRI in the same place and must not disagree about where that is.
