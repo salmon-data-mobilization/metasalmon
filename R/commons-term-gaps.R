@@ -129,9 +129,10 @@
   out$search_query <- out$commons_title
   out$target_label <- out$commons_title
   out$gap_detection_basis <- rep("commons_register", length(rows))
-  out$placement_recommendation <- ifelse(
-    nzchar(out$commons_hold_reason), "skip", out$commons_mint_target
-  )
+  # Assign into a character vector so an empty export keeps the SDP
+  # prototype's type; ifelse(logical(0), ...) would produce logical(0).
+  out$placement_recommendation <- out$commons_mint_target
+  out$placement_recommendation[nzchar(out$commons_hold_reason)] <- "skip"
   out
 }
 
@@ -207,5 +208,12 @@
   } else {
     cli::cli_abort("`issue_labels` must have length one or the number of gaps.")
   }
+  # Match the existing SDP normalization: exact empty strings become missing,
+  # whitespace is preserved, and duplicates are removed on both input shapes.
+  out$issue_labels <- lapply(out$issue_labels, function(labels) {
+    labels <- .trim_empties(as.character(labels))
+    if (!length(labels)) return(NULL)
+    unique(labels)
+  })
   out
 }

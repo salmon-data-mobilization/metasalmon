@@ -87,6 +87,11 @@ test_that("commons holds remain visible and cannot be revived by renderer contro
   incomplete <- tampered
   incomplete$commons_concept <- NULL
   expect_error(render_ontology_term_request(incomplete, scope = "smn"), "commons_gaps")
+  # Source columns still identify commons records when the display basis is
+  # removed; they must never fall through to SDP routing controls.
+  without_basis <- gaps
+  without_basis$gap_detection_basis <- NULL
+  expect_identical(render_ontology_term_request(without_basis, scope = "smn")$request_scope, requests$request_scope)
   tampered$commons_blocked_by[1L] <- list(NULL)
   expect_error(render_ontology_term_request(tampered, scope = "smn"), "commons_gaps")
   expect_true(any(grepl("blocked; conflicted", gaps$commons_hold_reason, fixed = TRUE)))
@@ -116,6 +121,14 @@ test_that("commons request bodies carry source evidence and require curator choi
   expect_equal(nrow(preview), sum(eligible))
   expect_true(all(preview$status == "dry_run"))
   expect_identical(preview$request_scope, gaps$commons_mint_target[eligible])
+  labelled <- render_ontology_term_request(gaps, ask = FALSE,
+    issue_labels = c(" custom ", "", " custom "))
+  expect_true(all(vapply(labelled$issue_labels, identical, logical(1), c(" custom ", NA_character_))))
+  unlabelled <- render_ontology_term_request(gaps, ask = FALSE, issue_labels = " ")
+  expect_true(all(vapply(unlabelled$issue_labels, identical, logical(1), " ")))
+  per_row <- render_ontology_term_request(gaps, ask = FALSE,
+    issue_labels = rep(list(c(" custom ", "", " custom ")), nrow(gaps)))
+  expect_true(all(vapply(per_row$issue_labels, identical, logical(1), c(" custom ", NA_character_))))
 })
 
 test_that("commons path accepts only a file and rejects incompatible SDP inputs", {
@@ -175,4 +188,6 @@ test_that("commons reader rejects malformed envelopes and invalid typed lifecycl
   empty <- detect_semantic_term_gaps(commons_gaps = commons_write(list(gaps = list())))
   expect_equal(nrow(empty), 0L)
   expect_identical(names(empty), c(metasalmon:::.ms_term_gap_cols(), commons_fields))
+  prototype <- metasalmon:::.empty_term_gap_result()
+  expect_identical(vapply(empty[names(prototype)], typeof, ""), vapply(prototype, typeof, ""))
 })
