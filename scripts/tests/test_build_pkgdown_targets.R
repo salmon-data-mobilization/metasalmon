@@ -47,9 +47,13 @@ site_snapshot <- function(root) {
   )
 }
 
-same_snapshot <- function(before, after, except = character()) {
+same_snapshot <- function(before, after, except = character(), check_mtime = TRUE) {
   before <- before[!before$path %in% except, , drop = FALSE]
   after <- after[!after$path %in% except, , drop = FALSE]
+  if (!check_mtime) {
+    before$modified <- NULL
+    after$modified <- NULL
+  }
   identical(before, after)
 }
 
@@ -72,14 +76,30 @@ run_builder <- function(root, arguments, expected_status = 0L) {
   output
 }
 
-search_has <- function(root, suffix, token) {
-  records <- jsonlite::fromJSON(
+search_records <- function(root) {
+  jsonlite::fromJSON(
     file.path(root, "docs/search.json"), simplifyVector = FALSE
   )
+}
+
+record_path <- function(record) {
+  if (is.character(record$path) && length(record$path) == 1L) {
+    record$path
+  } else {
+    ""
+  }
+}
+
+search_has <- function(root, suffix, token) {
+  records <- search_records(root)
   matches <- Filter(
-    function(record) endsWith(record$path, suffix),
+    function(record) endsWith(record_path(record), suffix),
     records
   )
+  if (length(matches) == 0L) {
+    cat("Search path control:", paste(head(vapply(records, record_path, character(1)), 16L),
+                                       collapse = ", "), "\n")
+  }
   length(matches) > 0L && any(vapply(
     matches,
     function(record) grepl(token, paste(unlist(record), collapse = " "), fixed = TRUE),
@@ -108,7 +128,7 @@ run_test <- function() {
     "export(example_topic)", "export(other_topic)"
   ))
   write_file(root, "R/topics.R", c(
-    "example_topic <- function() 'example'",
+    "example_topic <- function() 'baseline'",
     "other_topic <- function() 'other'"
   ))
   for (name in c("example_topic", "other_topic")) {
@@ -118,7 +138,8 @@ run_test <- function() {
       sprintf("\\title{%s}", name),
       "\\description{Baseline reference description.}",
       sprintf("\\usage{%s()}", name),
-      "\\value{A character scalar.}"
+      "\\value{A character scalar.}",
+      sprintf("\\examples{%s()}", name)
     ))
   }
   for (name in c("one", "two")) {
@@ -131,7 +152,9 @@ run_test <- function() {
       "  %\\VignetteEngine{knitr::rmarkdown}",
       "  %\\VignetteEncoding{UTF-8}",
       "---",
-      "Baseline article text."
+      "## Article section",
+      "Baseline article text.",
+      if (name == "one") c("", "```{r}", "sitefixture::example_topic()", "```")
     ))
   }
   write_file(root, "README.md", "# sitefixture")
@@ -155,6 +178,7 @@ run_test <- function() {
     quiet = TRUE
   )
   baseline <- site_snapshot(root)
+  baseline_search <- search_records(root)
   check(all(c("articles/one.html", "articles/one.md", "articles/two.html",
               "reference/example_topic.html", "reference/example_topic.md",
               "reference/other_topic.html", "search.json", "sitemap.xml") %in%
@@ -170,16 +194,24 @@ run_test <- function() {
     "% B430_REFERENCE_CHANGED",
     "\\details{B430_REFERENCE_CHANGED}"
   ))
+  write_file(root, "R/topics.R", c(
+    "example_topic <- function() 'B430_SOURCE_CHANGED'",
+    "other_topic <- function() 'other'"
+  ))
   run_builder(root, c("--article=one", "--article=one",
                       "--reference=example_topic"))
   selected <- site_snapshot(root)
   for (path in c("articles/one.html", "articles/one.md")) {
     check(any(grepl("B430_ARTICLE_CHANGED", readLines(file.path(root, "docs", path)),
                     fixed = TRUE)), paste("selected article content", path))
+    check(any(grepl("B430_SOURCE_CHANGED", readLines(file.path(root, "docs", path)),
+                    fixed = TRUE)), paste("selected article uses current package source", path))
   }
   for (path in c("reference/example_topic.html", "reference/example_topic.md")) {
     check(any(grepl("B430_REFERENCE_CHANGED", readLines(file.path(root, "docs", path)),
                     fixed = TRUE)), paste("selected reference content", path))
+    check(any(grepl("B430_SOURCE_CHANGED", readLines(file.path(root, "docs", path)),
+                    fixed = TRUE)), paste("selected reference uses current package source", path))
   }
   check(search_has(root, "/articles/one.html", "B430_ARTICLE_CHANGED") &&
           search_has(root, "/reference/example_topic.html", "B430_REFERENCE_CHANGED"),
@@ -192,13 +224,84 @@ run_test <- function() {
     baseline, selected,
     except = c("articles/one.html", "articles/one.md",
                "reference/example_topic.html", "reference/example_topic.md",
-               "search.json")
+               "search.json"), check_mtime = FALSE
   ), "all unrelated site outputs remain byte-identical")
+  keep_record <- function(record) {
+    !endsWith(record_path(record), "/articles/one.html") &&
+      !endsWith(record_path(record), "/reference/example_topic.html")
+  }
+  check(identical(Filter(keep_record, baseline_search),
+                  Filter(keep_record, search_records(root))),
+        "unrelated search records retain bytes and order")
+
+  write_file(root, "vignettes/two.Rmd", c(
+    readLines(file.path(root, "vignettes/two.Rmd"), warn = FALSE),
+    "B430_SECOND_ARTICLE_CHANGED"
+  ))
+  run_builder(root, c("--article=one", "--article=two"))
+  repeated <- site_snapshot(root)
+  check(any(grepl("B430_SECOND_ARTICLE_CHANGED",
+                  readLines(file.path(root, "docs/articles/two.html")),
+                  fixed = TRUE)) &&
+          search_has(root, "/articles/two.html", "B430_SECOND_ARTICLE_CHANGED"),
+        "repeated selectors update each named article and search")
+  check(same_snapshot(
+    selected, repeated,
+    except = c("articles/two.html", "articles/two.md", "search.json"),
+    check_mtime = FALSE
+  ), "second selected build leaves other page bytes unchanged")
+
+  article_lines <- readLines(file.path(root, "vignettes/one.Rmd"), warn = FALSE)
+  write_file(root, "vignettes/one.Rmd", sub(
+    "^title: 'one'$", "title: 'One revised'", article_lines
+  ))
+  reference_lines <- readLines(file.path(root, "man/example_topic.Rd"), warn = FALSE)
+  reference_lines[reference_lines == "\\title{example_topic}"] <-
+    "\\title{Example topic revised}"
+  write_file(root, "man/example_topic.Rd", reference_lines)
+  run_builder(root, c("--article=one", "--reference=example_topic"))
+  reindexed <- site_snapshot(root)
+  for (path in c("articles/index.html", "articles/index.md",
+                 "reference/index.html", "reference/index.md")) {
+    check(any(grepl("revised", readLines(file.path(root, "docs", path)),
+                    fixed = TRUE)), paste("changed metadata updates index", path))
+  }
+  check(any(grepl("revised", readLines(file.path(root, "docs/llms.txt")),
+                  fixed = TRUE)), "changed indexes update llms.txt")
+  check(same_snapshot(
+    repeated, reindexed,
+    except = c("articles/one.html", "articles/one.md", "articles/index.html",
+               "articles/index.md", "reference/example_topic.html",
+               "reference/example_topic.md", "reference/index.html",
+               "reference/index.md", "llms.txt", "search.json"),
+    check_mtime = FALSE
+  ), "index refresh preserves unrelated site bytes")
+
+  run_builder(root, "--reference=example_topic")
+  check(same_snapshot(reindexed, site_snapshot(root), check_mtime = FALSE),
+        "reference-only selector succeeds without unrelated byte changes")
+
+  write_file(root, "NEWS.md", c(
+    "# sitefixture (development version)", "", "* B430_NEWS_CHANGED."
+  ))
+  run_builder(root, "--news-only")
+  after_news <- site_snapshot(root)
+  check(any(grepl("B430_NEWS_CHANGED",
+                  readLines(file.path(root, "docs/news/index.html")),
+                  fixed = TRUE)) &&
+          any(grepl("B430_NEWS_CHANGED",
+                    readLines(file.path(root, "docs/news/index.md")),
+                    fixed = TRUE)), "existing news-only route updates both formats")
+  check(same_snapshot(
+    reindexed, after_news,
+    except = c("news/index.html", "news/index.md", "search.json"),
+    check_mtime = FALSE
+  ), "news-only route leaves article and reference bytes unchanged")
 
   # Rejection must occur before any output changes, including mtimes.
   for (arguments in list(
     "--article=", "--reference=", "--article=missing",
-    "--reference=missing", "--article=../one",
+    "--reference=missing", "--article=../one", "--article", "--reference",
     c("--article=one", "--news-only"),
     c("--reference=example_topic", "--accept-toolchain-change")
   )) {
@@ -207,6 +310,16 @@ run_test <- function() {
     check(length(output) > 0L && same_snapshot(before, site_snapshot(root)),
           paste("invalid selector does not write", paste(arguments, collapse = " ")))
   }
+
+  index_path <- file.path(root, "docs/index.html")
+  index_bytes <- readBin(index_path, what = "raw", n = file.info(index_path)$size)
+  unlink(index_path)
+  before <- site_snapshot(root)
+  output <- run_builder(root, "--reference=example_topic", expected_status = 1L)
+  check(any(grepl("existing checked-in site", output, fixed = TRUE)) &&
+          same_snapshot(before, site_snapshot(root)),
+        "missing site index fails before pkgdown can initialize a new site")
+  writeBin(index_bytes, index_path)
 
   write_file(root, "unlisted.md", "# This page has no publication decision")
   before <- site_snapshot(root)
@@ -220,6 +333,7 @@ run_test <- function() {
   # second Pandoc in CI. The rejection must not update the site or its record.
   toolchain_path <- file.path(root, "docs/pkgdown.yml")
   toolchain <- yaml::read_yaml(toolchain_path)
+  recorded_toolchain <- toolchain
   toolchain$pandoc <- "not-the-running-pandoc"
   yaml::write_yaml(toolchain, toolchain_path)
   before <- site_snapshot(root)
@@ -227,6 +341,18 @@ run_test <- function() {
   check(any(grepl("different toolchain", output, fixed = TRUE)) &&
           same_snapshot(before, site_snapshot(root)),
         "changed toolchain fails before selected output is written")
+  yaml::write_yaml(recorded_toolchain, toolchain_path)
+
+  # This guard scans the whole published site after building a selected page.
+  # It must still find forbidden text in an unrelated, existing output page.
+  write_file(root, "docs/articles/two.html", c(
+    readLines(file.path(root, "docs/articles/two.html"), warn = FALSE),
+    "https://dfo-pacific-science.github.io/metasalmon/"
+  ))
+  output <- run_builder(root, "--article=one", expected_status = 1L)
+  check(any(grepl("Generated pkgdown output still contains forbidden text", output,
+                  fixed = TRUE)),
+        "selected build retains whole-site forbidden-text scan")
 }
 
 run_test()
