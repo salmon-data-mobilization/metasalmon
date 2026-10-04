@@ -3470,3 +3470,71 @@ B350 retains its consequential decision boundary. Passive waiting and active
 effort were not comprehensively timed, so no whole-run waste percentage is
 inferred. This substantive append preserves the entire 230015-byte canonical
 prefix, SHA-256 `464681b87ec6da03a4a6f4069695968f0da7ffe24a93916706f72e2f63795765`.
+
+
+## B340 actual review: required sequence-key repair — 2026-10-04
+
+**Implementation.** Actual Claude comment 5984038702 on published `acd5e2b`
+identified a required tagged flow-sequence key after a preceding mapping pair.
+Independent native/public reproduction confirms the bypass: the disposable
+probe reports closing `]` at 2:1037 rather than its separator at 2:1038, so
+absent outputs are created or existing sentinels overwritten and the sidecar
+rewritten. This is a real Q62 refusal defect, not an administrative hold.
+Separate tests-only RED `946da7a5a69d33baa4a9a99e767eb1f9ab762167` retains the
+prior reader `4125f5ce`; 432 assertions pass and ten fail, zero errors,
+warnings or skips, 5.528s R elapsed / 6.106s process. Minimum fix GREEN
+`6fb1d1364ce17057ad13ef4386c9fa20aa0b0a2c` changes only the disposable native
+probe. Native key start makes the candidate explicit; native mapping-value
+positions identify a literal collection's separator without a custom scanner.
+The real reader expression and untouched bytes/eval.expr FALSE remain exact.
+
+**Verification and requested audit.** Focused GREEN: 493 assertions, zero
+failures/errors/warnings/skips, 6.266s R elapsed / 6.383s process. Independent
+implementation reviewer `ontology_fetch_peer` checked exact reader blob
+`2658d4883713a464a27a4cbaafc9a59c251b26a9` with 90 additional assertions,
+1.465s R elapsed / 1.932s process. All four public absent/sentinel cases
+preserve every output and sidecar byte. Scalar and nested collection keys,
+repeated literal retries, known/literal/flow acceptance, native results and
+four originally malformed fallback controls pass. Every captured native call
+has eval.expr FALSE. No substantive finding remains on this source freeze.
+All prior source checkpoints, B429 and original terminal holder `428346de`
+remain; no claim or identity changed.
+
+**Factual documentation.** Actual Codex code/security review 5983971966
+completed on `acd5e2b`; its P1 roadmap finding correctly identified the missing
+B429 sequencing note. Python main `d04982b` retains that undefined-handle
+fallback. Q62 already decides refusal, so the roadmap and nonnumbered parity
+owed-port notes record the existing obligation under Brett's 2026-10-04
+standing delegation, without a new numbered difference or approval question.
+No NEWS/site input changed in this review correction. Existing generated
+outputs remain exact; no repeated NEWS/full-site build is needed.
+
+**Remote gates and coordination.** Previous publication `acd5e2b` passed
+hosted provider-isolated full tests and strict R4.6.1 check, run 37231379689 /
+job 111521549819, zero errors/warnings/notes. Actual Claude 37231412031 model
+and verifier ran successfully; its residual finding above is repaired rather
+than treated as a nit. The normal ready-event concurrency cancelled
+37231379730 and a different job skipped; neither is a completed review.
+A repaired publication still requires its own hosted CI. No manual model
+request, unavailable-bot retry or permission question was added. Three existing
+helpers performed disjoint implementation, independent replay and factual
+notes; zero polling-only helpers and zero status-only checkpoints. One batched
+public tip read confirms B340 `428346de` and B223 `56611e3` unchanged. Root's
+wide parity-row read caused truncated output and was narrowed; this bounded
+instrument correction is not environment repair or substantive verification.
+Passive waits and total active effort were not comprehensively timed, so no
+whole-run waste percentage is inferred.
+
+This substantive append preserves all 234142 preceding bytes, SHA-256
+`a8e9e7f82ef3c666d4966082abaef8d6b0309793112e46da22667c52149f7939`. The approved substitution removed old
+administrative questions while actual review findings still drove RED/GREEN
+repairs and independent proof. Reuse that exact proof on unchanged source;
+current-head CI remains separate. This evaluation changes no review or claim
+gate and starts no second tracker.
+
+**Factual-note gates.** OKF capture reports zero diagnostics and the register
+guard retains 64 matching numbered rows. An independent Python main d04982b
+probe reproduces the native undefined-handle ParserError/default-path fallback
+and passes seven mapping controls using existing Python3.9.6/PyYAML6.0.3. One
+inherited urllib3 warning is recorded; no environment install/repair or new
+policy decision was involved. Source and generated outputs stay frozen.

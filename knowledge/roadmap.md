@@ -992,6 +992,15 @@ and Brett ruled it on 2026-09-25: refuse on every path, recorded in
 difference nor changes it, and the closure path's refusal is `B-340` in this
 package and `B-341` in metasalmonpy.
 
+**Q62 closure port completion.** [B-429](../queue/items/B-429.yaml)
+covers the undefined YAML tag handle found after B-341 merged. For
+`path: !e!foo value`, Python falls back to default closure paths while R's
+B-340 reader refuses; [the dated reproduction](backlog.md) records the
+native parser boundary. Complete this Python port after B-340's shared reader
+lands, in the same stream, preserving unrelated malformed/nonmapping fallback.
+This implements [Brett's Q62 ruling](questions.md) without a new deliberate
+parity difference or numbered register row; the queue item owns retirement.
+
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
 window" until 2026-09-16, when closing that window made the wording
