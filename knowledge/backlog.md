@@ -9007,15 +9007,7 @@ failing-before test.
 The full branch calls `pkgdown::build_site(lazy = FALSE)`. During B-278 on
 metasalmon pull request 263, the pinned build rewrote 98 unrelated tracked
 files and added one unrelated redirect. The implementation retained ten
-affected/build-record files and restored the rest. The measurement and exact
-receipt are in that PR's appended
-`.hub/overhead/2026-09-30-workflow-improvements.md`.
-
-This is recurring cleanup work for a bounded documentation change. The proposed
-scope is optional named article and reference targets in the existing builder,
-using the pinned pkgdown APIs and rebuilding search and sitemap. Selected-page
-and search positive controls plus byte comparisons of unrelated tracked pages
-establish the benefit. The existing full-site publication scan and toolchain
-rejections keep their scope. B-393's unrecorded toolchain inputs are separate;
-target selectors do not repair them. The queue item owns the retirement
-condition. No package behavior or Python documentation builder changes here.
+affected/build-record files and restored the rest. At this observation date,
+the [published measurement and receipt](https://github.com/salmon-data-mobilization/metasalmon/blob/0f86ff3148645985e5fae6cadc903b36edc189d9/.hub/overhead/2026-09-30-workflow-improvements.md#L3006)
+are in PR 263's appended log and have not landed on main. The queue item owns
+the implementation and retirement condition.
