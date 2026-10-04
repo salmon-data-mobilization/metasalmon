@@ -190,8 +190,35 @@
     line <- lines[[key[[1L]]]]
     column <- key[[2L]]
     separator <- key[[4L]]
-    if (key[[3L]] != key[[1L]] || substr(line, separator, separator) != ":") {
+    if (key[[3L]] != key[[1L]]) {
       return(FALSE)
+    }
+    if (substr(line, separator, separator) != ":") {
+      # A collection can exceed the implicit-key bound before the scanner
+      # reaches its separator. Native key-start coordinates still identify
+      # the node: making only that disposable node explicit reaches a real
+      # tag, or reports the value separator for a literal collection key.
+      explicit_probe <- lines
+      explicit_probe[[key[[1L]]]] <- paste0(
+        if (column == 1L) "" else substr(line, 1L, column - 1L),
+        "? ", substring(line, column)
+      )
+      explicit_result <- parse_probe(explicit_probe)
+      if (!inherits(explicit_result, "error")) return(FALSE)
+      if (grepl("found undefined tag handle", conditionMessage(explicit_result),
+                fixed = TRUE)) return(TRUE)
+      match <- regexec(
+        "mapping values are not allowed in this context at line ([0-9]+), column ([0-9]+)",
+        conditionMessage(explicit_result)
+      )
+      parts <- regmatches(conditionMessage(explicit_result), match)[[1L]]
+      if (length(parts) != 3L || as.integer(parts[[2L]]) != key[[1L]]) {
+        return(FALSE)
+      }
+      # Account only for the two inserted characters. The native diagnostic,
+      # not a collection/quote scanner, chooses this separator in the probe.
+      separator <- as.integer(parts[[3L]]) - 2L
+      if (substr(line, separator, separator) != ":") return(FALSE)
     }
     # Keep the value separator on its own line too: `? key: value` can still
     # construct an implicit mapping inside the explicit key. libyaml reports
