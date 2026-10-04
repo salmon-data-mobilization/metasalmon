@@ -2948,8 +2948,9 @@ write_eml_from_sdp <- function(path,
     cli::cli_abort("EML export requires exactly one SDP dataset row.")
   }
 
-  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
-  mapping <- yaml::read_yaml(mapping_path, eval.expr = FALSE)
+  # Q62: the shared sidecar reader refuses unknown YAML tags before a tagged
+  # text value can flow into published EML; it also disables evaluation.
+  mapping <- .ms_eml_read_mapping_yaml(mapping_path)
   configs <- .ms_eml_validate_mapping(mapping, pkg)
   revision_key <- .ms_eml_revision_key(
     mapping,
