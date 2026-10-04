@@ -150,7 +150,8 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       guess_types = guess_types,
       dataset_id = dataset_id,
       semantic_sources = semantic_sources,
-      semantic_max_per_role = semantic_max_per_role,
+      # Preserve the widened shortlist if child seeding is ever enabled.
+      semantic_max_per_role = llm_review$semantic_max_per_role,
       seed_verbose = seed_verbose
     )
 

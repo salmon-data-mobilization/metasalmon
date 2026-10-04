@@ -55,7 +55,15 @@
   structure(
     list(
       mode = if (omitted) "role_defaults" else "explicit",
-      sources = unname(as.character(sources))
+      # An explicit list is read the way metasalmonpy's `make_source_policy()`
+      # reads it (hub B-421), so an injected search function, the bundle
+      # payload and a review packet's recorded allowlist all see the names
+      # `find_terms()` searches.
+      sources = if (omitted) {
+        unname(as.character(sources))
+      } else {
+        .ms_normalize_explicit_sources(sources)
+      }
     ),
     class = "metasalmon_source_policy"
   )
