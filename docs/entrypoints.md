@@ -11,6 +11,11 @@ Short map of the package's public starts and their canonical implementations.
 - Review workflow: `read_salmon_datapackage()` -> validate/edit -> rebuild EDH XML
 - R review walkthrough: `vignettes/semantic-review.Rmd`, linked from the
   quickstart and pkgdown Guides index; queue decisions and the four setters.
+- Commons gap intake: `detect_semantic_term_gaps(commons_gaps = "gaps.json")`
+  -> `render_ontology_term_request(ask = FALSE)` ->
+  `submit_term_request_issues(dry_run = TRUE)`; reader and source-based holds
+  live in `R/commons-term-gaps.R`. Export and preview instructions are in
+  `vignettes/post-review-package-publication.Rmd`.
 - Reviewed suggestion merge: `apply_semantic_suggestions()`; `"reviewed"`
   applies accepted review decisions, `"llm"` applies accepted LLM selections
   (an `llm_selected` row with `llm_decision == "accept"`), and both preserve

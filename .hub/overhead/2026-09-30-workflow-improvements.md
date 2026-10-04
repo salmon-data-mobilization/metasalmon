@@ -3278,3 +3278,73 @@ review cap, not a reroll of the same finding. Claude's verified nits verdict is
 retained; a workflow that reuses it is not described as a fresh review. New
 current-head hosted gates remain passive required verification, and their
 receipts are recorded in the PR body without a status-only commit.
+
+
+### Delegated B278 integration after B430 merge, 2026-10-04
+
+Brett's approved standing grant delegates compatible optional APIs and permits
+recorded independent review/tests when a bot cannot complete. B278's former
+public-formal approval hold is superseded: its only added tail formal is
+`commons_gaps = NULL`; existing calls/defaults, attributes and frozen gap
+columns stay intact. Actual Claude comment 5974971569 reported five nits and
+no blockers; the substantive type/label findings were fixed. Existing source
+peer and paired full-export evidence are reused because the owned reader,
+acceptance tests and fixtures remain byte-identical to reviewed 3e8a9a1. No
+cached-verdict job is described as a fresh review. Required CI on the newly
+integrated head remains a gate, and B278/B279 remain open until landing.
+
+Coordination: PR265 merged as 515a365; B430's queue-only closeout fa61f09 is
+included by ordinary merge into the existing B278 branch. The canonical log's
+complete 221386-byte prefix (SHA-256 87df604746778b6b4169a0cf789bf15f328cd0a10a0d0a414b889804c1e00452)
+contains the entire 208242-byte PR263 log and is preserved before this append.
+Five overlapping conflicts were resolved as one substantive integration,
+including both NEWS entries. Main's queue-only advance triggered a scoped
+abort/replay before building. The first abort needed a status/index refresh;
+working/staged canonical log bytes were verified equal before retry. No reset,
+claim change, branch deletion, source rewrite or lost log append occurred.
+
+Implementation: only incoming-main source changes were admitted. Byte checks
+retain 295 old R/tests files exactly and match 10 changed/added R/tests files to
+the incoming versions derived from the merge base. The owned commons reader,
+33-column prototype and original fixtures/checkpoints remain intact.
+
+Verification: one matched NEWS-only build under pkgdown 2.2.0/Pandoc 3.8.3
+passed in 16.050 seconds. It changed only NEWS HTML/Markdown and search JSON;
+there was no full site or full R-suite repeat. The native search rebuild moved
+four empty placeholder slots (non-NEWS positions 257, 258, 433, 434). After the
+complete non-NEWS multiset matched, the 596 original non-NEWS records and order
+were retained, grafting all 70 newly generated NEWS records into their old
+slots. Both source/rendered NEWS entries are present, with source entries
+occurring once. Every unrelated output file remains exact. This scoped index
+retention is recorded rather than misreported as zero generated-output work.
+
+Requested audit/instrument repair: a temporary R version print used a list
+where cat needed text; a search oracle initially assumed scalar path fields,
+then assumed every record had dir, and finally treated native placeholder
+reordering as unchanged order. Those bounded oracles were corrected against
+actual positive controls; no source regression or build failure was concealed.
+An initial workpad patch context mismatch wrote nothing and was corrected.
+Environment repair: none. Passive waits: hosted checks after publication remain
+for root; no new model request or polling-only helper was introduced here.
+
+Root's e16978f closeout receipt reports two useful audit helpers and zero
+polling-only helpers, repeated builds, bot requests or approval questions.
+The subsequent PR265 closeout similarly used zero new claims/questions/bot
+requests/repeated builds, reusing source fingerprints plus current CI,
+retirement and ownership evidence. The policy audit used one useful helper;
+a Python YAML probe failed and the Ruby parser passed, without environment
+repair. These are bounded receipts from those steps, not a whole-run total.
+This integration reused the existing peer and ran one useful NEWS gate. Root
+retains publication, PR-body/ready and merge acts; neither a fresh automated
+review nor a green integration-head CI result is claimed before it happens.
+
+The experiment's next use preserved the source freeze and collected a moving
+queue closeout into the same integration, but temporary audit/schema assumptions
+still caused avoidable rework. Reuse the existing typed search-record reader
+and validate its positive control before asserting order next time. This is
+one procedural adjustment, not a new tracker or policy. Total active runtime across agents
+ was not captured, so no wasted-time percentage is asserted.
+
+Alan was informed of PR265’s merge and asked to route B421’s factual amendment
+through the existing S16 writer. That retained ownership without a takeover
+or a new approval question.

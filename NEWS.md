@@ -57,6 +57,14 @@ metasalmon (development version)
 
 ### Added
 
+* `detect_semantic_term_gaps(commons_gaps = "gaps.json")` reads the commons
+  `okf-check.py --gaps` export (B-278), retaining lifecycle, source order,
+  repeated concepts and draft provenance. Commons-specific request rendering
+  preserves declared targets and unresolved holds; only open, unheld SMN/GCDFO
+  rows reach `submit_term_request_issues(dry_run = TRUE)`. It selects no term
+  IRI, definition or type. Existing SDP input and result columns are unchanged.
+  The matching Python behavior and shared fixtures remain owed under B-279.
+
 * The repository site builder accepts repeatable `--article=NAME` and
   `--reference=TOPIC` selectors for existing pages (hub B-430). It updates their
   HTML, Markdown companions and derived indexes without rebuilding unrelated

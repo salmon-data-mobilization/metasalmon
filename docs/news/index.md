@@ -4,6 +4,39 @@
 
 ### Breaking changes
 
+- **A custom ontology URL no longer implicitly falls back to smn**
+  (B-333).
+  [`fetch_salmon_ontology()`](https://salmon-data-mobilization.github.io/metasalmon/reference/fetch_salmon_ontology.md)
+  keeps its public fallback default `c("https://w3id.org/smn")`, but
+  uses that implicit fallback only for the default
+  `url = "https://w3id.org/smn/"`. A custom URL that fails now errors
+  unless its caller explicitly supplies fallback URLs or it has an
+  eligible matching cache. It previously could return smn’s body for
+  another ontology. Named fallbacks are tried as before; explicit `NULL`
+  and [`character()`](https://rdrr.io/r/base/character.html) name none.
+  The package’s own callers already name their fallbacks. The Python
+  mirror remains owed in B-334 and the existing unmerged PR75.
+
+- **[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  searches the sources a role calls for when you name a role and no
+  sources** (hub item B-420; ruled by Brett on 2026-09-26,
+  `knowledge/questions.md` Q70: R moves). `sources` now defaults to
+  `NULL`, which means `sources_for_role(role)`, as it already did in
+  metasalmonpy and as
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  already resolved an omitted list here. So
+  `find_terms("kilogram", role = "unit")` searches QUDT, NVS and OLS,
+  where it searched smn, gcdfo, OLS and NVS whatever the role, and a
+  direct unit search now reaches QUDT. A call with no role searches the
+  same four sources as before, and a vector you name is still a strict
+  allowlist. An explicit `sources = NULL` now means the same as leaving
+  the argument out; pass
+  [`character()`](https://rdrr.io/r/base/character.html) to search
+  nothing. The documentation described both behaviours, one under `role`
+  and one under `sources`, and now describes one. Pinned by
+  `tests/testthat/test-find-terms-sources.R`, which stubs every source
+  and failed before the change.
+
 - **A package’s ownership sentinel is now `.sdp-package`, holding the
   line `sdp-owned`, and `.metasalmon-package` is no longer written or
   recognised** (hub item B-113; ruled by Brett 2026-08-24,
@@ -36,6 +69,16 @@
   meantime, but a package written by both carries both files until then.
 
 ### Added
+
+- `detect_semantic_term_gaps(commons_gaps = "gaps.json")` reads the
+  commons `okf-check.py --gaps` export (B-278), retaining lifecycle,
+  source order, repeated concepts and draft provenance. Commons-specific
+  request rendering preserves declared targets and unresolved holds;
+  only open, unheld SMN/GCDFO rows reach
+  `submit_term_request_issues(dry_run = TRUE)`. It selects no term IRI,
+  definition or type. Existing SDP input and result columns are
+  unchanged. The matching Python behavior and shared fixtures remain
+  owed under B-279.
 
 - The repository site builder accepts repeatable `--article=NAME` and
   `--reference=TOPIC` selectors for existing pages (hub B-430). It
@@ -271,6 +314,113 @@
   removes the script’s last hand-computed file digest as well.
 
 ### Fixed
+
+- **A matching ontology cache remains usable with a warning after failed
+  refresh** (B-422; Brett’s Q71 clarification, 2026-10-03). A transport
+  or server failure alone does not prove that copy stale. Only bodies
+  belonging to an attempted URL and the requested Accept are eligible;
+  unqualified legacy caches and other URL/Accept entries are excluded. A
+  replacement response or contradictory ETag invalidates the previous
+  copy persistently, so failed replacement storage cannot revive it on a
+  later offline call. Its bytes remain available for inspection with a
+  `.invalid` marker until a successful replacement clears that marker.
+  Without an eligible matching copy the call errors. No freshness time
+  limit or public argument is added. The Python ontology-fetch stream
+  owes the same behavior before parity is complete.
+
+- **[`fetch_salmon_ontology()`](https://salmon-data-mobilization.github.io/metasalmon/reference/fetch_salmon_ontology.md)
+  no longer answers a request for one ontology with another’s body, or
+  one representation’s request with another’s** (hub items B-333 and
+  B-335; the Python mirror remains owed in B-334/B-336 and the existing
+  unmerged PR75). Each is pinned by
+  `tests/testthat/test-ontology-fetch.R`, which stubs
+  [`httr::GET()`](https://httr.r-lib.org/reference/GET.html) and failed
+  before the change.
+
+  1.  **Each URL and representation has its own cached copy and
+      validators.** Every body used to be written to
+      `salmon-ontology.ttl` in `cache_dir`, beside one `etag.txt` and
+      one `last_modified.txt`. So fetching smn and then gcdfo into one
+      directory left gcdfo at the path the smn call had returned, and
+      the gcdfo request carried smn’s ETag; a Turtle and then an RDF/XML
+      fetch of one url did the same; and a fallback’s ETag, sent to the
+      url on the next call, could bring back the fallback’s body as the
+      url’s on a `304`. A copy is now `<key>.ttl`, where `<key>` is the
+      first 16 hexadecimal digits of the SHA-256 of the url as
+      requested, a newline and `accept`, taken as UTF-8 bytes whatever
+      the session’s locale, and its validators are `<key>.etag` and
+      `<key>.last_modified`. A request carries only the validators of
+      the copy that URL returned under that `accept`, a `304` returns
+      that copy, and a `200` replaces the copy’s validators rather than
+      keeping any the new answer did not send. **The returned file name
+      changes accordingly.** Copies cached by earlier versions –
+      `salmon-ontology.ttl`, `etag.txt` and `last_modified.txt` directly
+      under `cache_dir`, which by default is the persistent
+      `file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology")`
+      – are no longer read, and you can delete them.
+  2.  **A `304` with no cached copy is that url’s failure**, and the
+      next url is tried. It used to stop the call with “Not Modified
+      (HTTP 304)”.
+  3.  **A copy holds exactly the bytes the server sent.** The body used
+      to be decoded as UTF-8 and written back with
+      [`writeLines()`](https://rdrr.io/r/base/writeLines.html), so every
+      copy gained a final newline and a body that was not valid UTF-8
+      was stored as the two characters `NA`. The copy is now the raw
+      body, still written to a temporary file in `cache_dir` and renamed
+      into place, and a validator file is the header’s bytes and a
+      newline, written in binary so that it is the same file on every
+      platform. The matching Python storage remains owed in the existing
+      unmerged PR75; its default branch still decodes a text type sent
+      with no charset as ISO-8859-1 and rewrites it. `timeout_seconds`
+      is unchanged in R: it bounds both connection and whole transfer.
+      Python’s default branch uses a fixed 15 s per request, and PR75’s
+      proposed configurable connect/read timeout does not bound the
+      whole transfer.
+
+- **Source lists are normalised consistently across R’s readers**
+  (B-421). Unicode lower-casing uses an explicit locale, so the
+  session’s `LC_CTYPE` cannot change a supported source name or a review
+  packet’s recorded source list. Shared dotted-I and Greek-final-sigma
+  controls match Python’s lower-casing. `stringi` is now a declared
+  runtime dependency for this fold; this is not a claim that differing
+  Unicode versions map every unknown name identically.
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md),
+  and the source policy that
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  and
+  [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+  build (and so
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  and
+  [`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md),
+  which pass their sources to
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)),
+  now trim each name you supply of exactly what Python’s `str.strip()`
+  removes, lower-case it, and drop a missing or empty name and any
+  repeat after its first appearance, keeping your order. Measured before
+  the change: `find_terms(sources = "SMN")` and `sources = " smn "`
+  searched nothing and reported a successful search with no rows, where
+  metasalmonpy searched smn; and an `NA` was dispatched, failed, and was
+  reported as a source that did not answer. An injected `search_fn`, the
+  bundle-review payload and a review packet’s recorded
+  `explicit_allowlist` now see the normalised list, as they do in
+  metasalmonpy. A name that is none of the sources is still kept and
+  searches nothing. The pending metasalmonpy port in PR75 must also drop
+  missing entries (`None`, NaN); its default branch still turns `None`
+  into a source called `"none"`. Pinned by
+  `tests/testthat/test-find-terms-sources.R`.
+
+  [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
+  reads its `sources` by the same rule. It had its own,
+  [`trimws()`](https://rdrr.io/r/base/trimws.html) and
+  [`unique()`](https://rdrr.io/r/base/unique.html) with no lower-casing,
+  so `" SMN"` and `"smn"` were two sources there and a no-break space
+  survived; metasalmonpy’s closure has a third rule of its own. All
+  three R readers now read a list one way; the corresponding Python
+  reader port remains owed in PR75. A list with no name left is still
+  refused. Pinned by `tests/testthat/test-semantic-closure.R`, which
+  failed before the change.
 
 - The bundled NuSEDS dictionaries now describe `AREA` as a DFO
   sub-district code, following NuSEDS’s data dictionary and sub-district
