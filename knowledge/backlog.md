@@ -8708,7 +8708,7 @@ says was intended.
 measured by this filing on 2026-09-25, on metasalmon `main` at `41146fc` and
 metasalmonpy `main` at `ba1b54a`. Every stubbed run was repeated at each
 package's `v0.5.0` tag, metasalmon `af84689` and metasalmonpy `67fb486`, with
-the same results, except the plain stale-copy run in the `Q-71` entry, which
+the same results, except the plain failed-refresh fallback run in the `Q-71` entry, which
 ran on `main` only. Line numbers are `main`'s. The package runs loaded
 `git archive` exports rather than any checkout. R was 4.5.2, with httr 1.4.8
 and testthat 3.3.2, loading metasalmon through `pkgload::load_all()`. Python was
@@ -8806,7 +8806,8 @@ apart from the package rename in `91d993a`.
   in the cache directory as an earlier session would leave it: the call
   completed normally and returned that copy. The only signal was an
   `rlang_warning` reading "Failed to refresh Salmon ontology; using cached copy
-  at …", and nothing on the returned value marks it stale. metasalmonpy raises
+  at …"; the failed refresh does not establish that the cached body is stale.
+  metasalmonpy raises
   `RuntimeError` whether or not a copy is cached (`ontology_fetch.py:105-110`).
   Measured with `requests.get` stubbed the same way and a copy in the cache
   directory, it raised and left the copy on disk. R's documentation says nothing
@@ -8823,9 +8824,17 @@ apart from the package rename in `91d993a`.
   `fetch_salmon_ontology()`. Read as a statement about this function, the row's
   R half would be wrong, because R's fetcher does not raise when a copy is
   cached. R's own index fetchers do call it, with caches under `tempdir()`, so
-  there the stale path can only return a copy fetched earlier in the same R
-  session, when an index is rebuilt with `refresh = TRUE`; that was read and
-  not run.
+  there the failed-refresh fallback can only return a copy fetched earlier in
+  the same R session, when an index is rebuilt with `refresh = TRUE`; that was
+  read and not run.
+
+  **Ruling clarification, 2026-10-03:** Brett requires a warning and continued
+  use when the cached body matches the requested ontology and refresh fails;
+  unrelated, mismatching or otherwise known-stale bodies must not be used. The
+  2026-09-25 measurements above describe the earlier implementation, not proof
+  that every body it could not refresh was stale. PR209/211's later reading of
+  the 2026-09-26 quote as an unconditional failed-refresh error is superseded.
+  The exact ruling is in the Q71 Answered entry in [questions.md](questions.md).
 - *The default fallback is used whatever `url` a caller passes* (`B-333`,
   `B-334`). In both packages the default `fallback_urls` belongs to the default
   ontology, and it is tried after any `url` the caller names. Measured with the
@@ -8869,7 +8878,7 @@ apart from the package rename in `91d993a`.
   way in both, with a stub that answers `304` to any validator: a call whose
   `url` failed and whose fallback answered stored the fallback's ETag, the next
   call sent it to the `url` in `If-None-Match`, and the `url`'s `304` then
-  returned the fallback's body as the `url`'s. In R the stale-copy path above
+  returned the fallback's body as the `url`'s. In R the failed-refresh path above
   also serves the one file for any `url`: with gcdfo cached there, a call for
   the default smn, with every request failing, returned the gcdfo body under
   the warning "Failed to refresh Salmon ontology; using cached copy".
@@ -8949,3 +8958,56 @@ Found while four metasalmonpy convergence items were built for S16 step 1 (B-360
   surviving deterministic packet path is the scope of this fix.
 - **B-384 — the validator's phrase anchor (metasalmon `R/semantic-bundle-validators.R:607-645`).** `.ms_semantic_validator_chunk_has_anchor()` extracts the leading token with `sub("^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$", "\\1", x, perl = TRUE)` and no dot-all flag. On a chunk with a newline the pattern cannot reach the end of the text, so `sub()` returns the whole chunk. The underscore-or-hyphen guard that follows then rejects the anchor **when any later line contains `_` or `-`**. Measured: `Spawner count by visual survey` gives `Spawner`; the same text plus a second line holding `table_2` gives the whole chunk and fails; adding `(?s)` gives `Spawner` again. **It does not fail every multi-line chunk.** `Catch count was observed.` followed by `Protocol.` has no `_` or `-` anywhere, and it still anchors on its normalised text (the second Codex review of metasalmon #196). The B-360 run found it, and copied the quirk to metasalmonpy on purpose as `multiline_chunk_phrase_anchor_quirk`. That is why B-385 exists.
 - **B-386 — metasalmonpy's HTML reader.** `_TextExtractor` in `llm_review.py` collects every text node through `handle_data()`, including `<script>`, `<style>` and `<head>` text. R's `.ms_context_text_from_html()` reads only `.//body` text that is `not(ancestor::script) and not(ancestor::style)`. Register row 62 covers library-specific extraction in general; this is the largest practical difference under it, reported by the B-364 run.
+
+### The 2026-09-26 findings from metasalmonpy pull request 72
+
+metasalmonpy pull request 72 (B-327) ported metasalmon's half of the
+review-packet contract (B-326, metasalmon pull request 194) and mirrored it
+exactly, defects included, so that the shared conformance fixtures match. It
+reported seven findings as claims; the coordinator re-ran the port's suites and
+its cross-language test before filing them. Brett said on 2026-09-26 to fix them
+now rather than leave them filed (*"yes or just fix them now"*). Each finding is
+filed under the linked items below; each implementing fix must carry its own
+failing-before test.
+
+1. **metasalmon counts the `propose_new_term` alias as a downgrade.**
+   `identical(aliases[harness_decision] %||% NA, decision)` never holds, because
+   the subset keeps its name, so the `row_errors` case records five downgrades.
+   `B-424`, mirrored in `B-425`.
+2. **A code under a measurement column loses shortlists.** It gets constraint,
+   entity and method targets that share one slot id: the in-memory exporter
+   aborts on the duplicate unit key, and the package path keeps only the first
+   role's shortlist. Both packages. `B-424` and `B-425`.
+3. **metasalmon's prune warning is skipped.**
+   `.ms_warn_pruning_recorded_decisions()` returns early when a package has no
+   `semantic_suggestions.csv`, so a `review/` record is pruned without a word.
+   `B-424`, and `B-425` if the Python side has the same early return.
+4. **The `retry_dead_ends` fixture README claims an identifier-like query that
+   never occurs.** R's bracket class reads `[^\s]` as "not a backslash and not
+   the letter s", so `smn:MeshSize` is classified as a lexical query. That is the
+   quirk `B-380` already records; it lands with `B-424`, and the README is true
+   after it or is corrected.
+5. **metasalmon's NEWS names a deprecation it never lists.** The development
+   entry says the in-package model call "is deprecated below" and has no bullet
+   for it. `B-424`.
+6. **The two `find_terms()` treat a given source list differently.** metasalmonpy
+   trims, lower-cases and de-duplicates it; metasalmon passes it as given, so a
+   source named in capitals is searched in one and not the other. Pull request
+   72 registers the difference in `PARITY.md` row 65 (g) only where it reaches a
+   packet. `B-421` converges metasalmon on metasalmonpy, the coordinator's
+   direction rather than a ruling.
+7. **A metasalmonpy review record cannot be concatenated with another.** It
+   carries its findings as a DataFrame in `attrs`, and `pd.concat()` compares
+   the inputs' `attrs`, the hazard `B-370` fixed in the retriever. `B-425`.
+
+### B-430 — bounded docs updates need a full site build and unrelated-file cleanup
+
+**Spot-verified, 2026-10-04.** `scripts/build-pkgdown.R` accepts a full build or
+`--news-only`; article and reference targets are rejected as unknown arguments.
+The full branch calls `pkgdown::build_site(lazy = FALSE)`. During B-278 on
+metasalmon pull request 263, the pinned build rewrote 98 unrelated tracked
+files and added one unrelated redirect. The implementation retained ten
+affected/build-record files and restored the rest. At this observation date,
+the [published measurement and receipt](https://github.com/salmon-data-mobilization/metasalmon/blob/0f86ff3148645985e5fae6cadc903b36edc189d9/.hub/overhead/2026-09-30-workflow-improvements.md#L3006)
+are in PR 263's appended log and have not landed on main. The queue item owns
+the implementation and retirement condition.

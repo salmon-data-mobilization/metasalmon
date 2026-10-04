@@ -1003,6 +1003,9 @@
 #'   A test hook; the signature is `function(query, role, sources)`.
 #' @param sources Vocabulary sources to search. Defaults to
 #'   `c("smn", "gcdfo")`, the two this package resolves deterministically.
+#'   Names are read as [find_terms()] reads them: each trimmed and lower-cased,
+#'   with missing, empty and repeated names dropped. A list with no name left
+#'   is an error.
 #' @param quiet Suppress the progress and summary messages. Warnings about gaps
 #'   and placeholder rationales are not suppressed.
 #'
@@ -1061,8 +1064,11 @@ write_sdp_semantic_closure <- function(path,
   if (!is.function(search_fn)) {
     cli::cli_abort("{.arg search_fn} must be a function.")
   }
-  sources <- unique(trimws(as.character(sources)))
-  sources <- sources[!is.na(sources) & nzchar(sources)]
+  # One reading of a source list for the whole package: the rule find_terms()
+  # and the source policy apply (hub B-421), and the one metasalmonpy's closure
+  # takes from `_normalize_explicit_sources()`. This used to be `trimws()` and
+  # `unique()` alone, so " SMN" and "smn" were two sources here.
+  sources <- .ms_normalize_explicit_sources(sources)
   if (length(sources) == 0L) {
     cli::cli_abort("{.arg sources} must name at least one vocabulary source.")
   }

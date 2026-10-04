@@ -182,6 +182,7 @@ articles:
     desc: "Step-by-step guides for common workflows"
     contents:
       - tidy-data-for-sdp
+      - semantic-review
       - post-review-package-publication
       - data-dictionary-publication
       - reusing-standards-salmon-data-terms

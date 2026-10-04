@@ -1173,11 +1173,31 @@ gap and incomplete-evidence rows with every carrying code row's dataset,
 table, column, code value and target key. An IRI shared by two code rows gets
 two address rows; `render_ontology_term_request()` renders two candidate
 requests, which must be reviewed before filing to avoid duplicate issues.
-Warnings and placement rationales name `term_iri`. metasalmonpy's closure
-still has the same invented address; this is an owed port, not a chosen
-difference or a new numbered row. **Why not in the same stream:** a hub claim
+Warnings and placement rationales name `term_iri`. At Python main `d68383c`,
+metasalmonpy's closure had the same invented address; this was an owed port,
+not a chosen difference or a new numbered row. **Why not in the same stream:** a hub claim
 covers one branch in one repository. The Python half is **B-266**, scoped to
-mirror the `codes.csv` `term_iri` address and the two RED-tested cases.
+mirror the `codes.csv` `term_iri` address and the two RED-tested cases. **This
+one is closed.** `B-266` **landed 2026-10-03 as metasalmonpy #96**, merge
+`552bfa2`: both controls failed before the port, and the final focused closure
+file passed all 53 tests. The extras dependency leg exercised the YAML-gated
+controls; shared IRIs retain every carrying address and separate request
+drafts. The port adds no numbered deviation row.
+
+**The development version after 0.5.0 adds a corrected NuSEDS `AREA`
+description to what the mirror is owed (2026-10-01).** Hub item **B-401**
+changes both metasalmon example dictionaries from PFMA Area to DFO sub-district,
+as defined by NuSEDS's own data dictionary and map. metasalmonpy's bundled
+`data/column_dictionary.csv` at main `552bfa2` still called `AREA` a PFMA Area.
+This was an owed data/documentation port, not a deliberate difference or a
+register row.
+It did not land in the same stream because a hub claim covers one branch in
+one repository. The metasalmonpy item is **B-402**; the
+independent specification-example correction is **B-403** in `smn-data-pkg`.
+**This one is closed.** `B-402` **landed 2026-10-03 as metasalmonpy #97**,
+merge `24b6472`. The complete Python dictionary now matches R's B-401 file
+byte for byte, changing only the AREA label and description; semantic IRI
+cells are unchanged.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.** When
@@ -1525,3 +1545,19 @@ live in one repository, at which point a single test can read both directly.
 
 Maintenance: a new deviation is added in the same PR that introduces it, in
 both registers, in the same stream, at the same number.
+
+## Commons-reader measurement, 2026-10-04 (B-278/B-279)
+
+At R `3e8a9a1` and Python `d01b93f`, the full 110-record commons export and
+both shared fixtures yield the same 49 gap fields, ordered holds, routes,
+repositories, titles and bodies after missing-value normalization. The actual
+export retains 35 explicit draft routes and 75 holds. Fixtures are byte-identical;
+no term definition, type, IRI or verification decision is inferred.
+
+This measurement covers default labels. Existing nondefault `issue_labels`
+behavior differs: R replaces exact empty strings with missing values, removes
+duplicates and supports row-aligned lists; Python preserves the supplied label
+object on each row. B-278/B-279 preserve their respective ordinary SDP behavior.
+This is a preexisting difference, not a new design ruling or an assertion of
+universal payload parity; choosing a common normalization remains unresolved.
+No numbered deliberate-difference row is opened or claimed closed here.

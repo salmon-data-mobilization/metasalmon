@@ -2263,3 +2263,1150 @@ is introduced. Existing reviewed PRs remain separate.
   findings and reach controls. Next useful owned batch will test the merged
   coherent-batch rule after Git auth recovers. Keep this owner route and failure
   disposition, and avoid repeating the completed review/audit on unchanged heads.
+
+### Original-owner continuations and preservation check, 2026-10-02 about 14:06–15:29 UTC
+
+- **Useful implementation:** B-265, B-401, B-129 and B-262 continued their
+  verified original terminal handoffs, branches and holder identities. No fresh
+  claim, renewal, second handoff, new worktree or borrowed identity was needed.
+  B-265 merged as `fd5c421` after all current-head CI and completed review gates;
+  canonical main fast-forwarded and its clean, zero-unique-work auxiliary
+  checkout was removed, with branches retained. B-266's fulfilled prerequisite
+  is cleared and its ready promotion cites the 2026-09-23 standing grant.
+  Fresh claiming still awaits usable configured Git authentication; the actual
+  cache's no-write probe at 14:14:52 UTC failed and its probe ref was absent.
+- **Coordination:** original owners and frozen peers remained separate lanes,
+  with one publication/main writer and staggered NEWS builders. B-401 combined
+  six real prerequisite conflicts and two actual Codex P1 fixes into one NEWS
+  build/publication; both findings were fixed, answered and resolved. No routine
+  publication or merge approval question was added. One exact pending question
+  reserves B-129's new public guide (HUB class 9) for Brett; it remains draft.
+  B-262's earlier failed Claude execution remains a hold pending actual complete
+  review, independently of CI. No manual model reroll or permission relaxation
+  was requested. Inactive-lane and execution-failure audits stayed read-only.
+- **Small transport adjustment evaluated:** selecting settled main as the API
+  tree base while preserving actual ordered commit parents and proving the exact
+  resulting tree reduced B-265's plan from 253 entries/32,258 characters to
+  12/2,757: 95.3% fewer entries and 91.5% less plan text. These are artifact
+  percentages, not whole-run time or token savings. Next uses were B-401's
+  12 entries/2,948 characters and B-129's 20/4,697. An initial oversized plan
+  read truncated and failed JSON parsing; bounded reads recovered it before
+  any branch mutation.
+- **Verified content reuse evaluated:** exact parent-blob identities, narrow
+  edits and final Git blob/tree assertions avoided 13 additional chunk reads
+  for B-265's two mirror-note fixes (still two uploads/361,938 bytes). B-401's
+  combined knowledge repairs similarly used 49 reads instead of 62, saving 13.
+  Its later one-file roadmap repair used zero reads instead of five and passed
+  the expected blob, tree and public-Git parent proofs before publication.
+  The cache is a transport aid; content identity and preservation still require
+  verification.
+- **Environment workaround:** plain Git authentication is still unavailable,
+  so connected-app source publication required chunk transport. Recorded
+  reads/uploads/bytes: B-265 57/6/about 1.74 MB; B-401 62/6/1,739,388;
+  B-129 57/11/1,451,106; latest B-262 integration 66/8/1,813,277. This is
+  credential/transport overhead, not claim bureaucracy. Every source ref update
+  was non-force and followed exact frozen-tree/ordered-parent public Git proof.
+- **Verification and a failed shortcut:** frozen peers checked original source,
+  main's executable bytes, NEWS, all ordered search identities (including
+  duplicate/list-valued records) and committed assets. Native NEWS builds took
+  B-265 about 17 seconds, B-401's combined integration 15.3, B-129 14.80 and
+  latest B-262 13.572. The narrower B-401 incremental peer check took 1m14s
+  but missed its original gold-standard ordering paragraph: the merge had
+  restored main's stale PFMA account there. An independent read found the loss;
+  the original owner restored the exact reviewed paragraph in 72 seconds.
+  Published correction `520f37c` changes only the roadmap and preserves the new
+  B-265 mirror record. The shortened peer check is **not a demonstrated net
+  improvement**: it required another publication and CI cycle. The PR body
+  corrects the earlier preservation claim.
+- **Next execution adjustment, already applied to that repair:** compare every
+  original owned changed hunk as well as the complete delta against settled
+  main, including separate ordering passages rather than only mirror notes.
+  The before/after check fails on the prior head and passes on the correction;
+  both original roadmap regions are now explicitly covered. No new tracker,
+  policy, guard relaxation, build or model request was introduced. Evaluate this
+  broader preservation checklist on the next necessary integration.
+- **Measurement limits and passive waits:** B-129's 49.79-second
+  coordination/inspection interval within its 490-second builder elapsed total
+  mixes useful scope inspection with coordination and excludes root publication;
+  it is not a waste measure. Actual Claude elapsed times were B-265 200.979s,
+  B-401 114.845s and B-129 193.586s, external execution rather than root active
+  effort. Passive waits and requested audit effort are separate, but a complete
+  partition was not recorded; no defensible whole-run bureaucracy percentage
+  follows. Broad historical-comment, memory and status output regressed again;
+  subsequent reads should inspect all records but render only new findings,
+  changed metadata and positive reach controls. A proportionate documentation
+  CI path and a clearer routine-guide publication boundary are possible future
+  improvements for Brett to consider, not policy changes made in this run.
+
+### Delegated B-401 closeout and final-head wait, 2026-10-02 about 15:29–15:39 UTC
+
+- B-401 merged normally as `61fce4b596daa4ac238a170017bead6cfefdb5ae`,
+  final source head `520f37c`. All six current-head workflows pass. Strict R
+  run 37026938536/job 110903847275 completed on R 4.6.1 at 15:35 UTC with
+  Status OK and zero errors, warnings and notes. Actual completed Claude
+  review 37021403587 has only two nits; its original correction is preserved.
+  Both findings from the last requested Codex review are fixed, answered and
+  resolved. The final skipped Claude job is not counted as a completed review.
+  The PR body and ordinary merge message record the routine delegated class
+  under Brett's 2026-10-01 grant. Q5's term question remains his; no semantic
+  term choice or frozen/public contract, parity-row, guard or policy change
+  was merged. The restored ordering passage satisfies the original retirement
+  condition, with its failing-before/passing-after preservation proof retained.
+- Canonical main fast-forwarded cleanly. B-401's native auxiliary checkout
+  had zero unique commits, no ignored files and no initialized submodules;
+  it was removed and pruned, with both branches retained. B-402's fulfilled
+  prerequisite is cleared and it becomes ready under the 2026-09-23 standing
+  grant (solo P3, nonempty retirement condition, no remaining blocker or Brett
+  decision). B-403 is P4 and remains icebox outside that promotion grant.
+  No fresh claim or renewal was attempted; the Git-auth hold remains.
+- Merge order progressed through B-265 then B-401. Their owed B-266/B-402
+  Python ports can be claimed when configured Git authentication works.
+  B-129's new public guide remains at its existing exact approval question.
+  B-262 remains held for actual completed Claude execution. Its necessary
+  integration naturally started run 37026994541/job 110904041807: 32 turns,
+  145.737 seconds, only the same three nits in comment 5955667288, but one
+  denied `Bash:git log` call failed verification. No manual retry, permission
+  relaxation or cosmetic source churn was used to clear it.
+- The factual canonical checkpoint `0827353` merged cleanly into B-401 in a
+  read-only merge-tree proof; no redundant source refresh or additional CI
+  cycle was added for that base movement. Waiting for final-head CI used four
+  bounded sleeps (45, 45, 55 and 55 seconds: about 200 seconds), recorded as
+  passive wait, not active effort or claim bureaucracy. Final metadata/check
+  reads and publication remain coordination; code/content proofs remain
+  verification. These partial measurements still do not support a global
+  percentage of wasted time.
+
+### Idle batching and PR236 named continuation, 2026-10-02
+
+The 15:44, 16:45 and 17:45 UTC idle checks found unchanged authentication,
+heads and review/approval holds. Reads fell from 11 (seven PR reads and four
+shell calls) to eight (seven PR reads and one configured-URL batch) on each of
+the next two uses: three fewer calls, or 27.3% of read calls per idle check.
+All three recorded zero polling-only agent spawns, source edits, builds/tests
+and Git checkpoints. The first probe wrongly assumed an origin remote in the
+bare claim cache and needed two recovery calls. Later probes reused its actual
+configured URL; authentication still failed without a write and the probe ref
+remained absent. These are call counts, not a whole-run effort percentage.
+
+Brett's directly verified 18:29 UTC named PR236 grant enabled its retained
+B-129 handoff continuation. Root was sole writer/publisher; peers had read-only
+disjoint audit scopes. The necessary main merge took 0.178s and had one actual
+search conflict. A supported publication paragraph was corrected to distinguish
+sharing a strictly validated folder from EML/KNB closure gates. The article
+and NEWS renders took 3.119s and 16.090s (19.209s combined). Offline displayed
+review/setter examples, unchanged data bytes, all 20 fences/39 expressions,
+search ordering/assets and current local gates passed. Unlike B401's narrow
+peer, the next preservation check accounted for every original owned path and
+hunk, and the incoming-main delta. It passed across all 20 original paths;
+this demonstrates the broader check was applied, without establishing a causal
+time saving. Sources stayed frozen for those checks and publication.
+
+The first requested Codex review completed on `9b37fa7` and found one valid P2:
+the S11 implementation note conflicted with present-tense historical audit
+statements. The card now dates its status/remainders/slice plan and routes live
+state to the existing queue. A peer found two residual current-tense clauses
+before publication; both were repaired and the final peer passed. Only card
+and workpad bytes changed in `31c3768`; runtime, guides and rendered pages match
+9b37. OKF has zero diagnostics and original citation/decision-owner controls
+pass. Fixing and checking this finding is implementation/useful verification,
+not claim bureaucracy. Two unused blob uploads and one unreferenced server
+commit were prepared before the peer completed and superseded privately; no
+public branch or CI cycle used that intermediate state. Next time upload after
+the peer's final source freeze. No published history was rewritten.
+
+Claude's source-push, ready and fix jobs skipped execution using the existing
+verified `4854c41` nits verdict. They are not fresh reviews; the actual prior
+completed execution remains the Claude evidence. The last requested Codex code
+and security reviews completed on9b37; its P2 was fixed, answered and resolved.
+No optional review reroll, permission expansion, guard relaxation, provider
+repair or repeated publication approval was used. Final-head CI and the exact
+named approval remain separate merge gates.
+
+Two avoidable output failures are recorded separately from implementation:
+a four-turn approval read with included outputs emitted about 22K tokens, and a
+top-level log-heading selector emitted 20,550 tokens because the latest dated
+sections use level-three headings. The next read selected the actual latest
+h2/h3 dated subsection (2,669 characters), asserted a size bound and emitted a
+compact log/cleanup receipt (187 tokens). This small execution adjustment
+avoids reading the full history again and changes no policy or tracker. The
+initial queue Markdown link escaped the OKF bundle and produced one warning;
+its inline canonical queue route passed the next capture with zero diagnostics.
+These repairs have no measured elapsed-time cost and are not package defects.
+
+Coordination includes ownership/approval/metadata reads, publication and factual
+closeout; implementation includes the two bounded prose repairs; verification
+includes examples, content proofs, builds, peers and actual reviews; claim-auth
+and transport/output repair remain separate. The measurement peer read existing
+receipts without GitHub polling, source writes, new builds/tests or model calls.
+The 12m12s merge-to-freeze interval mixes several categories; it cannot be
+partitioned into active effort or waste. Passive sleeps and final gate/merge
+receipts are added below. No defensible whole-run wasted-time percentage is
+inferred from these partial and overlapping measurements.
+
+PR236 merged as `11ea204ad875785d5ec22590ffb2bd5a6b521089` after all seven
+final-head workflows passed on31c3768. R run37052054610/job110987591166 passed
+the full provider-isolated suite and strict R4.6.1 check at19:18 UTC with
+zero errors, warnings and notes. The exact named grant satisfies its reserved
+new-public-page gate; the merge message and concise PR body retain that receipt.
+No human thread waited; the one Codex P2 is fixed, answered and resolved.
+Canonical main fast-forwarded cleanly. The native B129 checkout had no unique
+commits, ignored files, initialized submodules or embedded repositories and was
+removed/pruned; branches were retained and unrelated B384 workpad edits kept.
+B129's own walkthrough/navigation/tidyr retirement condition is met. No item
+had a B129 dependency to promote.
+
+This continuation recorded six completed bounded sleeps (45s then five55s)
+and one interrupted sleep (~4.06s): about324.15s of passive wait. Later elapsed
+idle gaps are not asserted as measured sleep or active effort. A premature
+in-progress job-log read returned404; the completed-job read supplies the actual
+R4.6.1/StatusOK/zero-result evidence. A closeout query first assumed PyYAML in
+the system interpreter; its missing import was avoided using the existing
+queue instrument and an rg search with B129's own ID as positive control.
+These are instrument rework, not source defects. A fresh19:19 UTC no-write
+Git-auth probe still fails128 with credential failure; public locks-main is a
+positive reach control and the probe ref is absent. No new claims/renewals,
+credentials or claim-policy changes were made. B266/B402 remain ready for
+authenticated pickup. All history before this append is preserved exactly.
+
+### B266 authenticated pickup and Cloud verification lane, 2026-10-02
+
+The normal configured Git route now works in this chat: `scripts/hub claim
+B-266` acquired the fresh item under the inherited session's existing cached
+identity `a-c1bbb42efa975289`. Its claim tip is
+`f7bdb4a2a342f562d1443e6c195520ca0787dc6d`, with lease through
+`2026-10-03T03:11:17Z`. No identity override, credential copying, helper
+reconfiguration, alternate claim API or protocol exception was used. Earlier
+authentication receipts describe those commands in their execution contexts;
+they do not establish the current route's state. B199's existing handoff
+remains `e1c32c6771e7b38fedd0c9a1c2c02784d8ad2bab`.
+
+One root implementation writer owns the isolated Python B266 branch. The
+published workpad-only plan is `53dbe7db9706c2d74f89c6f92d5a0c4b1f064e96`,
+based on Python main `d68383c`. Production and tests are unchanged. A bounded
+read-only peer mapped both R B265 controls and the repeated-IRI/address risks.
+The Cloud assistance proposal is review and verification of exact frozen
+commits, with no claim/source/branch writes or configured holder identity;
+the parent chat creates the environment/task. This needs no ownership
+transfer. B402 is unrelated and stays separate. The sole claim cap was
+enforced by the normal client. Existing dirty workpads and unique unpublished
+commits in other worktrees were preserved.
+
+The four pending compact idle receipts at 19:35, 20:38, 21:37 and 22:37 UTC
+used 8, 7, 9 and 8 nested read calls respectively, zero polling-only agent
+spawns, zero Git checkpoints and zero tests/builds. PR heads/activity and the
+relevant claim tips were unchanged, so earlier dispositions were reused.
+The 21:37 instrument first used nonexistent bare-cache HEAD in its dry-run;
+the corrected existing locks-main SHA reached the credential route. It also
+printed oversized PR bodies after selecting the wrong MCP result field.
+These are coordination rework, not package failures or useful verification.
+Local receipt files retained the counts without creating status-only Git
+commits. No whole-run wasted-time percentage follows from these call counts.
+
+Small adjustment under evaluation: use a 10-second initial tool yield for
+the short compact shell snapshot, rather than yielding after one second and
+requiring an output-poll call. The B266 claim returned in one tool read:
+4.887 seconds for the client. Worktree creation took 0.057 seconds. The next
+idle snapshot will test the adjustment on the comparable operation. These
+are partial command durations, not elapsed pickup time or model-effort time.
+The pickup/plan portion has coordination and peer preparation only; no
+implementation, package verification, local environment repair or explicit
+passive sleep is claimed. Bad Python layout/orientation path assumptions and
+oversized instruction/config reads are additional instrument rework. Preserve
+all earlier measurements; this append changes no policy or review gate.
+### B266 verified port, delegated merge and yield result, 2026-10-02
+
+B266's local owner published source `c805c1235b94ce8b3c053654bae418b4f263be41`
+and handed it back through the normal client, tip
+`ec10ff100b9cc92bf6300fcadb25d480ae9dcd1a`. The terminal claim remains held;
+no release, transfer or borrowed identity was used. Python PR96 was attached,
+marked ready as a one-PR batch, and merged under the standing delegated
+already-ruled behavior-port class after its gates passed. GitHub records
+merge `552bfa245aceaf83d20d381706f9a9a81056dcc7` at 2026-10-03 00:02:33 UTC
+(2026-10-02 Pacific). The exact head was required by the merge command.
+The PR body records the delegation before merge; no PR write followed it.
+The canonical queue done mark and both required port-landed passages close
+the factual record. No numbered parity row or policy changed.
+
+Useful implementation corrects gap and incomplete-evidence addresses to every
+actual carrying codes.csv term_iri row. Shared IRIs keep separate addresses
+and request drafts, parent lookups include the dataset key, warnings name the
+real field, and canonical gap ordering matches R's code-value-first,
+missing-last order. No ontology term was selected or changed. B199, S16 and
+unrelated B402 were preserved. One root wrote the source; one independent
+read-only peer checked the frozen candidate and final correction.
+
+Verification receipts are distinct from coordination:
+
+- Baseline production unchanged: the public procedure controls failed three
+  cases (gap and incomplete field, and shared-IRI row count), 0.61s.
+- First candidate: three focused passes, 0.39s; whole closure file 49 passes,
+  no skips, 1.00s. The peer found a real ordering mismatch against R source.
+  An inverted-order control reproduced it: one failure/one pass, 0.26s.
+- After that correction and fail-closed/qualified-parent controls, the frozen
+  closure file passed 53 tests, no failures/errors/skips, 1.00s. The final
+  peer found no remaining substantive issue. Focused pytest time across the
+  five invocations was 3.26s; this is partial tool time, not total work time.
+- Hosted run37079729306 at the exact source head: extras job111077359992
+  reported 1903 passed, 9 skipped, 218 warnings and 319 subtests (51.59s).
+  Core job111077359914 and bare job111077359741 each reported 1742 passed,
+  170 skipped, 217 warnings and 278 subtests (75.91s and 52.08s).
+  The actual core/extras sentinels checked absence/presence of yaml, lxml,
+  openpyxl, pypdf and xlrd. B266's YAML-gated public controls ran in extras;
+  aggregate quiet logs do not establish every individual skip's reason.
+  Parity job111077359998 passed 308 tests (6.16s). Both distributions built,
+  with four nonfatal setuptools namespace-package discovery warnings. B266
+  changed no packaging configuration; these warnings are not zero-warning
+  coverage. Documentation build and changelog-window checks also passed.
+  PR documentation deployment was skipped by design.
+- Actual Codex code review completed on c805c12 at 23:59:37 UTC, summary
+  comment5963354128, with the bot's completed-without-findings reaction.
+  Inline findings and human review threads were empty. No extra review was
+  requested. Python has no configured Claude workflow; no Claude completion
+  is inferred. R B265's prior review is not substituted for this Python review.
+
+The active continuation snapshot tested the prior yield adjustment on the
+comparable operation: seven nested reads, zero output polls, shell3.772s.
+The prior eight-read envelope included one extra poll. Retain the ten-second
+initial yield for this short snapshot. The evidence is one eliminated call,
+not a measured saved-time or wasted-time percentage. Separate the subsequent
+useful source/CI/review/merge reads from that polling comparison.
+
+Coordination rework included too-small source-read budgets, one mixed-cwd
+R-source lookup, and a CI extraction that matched job-name prefixes on every
+line instead of the log payload. The bounded CI auditor corrected the latter
+by removing the first two tab fields before filtering the cached logs; no
+package test was rerun to repair the instrument. The peer correction is
+useful verification and implementation rework, not paperwork waste. Requested
+workflow measurement lives in this existing log. No local environment repair,
+heavy local full suite/build, extra credential setup, polling-only agent or
+explicit passive sleep occurred in the implementation continuation. Hosted
+execution is recorded separately from local test time. Whole-run category
+percentages remain unavailable without a complete active-time denominator.
+
+The clean canonical Python checkout fast-forwarded to 552bfa2. The completed
+B266 worktree had zero unique commits and only generated pytest/bytecode
+ignored files; it was removed and pruned after verification. Both branches
+remain. Other worktrees and their dirty/unpublished work were preserved.
+The local member workpad stays as its source-verification receipt; publication,
+review and closeout status are appended here rather than generating another
+source-identical member commit and another CI/review cycle. This operating
+choice changes no gate. The complete 171002-byte log prefix is preserved.
+Closeout queue lint and generated-block check pass; OKF capture reports zero
+errors and warnings, and the final diff whitespace check passes.
+
+### B402 small port and bounded delegation follow-through, 2026-10-02
+
+The next live ready scan returned B223, B350 and B402 in 3.667s. B223 retains
+unpublished work awaiting B340's shared YAML helper; B350 retains its quote
+compatibility decision. Their workpads and branches were preserved rather
+than treating lease eligibility as an instruction to duplicate their work.
+B402 was ready, unblocked and unclaimed, and became the independent lane.
+
+The existing queue_scout used its own historical explicit HUB_SESSION_KEY
+`metasalmon:01a0ef90-3d80-77f2-9fd0-f75a4b388fc8:/root/queue_scout`, selecting
+cached holder a-16638a45c615a2f8. The shared inherited CODEX_SESSION_ID names
+root, whose holder is a-c1bbb42efa975289; that inherited value alone is not
+proof of a distinct subagent identity. No token was copied, overridden or
+transferred. Normal claim6b8c4b01a8303b08d9536481a4de0a82cb93ac49 advanced to
+handoff f4614c7e32a738c46db8ae3425bf9d3fbee9df2a and remains held. One agent
+wrote the isolated source; root checked the frozen diff and handled readiness,
+review gates and the ordinary delegated already-settled data-port merge.
+
+Python PR97, attached to this chat, merged source
+`e7480b2383a4013c970bf2f2605728f7fac0877a` as
+`24b64720efe69e200c885e97b952b726c5cb1180` at 2026-10-03 00:21:01 UTC
+(2026-10-02 Pacific). Exact-head matching was required. The PR body recorded
+the delegation before merge, the last PR write. Only the AREA label and
+description changed in the 17-row CSV; the entire result matches merged R
+B401 byte for byte, SHA256
+`62baa71f7893bb6916e10c0113f932c32257db2f3887a63beef9a0372c06803a`.
+Implementation and independent peer checks retained all other cells and rows.
+The retirement says exact row/grep, so no test duplicating this reversible
+edit or heavy local suite/build was added. The source, Unreleased changelog
+and initial workpad shared one member commit; later status lives here.
+
+Hosted run37081081143 on that head passed: core1742/170skipped/217warnings/
+278subtests (42.86s), extras1903/9skipped/218warnings/319subtests (90.46s),
+bare the core counts (76.50s), and R parity308 (5.98s). Actual core/extras
+dependency-sentinel completion was read. Documentation build and changelog
+window also passed; PR deploy was skipped. Actual Codex code review completed
+at 00:17:16 UTC, summary5963503370, with the completed-without-findings
+reaction and empty review/human threads. No additional review or human
+approval question was requested; no Claude completion is inferred for Python.
+
+The next-use CI extraction stripped the first two tab fields before matching
+the log payload. One shell invocation used five CLI reads (run metadata plus
+four jobs), returned 255 output tokens and took 7.028s. All four actual pytest
+summary lines were positive controls. The plain actual sentinel-completion
+messages were read alongside their echoed source lines; the echoed print
+statements are not completion evidence. This avoids the earlier prefix-matching
+output flood. Keep the payload-first extraction and require actual output
+messages when applying it again; no helper, tracker or policy was added.
+
+Partial subagent coordination command durations: status0.989s, claim4.903s,
+worktree0.088s, push1.756s, PRcreation2.267s, label1.981s and handoff3.388s,
+approximately15.4s across those seven commands. The roughly one-minute source
+edit/CSV-verification interval also included workpad preparation, so it does
+not isolate implementation from documentation time. One obsolete frozen-helper
+path failed immediately before using the canonical hub client; this is
+coordination rework, not package or dependency repair. Root's frozen CSV peer
+command took0.171s. These partial samples do not yield a whole-item bureaucracy
+or wasted-time percentage, and coordination is not all waste.
+
+Passive waiting is separate: two collaboration waits timed out at their
+requested60s limits, one ended on a message with unmeasured duration, and two
+explicit review sleeps returned120.019s combined. No polling-only agent was
+spawned. Source verification, hosted gate inspection and the requested workflow
+audit are useful work; no local environment installation or full-gate repair
+occurred. The small port still needs identity, publication and review steps,
+so creating more workflow machinery for it would add overhead. Retain the
+short workpad, one source commit, frozen peer, concise status closeout and
+existing review gates for the next comparable item. Claimable discovery alone
+does not clear an existing dependency or unresolved decision.
+
+Canonical Python fast-forwarded to24b6472. The completed B402 worktree was
+clean with zero unique commits and zero ignored files, then removed/pruned;
+its branches remain. Other worktrees and dirty/unpublished work were preserved.
+The complete176377-byte overhead-log prefix is unchanged. Queue/port closeout
+uses the existing canonical hub route and introduces no parity-register row.
+Closeout queue lint, generated-block check, diff whitespace and OKF capture
+passed; capture reported zero errors and warnings.
+
+
+### B333+B335 requested fetch checkpoints and publication overlap, 2026-10-03
+
+Brett explicitly directed the R B333+B335 batch in this chat on 2026-10-03:
+recheck, promote under R15, claim with the normal identity, preserve URL/Accept
+isolation and Q71 behavior, keep tests-only/fix checkpoints, and report to Alan.
+B266/B402 were not restarted. R15 promotion8b6559041b3cb736630d74f8869b9e0046fc067a
+changed only the two existing queue states; lint, generated-block freshness
+and diff whitespace passed. Normal inherited-session holder a-c1bbb42efa975289
+claimed B333 at ab6a374b084cf3667a989b3fab93910be77d01df. A premature B335
+attempt exited3 under max_concurrent_claims1 with no claim write; after B333
+handoff, B335 claimed normally at9bb93682f2ec0914e0d293339cf59b69cf7f503d.
+
+One native auxiliary checkout, salmon-data-mobilization-metasalmon-B-333,
+holds lead branch agent/B-333/a-c1bbb42efa975289 and detailed B333 workpad plus
+short linked B335 workpad. B335 reused it. No token copy/override, second
+implementation worktree or new tracker was introduced. The live handoffs are
+B333 9ed43ab24ce99d2d043faa9df5e8fb8e0c21bd24 and B335 f3348c876c75c084d2bd09273f3d321732ff5d73. Both claims stay held;
+queue retirement remains pending source merge and each item's verification.
+
+Published source checkpoints, retained separately in the lead ancestry:
+
+| Item | Tests-only | Fix | Focused before/after |
+| --- | --- | --- | --- |
+| B333 | 174783c3a7b2689bb40573881c62e257f519fb98 | 2da4c1a8ea0fbe4195e724b00e7ef7432d26c7a5 | 2 expected assertion failures, 7 controls passed; then 9 passed |
+| B335 | ce457677459a586ed0e8e1596421717547ec57c6 | a2f32fa9cb778ee42f4f0986e0667a11ceba8735 | 26 expected failures, 27 passed, zero errors/skips; then 56 passed |
+
+B335 tests-only production blob ae31ae60798e6c135071d2d25be84394bd41039f is
+exactly B333's completed production. Final tree3ef23105bc24a6a9219604433dcd4dfc873938c1,
+fetch blob b23b7eaf77d871be80a43f418b0d1e0b4c4d6913 and test blob
+6a050d05d37ec604d6ef35c39e94de1342dfb735 stayed frozen for peer verification.
+Both exact agent/B333 and agent/B335 handoff refs were read back at the final
+fix. B333's earlier completion remains an ancestor of the lead; no local
+B335 branch was needed for its direct commit-to-remote handoff alias.
+
+The fix retains public formals and explicit fallback choices. An implicit SMN
+fallback belongs only to the default URL. Cached bodies and both validators
+belong to each requested URL/Accept pair; orphan headers cannot produce a hit,
+a fresh200 drops validators it omits, and an all-fail cached return must belong
+to an attempted pair. The existing matching-cache warning/return assertion was
+retained with a public-fetch fixture, replacing an unqualified legacy filename.
+New canonical-byte helpers were added to the existing collation guard.
+No ontology IRI choice, model call, version or parity-register row changed.
+Python B334/B336 remain separate blocked mirror obligations.
+
+Local R4.5.2, testthat3.3.2 and digest0.6.39: first B333 RED command1.48s;
+combined B333 GREEN/documentation block3.86s, with individual times unmeasured.
+B335 complete RED-count extraction1.66s, first53-assertion GREEN2.91s and final
+56-assertion GREEN2.20s. Collation9 and CLI safety11 assertions passed in the
+combined guard/documentation block4.04s. These are command samples, not complete
+phase durations. No heavy local full suite, package check or full site build ran.
+
+A read-only peer independently passed B3339 assertions and six extra controls.
+On the frozen final source it passed all56 isolation assertions in1.31s and
+all22 validation-helper assertions in1.30s, zero failures/errors/skips, with
+three existing semantic-field warnings. The validation file used external
+mocked HEAD/GET responses and a temporary user-cache directory; its existing
+live-probe instrument was bypassed only in that scoped offline run. This is
+not live ontology reach. Four paired golden keys plus unknown-encoding UTF8
+under C locale passed. No peer source/claim/ref writes occurred.
+
+Actual scope conflict: PR211 already names B333/B335 alongside B420/B421/B422.
+HUB forbids another PR for an included ID. Canonical main still has the old
+matching-cache failure behavior; PR209/PR211 quote Brett's separate Q71 stale
+ruling. This batch preserves the canonical failure behavior and does not
+implement unclaimed B422, change the default ontology, or alter the S16 branch.
+Alan was notified; duplicate publication, full hosted/R-capable Cloud gates
+and merge stay held for an explicit PR211 disposition. No completed Claude
+review, hosted full gate or merge is claimed for these checkpoint branches.
+The parent owns admission of any fresh Cloud verifier.
+
+Coordination rework observed: oversized context output needed narrower reads;
+a read_thread limit40 call was rejected (maximum10), and one non-JSON error
+message reached a JSON parser. An unmatched shell glob and a guessed workflow
+filename caused read failures. The cap1 claim miss was avoidable by reading the
+existing cap before attempting both claims. The first C-locale positive-control
+fixture errored in MIME guessing on its Unicode response URL; using the URI
+form corrected the instrument without changing production for that error.
+These are coordination/instrumentation corrections, not dependency repair.
+
+Next-use adjustment: before promotion/claims for named IDs, inspect the current
+open-PR ID inventory alongside queue/claim evidence. Published legacy work may
+have no claim and still make a second PR invalid. One existing metadata read
+can expose that overlap before implementation; no new scanner, policy or
+tracking surface is needed. Evaluate the next pickup by whether this avoids a
+late publication hold and duplicated scope, while preserving normal ownership.
+This is the single proposed adjustment from this round; it has not yet had a
+next-use measurement. Separate sequential claims already saved a second
+implementation worktree, but no measured time saving is attributed to that.
+
+Implementation, focused verification, requested workflow audit, coordination,
+environment repair and passive waits remain separate categories. No environment
+installation/auth repair or intentional sleep occurred. Whole-run active phase
+time was not instrumented, so a bureaucracy/wasted-time percentage remains
+unmeasured. Partial subprocess durations are not that denominator. The complete
+181454-byte prior log, SHA25657ab1dd3369a565fff9614e900c9d4001160b100a3354f500968dde644452aa8,
+is preserved byte for byte.
+
+
+### Q71 clarification and existing-PR reconciliation, 2026-10-03
+
+Authority: Brett said in this chat, "For Q71, if the cache matches the
+requested ontology and refresh fails, continue with a warning. Do not use
+unrelated, mismatching or otherwise known-stale caches. Reconcile PR209/211
+and B422 with this ruling, preserving the B333/B335 checkpoints and existing
+claims." The default-SMN ruling is unchanged. Failed refresh alone is not
+proof of staleness; no TTL was invented.
+
+Canonical B422 record/promotion: 75a4131ada0e55db6310bdedfe3e1027566b73a1,
+under the existing R15 grant (solo, P2, explicit retirement, no blockers or
+remaining decision). Normal holder a-c1bbb42efa975289 successfully claimed it.
+Terminal held handoff: 9434bd8e77997aef95123b3df7c7922a8247abb5.
+Its exact agent/B-422/a-c1bbb42efa975289 ref and existing PR211 both point to
+176c7c4ad4ae0f938abbd3115cf7fc88d231ed42; tree
+2e7f7fbb0a7ec642c0cf33f17620b78c99330a2f. Queue retirement remains pending.
+
+PR209 head 526f07b6977c8ac8a353291627356e720d3f7b7a records the superseding
+Q71 interpretation, corrected B422, the same-stream B423 Python acceptance,
+and the S2 explanation of the still-owed PR75 port (measured acc1a57).
+PR209 precedes PR211 in merge order. Both existing PR titles/bodies are
+reconciled; no duplicate PR, branch rewrite or other claim transfer occurred.
+B333/B335 terminal tips are unchanged at 9ed43ab24ce99d2d043faa9df5e8fb8e0c21bd24
+and f3348c876c75c084d2bd09273f3d321732ff5d73. Their worktree and both source
+refs remain at a2f32fa; all four original tests-only/fix commits are ancestors
+of PR211 through an ordinary merge, without edits to the checkpoints.
+
+Q71 tests-only 3bae7af9e3d2e58595bc8a56da1efd48a60ba76c demonstrated
+12 failures/67 passes/zero errors against the unconditional-error candidate.
+After the first fix, peer found old-validator cleanup failure could pair a
+new body with old headers. A new regression demonstrated 3 failures/87 passes;
+checking cleanup before clearing invalidation repaired it. Final local:
+90 fetch +56 preserved isolation +9 collation +11 CLI assertions pass, zero
+failures/errors/skips. Independent peer reproduced those, executed the exact
+matching warning/return validation fixture offline (two assertions), and
+found no remaining substantive Q71 issue after repair. Final R fetch blob:
+c9149fdc20a1ab7229647b28ffd6aa47f33fcf69. No live ontology reach was claimed.
+
+Coordination measurements: one new claim and one handoff; zero changes to
+existing claims; zero new PRs; two useful read-only agents, zero polling-only
+spawns. PR inventory was checked before publication and existing PR211 was
+updated, evaluating the previous pickup-overlap adjustment without another
+tracker. No time saving is attributed beyond the observed absence of duplicate
+publication. Implementation and requested contract/mirror audit time were not
+separately instrumented; no full active-time denominator exists, so a wasted-
+time percentage would be invented. Focused subprocess blocks observed roughly
+1-3 seconds each; these are partial runtime measurements, not total effort.
+Verification included queue lint/check, capture with zero errors/warnings,
+focused RED/GREEN, source freeze, independent peer, ancestry/ref readback and
+released-NEWS preservation. Environment repair: none. Intentional passive
+waits: none; hosted CI/reviews were still in progress at 22:15 UTC.
+
+Rework: an unpublished merge parser used a greedy conflict-marker suffix and
+truncated NEWS history; the diff-stat and canonical suffix control caught it.
+The full file was restored before publication, with all 123898 released-history
+bytes preserved. A few oversized orientation/status outputs and one read from
+the wrong worktree added avoidable reads. No test/approval/review gate was
+relaxed to recover. Source/storage audit is requested useful work, not counted
+as bureaucracy merely because it is review.
+
+Next small adjustment: include both packages' implementing acceptance clauses
+in the initial ruling-doc pass before that pass is committed. The second B423
+acceptance commit here was avoidable after the initial mirror audit; measure
+that next use by extra documentation commits/reads, not a new dashboard.
+
+Holds: current-head full R suite, strict package check/site rendering and
+actual hosted reviews; original B421 locale-folding finding4115693924 remains
+outside this bounded Q71 repair. PythonPR75 still owes matching warning and
+invalidation behavior under corrected B423. No merge, completed Claude review,
+full gate, Python parity closure or queue done state is claimed. Parent Alan
+receives the exact checkpoint/ref report; existing pending approvals remain.
+
+
+### Actual review follow-up, 2026-10-03 at 22:32 UTC
+
+The compact idle check found actionable actual Claude reviews at PR209526f07b
+(nits) and PR211176c7c4 (one important documentation finding). Both heads'
+hosted checks completed successfully before follow-up pushes. The important
+finding was verified, not accepted on the bot's authority: Python main
+24b64720 still has the old unqualified/text-writing fetcher, while unmerged
+PR75acc1a57 carries the proposed keyed/raw-byte/default-SMN changes. Its Q71
+warning/invalidation port remains owed, and its configurable per-read timeout
+is not R's whole-transfer timeout.
+
+PR211 follow-up a4ceea30bcabafbe0b6792b63e176ff29757a111 corrects false
+present-tense parity in NEWS, roxygen, comments and test descriptions; moves
+custom-URL fallback behavior under Breaking changes; and supersedes this
+checkout's old B333 hold. Independent peer caught two remaining wording
+claims, then cleared them. Executable R text and test assertion text are
+unchanged. Three test descriptions changed; both Rd files regenerated. All
+123898 released NEWS bytes and all four original B333/B335 checkpoint
+ancestors remain preserved. No full local test, check or site build repeated.
+
+PR209 follow-up 9e77dadd343593b2934819b73c5dcb11de264126 corrects the old actual
+Codex ownership finding: linked findings are filed, not already being worked.
+Queue states and claims are unchanged. Three Claude prose nits were corrected;
+the legacy in-flight/icebox claim-status nit was left honest rather than
+manufacturing claims. Queue lint/check, diff check and OKF capture pass with
+zero diagnostics. Factual bot answer4175182957 records the correction without
+requesting another review. A peer merge-gate audit classifies this records PR
+as delegated; implementation PR211 retains its public-default merge gate and
+separate B421 locale-folding finding. New-head hosted gates remain required.
+
+Coordination: zero claim/handoff mutations, zero new PRs, two useful audit
+agents (one also made a disjoint two-file documentation edit), zero polling-
+only agents. B333/B335/B422 held tips remain 9ed43ab, f3348c8 and 9434bd8;
+original B333/B335 source refs/checkpoints were not touched. The unrelated
+dirty B384 workpad is preserved. PR metadata readbacks used compact check
+summaries after an oversized initial review read. One compact parent-status
+read showed Alan active; the checkpoint report is sent under Brett's existing
+report-back authorization, without another task or writer.
+
+Implementation here is documentation repair, separate from requested mirror
+and merge-gate audit; verification is byte/code/assertion preservation, peer,
+queue/capture and generated-reference checks. Environment repair: none.
+Intentional passive waits: none; CI/review waits are background and still
+pending on the new heads. The trigger-to-clock interval at 22:32:38 was ten
+minutes, not an active-effort partition, so it cannot support a wasted-time
+percentage. Several oversized reads and a second roxygen regeneration after
+residual wording corrections were avoidable rework; useful evidence checking
+is not counted as bureaucracy. Two meaningful PR fix commits and this durable
+measurement are not status-only checkpoints.
+
+The prior next-use experiment (both packages' implementing acceptance clauses
+in the initial ruling pass) has no new ruling/pickup sample here and remains
+to be evaluated. No new tracking surface or policy change was introduced.
+
+### Locale repair and next paired pickup, 2026-10-03 at 23:53 UTC
+
+The compact check found PR209 merged as
+65f91676665b78b61e2f49e367a1ad91745190c6, then canonical main was fast-forwarded.
+The clean completed auxiliary checkout was removed only after verifying no
+unique commits or untracked/ignored files; its branch was retained. No new
+merge was performed by this run. The unrelated dirty B384 workpad remains.
+
+B421 was promoted under the standing R15 grant and claimed with normal holder
+a-c1bbb42efa975289. Its existing PR211/worktree was reused. Tests-only
+46fae4ef8e15cfe423600ba55d2b809fd2b2504f gives six failures, 85 passes and no
+errors/skips. Repair ae70e581add6e0d9335055b0f04f4cf23d5a8d3f explicitly uses
+stringi Unicode lowercase with locale en and declares that runtime dependency.
+All 257 focused assertions pass, including source folding, fetch isolation,
+Q71, collation and CLI safety. Independent peer checked supported-source and
+shared Unicode controls under C, English UTF-8 and Turkish UTF-8, preserving
+ambient locale and invalid UTF-8 handling. The actual Mac Turkish GBIF failure
+did not reproduce; the injected ambient-fold control and real dotted-I/final-
+sigma mismatches are distinguished honestly. Universal Unicode-version parity
+is not claimed: 27 newer-character ICU14/Python16 differences predate this fix.
+
+B421's exact handoff alias agent/B-421/a-c1bbb42efa975289 points to ae70e58;
+terminal claim tip is 24721c09ec3f16510e3626fe66401de18bf246f8. Original
+B333/B335 tests/fix checkpoints and their held claims, plus B422's claim,
+are preserved. Q71/fetch source and assertions are byte-identical to a4ceea3.
+The actual old Codex finding received factual answer4175419894; no reroll or
+person contact occurred. Hosted checks on ae70e58 passed. Claude accounting
+job37162456691 reused the earlier verified nits verdict and ran no new model
+review; its green status is not described as a fresh completed review. PR211
+still requires Brett's merge because B420 changes a public default.
+
+Coordination: one B421 claim/handoff, no changes to existing held claims, zero
+new PRs for this repair and no extra implementation checkout. A parent report
+was sent under the existing explicit authorization. B278/B279 were subsequently
+promoted in separate R15-citing commits after checking their queue records,
+claim absence, worktrees and open PR inventory. B278 is claimed normally until
+2026-10-04T03:42:45Z; B279 remains unclaimed until the sequential handoff. Useful
+peer/schema/port-planning delegates were used; polling-only delegates: zero.
+The shared harness gives the child the root identity, so distinct simultaneous
+claims are unavailable here. No identity override or duplicate claim was used.
+
+Implementation is the one source-fold change and declared dependency, separate
+from requested Unicode/parity audit. Verification includes honest RED/GREEN,
+independent locale checks, byte/ref preservation and hosted CI; no full local
+gate or site rebuild repeated. Environment/instrument repair: an unavailable
+PyYAML import stopped the first promotion wrapper before mutation; lack of
+set-e let later commands continue ineffectively. The retry used builtin text
+validation and set-e without installing anything. An unpublished mock fixture
+encoding error was corrected before tests-only publication. Guessed R/Python
+paths and an absent commons schema glob caused avoidable reads; rg identified
+the actual files. A guessed public claims-repository URL returned 404 and
+changed nothing; subsequent ownership reads use the configured hub client.
+Intentional passive waits: zero. These observations are not
+a complete active-time denominator, so no wasted-time percentage is invented.
+
+The previous adjustment was used: both packages' implementing acceptance
+clauses were included in the first B421 documentation pass. One final roxygen
+pass and one fix/docs commit sufficed; there was no second companion-docs
+commit or duplicate PR. This is one observed use, not a causal time-saving
+estimate. Next use is the B278/B279 reader pair: agree the fixture, lifecycle
+holds and acceptance mapping before either implementation, then mirror that
+one contract. Record mismatches/rework rather than add another tracker or
+change a claim, review or approval gate. B266/B402 were not restarted.
+
+### Commons reader first use, 2026-10-04 at 00:16 UTC
+
+B278's tests-only623a82f and fix/docs882dc5a checkpoints are preserved. A
+post-freeze serialization probe found empty dependency arrays becoming null;
+e93383e repairs that representation. Root's source review then reproduced a
+parser-message secret leak (226 passing/2 failing assertions); f45509e uses
+the existing redactor before CLI escaping and passes all 228 new assertions.
+The 84 prior term-request assertions, 9 collation assertions and 11 CLI
+assertions also passed (the unchanged paths were not rerun after the final
+capture-only repair). These two substantive repairs were useful verification,
+not coordination overhead. No full local suite was repeated; hosted full
+suite/strict check remain required after publication.
+
+Independent source peer found no substantive issue. Root regenerated the
+current valid 110-row commons export and checked all twelve fixture records'
+exact bytes, values and order. Full-source reach then passed: 110 retained
+rows, 35 explicit destinations, 75 visible holds, no fabricated dataset or
+semantic evidence. The Python implementation is still owed; the first docs
+pass says so. Shared fixture/field/hold agreement preceded either port.
+
+Coordination includes schema agreement, one normal claim, publication setup
+and the sequential same-identity limitation. Implementation is the additive
+reader and request-body path. Verification is RED/GREEN, typed/lifecycle and
+capture probes, independent peer, full-export reach and the one successful
+site build. Requested audit covers schema meanings, source provenance and
+mirror acceptance, separate from generic coordination. Environment repair
+was one no-write toolchain rejection, resolved with the already-installed
+pinned Pandoc via PATH/RSTUDIO_PANDOC; no dependency or global setting changed.
+Intentional passive waits total about two minutes while the implementation
+delegate worked. Categories overlap across agents, and no complete active
+effort denominator exists, so a wasted-time percentage is not asserted.
+
+Avoidable root rework: guessed file paths and workdirs caused failed reads;
+the private full-export harness initially had an extra parenthesis; a search
+index probe assumed every entry had an id and a scalar path, although 35
+placeholder entries have only an empty path array. Positive controls and the
+actual layout corrected those probes. One patch used stale wrapped context
+and made no change. These are instrument/implementation mistakes rather than
+claim bureaucracy. Compound mutation scripts now use set-e, and further
+selectors use observed paths and shapes rather than guesses.
+
+The full pinned build rewrote 98 unrelated tracked files and added one
+unrelated redirect. Those outputs were discarded; ten affected/build-record
+files remain. All 567 unaffected search entries retain exact values and order,
+and both complete preexisting NEWS renderings recover byte-for-byte when the
+new item is removed. This selective retention took several minutes of root
+work. Candidate next small tooling improvement: optional named article and
+reference targets in the existing site builder, extending its news-only path,
+so a bounded docs change does not need a full-site cleanup. It is a separate
+workflow improvement, not added to this reader or introduced as a new tracker.
+
+The earlier first-pass mirror-doc adjustment avoided a second companion-docs
+pass; R278 used one roxygen generation. B279 will evaluate fixture/contract
+reuse after the root-owned R handoff. The unrelated R384/Python345 dirty
+workpads and all S16/source-fetch branches are preserved. No new model-provider
+repair, term choice, issue submission, policy change, release or merge occurred.
+
+### Paired commons-reader handoff, 2026-10-04
+
+B279 evaluates the first-pass fixture/contract reuse: its two JSON fixtures are
+byte-identical to R, and one independent comparison matches all 49 gap fields
+plus route/repository/title/body for 110 source records, 12 excerpt records and
+three synthetic controls. The source register gives 35 draft routes and 75
+retained holds on both sides. This is an observed acceptance result, not a
+claim of universal parity for all optional arguments. The existing registers
+record preexisting nondefault-label normalization differences without spending
+a new row number or inventing a design ruling.
+
+Coordination: one normal root-owned B279 claim followed the R terminal handoff;
+the implementation child worked within it. Publication uses one member PR each
+(R263 / Python98), separate tests-only and fix checkpoints, one terminal held
+handoff each, and the already-authorized draft grant. No approval question,
+identity override, polling-only agent spawn or alternate tracker was added.
+Draft publication already triggered actual Claude review on R, so no ready
+transition was needed solely to get that review. Public-formal merges remain
+Brett's. Existing B333/B335/B422 checkpoints and held claims were untouched.
+
+Implementation: the Python reader reuses the agreed schema, holds and body
+format. Verification: 27 focused Python tests pass with two existing dictionary
+warnings, with optional dependencies genuinely absent; 233 R commons and 84
+existing term-request assertions pass after the review follow-up. An independent
+Python peer found an extra non-string SDP column regression, reproduced it
+against baseline, and verified the one-line guard repair. The final peer is
+clear. Root's final frozen comparison passes after that repair. Hosted full
+checks remain gates rather than being repeated locally. Requested audit:
+source provenance, exact full-export row/body comparison and the bounded label
+behavior measurement. Environment repair: none was needed for the Python
+core run; its isolated venv was ordinary setup. Passive waits: review and hosted
+checks overlapped implementation; they are not counted as active coordination.
+
+Actual Claude R263 review reported no blocking issues and five nits. The type
+and existing-label-normalization findings were verified and fixed. Narrowing
+commons dispatch to the mutable display basis would weaken hold protection,
+so the positive control retains source-column dispatch. The first label oracle
+assumed a misleading helper name meant trimming/dropping; actual default-path
+behavior corrected the instrument before publication. This rework belongs to
+verification/instrument repair, not claim bureaucracy. Remaining wording nits
+were left alone rather than forcing another rendered-site pass. A successful
+follow-up review job reused the prior verdict and is not called a fresh review.
+
+The experiment reduced duplicate schema discovery and companion-doc drafting,
+with no repeated full site/suite gate by the peer agents. It did not eliminate
+publication sequencing: the R review fix was pushed while Python was finishing,
+then paired receipts changed R's head again. That can cause another hosted full
+check even though sources stayed frozen. Next procedural adjustment: collect
+bounded paired verification/receipt edits before the next review-fix publication
+where practical, retaining immediate fixes for substantive findings. This is
+one batching habit, not a claim/approval/review policy change. The separately
+identified optional site-builder targets remain a candidate, not a redesign.
+
+Complete active effort across agents was not stopwatch-captured, so no honest
+wasted-time percentage can be computed for this batch. Observable overhead
+proxies are two paired draft publications, zero new approval questions, zero
+polling-only spawns, reused fixture/schema/body design, one affected Python
+article render, and the avoidable late R receipt head change. Coordination and
+requested audit are recorded separately from avoidable instrument mistakes.
+
+### Targeted site-build queue intake, 2026-10-04
+
+The prior B278 build's 98 unrelated rewrites motivated one bounded tool change:
+optional named article/reference targets in the existing builder. A read-only
+helper checked the pinned pkgdown APIs and the existing queue. Positive adjacent
+controls were B141/B213 (done), B393 (additional toolchain inputs) and B253
+(generated Markdown copies); none is this selector capability. The fetched ID
+helper suggested B430 and a second scan found it only in this proposal's branch
+and worktree. No alternate tracker or identity override was created.
+
+Coordination: PR264 registered the new item in icebox, as a new item requires a
+PR rather than the existing-item main-push exception. It opened at 02:01:16Z
+and merged at 02:20:53Z: 19m37s calendar elapsed, including hosted checks and
+reviews, not 19m37s of active bureaucracy. The initial 19910dc had a duplicate
+retirement paragraph in the evidence file. Codex's completed review verified
+that queue-contract defect; Claude called the same issue a nit. The correction
+20a6375 removed the paragraph and clarified the content-addressed measurement
+receipt. Both findings were verified, not settled by the reviewer's severity
+label. One correction push bundled both documentation fixes and its receipt;
+no additional review request or status-only Git checkpoint was made. The later
+Claude job reused a verified completed nits verdict, not a new review.
+
+Current-head CI was green before delegated queue/backlog merge 965416c. The
+canonical primary was fast-forwarded; existing-item promotion 38b2b41 cited
+Brett's exact 2026-09-23 R15 standing grant and every qualifying condition. The
+normal root claimed B430 as a-c1bbb42efa975289 at 02:21:55Z, initial tip
+21d61cff1484de810b63917968d50116545b5fff. B333/B335/B422/B278/B279 terminal
+held tips were batch-read and unchanged. The clean proposal checkout is reused
+on the claim branch, avoiding a second auxiliary checkout. One helper works
+within the root claim; it does not invent a separate identity or duplicate it.
+
+Verification: queue lint/generated checks, OKF capture and diff checks passed
+before and after correction; the baseline rejected the selector before output.
+The hosted full R suite/strict check ran for this queue-only PR and restarted
+on the substantive review correction. That passive gate cost is separate from
+implementation and from active coordination. There was no new approval
+question, polling-only agent spawn, model-provider repair, semantic choice,
+public package contract, policy/guard relaxation or parity-register change.
+
+Requested audit: Brett's 2026-09-27 S16 handoff was reread against live PR/queue
+evidence. Python73 and R209 are merged; Python72 is still open with red parity,
+and its stated prerequisite/merge order remains relevant. R210/211 and
+Python74/75 are still open. The historical snapshot supplies context rather
+than new authority or a reason to take over Brett's branches.
+
+Environment: existing pkgdown2.2.0/R4.5.2 and pinned Pandoc3.8.3 are available;
+the recorded default Pandoc3.11 mismatch is kept as a no-write rejection
+control. No dependency or global setting changed. Failed guessed source paths
+and one stray shell token were instrument mistakes; they are not attributed to
+claim bureaucracy. Passive waits used bounded pauses while review/CI ran.
+No complete cross-agent active-effort denominator exists for intake, so no
+wasted-time percentage is claimed. Implementation and next-use measurements
+will follow in this same log after sources are frozen.
+
+### B430 implementation and next-use measurement, 2026-10-04
+
+Implementation checkpoints stay separate: tests-only e7d818b at 02:27:32Z
+reproduces unknown selectors on the baseline (~4.95s including the fixture's
+initial full build); fix 1f4d619 at 02:38:30Z adds named existing-page targets.
+One helper owns builder/test edits within the root claim; the root owns docs,
+receipts and publication. The 10m58s between commits is calendar elapsed, not
+an active-time percentage. Sources were frozen for the peer and root's real
+site probe. The peer read the pinned source/API/dependency behavior without
+repeating the passing build fixture or full suite.
+
+Verification: the toy fixture passes 37 controls in 14.59s with zero skips.
+It verifies current-source installation, selected HTML/Markdown, derived
+indexes/llms.txt/search/sitemap, repeated selectors, unrelated bytes and ordered
+search records, existing NEWS-only behavior, and rejection before writes for
+invalid selectors and publication/toolchain hazards. Root's independent real
+MetaSalmon probe rebuilt glossary plus semantic_suggestions in 18.26s from a
+disposable archive with private positive-control markers. Both markers reached
+HTML, Markdown and search; 217 unrelated files and 644 unrelated ordered search
+records stayed identical. Only eight selected/derived files changed. No full
+site build or manual cleanup of unrelated outputs was required. The earlier
+B278 full build required discarding 98 unrelated rewrites and a redirect.
+Those two scopes differ, so this supports avoided cleanup, not a universal
+speedup ratio or a causal estimate for all documentation changes.
+
+Root's existing NEWS-only path took 14.80s, changed only NEWS HTML/Markdown
+and search, and preserved 595 non-NEWS search records. Syntax/diff, queue
+lint/generated blocks, changelog-window, OKF capture and workflow parse pass.
+The peer found no substantive defect. Full/news behavior and every existing
+guard retain their scope; B393's unrecorded toolchain inputs remain separate.
+A narrow repository-tooling reason for no Python package port is recorded in
+the roadmap; there is no new parity row or ruling.
+
+Coordination: one normal B430 claim, separate RED/fix checkpoints and one
+bundled publication receipt. No approval question, polling-only agent spawn,
+identity override, duplicate claim or second tracker. The prior complete PR263
+measurement history is copied unchanged before these appended observations;
+its source draft remains frozen. Hosted current-R/actual-review gates remain
+required and are not replaced by local evidence. Publication/terminal-claim
+receipts go in the PR body so CI does not rerun for a status-only head change.
+
+Environment repair: none installed or configured. One validation command
+assumed Python's YAML module was available; it was not. The already-installed
+R YAML reader performed the same bounded parse. That failed probe belongs to
+instrument/environment diagnosis, not hub bureaucracy. Requested audit: the
+old S16 handoff was checked live as recorded above. Passive waits: render and
+hosted review/check time are separated from active coordination. A read-only
+next-item scout runs while root finishes the receipt, not a polling-only spawn.
+
+The improvement reached its immediate target: bounded docs work can keep
+unrelated outputs intact. Next adjustment is procedural: use named targets on
+the next genuine bounded docs task and retain the existing full build for new
+pages/navigation/configuration, rather than extending selectors into a new
+framework. A complete cross-agent active-effort denominator still was not
+captured; no defensible wasted-time percentage is claimed from calendar gaps.
+
+### B430 review and available-work audit, 2026-10-04
+
+Actual Claude review on eb53851 reports zero important findings and five nits.
+A bounded peer verified article titles feed pkgdown's site-wide article menus;
+full builds are therefore explicitly required for title changes affecting those
+menus. The selector pre-resolution workaround now states what would retire it.
+These are source-comment/entrypoint clarifications: comparing parsed builder
+expressions against fix 1f4d619 proves the executable AST is unchanged. The
+other suggestions concern deliberate canonical topic names, mixed bullet style
+and optional stronger llms composition coverage. No new local build/full suite
+was added for these comments. The tests-only and fix commits remain intact.
+
+The first publication head's hosted fixture passes all 37 controls on
+R4.6.1/pkgdown2.2.1/Pandoc3.8.3; the toy records its own running toolchain and
+never accepts a change to metasalmon's committed toolchain. Its strict hosted
+R4.6.1 check uses error_on=warning and finishes with zero errors/warnings/notes.
+Ready conversion was a batch of one after Claude completed, avoiding an
+in-progress review cancellation. The ready-triggered successful Claude job
+explicitly reused that verified completed nits verdict; it is not a new review.
+Current-head CI and completed Codex findings still govern the eventual merge.
+Their final receipts belong in the PR body rather than a status-only Git head.
+
+A read-only queue scout covered all 325 canonical items with B430's live claim
+and done B266/B402 as positive controls. B223/B350 are the only ready-list
+outputs, but have existing partial work or explicit decision holds. Fifteen
+icebox items pass only the mechanical solo/severity/retirement/done-blocker
+screen. No independent core pickup survives ownership/authority checks: B423
+belongs to open conflicting Python75, B420 to R211, B325 leaves timing to Brett,
+and other promising items retain explicit choices. No queue state, duplicate
+claim, partial branch or another owner's scope was changed. This is a dated
+bounded audit; the live queue and workpads remain the authority. Alan received
+the checkpoint/claim/result report and the existing-owner conflict finding.
+
+Coordination proxies remain zero new approval questions, zero polling-only
+agent spawns and one root claim. Passive hosted review/check waits use bounded
+checks; no workpad/status commit is made merely because a poll is unchanged.
+The clarification push will be bundled with any valid Codex correction rather
+than split into a publication for each nit. This retains the already-selected
+batching habit; no approval/claim/review gate or tracking framework changed.
+
+### B430 substantive review repair, 2026-10-04
+
+Codex's completed eb53851 review found a valid P2 beyond Claude's nits: selected
+articles rendered without separate-process isolation and could clobber the
+wrapper's variables or leak state to each other. The peer verified pinned
+pkgdown/callr source: full-site articles use fresh processes, and callr carries
+the active current-source temporary library paths. This is useful defect
+verification, not bureaucratic waste. The repair stays within the existing
+full-build behavior condition and strengthens regression coverage.
+
+The implementation helper is preparing a separate tests-only RED checkpoint
+and fix while the root preserves the existing claim and original checkpoints.
+The two source-comment/entrypoint clarifications are bundled into the same
+publication. The earlier AST-equality receipt applies to those comments before
+this executable repair; it does not claim the subsequent process fix leaves
+the AST unchanged. No new claim, approval question, identity, tracker or full
+local MetaSalmon suite/site run is needed. New frozen proof and actual review
+receipts will be recorded after the repair, with hosted gates still required.
+
+### B430 repair frozen and measured, 2026-10-04
+
+Separate review checkpoints: tests-only 2ffca36 reproduces a real selected
+chunk clobbering index_paths, making the old builder fail on poison.html after
+a successful initial toy full site (7.3s RED). Fix 72fd116 restores fresh
+article processes while retaining the current-source temporary library.
+The helper's pinned fixture passes 40 controls in 17.3s. Root spotted an oracle
+weakness: source echo contained the same marker being asserted as executed.
+Hiding echo in the two probes makes marker matches output-only; this stronger
+fixture passes all 40 controls, zero skips. The peer independently reviewed
+both the functional fix and oracle correction, with no duplicate build.
+This necessary regression recheck resolves a concrete remaining risk rather
+than expanding an optional validation loop.
+
+Root's independent real-site build on 72fd116 took 19.16s, kept the same eight
+selected/derived changes and again preserved 217 unrelated file bytes and 644
+ordered unrelated search records. Both markers reached HTML/Markdown/search.
+The earlier 18.26s trial preceded the isolation correction; the 0.90s difference
+is not attributed causally to process isolation because ordinary run variance
+was not measured. The useful result remains no unrelated-output cleanup.
+
+Implementation/verification work includes this actual behavior defect and test
+oracle repair. Coordination is one bundled review-fix publication with no new
+claim or approval question; original checkpoints and terminal held claim stay
+intact. Source/comment, entrypoint and proof edits are collected before that
+push. The next Codex request is for a pushed substantive fix, within the existing
+review cap, not a reroll of the same finding. Claude's verified nits verdict is
+retained; a workflow that reuses it is not described as a fresh review. New
+current-head hosted gates remain passive required verification, and their
+receipts are recorded in the PR body without a status-only commit.
+
+
+### Delegated B278 integration after B430 merge, 2026-10-04
+
+Brett's approved standing grant delegates compatible optional APIs and permits
+recorded independent review/tests when a bot cannot complete. B278's former
+public-formal approval hold is superseded: its only added tail formal is
+`commons_gaps = NULL`; existing calls/defaults, attributes and frozen gap
+columns stay intact. Actual Claude comment 5974971569 reported five nits and
+no blockers; the substantive type/label findings were fixed. Existing source
+peer and paired full-export evidence are reused because the owned reader,
+acceptance tests and fixtures remain byte-identical to reviewed 3e8a9a1. No
+cached-verdict job is described as a fresh review. Required CI on the newly
+integrated head remains a gate, and B278/B279 remain open until landing.
+
+Coordination: PR265 merged as 515a365; B430's queue-only closeout fa61f09 is
+included by ordinary merge into the existing B278 branch. The canonical log's
+complete 221386-byte prefix (SHA-256 87df604746778b6b4169a0cf789bf15f328cd0a10a0d0a414b889804c1e00452)
+contains the entire 208242-byte PR263 log and is preserved before this append.
+Five overlapping conflicts were resolved as one substantive integration,
+including both NEWS entries. Main's queue-only advance triggered a scoped
+abort/replay before building. The first abort needed a status/index refresh;
+working/staged canonical log bytes were verified equal before retry. No reset,
+claim change, branch deletion, source rewrite or lost log append occurred.
+
+Implementation: only incoming-main source changes were admitted. Byte checks
+retain 295 old R/tests files exactly and match 10 changed/added R/tests files to
+the incoming versions derived from the merge base. The owned commons reader,
+33-column prototype and original fixtures/checkpoints remain intact.
+
+Verification: one matched NEWS-only build under pkgdown 2.2.0/Pandoc 3.8.3
+passed in 16.050 seconds. It changed only NEWS HTML/Markdown and search JSON;
+there was no full site or full R-suite repeat. The native search rebuild moved
+four empty placeholder slots (non-NEWS positions 257, 258, 433, 434). After the
+complete non-NEWS multiset matched, the 596 original non-NEWS records and order
+were retained, grafting all 70 newly generated NEWS records into their old
+slots. Both source/rendered NEWS entries are present, with source entries
+occurring once. Every unrelated output file remains exact. This scoped index
+retention is recorded rather than misreported as zero generated-output work.
+
+Requested audit/instrument repair: a temporary R version print used a list
+where cat needed text; a search oracle initially assumed scalar path fields,
+then assumed every record had dir, and finally treated native placeholder
+reordering as unchanged order. Those bounded oracles were corrected against
+actual positive controls; no source regression or build failure was concealed.
+An initial workpad patch context mismatch wrote nothing and was corrected.
+Environment repair: none. Passive waits: hosted checks after publication remain
+for root; no new model request or polling-only helper was introduced here.
+
+Root's e16978f closeout receipt reports two useful audit helpers and zero
+polling-only helpers, repeated builds, bot requests or approval questions.
+The subsequent PR265 closeout similarly used zero new claims/questions/bot
+requests/repeated builds, reusing source fingerprints plus current CI,
+retirement and ownership evidence. The policy audit used one useful helper;
+a Python YAML probe failed and the Ruby parser passed, without environment
+repair. These are bounded receipts from those steps, not a whole-run total.
+This integration reused the existing peer and ran one useful NEWS gate. Root
+retains publication, PR-body/ready and merge acts; neither a fresh automated
+review nor a green integration-head CI result is claimed before it happens.
+
+The experiment's next use preserved the source freeze and collected a moving
+queue closeout into the same integration, but temporary audit/schema assumptions
+still caused avoidable rework. Reuse the existing typed search-record reader
+and validate its positive control before asserting order next time. This is
+one procedural adjustment, not a new tracker or policy. Total active runtime across agents
+ was not captured, so no wasted-time percentage is asserted.
+
+Alan was informed of PR265’s merge and asked to route B421’s factual amendment
+through the existing S16 writer. That retained ownership without a takeover
+or a new approval question.
+
+
+## B262 terminal-handoff integration after commons landing — 2026-10-04
+
+Root authorized maintenance of R229/B262 after R263 merged as 58299e5 and Py98
+as d04982b; canonical queue closeout 7654339 is pushed. One fetch/ordinary merge
+brought settled main into original 93180ba on the existing owner branch. The
+live terminal claim remains a6e3c61dc2a23d5dba617278881095eff73e46a6. No new
+claim, holder impersonation, token write, checkpoint rewrite or PR was used.
+Only docs/search.json conflicted. This append preserves the complete
+225938-byte canonical log prefix, SHA-256
+`d852cc0506c50383b576a50da23fcc0a65821c4f0eab9c253fc572cbf1a37bbd`.
+
+The independent diagnostic and integration reused the original factual wording
+fix, completed requested Codex evidence and frozen source peer proof. All owned
+source/article/NEWS/knowledge hunks survive exactly, including incoming B278
+guide additions. Executable closure expressions equal final main; the other
+304 R/test files remain exact. Latest Claude run 37026994541 remains an
+execution failure caused by one denied Bash:git log. Its substantive wording
+finding was fixed; only formatting nits remain. The approved 2026-10-04
+independent-review substitution is recorded in the existing workpad. Required
+new-head CI and publication/merge remain root acts without a fresh bot request.
+
+Useful native work: exactly one pinned NEWS-only build, exit zero in 16.015s,
+using existing R4.5.2/pkgdown2.2.0/Pandoc3.8.3. Git merge took 0.126s; index,
+parity, changelog, queue lint/check and diff took 3.011s combined. OKF capture
+independently reports zero diagnostics. Typed raw-record controls cover arrays,
+missing/empty/null/boolean/numeric IDs, duplicates and reordered sequences.
+Native search moved four empty placeholders, but the entire 596-record
+non-NEWS multiset was equal; their raw bytes and original order were retained,
+grafting all 70 generated NEWS records into prior slots. Final 666 identities
+stay ordered, 664 raw records match main, and only B262's article/NEWS text
+change. Unrelated outputs remain exact. No full site/suite or second build ran.
+
+Instrument repair was bounded: an inventory probe indexed an omitted ID and
+stopped before any order assertion; typed controls replaced that assumption.
+A Pandoc preflight used the existing executable's parent directory, selected
+ambient3.11 and stopped before generation. The correct existing /bin directory
+passed version checks. A workpad patch context mismatch wrote nothing, then a
+bounded append succeeded. No install, source repair or global environment
+change was needed. After the accepted build this agent released the slot to
+B340's separate integration, leaving its tagged-key refusal fix out of R229.
+No active-runtime denominator was captured; no waste percentage is asserted.
+
+Canonical history already retains root's e16978f receipt: two useful audit
+helpers and zero polling-only helpers, repeated builds, bot requests or approval
+questions for that bounded closeout. This integration adds no new helper or
+model reroll. Root's 7654339 cleanup receipt records removed clean, zero-unique
+R263/Py98 worktrees with branches and terminal claims retained. B279's 3195
+ignored cache/build files were moved intact to
+`/Users/brettjohnson/code/hub-worktrees/.completed-build-artifacts/metasalmonpy-B-279-2026-10-04`
+before removal. Its first probe printed an oversized ignored listing and
+stopped before deletion; the corrected probe used a known-root positive
+control and preserved the artifacts. This is cleanup/instrument evidence,
+not source or environment repair. Prior history is retained, not replaced.
+
+Final diff scope: the cached comparison to B262's old parent exposed four
+trailing-whitespace lines in the incoming semantic-review HTML. Its blob equals
+canonical main exactly (`3cee1407b6b43d24a56395b1dc37650183e67a57`), and the
+actual B262 delta passes `git diff --check 7654339 HEAD`. The unpublished local
+merge receipt was qualified before handoff; no unrelated generated source was
+rewritten, and no published checkpoint was amended.
