@@ -3538,3 +3538,95 @@ probe reproduces the native undefined-handle ParserError/default-path fallback
 and passes seven mapping controls using existing Python3.9.6/PyYAML6.0.3. One
 inherited urllib3 warning is recorded; no environment install/repair or new
 policy decision was involved. Source and generated outputs stay frozen.
+
+
+## B223 resumed consumer port after shared-reader landing — 2026-10-04
+
+**Coordination and ownership.** R258 merged exact publication d05217d at
+21:37:31 UTC as 9681490. Final hosted full provider-isolated suite and strict
+R4.6.1 check, 37235947556/job111534950845, were green with zero errors,
+warnings or notes. All threads were answered/resolved; the final Claude model
+and verifier skipped rather than completing a new review. Actual preceding
+reviews and independently verified repairs remain accurately recorded.
+Literal retirement/source closeout 6500114 marked only B340 done. Its clean,
+zero-unique, zero-ignored checkout was removed/pruned; branches and terminal
+handoff 428346de retained. The canonical full 238582-byte log and uncommitted
+primary AGENTS/HUB bytes were preserved exactly. Alan received substantive
+completion/claim/checkpoint receipts for the five merged PRs; B421's unchanged
+S16 row amendment remains with its existing writer.
+
+Fresh ready/claim/PR evidence allowed normal B223 reclaim after its old beat
+56611e3's lease and 60-minute grace elapsed. Genuine root identity
+a-c1bbb42efa975289 acquired a384950720f35787b86ba4bc4ab638a76beda7ff until
+2026-10-05T01:39:52Z, with no identity override or duplicate claim. The new
+own branch retains original combined partial 47e54e98; its original checkout
+and workpad remain untouched. No separate historical tests-only commit exists.
+The historical six-failure/48-pass RED is reported honestly, rather than
+manufacturing a checkpoint. B429 was separately promoted under R15 in
+2beb192 after all five conditions were source-checked; root's one-slot live
+cap keeps its Python claim sequenced after B223 handoff.
+
+**Implementation.** Initial ordinary main integration 01d11dd retains ordered
+parents 47e54e98 and 6500114; only NEWS conflicted and exact main plus the original
+seven-line B223 entry survives. Queue-only integration adaeef68 contains
+actual 2beb192/B429ready. GREEN source freeze f9c018f1923a683729d01a48662665825ac3ea5c
+retains all three original call-site edits in EML export and KNB inventory/
+planning, using the landed shared reader. All other 49 R files, including
+native reader 2658d488, are byte-identical to main. The expression guard removes
+only three obsolete direct-native-reader owners; actual native/probe walks,
+literal evalFALSE requirements and behavioral refusal/inertness controls stay.
+This is the remaining R consumer obligation after the separate shared reader
+landed; Python B429 belongs to its own repository, so the single-ID scope is
+appropriate. No native parser reimplementation or public/frozen contract change.
+
+**Verification and requested audit.** Four focused files passed 755 assertions,
+zero failures/errors/skips in 22.757s R elapsed / 23.474s process: sidecar 120,
+expression guard 52, EML export 149, KNB 434. One inherited warning comes from
+unchanged EML-export test 527 validating structure-fixture placeholders, outside
+every changed sidecar consumer; it is retained rather than reported as zero.
+Independent implementation reviewer ontology_fetch_peer cleared exact f9c018f:
+115 public consumer assertions in 2.782s R elapsed / 3.407s process, then 18 guard
+assertions in 1.307s R elapsed. Twelve actual EML/inventory/public-plan unknown/
+expr refusals preserve raw sidecar and absent/existing EML output bytes,
+name the file, prevent expression evaluation and leave archive construction
+unreached. Untagged/core/literal controls render valid EML and reach inventory/
+public-plan archive stops; malformed YAML keeps native errors and unchanged
+bytes. Both guard walks reach seven safe native reads. No substantive finding.
+All 51 R files and the two test blobs match the frozen receipt. No source-
+identical native parser, full suite or strict gate was repeated locally.
+
+One necessary pinned NEWS-only generation follows this peer freeze; current
+publication/hosted CI remain root acts. No optional bot request, approval
+question or polling-only helper was added. Three existing helpers have disjoint
+useful consumer implementation, independent verification and generated-doc
+scopes under the root-owned claim, with zero identity operations of their own.
+Queue-only promotions/retirements are useful coordination checkpoints; there
+are zero status-only source checkpoints. Passive waits and total active effort
+are not comprehensively timed, so no waste percentage is inferred.
+
+This substantive append preserves every 238582 prior byte, SHA-256
+`171e40762af8e2ab40f946792a82e4e46cc24dbb0da676e932f2f1b84554a457`. The next use of source-freeze reuse kept
+native reader proof intact while consumer evidence widened only for actual
+new call sites. Staggering a single NEWS build after the peer avoids building
+an unfinished source snapshot; no quantified saving is asserted. No review,
+claim, scientific, security or release gate changes.
+
+
+### 2026-10-04 B223 single NEWS generation and publication checkpoint
+
+The frozen consumer/guard peer was clear before one accepted NEWS-only build.
+R4.5.2/pkgdown2.2.0/Pandoc3.8.3 completed in 15.991s. Only the two NEWS pages
+and search JSON changed. Typed ordered-search proof retains 666 identities,
+665 unrelated raw records and all 596 non-NEWS records; only the development
+NEWS text gains B223. Both generated pages reproduce incoming main after
+removing that entry, and 225 unrelated generated files remain unchanged.
+The final 309 source blobs and SHA256 hashes equal f9c018f. Index 68 exports/
+64 topics, parity 64, changelog 16 release headings and scoped whitespace pass.
+
+Verification: one necessary selected build, no repeated native/source/full/
+strict suite, with full exact-publication hosted CI still required. Useful
+implementation/verification helpers: consumer continuation, independent peer
+and selected generation; polling-only helper spawns: zero. One publication
+checkpoint combines real generated outputs with operational measurements and
+workpad proof. No status-only checkpoint or additional bot request is made.
+Outside-repository receipts are in /tmp/b223-news-build-f9c018f-20261004.

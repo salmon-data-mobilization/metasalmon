@@ -315,6 +315,15 @@
 
 ### Fixed
 
+- **EML and KNB reads now refuse unknown YAML tags in
+  `eml-mapping.yml`** (hub B-223, Brett’s Q62 ruling).
+  [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  and both KNB publication reads name the sidecar in the error instead
+  of carrying the text of `!expr` or another unknown local tag into an
+  output or plan. Untagged mappings and supported YAML core tags remain
+  readable; expressions remain inert. The semantic-closure path is the
+  separate B-340 implementation.
+
 - **Semantic closure refuses unknown YAML tags in its EML sidecar before
   writing either closure file** (hub item B-340; Q62). The refusal names
   `metadata/eml-mapping.yml` and leaves that sidecar unchanged. Untagged
