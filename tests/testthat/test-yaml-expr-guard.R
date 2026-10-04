@@ -55,9 +55,6 @@ yaml_reader_fns <- c("yaml.load", "read_yaml", "yaml.load_file")
 known_yaml_read_fns <- c(
   ".ms_eml_mapping_native_directive_start",
   ".ms_sssom_parse_metadata",
-  "write_eml_from_sdp",
-  ".ms_knb_sdp_artifact_paths",
-  ".ms_knb_build_plan",
   ".ms_fetch_remote_sdp_schema",
   ".ms_load_vendored_sdp_schema",
   ".ms_eml_read_mapping_yaml",
