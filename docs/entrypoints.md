@@ -51,12 +51,20 @@ Short map of the package's public starts and their canonical implementations.
 - Package: `R CMD build .`
 - Site: `Rscript scripts/build-pkgdown.R` (full rebuild, then removes non-public
   agent guidance from the generated sitemap)
+- Existing pages only: `Rscript scripts/build-pkgdown.R --article=glossary --reference=semantic_suggestions`.
+  Use vignette stems and canonical Rd topic names; repeat either selector for
+  multiple pages. Selected pages, their Markdown companions and search are
+  rebuilt under the recorded toolchain. Use a full build for new pages,
+  navigation or site configuration changes.
+- NEWS only: `Rscript scripts/build-pkgdown.R --news-only`.
 
 ## Test
 
 - Full suite: `Rscript -e 'devtools::test()'`
 - Release check: `R CMD check metasalmon_<version>.tar.gz`
 - Fast package smoke: `Rscript -e 'pkgload::load_all(quiet = TRUE); testthat::test_file("tests/testthat/test-package-helpers.R", reporter = "summary")'`
+- Site builder fixture: `Rscript scripts/tests/test_build_pkgdown_targets.R`
+  (disposable package; exercises selected pages, search, Markdown and guards).
 
 ## Public Wiring
 

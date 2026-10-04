@@ -1747,6 +1747,12 @@ sequence from them.
 
 ## Process notes worth keeping
 
+**B-430's named site builds are repository tooling.** The optional article and
+reference selectors operate on R's pkgdown sources and committed site; they
+change no package behavior, semantic fixture or release number. There is no
+Python package port or new parity ruling. Python's Quarto site already supports
+rendering one guide, used for the B-279 guide verification in metasalmonpy #98.
+
 **A green suite was not the signal it looked like.** Three 0.2.0 findings were
 invisible to 21k lines of tests because the suite pinned the vendored schema,
 never round-tripped a package through its own validator, and skipped tests
