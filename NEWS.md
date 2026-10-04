@@ -57,6 +57,12 @@ metasalmon (development version)
 
 ### Added
 
+* The repository site builder accepts repeatable `--article=NAME` and
+  `--reference=TOPIC` selectors for existing pages (hub B-430). It updates their
+  HTML, Markdown companions and derived indexes without rebuilding unrelated
+  pages, while retaining the recorded-toolchain and publication checks. New
+  pages and site-wide changes still require a full build.
+
 - A dedicated semantic-review walkthrough covers the R review queue, accept
   and reject decisions, metadata setters and the optional decomposition
   dialogue. `tidyr` is now declared in Suggests for the tidy-data guide's
