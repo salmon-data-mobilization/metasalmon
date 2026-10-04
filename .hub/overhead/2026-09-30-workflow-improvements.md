@@ -2897,3 +2897,184 @@ measurement are not status-only checkpoints.
 The prior next-use experiment (both packages' implementing acceptance clauses
 in the initial ruling pass) has no new ruling/pickup sample here and remains
 to be evaluated. No new tracking surface or policy change was introduced.
+
+### Locale repair and next paired pickup, 2026-10-03 at 23:53 UTC
+
+The compact check found PR209 merged as
+65f91676665b78b61e2f49e367a1ad91745190c6, then canonical main was fast-forwarded.
+The clean completed auxiliary checkout was removed only after verifying no
+unique commits or untracked/ignored files; its branch was retained. No new
+merge was performed by this run. The unrelated dirty B384 workpad remains.
+
+B421 was promoted under the standing R15 grant and claimed with normal holder
+a-c1bbb42efa975289. Its existing PR211/worktree was reused. Tests-only
+46fae4ef8e15cfe423600ba55d2b809fd2b2504f gives six failures, 85 passes and no
+errors/skips. Repair ae70e581add6e0d9335055b0f04f4cf23d5a8d3f explicitly uses
+stringi Unicode lowercase with locale en and declares that runtime dependency.
+All 257 focused assertions pass, including source folding, fetch isolation,
+Q71, collation and CLI safety. Independent peer checked supported-source and
+shared Unicode controls under C, English UTF-8 and Turkish UTF-8, preserving
+ambient locale and invalid UTF-8 handling. The actual Mac Turkish GBIF failure
+did not reproduce; the injected ambient-fold control and real dotted-I/final-
+sigma mismatches are distinguished honestly. Universal Unicode-version parity
+is not claimed: 27 newer-character ICU14/Python16 differences predate this fix.
+
+B421's exact handoff alias agent/B-421/a-c1bbb42efa975289 points to ae70e58;
+terminal claim tip is 24721c09ec3f16510e3626fe66401de18bf246f8. Original
+B333/B335 tests/fix checkpoints and their held claims, plus B422's claim,
+are preserved. Q71/fetch source and assertions are byte-identical to a4ceea3.
+The actual old Codex finding received factual answer4175419894; no reroll or
+person contact occurred. Hosted checks on ae70e58 passed. Claude accounting
+job37162456691 reused the earlier verified nits verdict and ran no new model
+review; its green status is not described as a fresh completed review. PR211
+still requires Brett's merge because B420 changes a public default.
+
+Coordination: one B421 claim/handoff, no changes to existing held claims, zero
+new PRs for this repair and no extra implementation checkout. A parent report
+was sent under the existing explicit authorization. B278/B279 were subsequently
+promoted in separate R15-citing commits after checking their queue records,
+claim absence, worktrees and open PR inventory. B278 is claimed normally until
+2026-10-04T03:42:45Z; B279 remains unclaimed until the sequential handoff. Useful
+peer/schema/port-planning delegates were used; polling-only delegates: zero.
+The shared harness gives the child the root identity, so distinct simultaneous
+claims are unavailable here. No identity override or duplicate claim was used.
+
+Implementation is the one source-fold change and declared dependency, separate
+from requested Unicode/parity audit. Verification includes honest RED/GREEN,
+independent locale checks, byte/ref preservation and hosted CI; no full local
+gate or site rebuild repeated. Environment/instrument repair: an unavailable
+PyYAML import stopped the first promotion wrapper before mutation; lack of
+set-e let later commands continue ineffectively. The retry used builtin text
+validation and set-e without installing anything. An unpublished mock fixture
+encoding error was corrected before tests-only publication. Guessed R/Python
+paths and an absent commons schema glob caused avoidable reads; rg identified
+the actual files. A guessed public claims-repository URL returned 404 and
+changed nothing; subsequent ownership reads use the configured hub client.
+Intentional passive waits: zero. These observations are not
+a complete active-time denominator, so no wasted-time percentage is invented.
+
+The previous adjustment was used: both packages' implementing acceptance
+clauses were included in the first B421 documentation pass. One final roxygen
+pass and one fix/docs commit sufficed; there was no second companion-docs
+commit or duplicate PR. This is one observed use, not a causal time-saving
+estimate. Next use is the B278/B279 reader pair: agree the fixture, lifecycle
+holds and acceptance mapping before either implementation, then mirror that
+one contract. Record mismatches/rework rather than add another tracker or
+change a claim, review or approval gate. B266/B402 were not restarted.
+
+### Commons reader first use, 2026-10-04 at 00:16 UTC
+
+B278's tests-only623a82f and fix/docs882dc5a checkpoints are preserved. A
+post-freeze serialization probe found empty dependency arrays becoming null;
+e93383e repairs that representation. Root's source review then reproduced a
+parser-message secret leak (226 passing/2 failing assertions); f45509e uses
+the existing redactor before CLI escaping and passes all 228 new assertions.
+The 84 prior term-request assertions, 9 collation assertions and 11 CLI
+assertions also passed (the unchanged paths were not rerun after the final
+capture-only repair). These two substantive repairs were useful verification,
+not coordination overhead. No full local suite was repeated; hosted full
+suite/strict check remain required after publication.
+
+Independent source peer found no substantive issue. Root regenerated the
+current valid 110-row commons export and checked all twelve fixture records'
+exact bytes, values and order. Full-source reach then passed: 110 retained
+rows, 35 explicit destinations, 75 visible holds, no fabricated dataset or
+semantic evidence. The Python implementation is still owed; the first docs
+pass says so. Shared fixture/field/hold agreement preceded either port.
+
+Coordination includes schema agreement, one normal claim, publication setup
+and the sequential same-identity limitation. Implementation is the additive
+reader and request-body path. Verification is RED/GREEN, typed/lifecycle and
+capture probes, independent peer, full-export reach and the one successful
+site build. Requested audit covers schema meanings, source provenance and
+mirror acceptance, separate from generic coordination. Environment repair
+was one no-write toolchain rejection, resolved with the already-installed
+pinned Pandoc via PATH/RSTUDIO_PANDOC; no dependency or global setting changed.
+Intentional passive waits total about two minutes while the implementation
+delegate worked. Categories overlap across agents, and no complete active
+effort denominator exists, so a wasted-time percentage is not asserted.
+
+Avoidable root rework: guessed file paths and workdirs caused failed reads;
+the private full-export harness initially had an extra parenthesis; a search
+index probe assumed every entry had an id and a scalar path, although 35
+placeholder entries have only an empty path array. Positive controls and the
+actual layout corrected those probes. One patch used stale wrapped context
+and made no change. These are instrument/implementation mistakes rather than
+claim bureaucracy. Compound mutation scripts now use set-e, and further
+selectors use observed paths and shapes rather than guesses.
+
+The full pinned build rewrote 98 unrelated tracked files and added one
+unrelated redirect. Those outputs were discarded; ten affected/build-record
+files remain. All 567 unaffected search entries retain exact values and order,
+and both complete preexisting NEWS renderings recover byte-for-byte when the
+new item is removed. This selective retention took several minutes of root
+work. Candidate next small tooling improvement: optional named article and
+reference targets in the existing site builder, extending its news-only path,
+so a bounded docs change does not need a full-site cleanup. It is a separate
+workflow improvement, not added to this reader or introduced as a new tracker.
+
+The earlier first-pass mirror-doc adjustment avoided a second companion-docs
+pass; R278 used one roxygen generation. B279 will evaluate fixture/contract
+reuse after the root-owned R handoff. The unrelated R384/Python345 dirty
+workpads and all S16/source-fetch branches are preserved. No new model-provider
+repair, term choice, issue submission, policy change, release or merge occurred.
+
+### Paired commons-reader handoff, 2026-10-04
+
+B279 evaluates the first-pass fixture/contract reuse: its two JSON fixtures are
+byte-identical to R, and one independent comparison matches all 49 gap fields
+plus route/repository/title/body for 110 source records, 12 excerpt records and
+three synthetic controls. The source register gives 35 draft routes and 75
+retained holds on both sides. This is an observed acceptance result, not a
+claim of universal parity for all optional arguments. The existing registers
+record preexisting nondefault-label normalization differences without spending
+a new row number or inventing a design ruling.
+
+Coordination: one normal root-owned B279 claim followed the R terminal handoff;
+the implementation child worked within it. Publication uses one member PR each
+(R263 / Python98), separate tests-only and fix checkpoints, one terminal held
+handoff each, and the already-authorized draft grant. No approval question,
+identity override, polling-only agent spawn or alternate tracker was added.
+Draft publication already triggered actual Claude review on R, so no ready
+transition was needed solely to get that review. Public-formal merges remain
+Brett's. Existing B333/B335/B422 checkpoints and held claims were untouched.
+
+Implementation: the Python reader reuses the agreed schema, holds and body
+format. Verification: 27 focused Python tests pass with two existing dictionary
+warnings, with optional dependencies genuinely absent; 233 R commons and 84
+existing term-request assertions pass after the review follow-up. An independent
+Python peer found an extra non-string SDP column regression, reproduced it
+against baseline, and verified the one-line guard repair. The final peer is
+clear. Root's final frozen comparison passes after that repair. Hosted full
+checks remain gates rather than being repeated locally. Requested audit:
+source provenance, exact full-export row/body comparison and the bounded label
+behavior measurement. Environment repair: none was needed for the Python
+core run; its isolated venv was ordinary setup. Passive waits: review and hosted
+checks overlapped implementation; they are not counted as active coordination.
+
+Actual Claude R263 review reported no blocking issues and five nits. The type
+and existing-label-normalization findings were verified and fixed. Narrowing
+commons dispatch to the mutable display basis would weaken hold protection,
+so the positive control retains source-column dispatch. The first label oracle
+assumed a misleading helper name meant trimming/dropping; actual default-path
+behavior corrected the instrument before publication. This rework belongs to
+verification/instrument repair, not claim bureaucracy. Remaining wording nits
+were left alone rather than forcing another rendered-site pass. A successful
+follow-up review job reused the prior verdict and is not called a fresh review.
+
+The experiment reduced duplicate schema discovery and companion-doc drafting,
+with no repeated full site/suite gate by the peer agents. It did not eliminate
+publication sequencing: the R review fix was pushed while Python was finishing,
+then paired receipts changed R's head again. That can cause another hosted full
+check even though sources stayed frozen. Next procedural adjustment: collect
+bounded paired verification/receipt edits before the next review-fix publication
+where practical, retaining immediate fixes for substantive findings. This is
+one batching habit, not a claim/approval/review policy change. The separately
+identified optional site-builder targets remain a candidate, not a redesign.
+
+Complete active effort across agents was not stopwatch-captured, so no honest
+wasted-time percentage can be computed for this batch. Observable overhead
+proxies are two paired draft publications, zero new approval questions, zero
+polling-only spawns, reused fixture/schema/body design, one affected Python
+article render, and the avoidable late R receipt head change. Coordination and
+requested audit are recorded separately from avoidable instrument mistakes.

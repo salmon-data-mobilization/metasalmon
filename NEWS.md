@@ -32,6 +32,14 @@ metasalmon (development version)
 
 ### Added
 
+* `detect_semantic_term_gaps(commons_gaps = "gaps.json")` reads the commons
+  `okf-check.py --gaps` export (B-278), retaining lifecycle, source order,
+  repeated concepts and draft provenance. Commons-specific request rendering
+  preserves declared targets and unresolved holds; only open, unheld SMN/GCDFO
+  rows reach `submit_term_request_issues(dry_run = TRUE)`. It selects no term
+  IRI, definition or type. Existing SDP input and result columns are unchanged.
+  The matching Python behavior and shared fixtures remain owed under B-279.
+
 - A dedicated semantic-review walkthrough covers the R review queue, accept
   and reject decisions, metadata setters and the optional decomposition
   dialogue. `tidyr` is now declared in Suggests for the tidy-data guide's
