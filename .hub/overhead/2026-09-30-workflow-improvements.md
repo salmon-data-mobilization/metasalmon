@@ -3018,3 +3018,63 @@ pass; R278 used one roxygen generation. B279 will evaluate fixture/contract
 reuse after the root-owned R handoff. The unrelated R384/Python345 dirty
 workpads and all S16/source-fetch branches are preserved. No new model-provider
 repair, term choice, issue submission, policy change, release or merge occurred.
+
+### Paired commons-reader handoff, 2026-10-04
+
+B279 evaluates the first-pass fixture/contract reuse: its two JSON fixtures are
+byte-identical to R, and one independent comparison matches all 49 gap fields
+plus route/repository/title/body for 110 source records, 12 excerpt records and
+three synthetic controls. The source register gives 35 draft routes and 75
+retained holds on both sides. This is an observed acceptance result, not a
+claim of universal parity for all optional arguments. The existing registers
+record preexisting nondefault-label normalization differences without spending
+a new row number or inventing a design ruling.
+
+Coordination: one normal root-owned B279 claim followed the R terminal handoff;
+the implementation child worked within it. Publication uses one member PR each
+(R263 / Python98), separate tests-only and fix checkpoints, one terminal held
+handoff each, and the already-authorized draft grant. No approval question,
+identity override, polling-only agent spawn or alternate tracker was added.
+Draft publication already triggered actual Claude review on R, so no ready
+transition was needed solely to get that review. Public-formal merges remain
+Brett's. Existing B333/B335/B422 checkpoints and held claims were untouched.
+
+Implementation: the Python reader reuses the agreed schema, holds and body
+format. Verification: 27 focused Python tests pass with two existing dictionary
+warnings, with optional dependencies genuinely absent; 233 R commons and 84
+existing term-request assertions pass after the review follow-up. An independent
+Python peer found an extra non-string SDP column regression, reproduced it
+against baseline, and verified the one-line guard repair. The final peer is
+clear. Root's final frozen comparison passes after that repair. Hosted full
+checks remain gates rather than being repeated locally. Requested audit:
+source provenance, exact full-export row/body comparison and the bounded label
+behavior measurement. Environment repair: none was needed for the Python
+core run; its isolated venv was ordinary setup. Passive waits: review and hosted
+checks overlapped implementation; they are not counted as active coordination.
+
+Actual Claude R263 review reported no blocking issues and five nits. The type
+and existing-label-normalization findings were verified and fixed. Narrowing
+commons dispatch to the mutable display basis would weaken hold protection,
+so the positive control retains source-column dispatch. The first label oracle
+assumed a misleading helper name meant trimming/dropping; actual default-path
+behavior corrected the instrument before publication. This rework belongs to
+verification/instrument repair, not claim bureaucracy. Remaining wording nits
+were left alone rather than forcing another rendered-site pass. A successful
+follow-up review job reused the prior verdict and is not called a fresh review.
+
+The experiment reduced duplicate schema discovery and companion-doc drafting,
+with no repeated full site/suite gate by the peer agents. It did not eliminate
+publication sequencing: the R review fix was pushed while Python was finishing,
+then paired receipts changed R's head again. That can cause another hosted full
+check even though sources stayed frozen. Next procedural adjustment: collect
+bounded paired verification/receipt edits before the next review-fix publication
+where practical, retaining immediate fixes for substantive findings. This is
+one batching habit, not a claim/approval/review policy change. The separately
+identified optional site-builder targets remain a candidate, not a redesign.
+
+Complete active effort across agents was not stopwatch-captured, so no honest
+wasted-time percentage can be computed for this batch. Observable overhead
+proxies are two paired draft publications, zero new approval questions, zero
+polling-only spawns, reused fixture/schema/body design, one affected Python
+article render, and the avoidable late R receipt head change. Coordination and
+requested audit are recorded separately from avoidable instrument mistakes.
