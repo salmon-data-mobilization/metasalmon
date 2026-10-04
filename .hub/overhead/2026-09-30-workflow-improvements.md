@@ -3348,3 +3348,125 @@ one procedural adjustment, not a new tracker or policy. Total active runtime acr
 Alan was informed of PR265’s merge and asked to route B421’s factual amendment
 through the existing S16 writer. That retained ownership without a takeover
 or a new approval question.
+
+
+## B262 terminal-handoff integration after commons landing — 2026-10-04
+
+Root authorized maintenance of R229/B262 after R263 merged as 58299e5 and Py98
+as d04982b; canonical queue closeout 7654339 is pushed. One fetch/ordinary merge
+brought settled main into original 93180ba on the existing owner branch. The
+live terminal claim remains a6e3c61dc2a23d5dba617278881095eff73e46a6. No new
+claim, holder impersonation, token write, checkpoint rewrite or PR was used.
+Only docs/search.json conflicted. This append preserves the complete
+225938-byte canonical log prefix, SHA-256
+`d852cc0506c50383b576a50da23fcc0a65821c4f0eab9c253fc572cbf1a37bbd`.
+
+The independent diagnostic and integration reused the original factual wording
+fix, completed requested Codex evidence and frozen source peer proof. All owned
+source/article/NEWS/knowledge hunks survive exactly, including incoming B278
+guide additions. Executable closure expressions equal final main; the other
+304 R/test files remain exact. Latest Claude run 37026994541 remains an
+execution failure caused by one denied Bash:git log. Its substantive wording
+finding was fixed; only formatting nits remain. The approved 2026-10-04
+independent-review substitution is recorded in the existing workpad. Required
+new-head CI and publication/merge remain root acts without a fresh bot request.
+
+Useful native work: exactly one pinned NEWS-only build, exit zero in 16.015s,
+using existing R4.5.2/pkgdown2.2.0/Pandoc3.8.3. Git merge took 0.126s; index,
+parity, changelog, queue lint/check and diff took 3.011s combined. OKF capture
+independently reports zero diagnostics. Typed raw-record controls cover arrays,
+missing/empty/null/boolean/numeric IDs, duplicates and reordered sequences.
+Native search moved four empty placeholders, but the entire 596-record
+non-NEWS multiset was equal; their raw bytes and original order were retained,
+grafting all 70 generated NEWS records into prior slots. Final 666 identities
+stay ordered, 664 raw records match main, and only B262's article/NEWS text
+change. Unrelated outputs remain exact. No full site/suite or second build ran.
+
+Instrument repair was bounded: an inventory probe indexed an omitted ID and
+stopped before any order assertion; typed controls replaced that assumption.
+A Pandoc preflight used the existing executable's parent directory, selected
+ambient3.11 and stopped before generation. The correct existing /bin directory
+passed version checks. A workpad patch context mismatch wrote nothing, then a
+bounded append succeeded. No install, source repair or global environment
+change was needed. After the accepted build this agent released the slot to
+B340's separate integration, leaving its tagged-key refusal fix out of R229.
+No active-runtime denominator was captured; no waste percentage is asserted.
+
+Canonical history already retains root's e16978f receipt: two useful audit
+helpers and zero polling-only helpers, repeated builds, bot requests or approval
+questions for that bounded closeout. This integration adds no new helper or
+model reroll. Root's 7654339 cleanup receipt records removed clean, zero-unique
+R263/Py98 worktrees with branches and terminal claims retained. B279's 3195
+ignored cache/build files were moved intact to
+`/Users/brettjohnson/code/hub-worktrees/.completed-build-artifacts/metasalmonpy-B-279-2026-10-04`
+before removal. Its first probe printed an oversized ignored listing and
+stopped before deletion; the corrected probe used a known-root positive
+control and preserved the artifacts. This is cleanup/instrument evidence,
+not source or environment repair. Prior history is retained, not replaced.
+
+Final diff scope: the cached comparison to B262's old parent exposed four
+trailing-whitespace lines in the incoming semantic-review HTML. Its blob equals
+canonical main exactly (`3cee1407b6b43d24a56395b1dc37650183e67a57`), and the
+actual B262 delta passes `git diff --check 7654339 HEAD`. The unpublished local
+merge receipt was qualified before handoff; no unrelated generated source was
+rewritten, and no published checkpoint was amended.
+### B340 refusal repair and final handoff integration, 2026-10-04
+
+**Useful implementation.** The final Claude finding refined the long-key case
+from a first mapping key to a required key after `a: 1`. On frozen `733e170`,
+the exact 1000-character tagged key is native-valid but the detector returns
+FALSE; the public writer creates or overwrites both closure files and rewrites
+the sidecar. Short-key and first-key controls refuse. Tests-only `3c26c66`
+retains the RED: 364 passes, ten failures, no errors/warnings/skips. Repair
+`2b9808e` uses native key/separator positions for a disposable explicit key,
+checks untouched-input overflow, and keeps the real read and original bytes.
+It closes the mechanism rather than shifting the prefix boundary. A first
+inline-separator candidate failed the long-literal-before-real-tag control;
+separating the disposable value line corrected that concrete failure.
+
+**Verification and requested audit.** Frozen GREEN was 425 focused assertions,
+zero failures/errors/warnings/skips in 4.758s. Independent `ontology_fetch_peer`
+added 44 native/control assertions, no substantive finding; its 0.08s measures
+assertion execution, not total review effort. The first settled-main integration
+`5d34fb7` retained main plus every owned hunk and passed 456 focused assertions
+in 5.182s. Its one accepted NEWS-only build took 13.921s, coordinated after
+R229 released the local build slot. The reader remains frozen at `4125f5ce`;
+all original checkpoints and both new RED/GREEN commits remain ancestors.
+
+**Necessary final integration.** R229 merged on 2026-10-04 at 20:01:20 UTC as
+`5a2076a`, with pushed queue closeout `39524ab`. One ordinary merge of that
+actual main into B340 conflicted only in `docs/search.json`. All 51 R files
+have identical parsed expressions to `5d34fb7` (32 top-level closure
+expressions), and every test blob is unchanged, so no focused/full suite or
+source peer was repeated. One necessary pinned NEWS-only build took 16.132s
+under R4.5.2/pkgdown2.2.0/Pandoc3.8.3. Ordered-index curation retains 666
+identities and 665 unchanged records, replacing only the development Fixed
+text; duplicate/list-valued identities and incoming B262 wording survive.
+NEWS is main plus the original 482-byte B340 entry. Index passes 68 exports /
+64 topics (2.068s); parity has 64 matching rows, OKF capture has zero
+diagnostics, and five icon/manifest links resolve through seven exact main
+asset pairs. B429 remains the owed Python port; holder and terminal tip
+`428346de` are unchanged.
+
+**Coordination and instruments.** Root's bounded live scout recorded 14 shell
+reads, one ready inventory, two PR lists, one batch-tip read and three cached
+content reads, with zero claims, builds, reviews or polling-only agents in
+that scout. These are scout counts, not whole-iteration totals. Root's wrong
+inferred `salmon-agent-locks` URL failed before any write; actual
+`queue/config.yaml` identified `hub-locks`, and both tips were then verified
+unchanged. That is one bounded coordination-instrument correction, not an
+authentication failure. Earlier B340 preparation had a heading assertion stop
+before writes, a 0.369s ambient-Pandoc preflight stop before generation, and an
+index run with ambient deprecation warnings; the existing pinned executable
+then passed without an install or global environment change.
+
+**Existing gates and waits.** R229 current-head CI `37229826123` passed strict
+R4.6.1 with zero errors/warnings/notes. Claude model/verifier jobs skipped;
+those skips were not new reviews, and the earlier failed-run substitution is
+recorded in its PR body. Publication was held for that required CI and ordered
+merge. B262's clean, no-ignored, zero-unique worktree was removed while its
+branch and terminal claim were retained. B223 resumes only after R258 lands;
+B350 retains its consequential decision boundary. Passive waiting and active
+effort were not comprehensively timed, so no whole-run waste percentage is
+inferred. This substantive append preserves the entire 230015-byte canonical
+prefix, SHA-256 `464681b87ec6da03a4a6f4069695968f0da7ffe24a93916706f72e2f63795765`.
