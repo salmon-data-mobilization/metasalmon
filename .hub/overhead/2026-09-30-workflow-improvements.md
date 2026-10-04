@@ -2961,3 +2961,60 @@ estimate. Next use is the B278/B279 reader pair: agree the fixture, lifecycle
 holds and acceptance mapping before either implementation, then mirror that
 one contract. Record mismatches/rework rather than add another tracker or
 change a claim, review or approval gate. B266/B402 were not restarted.
+
+### Commons reader first use, 2026-10-04 at 00:16 UTC
+
+B278's tests-only623a82f and fix/docs882dc5a checkpoints are preserved. A
+post-freeze serialization probe found empty dependency arrays becoming null;
+e93383e repairs that representation. Root's source review then reproduced a
+parser-message secret leak (226 passing/2 failing assertions); f45509e uses
+the existing redactor before CLI escaping and passes all 228 new assertions.
+The 84 prior term-request assertions, 9 collation assertions and 11 CLI
+assertions also passed (the unchanged paths were not rerun after the final
+capture-only repair). These two substantive repairs were useful verification,
+not coordination overhead. No full local suite was repeated; hosted full
+suite/strict check remain required after publication.
+
+Independent source peer found no substantive issue. Root regenerated the
+current valid 110-row commons export and checked all twelve fixture records'
+exact bytes, values and order. Full-source reach then passed: 110 retained
+rows, 35 explicit destinations, 75 visible holds, no fabricated dataset or
+semantic evidence. The Python implementation is still owed; the first docs
+pass says so. Shared fixture/field/hold agreement preceded either port.
+
+Coordination includes schema agreement, one normal claim, publication setup
+and the sequential same-identity limitation. Implementation is the additive
+reader and request-body path. Verification is RED/GREEN, typed/lifecycle and
+capture probes, independent peer, full-export reach and the one successful
+site build. Requested audit covers schema meanings, source provenance and
+mirror acceptance, separate from generic coordination. Environment repair
+was one no-write toolchain rejection, resolved with the already-installed
+pinned Pandoc via PATH/RSTUDIO_PANDOC; no dependency or global setting changed.
+Intentional passive waits total about two minutes while the implementation
+delegate worked. Categories overlap across agents, and no complete active
+effort denominator exists, so a wasted-time percentage is not asserted.
+
+Avoidable root rework: guessed file paths and workdirs caused failed reads;
+the private full-export harness initially had an extra parenthesis; a search
+index probe assumed every entry had an id and a scalar path, although 35
+placeholder entries have only an empty path array. Positive controls and the
+actual layout corrected those probes. One patch used stale wrapped context
+and made no change. These are instrument/implementation mistakes rather than
+claim bureaucracy. Compound mutation scripts now use set-e, and further
+selectors use observed paths and shapes rather than guesses.
+
+The full pinned build rewrote 98 unrelated tracked files and added one
+unrelated redirect. Those outputs were discarded; ten affected/build-record
+files remain. All 567 unaffected search entries retain exact values and order,
+and both complete preexisting NEWS renderings recover byte-for-byte when the
+new item is removed. This selective retention took several minutes of root
+work. Candidate next small tooling improvement: optional named article and
+reference targets in the existing site builder, extending its news-only path,
+so a bounded docs change does not need a full-site cleanup. It is a separate
+workflow improvement, not added to this reader or introduced as a new tracker.
+
+The earlier first-pass mirror-doc adjustment avoided a second companion-docs
+pass; R278 used one roxygen generation. B279 will evaluate fixture/contract
+reuse after the root-owned R handoff. The unrelated R384/Python345 dirty
+workpads and all S16/source-fetch branches are preserved. No new model-provider
+repair, term choice, issue submission, policy change, release or merge occurred.

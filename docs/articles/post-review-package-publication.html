@@ -42,6 +42,7 @@
 <li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
     <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
     <li><a class="dropdown-item" href="../articles/tidy-data-for-sdp.html">Tidy Data for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="../articles/semantic-review.html">Semantic Review in R</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -246,6 +247,41 @@ that form.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gaps</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">dictionary_role</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"variable"</span>, <span class="st">"property"</span>, <span class="st">"entity"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="start-from-a-commons-gap-register">Start from a commons gap register<a class="anchor" aria-label="anchor" href="#start-from-a-commons-gap-register"></a>
+</h4>
+<p>The same request pipeline can start from a recorded domain gap rather
+than a dataset. From a <code>salmon-knowledge-commons</code> checkout,
+export the current register and confirm the validator exits
+successfully:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">uv</span> run <span class="at">--with</span> pyyaml,jsonschema scripts/okf-check.py . <span class="at">--gaps</span> <span class="op">&gt;</span> gaps.json</span></code></pre></div>
+<p>Then use the exported file in R:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">commons_gaps</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps</a></span><span class="op">(</span>commons_gaps <span class="op">=</span> <span class="st">"gaps.json"</span><span class="op">)</span></span>
+<span><span class="va">commons_requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span><span class="va">commons_gaps</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">commons_preview</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/submit_term_request_issues.html">submit_term_request_issues</a></span><span class="op">(</span><span class="va">commons_requests</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">commons_preview</span></span></code></pre></div>
+<p>The reader retains every row, source order and repeated concepts.
+Fields starting with <code>commons_</code> preserve the card, registry,
+mint target, lifecycle, draft note, dependencies, conflicts and
+verification state. Dataset, role, candidate and model evidence remain
+missing; this input cannot be combined with a dictionary, suggestions or
+SDP-only filters.</p>
+<p>Only an open gap with an explicit SMN or GCDFO target and no hold
+reaches the issue preview. Proposed/rejected and do-not-mint records,
+unresolved blockers, conflicts, contested meanings, evidence needs and
+deprecated cards remain visible with <code>commons_hold_reason</code>.
+PSC CV, new-scheme and undecided targets are held because this pipeline
+has no defined route for them. <code>scope</code>,
+<code>scope_overrides</code> and <code>ask</code> cannot reopen or
+redirect these source declarations. Draft/unverified cards can produce
+drafts; they do not establish approval.</p>
+<p>Bodies retain the exact draft gap note and identify its concept card.
+A curator must still supply the term definition and type. This preview
+makes no issue or authentication request. The matching Python reader
+remains owed under B-279; this R capability does not establish parity on
+Python main.</p>
+</div>
 </div>
 <div class="section level3">
 <h3 id="decide-shared-salmon-domain-vs-dfo-specific-routing">5) Decide shared salmon-domain vs DFO-specific routing<a class="anchor" aria-label="anchor" href="#decide-shared-salmon-domain-vs-dfo-specific-routing"></a>
@@ -296,7 +332,7 @@ routing decision.</p>
 <h3 id="produce-a-concrete-term-request-list">6) Produce a concrete term-request list<a class="anchor" aria-label="anchor" href="#produce-a-concrete-term-request-list"></a>
 </h3>
 <p>First render a dry, non-interactive plan and inspect every route:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span></span>
 <span>  <span class="va">gaps</span>,</span>
 <span>  scope <span class="op">=</span> <span class="st">"auto"</span>,</span>
@@ -332,7 +368,7 @@ the best fallback evidence, and the proposed route. Review
 <p>To apply reviewed row-by-row decisions, pass an override vector. Edit
 <code>reviewed_scopes</code> so every value is one of <code>smn</code>,
 <code>gcdfo</code>, <code>profile</code>, or <code>skip</code>:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">reviewed_scopes</span> <span class="op">&lt;-</span> <span class="va">request_plan</span><span class="op">$</span><span class="va">request_scope</span></span>
 <span><span class="co"># reviewed_scopes[2] &lt;- "gcdfo"</span></span>
 <span></span>
@@ -359,7 +395,7 @@ submits an issue.</p>
 <h4 id="preview-issue-drafts">Preview issue drafts<a class="anchor" aria-label="anchor" href="#preview-issue-drafts"></a>
 </h4>
 <p>Preview both SMN and GCDFO payloads before any submission:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">issue_preview</span> <span class="op">&lt;-</span> <span class="va">requests</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">request_scope</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smn"</span>, <span class="st">"gcdfo"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/submit_term_request_issues.html">submit_term_request_issues</a></span><span class="op">(</span>dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -381,7 +417,7 @@ concepts. That includes an explicit <code>sssom:NoTermFound</code> row
 when a released PSC compound measurement has no defensible match in
 another versioned vocabulary. Do not put property/entity/unit
 decomposition columns into SSSOM.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_sdp_sssom.html">write_sdp_sssom</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  mapping_sets <span class="op">=</span> <span class="va">reviewed_sssom_paths</span></span>
@@ -390,7 +426,7 @@ decomposition columns into SSSOM.</p>
 <p>Store the ordered property, entity, constraint, statistical-modifier,
 and unit evidence in the separate SDP measurement-decomposition
 artifact:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_sdp_measurement_decompositions.html">write_sdp_measurement_decompositions</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  decompositions <span class="op">=</span> <span class="va">reviewed_components</span></span>
@@ -408,7 +444,7 @@ mappings.</p>
 </h3>
 <p>Once the metadata is final and every surviving IRI is deliberate,
 regenerate EDH XML if your publication path needs it:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_edh_xml_from_sdp.html">write_edh_xml_from_sdp</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
 <p>This is the reviewed-package wrapper around
 <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code>. It refuses to rebuild while obvious
@@ -428,7 +464,7 @@ those markers and does not block a rebuild; only a
 <h3 id="run-strict-final-validation">9) Run strict final validation<a class="anchor" aria-label="anchor" href="#run-strict-final-validation"></a>
 </h3>
 <p>When the package is genuinely ready, switch to strict validation:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>This should pass only when the package is actually
 publication-ready.</p>
@@ -559,7 +595,7 @@ otherwise written as a <code>REVIEW REQUIRED:</code> marker with a
 warning naming each target that got one. Replace those before
 publishing.</li>
 </ul>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Your judgement on each accepted IRI. The term evidence is resolved for you.</span></span>
 <span><span class="va">judgements</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tribble.html" class="external-link">tribble</a></span><span class="op">(</span></span>
 <span>  <span class="op">~</span><span class="va">iri</span>, <span class="op">~</span><span class="va">confidence</span>, <span class="op">~</span><span class="va">review_rationale</span>,</span>
@@ -597,7 +633,7 @@ closure first, run it again once the sidecar exists.</p>
 fatal.</strong> <code>closure$gaps</code> is a term-gap table in the
 same shape <code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> returns, so it feeds
 the request pipeline directly:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">closure</span><span class="op">$</span><span class="va">gaps</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span><span class="va">closure</span><span class="op">$</span><span class="va">gaps</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="../reference/submit_term_request_issues.html">submit_term_request_issues</a></span><span class="op">(</span><span class="va">requests</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -654,7 +690,7 @@ one</strong> metadata-provider <code>orcid</code>, and it must be the
 ORCID behind the DataONE token you authenticate with. A dry run accepts
 any syntactically valid ORCID, so the placeholder in the shipped
 template will pass a rehearsal and be refused by the live call.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Copy once, then replace every example value and checksum with reviewed facts.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
@@ -664,7 +700,7 @@ template will pass a rehearsal and be refused by the live call.</p>
 <span>  <span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"eml-mapping.yml"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
 <p>That standalone call creates valid reviewed EML for inspection. The
 later KNB dry run deterministically rebuilds it once more so the final
@@ -673,7 +709,7 @@ EML also describes each named canonical SDP artifact as an
 <p>Preview the exact immutable DataONE objects, identifiers, checksums,
 access decision, and OAI-ORE relationships without reading credentials
 or making a network request:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -700,7 +736,7 @@ DOI</li>
 <p>Test objects are never promoted to production: a production deposit
 is planned separately, with production credentials, and mints its own
 identifiers.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -728,7 +764,7 @@ redistribute the package.</p>
 <p>Keep the JWT out of scripts, YAML, manifests, and shell history.
 Enter it into the current R process only and clear it immediately after
 the live call:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># `dataone_token` is the production credential; the test node reads</span></span>
 <span><span class="co"># `dataone_test_token` instead.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="fu">rstudioapi</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/rstudioapi/reference/askForPassword.html" class="external-link">askForPassword</a></span><span class="op">(</span><span class="st">"Short-lived DataONE JWT"</span><span class="op">)</span><span class="op">)</span></span>
@@ -782,10 +818,10 @@ than overwriting bytes.</p>
 dry run to the verified manifest for the preceding version. Build the
 revision in a fresh versioned SDP directory; never reuse or overwrite
 the prior package directory:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">revised_pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>

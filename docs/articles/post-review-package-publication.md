@@ -185,6 +185,47 @@ gaps |>
   dplyr::filter(dictionary_role %in% c("variable", "property", "entity"))
 ```
 
+#### Start from a commons gap register
+
+The same request pipeline can start from a recorded domain gap rather
+than a dataset. From a `salmon-knowledge-commons` checkout, export the
+current register and confirm the validator exits successfully:
+
+``` sh
+uv run --with pyyaml,jsonschema scripts/okf-check.py . --gaps > gaps.json
+```
+
+Then use the exported file in R:
+
+``` r
+
+commons_gaps <- detect_semantic_term_gaps(commons_gaps = "gaps.json")
+commons_requests <- render_ontology_term_request(commons_gaps, ask = FALSE)
+commons_preview <- submit_term_request_issues(commons_requests, dry_run = TRUE)
+commons_preview
+```
+
+The reader retains every row, source order and repeated concepts. Fields
+starting with `commons_` preserve the card, registry, mint target,
+lifecycle, draft note, dependencies, conflicts and verification state.
+Dataset, role, candidate and model evidence remain missing; this input
+cannot be combined with a dictionary, suggestions or SDP-only filters.
+
+Only an open gap with an explicit SMN or GCDFO target and no hold
+reaches the issue preview. Proposed/rejected and do-not-mint records,
+unresolved blockers, conflicts, contested meanings, evidence needs and
+deprecated cards remain visible with `commons_hold_reason`. PSC CV,
+new-scheme and undecided targets are held because this pipeline has no
+defined route for them. `scope`, `scope_overrides` and `ask` cannot
+reopen or redirect these source declarations. Draft/unverified cards can
+produce drafts; they do not establish approval.
+
+Bodies retain the exact draft gap note and identify its concept card. A
+curator must still supply the term definition and type. This preview
+makes no issue or authentication request. The matching Python reader
+remains owed under B-279; this R capability does not establish parity on
+Python main.
+
 ### 5) Decide shared salmon-domain vs DFO-specific routing
 
 Use this plain-English rule:
