@@ -3630,3 +3630,51 @@ and selected generation; polling-only helper spawns: zero. One publication
 checkpoint combines real generated outputs with operational measurements and
 workpad proof. No status-only checkpoint or additional bot request is made.
 Outside-repository receipts are in /tmp/b223-news-build-f9c018f-20261004.
+
+
+### 2026-10-04 B223 review intake and B429 frozen verification
+
+Coordination: normal B223 terminal handoff c751738c precedes the normal B429
+claim 67149d1e, respecting the single-live-claim cap without identity overrides.
+B429 publishes as Python PR99 at 818466b8, then hands off at 6b6d123d after
+independent implementation proof. Both branch/source freezes remain exact.
+Final hosted head-specific CI remains required; no result is inferred from
+local proof or from an earlier publication.
+
+Requested review diagnostic: Codex 4179532999 alleges a new incomplete-line
+warning. The helper and root independently compare the actual yaml 2.3.12
+read_yaml default (readLines.warn TRUE) with the shared reader: both warn, both
+abort with warn=2, and otherwise return identical values. Five independent
+comparison assertions pass. No alleged-regression runtime change or NEWS
+change is retained. The finding is answered and resolved with source and
+baseline evidence rather than followed blindly.
+
+Implementation/test repair: actual Claude 4179538115/4179538396 are valid.
+Checkpoint 10a0f8a9 gives each consumer its own test, limits the dependency skip
+to EML, and restores real retirement conditions on skips/archive stubs. The
+changed files pass 126 and 52 assertions in 2.241s and 1.045s. Mocked absence
+of emld gives 83 passes in 0.886s, four EML-only skips, and six KNB cases still
+executed. Root independently reviews the changed tests and verifies all 52
+production/NEWS files and generated pages are unchanged. Earlier independent
+consumer proof and the 15.991s selected build therefore remain usable; no
+source/native/full/strict/site repeat occurs locally. A corrected external
+mock-count assumption is an instrument correction, not a source failure.
+
+B429 implementation is separate tests-only RED 19e84519 (9fail/9pass, 0.37s),
+then private-helper GREEN 818466b8 (73pass, 1.32s). Independent peer checks
+202 controls in 0.824s, including 20 public refusals preserving the entire
+package-file byte map before atomic writes. Native undefined scalar/sequence/
+map/required-key/flow/anchor/document contexts refuse; ordinary malformed,
+nonmapping, core/bare/literal behavior and inert expression/object tags remain.
+Own-source binding and unchanged other 38 Python modules are proven. The
+startup urllib3 LibreSSL warning is reported accurately. No full/site repeat.
+
+Experiment next use: compare a review allegation with the real former call
+and native baseline before authorizing a repair; reuse frozen implementation
+and generated-output proof for a tests-only coverage repair. This changes no
+gate. Tool-read/CLI instrument mistakes (two missing guessed source paths and
+one rejected positional done argument) are separate from useful tests; none
+changed ownership/source. Environment repair: none. Polling-only helper spawns:
+zero. Status-only Git/CI checkpoints: zero. This append carries actual new
+diagnostic/coverage measurements, not a periodic status snapshot. Passive
+hosted waits are separate from the R and Python implementation/verification.
