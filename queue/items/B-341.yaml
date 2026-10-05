@@ -1,7 +1,7 @@
 id: B-341
 kind: defect
 title: 'metasalmonpy''s semantic closure falls back to the default paths without a word when the EML sidecar carries an !expr tag'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
