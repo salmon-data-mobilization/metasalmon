@@ -652,12 +652,14 @@ port passage of [`parity-deviations.md`](parity-deviations.md). The two current
 implementations key the exclusion the same way; this is an owed port, with
 no deliberate difference to register.
 
-**The REVIEW-marker ruling owes the Python widening too:** strict validation,
-the EDH gate and `review_metadata()` must cover the same four metadata files.
-Brett's 2026-09-23 ruling is recorded under **B-177**; its mirror port is
-**B-230**. The register's port passage specifies the same widening and explains
-why it is a port rather than a numbered difference. No ontology term choice
-or new ruling is made here.
+**The REVIEW-marker ruling is mirrored:** R **B-177** landed in metasalmon
+#225, and **B-230** **landed 2026-10-05 as metasalmonpy #103**, `6e26d614`.
+Strict/default marker findings, the EDH gate and the schema-declared metadata
+scan now cover the same four metadata files. The dictionary retains its fixed
+six IRI fields and existing semicolon constraint treatment. The four-file,
+twelve-answer regression matrix remains, with its dataset/code outcomes
+flipped. Brett's 2026-09-23 ruling covers both implementations; this closes
+port lag without a new numbered difference or ontology choice.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
@@ -1701,7 +1703,7 @@ release half of that gate is satisfied.
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md) · **Updated 2026-09-08:** seven-chapter Day 1 published at `190df307`, with actual human graph/dictionary review before tools, one 173×14 Fraser Coho source, and released R 0.5.0/Python 0.4.0 pins. Five Day 2 chapters are published at `27e0ced`, with local technical checks, CI deployment, public download verification and browser checks passed; see the [curriculum evidence and draft SDO guidance](workshop-curriculum-and-sdo-guidance-2026-09-08.md). Local teaching artifacts support the curriculum while domain review, independent-validator compatibility, live free-provider rehearsal, and the verified KNB test record remain outstanding. Neither the site deployment nor the new contribution exercises close those conditions.
 - [S5 — R-native review flow, **shipped as 0.5.0**](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8; the "next minor" turned out to be **0.5.0**, tagged `v0.5.0` 2026-08-25 with a GitHub Release) · **M1–M5 all landed 2026-08-25**, including #60's accessor clause with #74. `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **Mirror delivered 2026-09-16, in two halves:** B-126 ported the behaviour (metasalmonpy #28) and B-153 wrote the documentation half and moved metasalmonpy to 0.5.0, closing the `0.4.0→0.5.0` window; `PARITY.md` **row 31** was **amended in place** by #28, because its "verified identical to R's output for all three strategies" went false at `v0.5.0` and nothing there would have said so. The behavioural half alone did not make the number true, and that is the stream's last lesson: this release's bar is a *documentation* claim, and for twenty-two days metasalmonpy exported all eleven calls and named none of them in its semantic-review guide. The amendment text was drafted in [parity-deviations.md](parity-deviations.md)
-  - **Later review-marker maintenance (Q59):** B-177 applies Brett's four-file ruling in R; B-230 is the Python port. They are separate because a hub claim covers one repository. This is port lag, not a chosen deviation; [parity-deviations.md](parity-deviations.md) records the details.
+  - **Later review-marker maintenance (Q59), mirrored 2026-10-05:** B-177 landed in R #225; B-230 landed in Python #103. Strict/default marker findings, EDH and schema-declared scans cover all four files, with the fixed dictionary owner retained. Separate claims preserve repository ownership; [parity-deviations.md](parity-deviations.md) records the completed port.
   **B-60 R packaging scope (recorded 2026-09-30):** executable Rd examples,
   R-only namespace/author metadata hygiene, and an R export naming convention
   change no runtime behaviour or SDP contract. These R packaging mechanics

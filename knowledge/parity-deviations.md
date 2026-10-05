@@ -603,16 +603,18 @@ validation."** With **B-177**, R strict validation sweeps all four metadata
 files, and `review_metadata()` reports markers in the same declared IRI fields;
 the interim two-file scan list has been retired. Its card records the ruling
 from the queue sweep of 2026-09-23 (pull request 150). The ruling covers both
-implementations, and the Python side owes a widening too. Its strict validation
-does not yet refuse a marker in `codes.csv` or `dataset.csv`, and its EDH gate
-and scan both leave out `dataset.csv`. That half was filed in the same sweep as
-**B-230**, and each item names the other.
+implementations. **This port is closed:** **B-230** **landed 2026-10-05 as
+metasalmonpy #103**, `6e26d614`, following R #225/B-177. Python strict/default
+marker findings now sweep dataset/table/code alongside the dictionary's fixed
+six; its EDH collector includes dataset and its schema-declared scan visits all
+four files. The interim private allowlist is retired. The retained four-file,
+twelve-answer matrix has its dataset/code outcomes flipped, and public controls
+preserve package bytes, placement/malformed ownership, the dictionary's seventh
+field exclusion and late semicolon constraint components.
 
-**The Python half remains owed as a port, not a register row**, for the reason
-this section gives throughout. A ruled direction with an owner on each side is
-lag being closed, not a difference anyone wants, and once B-230 lands the two
-implementations behave alike. No numbered row was added, so
-`scripts/check-parity-registers.py` has nothing new to compare.
+This is the completed port of an already ruled direction, not a new deliberate
+difference. No numbered row was added, and the separate Q63 B-344/B-345 work
+still owns marker spelling and newly swept-field shape completeness.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Its codes step
