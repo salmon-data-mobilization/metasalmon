@@ -1,7 +1,7 @@
 id: B-344
 kind: defect
 title: 'metasalmon recognises the REVIEW: marker through several patterns, and none of them is the ruled ASCII-only definition'
-state: ready
+state: done
 claimable: true
 repo: metasalmon
 venue: claude-code
