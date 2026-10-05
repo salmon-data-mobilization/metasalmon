@@ -179,7 +179,14 @@ factual completion of the existing exact-selected-IRI contract, with no new
 ontology choice, deliberate parity row or report/retry contract. The October4
 compatible-addition grant supersedes the older administrative API hold above;
 actual independent review and required CI on each merged head remain gates.
-The paired implementation is not yet landed and the retirement remains open.
+Both implementations landed on2026-10-05: metasalmon PR244 as
+`d5566476aed48f2f484a3142715d11b542f6f6c2` and metasalmonpy PR85 as
+`0052455b834617ec2a50dc0f7674f3087ca7efdf`. Required checks on both exact
+publications passed; substantive findings were settled and the R tool-permission
+review failure was recorded with the approved independent review/test
+substitution. The paired port obligation is fulfilled. Earlier draft and
+administrative-hold wording above remains historical; no numbered parity row,
+release or ontology decision changes.
 
 **Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
 pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;

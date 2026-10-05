@@ -1,8 +1,8 @@
 id: B-433
 kind: defect
 title: Python's row 64 still describes the R date-text seeder difference after the ruled fix landed
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 severity: P3
