@@ -132,11 +132,14 @@
     declared <- if (is.list(mapping) && is.list(mapping$semantic_review)) {
       mapping$semantic_review$path
     } else NULL
-    if (is.character(declared) && length(declared) == 1L &&
-        !is.na(declared) && declared %in% ledger_names) {
-      # Resolve the selected file once with the existing existence/containment
-      # guard. A missing or escaping authority cannot silently use its shadow.
-      ledger_paths <- .ms_eml_resource_path(path, declared)
+    if (is.character(declared) && length(declared) == 1L && !is.na(declared)) {
+      # Keep the existing scalar getter/closure producer's path qualification.
+      declared <- trimws(declared)
+      if (declared %in% ledger_names) {
+        # Resolve the selected file once with the existing existence/containment
+        # guard. A missing or escaping authority cannot silently use its shadow.
+        ledger_paths <- .ms_eml_resource_path(path, declared)
+      }
     }
   }
   iris <- c(iris, unlist(lapply(ledger_paths, function(ledger_path) {
