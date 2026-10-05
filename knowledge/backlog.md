@@ -9077,3 +9077,63 @@ and every unrelated row. Numeric columns held as text and other role/value-type
 inference remain outside this correction. Current Python metadata and the
 landed R helper/test blobs are the sources; no runtime or schema change follows.
 This is delegated factual registry maintenance under Brett's October 4 grant.
+
+
+## B-434 — Hub row 62's HTML description predates the Python body-selection repair
+
+The hub parity register's row62 still says metasalmonpy's HTML reader collects
+every data node, including scripts and styles. B-386/Python91 replaces this
+behavior with body text outside script/style, preserving the observed
+whole-document fallback for a head-only document with no body. Its Python
+row62 amendment retains the permanent library/parser differences. After the
+actual Python91 merge, the hub's source description must record that landed
+behavior as well; this is a factual companion under Brett's October4 grant,
+not a new extraction policy or deliberate parity decision.
+
+The unchanged native `.ms_context_text_from_html()` in
+`R/llm-semantic-helpers.R` already selects `.//body`, falls back to the
+document only when xml2 finds no body, and excludes script/style text nodes.
+Its function bytes are identical to the original B386 audit's R main8cbeef3.
+The factual amendment is limited to the two HTML parentheticals in the
+existing row62. PDF/DOCX/spreadsheet clauses, remaining parser/text/repair
+differences, ruling/history, row retirement condition and every unrelated
+numbered row remain unchanged; runtime/tests are outside this companion.
+
+B386's literal retirement belongs only to metasalmonpy and ends with
+"No metasalmon half." Its public implementation/assertion acceptance and
+Python registry wording can retire B386 after actual landing. This separate
+hub documentation correction must not silently widen that original item
+into a cross-repository claim.
+
+Python91 actually merged on2026-10-05 as `c842a6fc35858857d3387d669cea5aeb300b5a81`
+from `e41c761b`. Its original body-selection repair is landed, but B-435
+records a separately reported implicit-empty-body defect; B-386 literal
+closure and the factual twin remain pending that bounded repair's evidence.
+
+## B-435 — implicit empty HTML body leaks head-only text after B-386
+
+Codex comment
+[4184128012](https://github.com/salmon-data-mobilization/metasalmonpy/pull/91#discussion_r4184128012)
+reports valid optional-body markup
+`<html><head><title>Hidden</title></head><p><img></p></html>`: the Python
+collector sees no outside-head text and falls back to all visible text,
+emitting `Hidden`, while xml2 synthesizes an empty body and the R public
+context path skips it. Independent reproduction against the exact merged
+source is required; this intake records the actual report, not a completed
+regression test or fabricated RED checkpoint.
+
+Python91's six exact-head CI checks were green and Codex actually completed,
+but that did not mean its substantive findings were settled. The final
+premerge GraphQL check contained this unresolved thread and the root's gate
+assertion failed. The root nevertheless proceeded with the body update and
+merge at12:49:02Z, incorrectly recording zero reviews/threads in that body.
+That was an agent execution error, not a missing permission, review quota
+failure, waived safeguard or Brett-approved exception. The merged PR is
+historical and receives no post-merge write. This separately claimed repair
+and its durable receipt correct the product and record the actual failure.
+
+The next merge uses a fail-fast checked gate command: any failed validation
+stops before a public mutation, and completed review summaries are read with
+actual review threads. This preserves the existing HUB gate. A further
+review was already present here, so this is not evidence that the numerical
+review cap should change. Original checkpoints and terminal ownership remain.
