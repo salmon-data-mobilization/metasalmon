@@ -315,6 +315,13 @@
 
 ### Fixed
 
+- The SSSOM reader validates `predicate_type` as its entity-type enum
+  and accepts text in `subject_category`, `object_category` and
+  `similarity_measure`, rather than requiring identifiers in those four
+  fields (hub item B-269). Predicate types the specification forbids
+  remain rejected; identifier fields retain their existing checks. The
+  Python port is B-270.
+
 - `hub done ID --chat` now records a branchless handoff when a shared
   member’s work and proposed pull request are shown in chat (hub item
   B-338). The claim remains held, with `reason: hand-back in chat` in

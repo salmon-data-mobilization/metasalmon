@@ -3901,3 +3901,108 @@ environment repair. New published-head hosted CI remains required. Hosted
 waiting is passive, separate from useful implementation and verification.
 This real repair append preserves every byte of the 258757-byte prefix and all
 253197/247735/244672/238582/234142/230015/225938/221386/208242 histories.
+
+
+### 2026-10-05 — B269 surviving schema correction and final settled-main publication
+
+**Coordination and closure carried forward.** R237/B338 merged at
+2026-10-05T04:54:45Z as 1a874adb8ac8c06301a4b091dbfbc0ee22fb484c from exact
+publication de8487a52969971823a56e5317c43010cc9a36eb. RCI 37264656729/job
+111618789276 passed the full provider-isolated suite and strict R4.6.1 check,
+zero errors/warnings/notes, 4m53.9s. Queue, index, parity and changelog guards
+pass. Claude 37264657082 model/verifier steps were accounting-skipped despite
+a green wrapper; not a fresh completed review. Earlier actual nits 5988028970
+and Codex 5987988922 remain, with reproduced P2 4180695523 fixed and answered
+in 4180785479, thread resolved, exact-source independent repair proof above.
+No bot reroll or CI override. Literal B338 retirement is met by the optional
+command, committed-origin participation authority, held branchless shape and
+retained old branch mode. Original terminal c3c518ad and holder stay archival.
+
+Merged client blob a3e9ee31 and final harness 868a4eee match the reviewed
+repair. The primary fast-forward preserved approved dirty AGENTS/HUB edits
+through backed-up three-way replay and exact reverse round trip. Clean B338
+checkout was removed/pruned after zero unique/unpushed commits and zero ignored
+files; branch and original/RED cdb21db/GREEN de8487a checkpoints remain.
+Complete 262761-byte history was canonical before removal. R221/B203's earlier
+merge/cleanup receipt is preserved above. Queue closeout will batch literal
+retirements after B269; there is no status-only Git/CI checkpoint.
+
+**Implementation and source authority.** Existing R231/B269 original c44cc661
+and terminal 1a27aca3b3bfeb074a7dc0835606208dd93c56e6 remain. Ordinary d58ab95
+integration d5ab1b12 resolves six real conflicts, preserving all five owned
+SSSOM assignments and all 35 other incoming assignments, including current
+native YAML guards. Settled actual R237 main 1a874adb integrates once in
+0002857121be67941e86076deb28073f46fbee50; its sole NEWS conflict is resolved as
+complete main bytes plus the exact B269 entry. All 138 R/test files remain
+byte-identical to independently verified d5ab1b12. Source f766fe2a5ee80bee0dfb66c10f0ce8dd62cb0570 and tests
+cbc4336f9715f12adaa4b786d887acdd3dc4e815 retain the current main test prefix and
+original regression tail. The pinned SSSOM schema 667d3c57 gives string ranges
+to subject_category/object_category/similarity_measure and entity_type_enum to
+predicate_type, explicitly excluding rdfs literal/composed entity expression
+for predicates. Correcting false range restrictions preserves genuine
+identifier/profile/native safeguards. It chooses no ontology meaning, frozen
+contract or deliberate parity difference. B270 remains the existing owed
+Python port; B350's canonical-quote/legacy-byte choice remains separate.
+
+**Verification and actual review failure.** Source-bound focused SSSOM proof
+passes 214 assertions/26 tests in 1.522s, loading .734s, zero failures/errors/
+warnings/skips. Independent implementation reviewer remaining_work_explanation
+clears 84 public controls in .289s, loading .505s: free text/colon/unicode/bars,
+all ten legal predicate types, invalid row/metadata enum values, public writer
+round-trip, genuine reference/profile refusals and inert unknown-tag/atomic
+byte preservation. Its initial duplicate-triple/order/blank-metadata fixture
+assumptions were corrected and recorded, not product failures. Both proofs
+bind to the unchanged 138 files without another source/full/native/peer run.
+Old Claude 36821947131 failed with is_error:true, 373ms, one turn and zero
+model usage/cost/denials; hidden underlying reason is unknown and no finding
+was published. Not attributed to quota/permission or a completed review.
+Exact implementation/public/focused evidence provides the permitted substitute;
+required final-head hosted CI and actual new findings remain gates.
+
+**Generation and instrument correction.** One accepted pinned NEWS-only build
+took 15.744s, exit0 (R4.5.2/pkgdown2.2.0/Pandoc3.8.3). Only the two NEWS pages
+and search JSON change. Typed positive controls precede order assertions:
+666 ordered identities, 596 non-NEWS records, 665 unrelated raw records versus
+prebuild (664 versus main because the owned reader Details record is also an
+intentional correction), 225 unrelated generated files, 937 nondoc sources
+and all 138 R/test files remain exact. Removing only the owned NEWS insertion
+recovers the complete main pages. No unrelated restoration was needed.
+Index68/64, parity64, changelog and scoped whitespace pass.
+
+The first preservation probe stopped because Git index bytes changed. Root
+had run read-only git status during generation, a likely stat-refresh cause.
+Copied prebuild/current staged entries are byte-identical; cached diff empty,
+HEAD/source unchanged. No index restoration or rebuild. This is reported as
+an index-byte mismatch, not falsely as byte identity. The generation helper
+completed and saved all gate/preservation receipts before a model-capacity
+failure prevented its final message; root recovered those complete artifacts
+without another build or agent reroll. No environment repair. A separate
+138-file read initially included non-R fixtures and stopped before writing;
+restriction to the exact reviewed R-file set corrected that instrument.
+
+**Next-use intake result.** Existing-handoff maintenance has useful work beyond
+fresh ready eligibility. Disjoint read-only reassessments find R224/B371's
+matching raw/API off-CI preflights preserve all package assertions and CI paths,
+consistent with Brett's B152 ruling. Its green Claude SDK execution had three
+permission denials and no published substantive verdict; independent source
+review substitutes accurately. Inherited expected-404 ambiguity is retained,
+not newly caused. R230/B137's queue explicitly permits a non-UTF8 exact-output
+skip: its UTF8 assertion and separate print/inertness safeguard stay intact;
+IRI whitespace hardening matches Python's existing explicit class. Its old
+Claude failed with hidden cause and no findings. Both obsolete blanket holds
+are suitable for delegated maintenance, but settled-main integration, focused
+appropriate proof and new-head CI remain unfinished work. Their original
+branches/claims are preserved; no edits, tests or publication in these two
+reassessments. External receipts/complete PR drafts are under
+/tmp/b371-maintenance-proof and /tmp/b137-maintenance-proof. B270 has a separate
+read-only preflight under /tmp/b270-preflight-proof; it is not claimed or
+implemented before B269 lands and closes.
+
+The one intake adjustment is evaluated through useful repair/integration work,
+with zero polling-only agent spawns, identity overrides, duplicate claims,
+manual bot requests, approval questions or status-only checkpoints. Existing
+idle-read measurements remain intact; no total effort/waste percentage is
+inferred. Hosted CI waits are passive and separate from implementation,
+verification, requested audit and coordination. This substantive append
+preserves every byte of the complete 262761-byte canonical prefix, including
+258757/253197/247735/244672/238582/234142/230015/225938/221386/208242 histories.
