@@ -315,6 +315,14 @@
 
 ### Fixed
 
+- `hub done ID --chat` now records a branchless handoff when a shared
+  member’s work and proposed pull request are shown in chat (hub item
+  B-338). The claim remains held, with `reason: hand-back in chat` in
+  its claim record. The option requires a current queue checkout and a
+  configured member whose `solo` key is false or absent; solo and
+  unrecognized values are refused. The existing `--branch` handoff and
+  its branch-name check are unchanged.
+
 - **EML and KNB reads now refuse unknown YAML tags in
   `eml-mapping.yml`** (hub B-223, Brett’s Q62 ruling).
   [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
