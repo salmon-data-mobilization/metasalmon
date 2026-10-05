@@ -162,7 +162,12 @@ collation_sensitive_fns <- c(
   ".ms_semantic_review_pass_2_packet",
   ".ms_semantic_review_rewrite_suggestions",
   ".ms_semantic_review_union_findings",
-  ".ms_semantic_flag_role_collisions"
+  ".ms_semantic_flag_role_collisions",
+  # B-130: this selected-IRI set orders both the exported result and the CSV
+  # whose bytes a publication recipe can checksum. Register both dispatcher
+  # and collector because the guard does not traverse callees.
+  "verify_sdp_semantic_iris",
+  ".ms_selected_sdp_semantic_iris"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

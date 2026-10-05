@@ -57,6 +57,19 @@ metasalmon (development version)
 
 ### Added
 
+* **`verify_sdp_semantic_iris()` checks every selected HTTP semantic IRI in a
+  Salmon Data Package with bounded retries** (hub item B-130, S13 requirement
+  3). It includes reviewed SSSOM mappings, preserves exact identifiers and
+  writes a C-sorted per-IRI CSV to
+  `reproducibility/provenance/semantic-iri-dereference.csv` before reporting
+  *all* failed IRIs. Publication workflows can checksum that CSV. The check
+  confirms HTTP resolution; it does not judge whether a term is suitable.
+  Vector condition messages stay in one redacted failure row so they cannot
+  interrupt the remaining IRI checks or prevent the complete report.
+  Default GETs stop after complete final headers and discard body bytes, with
+  a 30-second timeout across connection and redirects. `curl` is declared
+  directly in Imports; it was already installed as httr2's transport dependency.
+
 * `detect_semantic_term_gaps(commons_gaps = "gaps.json")` reads the commons
   `okf-check.py --gaps` export (B-278), retaining lifecycle, source order,
   repeated concepts and draft provenance. Commons-specific request rendering
@@ -257,6 +270,19 @@ metasalmon (development version)
   digest as well.
 
 ### Fixed
+
+* `verify_sdp_semantic_iris()` preserves legal semicolons in sixteen scalar
+  IRI fields declared by canonical metadata schemas, current extension
+  validators and the retained legacy methods contract (B-130). Dictionary
+  constraint lists and SSSOM pipe lists keep their separators; undeclared
+  extension fields keep their existing representation. The verifier previously
+  could report success without checking the full identifier after requesting
+  a truncated prefix. Redirected final URLs now remove credential userinfo
+  before report capture. No identifier, report column or retry policy changes.
+  An explicit supported reviewed-ledger path in the EML sidecar selects one
+  ledger; absent or unqualified mappings retain the compatibility union.
+  Missing or escaping selected ledgers and unsupported YAML tags refuse before
+  requests or report replacement.
 
 - Text columns that readr would read as dates or date-times no longer seed
   `codes.csv` rows. Factors retain their declared code-list intent. This

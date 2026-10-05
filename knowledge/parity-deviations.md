@@ -125,6 +125,62 @@ also the only reason the twin has caught this one.
 
 ## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
 
+**B-130 transport fixes verified in paired drafts (2026-10-01).** The paired
+[metasalmon PR244](https://github.com/salmon-data-mobilization/metasalmon/pull/244)
+and [metasalmonpy PR85](https://github.com/salmon-data-mobilization/metasalmonpy/pull/85)
+avoid requiring final or redirect bodies and bound default attempts to30 seconds.
+R uses curl>=6.2.1's public multi interface, matching complete terminal headers
+to current status and preserving its typed failure callback classes. Only default
+malformed-URL/redirect-limit failures receive a permanent marker; existing
+injected curl/error-message rules remain unchanged. Python uses a killed-and-reaped
+worker with HTTPX's public
+`send(stream=True, follow_redirects=False)`/`next_request` flow, closing each
+response before following. Python repair `5bfe68a` puts HTTPX>=0.28.1 in the
+optional `metasalmonpy[verify]` extra, required only for the default verifier
+backend. The pandas+Requests core imports and injected-requester checks remain
+available without HTTPX; a missing default-backend extra raises an install hint
+before requests or report writes. Requests stays for the package's other
+clients and existing injected-error compatibility. This records the repaired
+dependency boundary, not a new deliberate parity difference.
+
+The earlier Requests103→final200 gap was reproduced before Brett authorized
+a supported backend on2026-10-01. The retained eleven-route localhost fixture
+now requires both default clients to return final200 after103, including the
+same final URL, and covers withheld bodies, partial/stale headers and bounded
+failures. It passes on Python3.9.6 and3.13.11 with HTTPX0.28.1/HTTPcore1.0.9.
+Focused Python controls preserve cookies, origin auth and target-host netrc.
+Proxy routing applies Requests' public per-request environment decision at each
+hop through explicit supported HTTPX clients sharing a raw standard-library
+CookieJar. Local controls cover CIDR/apex bypass, the opposite scheme-qualified
+case, bare proxy URLs and three-hop cookie preservation. Both default public
+reports prove one attempt for malformed URLs/actual redirect limits and three
+for withheld-header timeouts; injected legacy classification remains intact. No private
+urllib3/http.client shim or approved-deviation row is introduced. This closes
+the demonstrated103 transport gap in the tested drafts, not the port's landing
+or B-130 acceptance: both exported APIs still require Brett's critical review.
+*Retires when:* the verified paired implementation is reviewed and lands on
+both sides. No release number, register number or new queue item changes.
+
+**B-130 exact-selection maintenance, 2026-10-05.** A source-bound public probe
+found that the drafted verifiers could report success after truncating scalar
+IRIs at a legal semicolon. The initial paired repair covered eleven canonical
+metadata scalar slots, including descriptor fallback. Actual review exposed
+five more declared owners in the three extension files already selected:
+legacy `metadata/methods.csv` method/protocol IRIs, measurement-decomposition
+concept/component IRIs, and observation-component relation IRIs. The completed
+sixteen-owner map preserves these existing scalar contracts. Native validators
+accept semicolon-bearing relation and component identifiers that the drafted
+verifier previously omitted while reporting success; a decomposition concept
+also occurs in the canonical dictionary, so its residual defect was an extra
+truncated-prefix request, not omission of its full canonical identifier.
+Dictionary constraints retain their declared semicolon list; SSSOM pipes and
+undeclared extension fields retain their existing behavior. This is
+factual completion of the existing exact-selected-IRI contract, with no new
+ontology choice, deliberate parity row or report/retry contract. The October4
+compatible-addition grant supersedes the older administrative API hold above;
+actual independent review and required CI on each merged head remain gates.
+The paired implementation is not yet landed and the retirement remains open.
+
 **Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
 pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
 its R half `B-342` landed in metasalmon pull request **#257**, merged as
