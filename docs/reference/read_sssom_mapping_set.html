@@ -104,6 +104,34 @@ specification forbids for predicates. <code>subject_category</code>, <code>objec
 and <code>similarity_measure</code> are text, so their values need no CURIE declaration.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Illustrative mapping only; curate real assertions before publication.</span></span></span>
+<span class="r-in"><span><span class="va">mapping_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".sssom.tsv"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">'#sssom_version: "1.1"'</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#curie_map:"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#  exa: https://example.org/ontology-a/"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#  exb: https://example.org/ontology-b/"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#mapping_set_id: https://example.org/mappings/demo"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#mapping_set_version: 1"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#license: https://creativecommons.org/licenses/by/4.0/"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#subject_source: https://example.org/ontology-a/"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#subject_source_version: 1"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#object_source: https://example.org/ontology-b/"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"#object_source_version: 1"</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"subject_id"</span>, <span class="st">"subject_label"</span>, <span class="st">"predicate_id"</span>, <span class="st">"object_id"</span>,</span></span>
+<span class="r-in"><span>        <span class="st">"object_label"</span>, <span class="st">"mapping_justification"</span>, sep <span class="op">=</span> <span class="st">"\t"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"exa:spawner-count"</span>, <span class="st">"Spawner count"</span>, <span class="st">"skos:exactMatch"</span>,</span></span>
+<span class="r-in"><span>        <span class="st">"exb:spawner-count"</span>, <span class="st">"Spawner count"</span>,</span></span>
+<span class="r-in"><span>        <span class="st">"semapv:ManualMappingCuration"</span>, sep <span class="op">=</span> <span class="st">"\t"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span>, <span class="va">mapping_file</span>, useBytes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mapping_set</span> <span class="op">&lt;-</span> <span class="fu">read_sssom_mapping_set</span><span class="op">(</span><span class="va">mapping_file</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mapping_set</span><span class="op">$</span><span class="va">metadata</span><span class="op">$</span><span class="va">mapping_set_id</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "https://example.org/mappings/demo"</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">mapping_file</span><span class="op">)</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

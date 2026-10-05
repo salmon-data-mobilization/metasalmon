@@ -10,3 +10,8 @@ if (getRversion() >= "2.15.1") {
     "term_type"
   ))
 }
+
+# Install only concrete defaults that the caller has not already supplied.
+.onLoad <- function(libname, pkgname) {
+  .ms_initialize_configuration()
+}

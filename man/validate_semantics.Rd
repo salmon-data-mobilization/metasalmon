@@ -42,3 +42,10 @@ under \verb{https://w3id.org/gcdfo/salmon#}). In non-strict mode
 (\code{require_iris = FALSE}), semantic gaps emit warnings but do not fail
 the overall call.
 }
+\examples{
+dictionary <- system.file(
+  "extdata", "column_dictionary.csv", package = "metasalmon"
+)
+result <- validate_semantics(dictionary, require_iris = FALSE)
+nrow(result$missing_terms)
+}
