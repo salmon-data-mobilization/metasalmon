@@ -315,6 +315,11 @@
 
 ### Fixed
 
+- Semantic bundle validation now checks a context chunk’s leading phrase
+  across lines. A later `table_2` or hyphenated note no longer hides a
+  matching first line; a leading underscored identifier remains
+  ineligible (hub B-384; metasalmonpy companion B-385 follows).
+
 - IRI shape validation now rejects Unicode whitespace consistently under
   C and UTF-8 locales (B-137). The shared validator uses the same
   non-ASCII space membership metasalmonpy already applies; previously a

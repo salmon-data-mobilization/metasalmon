@@ -4148,3 +4148,196 @@ it introduces no NEWS/runtime or affected locale changes, so the accepted
 github-helper test binds to actual merged B371 source once. Cleanup/closure
 receipts follow in PR body/durable queue commit, preserving terminale33c2628
 and original branch/checkpoints. No status-only Git/CI checkpoint.
+
+### 2026-10-05 — Same-stream factual completion and another hidden handoff land
+
+**Current experiment and result.** The existing-handoff intake adjustment is
+unchanged: inspect terminal handed-back PR maintenance as well as fresh claim
+eligibility. The latest next use completed Python82/B252 after the preceding
+R224/B371, R230/B137, Python100/B270 and Python101/B431 closeouts. These were
+real implementation/integration/factual completion tasks, not a new approval
+round or a fresh-ready-only assertion that no work exists. The original R221,
+R237 and R231 receipts remain in the exact279858-byte prefix, as does every
+269995/262761/258757/253197/247735 and earlier append.
+
+**Coordination and late actual review.** R230's completed Codex summary did not
+replace the actual inline/thread check. That existing check found P1
+4181044933: the Python explanatory mirror still described TRE alone. Canonical
+intake4895328 allocated B431 after259 refs/16worktrees were checked, with a
+normal root claim c59cc698 and terminal1a28e981; no identity override/duplicate
+claim. B432 separately records the already measured direct SSSOM parser locale
+residue and remains icebox, with public failing regression/repair still owed.
+B431 records the same15 non-ASCII whitespace members already in Python,
+retains correct historical dropping-PCRE stricter versus prior-use-PCRE laxer
+and the deliberately ASCII decomposition behavior, and scopes the historical
+comparison to its measured UTF8 named paths. It changes no runtime or new
+numbered parity difference. Independent remaining_work_explanation reviewed
+actual source and final23e163e comment/registry wording: all40module ASTs and
+261test/fixture bytes unchanged. No local runtime test/build repeat.
+
+**Verified review evidence and gates.** Python101 merged06:04:22Z as387b94b9
+from23e163e, with six exact-head checks green37270383302/37270383471/
+37270383413. Codex5988997527 failed/unavailable; public cause unknown and no
+review/findings published. Do not invent quota, denied tool, pre-execution
+failure or completed review. Approved independent implementation/comment
+review plus appropriate source/test bindings and hosted suites substituted
+accurately, no bot reroll/new approval/settings/server override. Landed B431
+settled R230's actual finding; reply4181131934/thread resolved before ordinary
+R230 merge06:05:37Z as0d875c79 fromd49bde1. Full provider-isolated suite and
+strictR4.6.1 zeroE/W/N37268892131/job111631531453 (3m57s), four guards green,
+actual Claude5988856901 model/verifier37269007009 completed with five source-
+verified nits. Locale/source/NEWS proofs stayed frozen and were reused.
+Complete279858-byte history returned canonical before cleanup; no dead route.
+
+R224/B371's final actual receipt: merged05:39:11Z asbbf94c40 from946a6a93;
+full/strictR4.6.1 zeroE/W/N3m53.1s37267850409, all guards, actual Claude two
+verified nits5988681021 and Codex code/security5988664772. Existing safeguards
+remain: offCI probes match raw/API endpoints and CI stays strict. Original
+expected404 ambiguity is disclosed. Python100/B270 merged05:46:08Z as29539c74
+from2959128; actual final changelog wording correction are-refused preserves
+source752d710a/tests5604f235 and every RED/GREEN checkpoint. Its six final
+checks green37268980614/37268980619/37268980576 include actual smoke/build;
+actual Codex5988769405 reviewed source-identical18d and independent305 proof
+was reused. Both R factual port passages record the landed matching schema
+rule in closeout81c3ee2. No new deliberate parity row or quote-byte choice.
+
+**Useful next implementation/integration.** Existing Python82/B252 preserves
+original157e31a/fd534aeb and terminalee84c72b/holdera-6e8d8b1dfb43a0d4.
+Ordinary3e76e118 integrates Python100, then cd9f295 integrates actual B431.
+Only CHANGELOG conflicts require keeping both entries and complete incoming
+history; all owned writer/inference substitutions and incoming B270/YAML/
+setters retained. Seven own-source field-absence/default-byte/extras/setter/
+apply controls pass .307s (1.149s with bootstrap),0fail/skips, eight inherited
+semantic warnings plus separate startup LibreSSL warning. Original241tests/
+28subtests reused; no repeated full/focused/native/provider/SSSOM corpus or
+build. Independent sssom_port_peer implementation330 bindings4.606s, final
+comments/integration344 bindings5.381s clear; all39 module ASTs and263tests/
+fixtures match accepted/incoming sources. This is implementation review,
+not a polling-only helper. Helper measured coordination reads3.925s, fetch/
+merge.591s, conflict resolution.033s and AST binding.226s; these operation
+times exclude whole-task deliberation and passive hosted waits.
+
+Python82 merged06:12:31Z as420a8058 from exactcd9f295 after six applicable
+checks green37270972443/37270972477/37270972494, including actual smoke/
+distribution steps. Codex5989070168 failed/unavailable on this source, public
+cause unknown/no actual review or finding; approved final-source independent
+review and appropriate acceptance/hosted tests substituted accurately. No
+reroll, new question, CI override or skipped-job-as-review claim. Literal
+retirement and exact whole publication tree were verified before cleanup.
+
+**Publication/coordination failure and repair.** Initial B252 queue closeout
+6bbf795 encountered the real port-landed-unrecorded local lint failure for
+two canonical mirror passages. The multi-command shell erroneously continued
+into commit/push; its commit's assertion that lint passed was wrong. Preserve
+that published failure/history. Ordinary da3dbf6 repairs both factual records
+with actual Python82 merge/publication proof; fresh lint328/check/parity64/
+OKF0 pass were inspected in a separate tool phase before the repair commit.
+No amend/force-push/server override or weakening of the guard. This corrects
+the existing required-gate execution, not another policy experiment. Count the
+failed closeout and necessary repair separately from clean first-pass work.
+The earlier cleanup assertion used a wrong src/ prefix and stopped before
+mutation; exact whole-publication tree equality replaced it. These are bounded
+coordination/instrument errors, not environment repair or passive waits.
+
+**Cleanup and operational receipts.** Closeout81c3ee2 retires B371/B137/B270/
+B431 with exact conditions retained. B2526bbf795 plus factual repairda3dbf6
+retire its actual landing. Completed clean zero-unique/zero-unpushed B371/
+B137/B270/B431/B252 checkouts removed/pruned; all branches, checkpoints and
+terminal claims retained. B270's five ignored caches and B252's49 ignored
+files are preserved under .completed-build-artifacts. The other three have
+zero ignored files. Primary R AGENTS/HUB dirty edits remained unstaged and
+were replayed through exactly reversible three-way fast-forwards; Python
+primary is clean420a8058. Final remote gates/merge/cleanup receipts are in PR
+bodies and durable closeout messages, not source-identical bookkeeping pushes.
+
+**Requested audit, next use and waits.** The useful bounded R384/B385 scope
+audit verifies surviving deterministic validators despite Python's llm_review
+filename: B329/B330 retain them, R pure ingest reaches the driver, and the
+existing read-only b327 draft reaches the same Python driver. No S16/provider/
+client/request/retry/options or chat-decomposition documentation edits. The
+one-flag first-token false-rejection correction retains markup stripping,
+identifier anchors and underscore/hyphen/phrase mismatch refusals. Preserve
+the original dirty B384 workpad5817bytes/ef658cff unstaged; no blanket staging,
+overwrite or owner impersonation. Python82's hosted parity finished before
+advancing this R oracle, so its accepted source is not invalidated mid-gate.
+B385 remains an existing owed port; actual R landing, then normal promotion/
+claim and R-computed fixture regeneration are required. No guessed fixture.
+
+Useful implementation/independent diagnostic helpers resumed with disjoint
+scopes; zero polling-only helper spawns, manual bot requests, new approval
+questions, identity overrides, duplicate claims or status-only Git checkpoints.
+The actual intake/promotion, implementation/comment publication, integration,
+per-ID completion and factual repair commits are useful writes, with the
+failed6bb publication separately disclosed. Bot-failure cause reads and claim/
+head snapshots are coordination, not completed reviews. Hosted CI waits are
+passive; there was no environment repair or new dependency. The earlier idle23
+read receipt remains dated passive evidence; no global waste percentage is
+inferred. This append continues the one handoff-intake experiment and changes
+no claim, merge, approval, review, server check or ownership gate.
+
+### 2026-10-05 — B384 existing-handoff integration, frozen deterministic proof
+
+**Coordination and integration.** The original R259/B384 handoff remains on
+agent/B-384/a-8b23709cce768317 with terminal d5d4e6f1 and original combined
+fix/tests7db0136. No historical separate tests-only checkpoint is invented.
+After Python82 landed, one ordinary integration of settled da3dbf6 into
+48383412 encountered only NEWS and its two generated companions/search. The
+resolved source NEWS retains the complete incoming bytes plus the exact
+original B384 development bullet. The existing workpad's5817bytes/ef658cff
+remain byte-exact and unstaged; its superseded blanket class6 text is historical,
+with current classification and maintenance receipts in the PR body. Primary
+AGENTS/HUB and unrelated checkouts are untouched. No claim takeover, identity
+override, new provider/client repair or S16 writer edit.
+
+**Implementation and source freeze.** The one DOTALL extraction flag and its
+five original assertions remain identical: validator blob7d5cd898 and test
+ad0027f. All50 other R files,86 other R test files and all unowned fixtures
+equal actual incoming main bytes. This is51 R files/87 R tests/256 tracked
+testthat files total,307 tracked R/testthat files. Strict byte identity is
+stronger than repeating parse comparison on unchanged files. The helper is a
+surviving deterministic validator, explicitly retained by B329/B330 and reached
+by live R assessment ingest; the existing read-only Python b327 draft reaches
+the same driver. Current Python main's ingester is not yet landed. Markup
+stripping, whole identifier anchors, leading-token underscore/hyphen refusal
+and normalized phrase mismatch safeguards remain intact. The old false rejection
+is routine under Brett's October4 grant, not a new ontology or parity choice.
+
+**Verification and generation.** One necessary pinned R4.5.2/pkgdown2.2.0/
+Pandoc3.8.3 NEWS-only build passed in16.072681s. Eighteen typed positive/
+malformed external controls preceded ordered-record assertions. Native
+generation retained unrelated typed content but reordered search records;
+the existing typed raw-span preservation control uses only its new owned Fixed
+text value and retains incoming framing/order. Final666 ordered identities,
+665 unrelated raw records,596 ordered non-NEWS records and225 unrelated
+generated files remain exact; HTML/MD equal incoming main after removing only
+the B384 entry. No unrelated native output was restored. Private index and
+all942 source inputs stayed unchanged during generation. No unchanged local
+full/native/provider suite, package check or second site build. Historical
+9087-pass/38-warning/6-skip fullR and zeroE/W/N strictR4.5.2 receipts remain
+historical; final exact-head hosted CI is still mandatory. Original completed
+Claude36939638008/5942527451 remains actual nits, not rerolled evidence.
+
+**Instrument corrections and remaining gates.** The whole merge diff against
+its old483 head reports four inherited whitespace lines in incoming
+semantic-review.html; the scoped staged diff against actual main passes, and
+those unrelated incoming bytes are preserved. An initial old test-helper path
+lookup failed; the current typed fixture is scripts/tests/test_build_pkgdown_targets.R.
+The first count label incorrectly said49 other R files; the per-file receipt
+was complete and unchanged, and the label is corrected to50. These are bounded
+coordination/instrument corrections, not environment repair or a test failure.
+The separately disclosed6bbf795 failed closeout and substantive da3dbf6 repair
+remain in the preceding full append; no clean-first-pass claim is made.
+
+B385 remains the existing owed scoped Python DOTALL port and R-computed fixture
+regeneration. R384 landing will stale its pinned multiline expectation; normal
+promotion/claim after landing must preserve guards and finish that convergence.
+No guessed fixture, new deliberate parity row or Py82/S16 branch takeover.
+Independent sssom_port_peer implementation review passed41 pure controls
+in0.156s with zero warnings/failures/skips, retaining token, markup, word-boundary,
+identifier and method/constraint evidence filtering. Final commit binding and
+exact-head hosted CI/actual findings remain separate gates before merge. Source work is frozen, no bot request/publication
+has occurred in this local maintenance phase. Zero polling-only agents, new
+approval questions, identity overrides, duplicate claims and status-only Git
+checkpoints. The useful existing-handoff intake experiment is unchanged;
+coordination/source binding, implementation integration, generation verification
+and passive hosted waits remain separate rather than a global waste ratio.
