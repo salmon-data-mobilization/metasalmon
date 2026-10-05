@@ -271,6 +271,13 @@ metasalmon (development version)
 
 ### Fixed
 
+* `verify_sdp_semantic_iris()` preserves legal semicolons in the eleven scalar
+  fields explicitly declared by the canonical metadata schemas (B-130). The
+  dictionary constraint list and SSSOM pipe lists keep their existing
+  separators; unknown extension fields keep their existing representation.
+  The verifier previously could report success after checking a truncated
+  scalar prefix. No identifier, report column or retry policy is changed.
+
 * `REVIEW` IRI markers now use the ruled ASCII-only spelling in validation,
   review decisions, method migration, bundle checks and EML/KNB output guards:
   optional spaces or tabs before `REVIEW` and around its colon, with ASCII case

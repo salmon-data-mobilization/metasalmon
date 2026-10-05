@@ -156,6 +156,18 @@ or B-130 acceptance: both exported APIs still require Brett's critical review.
 *Retires when:* the verified paired implementation is reviewed and lands on
 both sides. No release number, register number or new queue item changes.
 
+**B-130 exact-selection maintenance, 2026-10-05.** A source-bound public probe
+found that the drafted verifiers could report success after truncating scalar
+IRIs at a legal semicolon. The paired repair preserves all eleven scalar slots
+explicitly declared by the canonical metadata schemas, including descriptor
+fallback. Dictionary constraints retain their declared semicolon list; SSSOM
+pipes and ambiguous extension fields retain their existing behavior. This is
+factual completion of the existing exact-selected-IRI contract, with no new
+ontology choice, deliberate parity row or report/retry contract. The October4
+compatible-addition grant supersedes the older administrative API hold above;
+actual independent review and required CI on each merged head remain gates.
+The paired implementation is not yet landed and the retirement remains open.
+
 **Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
 pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
 its R half `B-342` landed in metasalmon pull request **#257**, merged as

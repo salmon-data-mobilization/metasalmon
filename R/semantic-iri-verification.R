@@ -14,17 +14,21 @@
   parts[nzchar(parts) & grepl("^https?://", parts, ignore.case = TRUE)]
 }
 
-.ms_semantic_iris_from_rows <- function(rows, fields, separator = ";") {
+.ms_semantic_iris_from_rows <- function(rows, fields, separator = ";",
+                                       scalar_fields = character()) {
   if (is.null(rows) || nrow(rows) == 0L) {
     return(character())
   }
   fields <- intersect(fields, names(rows))
   unlist(lapply(fields, function(field) {
-    .ms_semantic_iri_values(rows[[field]], separator = separator)
+    .ms_semantic_iri_values(
+      rows[[field]], separator = if (field %in% scalar_fields) NULL else separator
+    )
   }), use.names = FALSE)
 }
 
-.ms_semantic_iri_csv <- function(path, fields = NULL, accepted_only = FALSE) {
+.ms_semantic_iri_csv <- function(path, fields = NULL, accepted_only = FALSE,
+                                 scalar_fields = character()) {
   if (!file.exists(path)) {
     return(character())
   }
@@ -42,29 +46,45 @@
   if (is.null(fields)) {
     fields <- names(rows)[grepl("_iri$", names(rows))]
   }
-  .ms_semantic_iris_from_rows(rows, fields, separator = separator)
+  .ms_semantic_iris_from_rows(rows, fields, separator = separator,
+                             scalar_fields = scalar_fields)
 }
 
 .ms_selected_sdp_semantic_iris <- function(path) {
   # Canonical CSVs own these slots when present. The descriptor-only fallback
   # is for older SDPs; avoid reading their data resources for the usual path.
-  canonical <- c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")
+  # The bundled metadata schemas declare these eleven owner-specific slots as
+  # scalar IRIs. A legal semicolon is part of each identifier. constraint_iri
+  # explicitly declares a list; unknown extension fields retain their existing
+  # handling rather than acquiring a new convention from their suffix.
+  scalar_fields <- list(
+    dataset = "protocol_iri",
+    tables = c("observation_unit_iri", "protocol_iri", "method_iri"),
+    dictionary = c("unit_iri", "term_iri", "property_iri", "entity_iri",
+                   "statistical_modifier_iri"),
+    codes = c("term_iri", "vocabulary_iri")
+  )
+  canonical <- c(dataset = "dataset.csv", tables = "tables.csv",
+                 dictionary = "column_dictionary.csv", codes = "codes.csv")
   primary_paths <- vapply(canonical, function(file_name) {
     .ms_locate_metadata_file(path, file_name)
   }, character(1))
   has_canonical <- all(!is.na(primary_paths[c(
-    "dataset.csv", "tables.csv", "column_dictionary.csv"
+    "dataset", "tables", "dictionary"
   )]))
   if (has_canonical) {
-    iris <- unlist(lapply(primary_paths[!is.na(primary_paths)], .ms_semantic_iri_csv),
-                   use.names = FALSE)
+    iris <- unlist(lapply(names(primary_paths)[!is.na(primary_paths)], function(owner) {
+      .ms_semantic_iri_csv(primary_paths[[owner]], scalar_fields = scalar_fields[[owner]])
+    }), use.names = FALSE)
   } else if (file.exists(file.path(path, "datapackage.json"))) {
     package <- suppressMessages(read_salmon_datapackage(path))
     iris <- unlist(lapply(
-      package[c("dataset", "tables", "dictionary", "codes")],
-      function(rows) {
+      names(scalar_fields), function(owner) {
+        rows <- package[[owner]]
         if (is.null(rows)) return(character())
-        .ms_semantic_iris_from_rows(rows, names(rows)[grepl("_iri$", names(rows))])
+        .ms_semantic_iris_from_rows(
+          rows, names(rows)[grepl("_iri$", names(rows))], scalar_fields = scalar_fields[[owner]]
+        )
       }
     ), use.names = FALSE)
   } else {
