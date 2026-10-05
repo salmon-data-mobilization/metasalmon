@@ -279,6 +279,10 @@ metasalmon (development version)
   could report success without checking the full identifier after requesting
   a truncated prefix. Redirected final URLs now remove credential userinfo
   before report capture. No identifier, report column or retry policy changes.
+  An explicit supported reviewed-ledger path in the EML sidecar selects one
+  ledger; absent or unqualified mappings retain the compatibility union.
+  Missing or escaping selected ledgers and unsupported YAML tags refuse before
+  requests or report replacement.
 
 - Text columns that readr would read as dates or date-times no longer seed
   `codes.csv` rows. Factors retain their declared code-list intent. This
