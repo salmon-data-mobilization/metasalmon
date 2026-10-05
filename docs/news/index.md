@@ -315,6 +315,12 @@
 
 ### Fixed
 
+- IRI shape validation now rejects Unicode whitespace consistently under
+  C and UTF-8 locales (B-137). The shared validator uses the same
+  non-ASCII space membership metasalmonpy already applies; previously a
+  C-locale run admitted an ideographic space that a UTF-8-locale run
+  rejected.
+
 - The SSSOM reader validates `predicate_type` as its entity-type enum
   and accepts text in `subject_category`, `object_category` and
   `similarity_measure`, rather than requiring identifiers in those four

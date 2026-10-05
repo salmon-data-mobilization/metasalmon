@@ -204,24 +204,29 @@ test_that("infer_dictionary promotes paired value/unit numeric columns into meas
 })
 
 test_that("infer_dictionary recognizes wide numeric and percent metrics without promoting QA or reference fields", {
+  # Construct the accented header as UTF-8. A backtick name containing literal
+  # non-ASCII bytes is escaped by R's parser under LC_CTYPE=C, so it no longer
+  # matches the string used to select the resulting dictionary row.
+  discharge_name <- paste0("Discharge / D", intToUtf8(0x00e9L), "bit (cms)")
   df <- tibble::tibble(
     `Facility Reference Number` = c(1001, 1002),
     `Environmental (%/month)` = c("0.00%", "4.56%"),
     `Water Level / Niveau d'eau (m)` = c(1.2, 1.4),
-    `Discharge / Débit (cms)` = c(10.5, 11.1),
+    discharge = c(10.5, 11.1),
     water_temp_c__temp_eau_c = c(12.3, 12.8),
     width_middle = c(4.2, 4.5),
     depth_1_lower = c(0.5, 0.7),
     `Grade...4` = c(10, 10),
     `QA/QC...6` = c("Approved", "Approved")
   )
+  names(df)[names(df) == "discharge"] <- discharge_name
 
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
 
   expect_equal(dict$column_role[dict$column_name == "Facility Reference Number"], "identifier")
   expect_equal(dict$column_role[dict$column_name == "Environmental (%/month)"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "Water Level / Niveau d'eau (m)"], "measurement")
-  expect_equal(dict$column_role[dict$column_name == "Discharge / Débit (cms)"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == discharge_name], "measurement")
   expect_equal(dict$column_role[dict$column_name == "water_temp_c__temp_eau_c"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "width_middle"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "depth_1_lower"], "measurement")
