@@ -835,17 +835,35 @@ handoff ref needs no additional worktree. Never work in the primary checkout:
 it is Brett's day-to-day workspace, and a claim is task-scoped rather than a
 parallel authority over it.
 
-**A worktree is removed only after verifying it holds no unpushed work.** Both
-checks, and both have to be clean:
+**A worktree is removed only after verifying it holds no unpushed work.** Use
+the current branch tip on `origin`, not a local remote-tracking ref: a
+single-branch clone may never create `refs/remotes/origin/<branch>` for the
+branch being checked. Set `WT` to the worktree path, then run this check. It
+does not remove anything.
 
 ```sh
-git -C "$WT" status --porcelain                  # empty
-git -C "$WT" log HEAD --not --remotes --oneline  # empty
+(
+  set -eu
+  leave() { printf 'Leave %s in place: %s\n' "$WT" "$1" >&2; exit 1; }
+  dirty=$(git -C "$WT" status --porcelain) || leave 'status failed'
+  [ -z "$dirty" ] || { printf '%s\n' "$dirty"; leave 'worktree is dirty'; }
+  branch=$(git -C "$WT" symbolic-ref --quiet --short HEAD) || leave 'detached HEAD'
+  remote_ref="refs/heads/$branch"
+  remote_line=$(git -C "$WT" ls-remote --exit-code --heads origin "$remote_ref") || leave 'remote branch is unavailable'
+  remote_sha=$(printf '%s\n' "$remote_line" | cut -f1)
+  [ "$remote_line" = "$(printf '%s\t%s' "$remote_sha" "$remote_ref")" ] || leave 'remote branch response is ambiguous'
+  git -C "$WT" cat-file -e "$remote_sha^{commit}" || leave 'remote tip is not available locally; fetch the branch and rerun'
+  unpushed=$(git -C "$WT" log HEAD --not "$remote_sha" --oneline) || leave 'revision walk failed'
+  [ -z "$unpushed" ] || { printf '%s\n' "$unpushed"; leave 'HEAD has unpushed commits'; }
+  printf 'Clean worktree; HEAD has no commits outside origin/%s at %s\n' "$branch" "$remote_sha"
+)
 ```
 
-If either prints anything, leave the worktree in place and say so in the
-report. Never remove a dirty worktree, and never delete its branch: branch
-deletion is Brett's call, and `--delete` is in the denied list above.
+Any failure leaves the worktree in place. A remote branch that has advanced
+may name an object this checkout does not have; fetch that branch and rerun
+rather than treating the missing object as proof of safety. Never remove a
+dirty worktree, and never delete its branch: branch deletion is Brett's call,
+and `--delete` is in the denied list above.
 
 `git stash list` is deliberately not a check, because a stash is
 repository-wide: it returns the same entries from inside every worktree, so it
