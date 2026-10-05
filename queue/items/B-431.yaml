@@ -1,0 +1,12 @@
+id: B-431
+kind: defect
+title: Python's row 28 and whitespace comments omit R's explicit Unicode-space supplement
+state: ready
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, PARITY.md row 28 and metadata.py comments describe the explicit non-ASCII whitespace supplement in R''s shared IRI predicate and define the constants'' retirement by effective membership rather than TRE alone. Preserve the correct historical statement that dropping perl=TRUE made the old SDP-extension validator stricter, the deliberately ASCII-only decomposition validator, unchanged runtime constants and all existing public behavior. Source-verified factual companion to metasalmon PR230/B-137, not a new deliberate parity difference.'

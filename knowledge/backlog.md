@@ -9026,3 +9026,35 @@ affected/build-record files and restored the rest. At this observation date,
 the [published measurement and receipt](https://github.com/salmon-data-mobilization/metasalmon/blob/0f86ff3148645985e5fae6cadc903b36edc189d9/.hub/overhead/2026-09-30-workflow-improvements.md#L3006)
 are in PR 263's appended log and have not landed on main. The queue item owns
 the implementation and retirement condition.
+
+### B-431 — Python's whitespace explanation predates R's explicit supplement
+
+**Source-verified, 2026-10-05.** On metasalmonpy `29539c74`, `PARITY.md`
+row 28 and `metadata.py:20-40` describe R's classes and the constants'
+retirement through TRE alone. Metasalmon PR 230 at `d49bde1d` retains TRE's
+ASCII/POSIX component and adds the same 15 non-ASCII members already present
+in Python's `R_SPACE_CLASS`, making the shared predicate independent of the
+locale. The Python row's historical statement that **dropping** `perl=TRUE`
+made the old validator stricter is correct; R's description of the prior
+**use** of PCRE as laxer is also correct. Neither historical word should be
+flipped merely to make the prose identical. The missing factual companion
+was identified by Codex comment
+[4181044933](https://github.com/salmon-data-mobilization/metasalmon/pull/230#discussion_r4181044933).
+This records an existing behavior correction and its source, not a new
+deliberate difference. The queue item owns the bounded companion's condition.
+
+### B-432 — direct SSSOM reference parsing remains locale-dependent
+
+**Source-verified, 2026-10-05.** Metasalmon PR 230's workpad records a separate
+direct-parser path outside B-137's retirement: `R/sssom.R:512,520` still uses
+`[[:space:]]` directly, with an early reference check at lines 506–507. Public
+metadata validation and mapping-cell validation reach these paths at lines
+576 and 680. The shared predicate's explicit supplement does not change these
+expressions. Thus the NEWS entry correctly limits its claim to the shared
+validator; it does not establish locale-independent direct reference parsing.
+Claude comment
+[5988856901](https://github.com/salmon-data-mobilization/metasalmon/pull/230#issuecomment-5988856901)
+identified the absence of a queue record for this already measured residual.
+A new implementation must reproduce the public failure before repairing it;
+this source observation is not a completed public regression test. The
+separate quote-decoding/legacy-byte choice remains governed by B-350/B-351.
