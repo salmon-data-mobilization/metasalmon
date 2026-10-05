@@ -1105,3 +1105,77 @@ test_that("a licence placeholder never becomes a licenses entry", {
   # writer's answer and not a probe that can only return NULL.
   expect_identical(written_licenses("CC-BY-4.0")[[1]]$name, "CC-BY-4.0")
 })
+
+# Q63 excludes embedded LF/FF/VT before the colon. B177 newly visits codes
+# and dataset *_iri fields; B342 requires the same fields to retain strict
+# malformed-IRI ownership when the marker predicate no longer owns a value.
+test_that("Q63-excluded metadata markers reach strict malformed IRI refusal", {
+  pkg <- filled_coded_package("q63-metadata-shape")
+  slots <- list(
+    c("codes.csv", "term_iri"),
+    c("codes.csv", "vocabulary_iri"),
+    c("codes.csv", "custom_thing_iri"),
+    c("dataset.csv", "custom_thing_iri")
+  )
+  for (slot in slots) {
+    file <- slot[[1]]
+    field <- slot[[2]]
+    path <- file.path(pkg, "metadata", file)
+    for (separator in c("\n", "\f", "\v")) {
+      value <- paste0("REVIEW", separator, ":https://example.org/code")
+      original <- mark_metadata_field(pkg, file, field, 1L, value)
+      before <- readBin(path, "raw", file.info(path)$size)
+      label <- paste(file, field, charToRaw(separator))
+      expect_false(.ms_is_review_iri(value), info = label)
+      expect_identical(read_meta(pkg, file)[[field]][[1]], value, info = label)
+      expect_error(
+        suppressWarnings(suppressMessages(
+          validate_salmon_datapackage(pkg, require_iris = TRUE)
+        )),
+        paste0("field ", field, " is not an absolute IRI"),
+        info = label
+      )
+      # Completeness belongs to strict validation; the default mode retains
+      # its existing acceptance and does not normalize or rewrite the value.
+      expect_no_error(suppressWarnings(suppressMessages(
+        validate_salmon_datapackage(pkg, require_iris = FALSE)
+      )))
+      expect_identical(readBin(path, "raw", file.info(path)$size), before,
+                       info = label)
+      writeBin(original, path)
+    }
+  }
+})
+
+test_that("metadata shape ownership preserves marker, blank and valid IRI paths", {
+  pkg <- filled_coded_package("q63-metadata-controls")
+  slots <- list(
+    c("codes.csv", "term_iri"),
+    c("codes.csv", "vocabulary_iri"),
+    c("codes.csv", "custom_thing_iri"),
+    c("dataset.csv", "custom_thing_iri")
+  )
+  for (slot in slots) {
+    file <- slot[[1]]
+    field <- slot[[2]]
+    path <- file.path(pkg, "metadata", file)
+    original <- mark_metadata_field(
+      pkg, file, field, 1L, "rEvIeW\t :https://example.org/code"
+    )
+    expect_true(refuses_review_marker(pkg), info = paste(file, field))
+    non_strict <- suppressWarnings(suppressMessages(
+      validate_salmon_datapackage(pkg, require_iris = FALSE)
+    ))
+    matching <- grepl(paste0("field ", field, " still contains a REVIEW-prefixed IRI"),
+                      non_strict$semantic_validation$issues$message, fixed = TRUE)
+    expect_equal(sum(matching), 1L, info = paste(file, field))
+    writeBin(original, path)
+    for (value in c("https://example.org/code", "urn:example:code", "")) {
+      original <- mark_metadata_field(pkg, file, field, 1L, value)
+      expect_no_error(suppressWarnings(suppressMessages(
+        validate_salmon_datapackage(pkg, require_iris = TRUE)
+      )))
+      writeBin(original, path)
+    }
+  }
+})
