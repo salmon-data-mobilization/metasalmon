@@ -176,35 +176,35 @@ absolute-IRI shape in dictionary semantic fields and table IRI fields, with
 the supported constraint-list representation preserved. No new numbered
 parity row or term selection was made.
 
-**Development-version port, 2026-10-05: the ruled ASCII REVIEW marker
-(B-344 → B-345).** This R change implements Brett's Q63 ruling: optional
-ASCII spaces or tabs, REVIEW in any mix of ASCII case, optional ASCII spaces
-or tabs, then a colon. Stripping consumes ASCII spaces or tabs after the colon
-and nothing else. Unicode spaces and line breaks, form feeds or vertical tabs
-before REVIEW or the colon are excluded; raw suffix bytes are preserved.
-Q63 detection and stripping share one predicate, and decoded EML/ORE checks
-visit emitter IRI locations while retaining the inherited exact case-sensitive
-whole-document `REVIEW:` refusal. Ordinary review prose retains its existing
-literal-guard boundary.
+**Development-version Q63 marker port landed, 2026-10-05 (B-344 → B-345).**
+**This one is closed.** `B-345` landed as metasalmonpy pull request **#94**,
+merged as `182f71b29a4bccde1c2088029f598a3402d87212`.
+R pull request **#260** merged at 09:11:04Z as
+`df940b0dcfebd3824a849fc1ddaa88ca08ceb407` from `9002a6b`; Python pull
+request **#94** followed at 09:25:10Z as
+`182f71b29a4bccde1c2088029f598a3402d87212` from `8231095f`. Both whole
+merge trees equal their reviewed publications. This completes Brett's Q63
+spelling: optional ASCII spaces/tabs, ASCII-case REVIEW, optional spaces/tabs,
+then colon; stripping consumes only ASCII spaces/tabs after the colon. Unicode
+spaces, dotless-i and LF/FF/VT exclusions and raw suffix bytes are retained.
+Cell detection/stripping share the predicate. Decoded EML/ORE checks visit
+emitter IRI locations while retaining the inherited exact case-sensitive
+whole-document `REVIEW:` refusal and ordinary narrative boundary.
 
-The Python implementation is already owed under **B-345**, the paired item,
-and must carry the same detector, strip, review-decision and output-guard
-behavior. **B-177/B-230** have extended the marker sweep to all four metadata
-files; the port must also retain malformed-IRI ownership in every swept field when
-Q63 excludes a former marker: the six dictionary semantic IRI fields and every
-`*_iri` column in dataset, tables and codes metadata. B344's public regression
-pins internal LF, FF and VT before the colon in codes `term_iri`,
-`vocabulary_iri` and custom dataset/codes IRI fields. The fix reuses the existing
-absolute-IRI shape; blank and recognized-marker paths remain separate, table
-method/protocol and dataset protocol keep their existing placement owners, and
-default validation and input bytes are unchanged. B345 owes the same coverage
-on the landed B230 baseline.
+The B177/B230 all-four-file sweep retains malformed-shape ownership when Q63
+excludes a former marker: the six dictionary fields and swept `*_iri` columns
+in dataset/tables/codes. Dataset protocol and table method/protocol retain
+their unconditional placement owners, preventing duplicate findings. New
+separate RED/GREEN regressions in both packages reproduce and repair the
+codes term/vocabulary and custom dataset/codes strict gap; default validation,
+blank/admitted-marker paths and every package byte remain unchanged. Current
+head hosted gates and independent implementation proof passed before merge.
 
-This is the already ruled port and its required guard completeness, not a new
-deliberate difference, numbered parity row or version change. **Row 61's deliberate
-marker-producer byte distinction and the separate Q18 question are unchanged:** R still emits a space
-after `REVIEW:` and Python does not; Q63 governs recognition and stripping,
-not that deliberately registered output spelling.
+This is the completed already ruled port, with no new numbered parity row,
+version change or ontology selection. **Row 61's deliberate producer-byte
+distinction and Q18 are unchanged:** R emits a space after `REVIEW:` and
+Python does not. Q63 governs recognition/stripping, not that registered output
+spelling.
 
 **SSSOM tag-refusal port landed, 2026-10-01.** `B-353` landed as metasalmonpy
 pull request **#88**, merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`;
@@ -687,7 +687,7 @@ field exclusion and late semicolon constraint components.
 
 This is the completed port of an already ruled direction, not a new deliberate
 difference. No numbered row was added, and the separate Q63 B-344/B-345 work
-still owns marker spelling and newly swept-field shape completeness.
+implements marker spelling and newly swept-field shape completeness.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Its codes step
