@@ -105,9 +105,9 @@ test_that("classified retries are bounded and every final failure is persisted",
   root <- withr::local_tempdir()
   make_iri_fixture_sdp(root)
   write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
-    term_iri = "https://example.org/z#exact; https://example.org/a#exact",
+    term_iri = "https://example.org/z#exact",
     property_iri = "https://example.org/b#exact",
-    constraint_iri = "https://example.org/c#exact",
+    constraint_iri = "https://example.org/c#exact; https://example.org/a#exact",
     unrelated_url = "https://example.org/not-a-semantic-selection"
   ))
   calls <- new.env(parent = emptyenv())
@@ -327,7 +327,7 @@ test_that("malformed requester results become rows rather than stopping the swee
   root <- withr::local_tempdir()
   make_iri_fixture_sdp(root)
   write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
-    term_iri = "https://example.org/a#malformed;https://example.org/b#good"
+    term_iri = c("https://example.org/a#malformed", "https://example.org/b#good")
   ))
   seen <- character()
   expect_error(verify_sdp_semantic_iris(root, requester = function(iri) {
@@ -434,4 +434,61 @@ test_that("default redirect-limit failure retains its supported curl class and i
   expect_identical(read_iri_report(root)$attempts, "1")
   expect_identical(delays, numeric())
   expect_identical(cancelled, 2L)
+})
+
+
+# A semicolon is legal in these scalar IRI fields. Only constraint_iri declares
+# list syntax; checking a truncated prefix violates B130's exact-IRI retirement.
+test_that("B130 public scalar metadata IRIs preserve legal semicolons", {
+  for (slot in list(
+    c("metadata/column_dictionary.csv", "property_iri"),
+    c("metadata/column_dictionary.csv", "term_iri"),
+    c("metadata/codes.csv", "term_iri"),
+    c("metadata/codes.csv", "vocabulary_iri")
+  )) {
+    root <- withr::local_tempdir()
+    make_iri_fixture_sdp(root)
+    iri <- paste0("https://example.org/", slot[[2]], ";variant#one")
+    frame <- tibble::tibble(value = iri)
+    names(frame) <- slot[[2]]
+    write_iri_fixture_csv(root, slot[[1]], frame)
+    inputs <- list.files(root, full.names = TRUE, recursive = TRUE)
+    before <- lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size))
+    seen <- character()
+    result <- verify_sdp_semantic_iris(root, requester = function(selected) {
+      seen <<- c(seen, selected)
+      list(status = 200L, final_url = selected)
+    }, sleep_fn = function(...) stop("Successful scalars must not retry"))
+    # The old public path falsely succeeds and writes a passing report.
+    expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+    expect_identical(result$attempts, 1L)
+    expect_identical(lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size)), before)
+    expect_identical(seen, iri, info = slot[[2]])
+    expect_identical(result$iri, iri, info = slot[[2]])
+    expect_identical(read_iri_report(root)$iri, iri, info = slot[[2]])
+  }
+})
+
+test_that("B130 public declared constraint list and scalar ledger keep their owners", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    constraint_iri = "https://example.org/constraint-A; https://example.org/constraint-B"
+  ))
+  ledger <- "https://example.org/review;variant#accepted"
+  write_iri_fixture_csv(root, "reviewed_semantic_selections.csv", tibble::tibble(
+    iri = ledger, decision = "accepted"
+  ))
+  inputs <- list.files(root, full.names = TRUE, recursive = TRUE)
+  before <- lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size))
+  seen <- character()
+  result <- verify_sdp_semantic_iris(root, requester = function(iri) {
+    seen <<- c(seen, iri)
+    list(status = 200L, final_url = iri)
+  }, sleep_fn = function(...) stop("Successful list and ledger must not retry"))
+  expected <- sort(c("https://example.org/constraint-A", "https://example.org/constraint-B", ledger), method = "radix")
+  expect_identical(seen, expected)
+  expect_identical(result$iri, expected)
+  expect_identical(result$attempts, rep(1L, 3L))
+  expect_identical(lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size)), before)
 })
