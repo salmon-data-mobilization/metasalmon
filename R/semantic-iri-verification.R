@@ -53,7 +53,7 @@
 .ms_selected_sdp_semantic_iris <- function(path) {
   # Canonical CSVs own these slots when present. The descriptor-only fallback
   # is for older SDPs; avoid reading their data resources for the usual path.
-  # The bundled metadata schemas declare these eleven owner-specific slots as
+  # The canonical metadata schemas declare these owner-specific slots as
   # scalar IRIs. A legal semicolon is part of each identifier. constraint_iri
   # explicitly declares a list; unknown extension fields retain their existing
   # handling rather than acquiring a new convention from their suffix.
@@ -97,13 +97,20 @@
   # search results or arbitrary HTTP URLs in data and provenance records.
   # Retires when the SDP profile exposes one authoritative inventory of
   # selected semantic fields; this local file list can then read that instead.
-  extension_paths <- c(
-    "metadata/methods.csv",
-    "metadata/semantic/measurement-decompositions.csv",
-    "metadata/structure/observation_components.csv"
+  # Current decomposition/observation validators require single absolute IRIs.
+  # The two methods slots retain that scalar contract from the sdp-0.2.0 schema
+  # still read for migration. Only these declared fields bypass list splitting;
+  # unknown extension slots keep their previous representation.
+  extension_fields <- list(
+    "metadata/methods.csv" = c("method_iri", "protocol_iri"),
+    "metadata/semantic/measurement-decompositions.csv" = c(
+      "measurement_concept_iri", "component_iri"
+    ),
+    "metadata/structure/observation_components.csv" = "component_relation_iri"
   )
-  iris <- c(iris, unlist(lapply(extension_paths, function(relative) {
-    .ms_semantic_iri_csv(file.path(path, relative))
+  iris <- c(iris, unlist(lapply(names(extension_fields), function(relative) {
+    .ms_semantic_iri_csv(file.path(path, relative),
+                       scalar_fields = extension_fields[[relative]])
   }), use.names = FALSE))
   iris <- c(iris, .ms_semantic_iri_csv(
     file.path(path, "metadata/semantic_vocabulary.csv"), fields = "iri"
