@@ -4870,3 +4870,124 @@ Coordination and intake: original terminalccd6a26b/holder/branches and all histo
 Python85 completed exact2e9476058a87eded25c44f9d80540ababc678ae6: merged2026-10-05T12:03:45Z as0052455b834617ec2a50dc0f7674f3087ca7efdf, six applicable checks green37306410206/37306410331/37306410408. Hosted core1967pass/249optional skips/266warnings/278subtests93.27s and bare91.66s, extras2207pass/9existing skips/267warnings/319subtests125.80s; smoke routes pass. Actual Codex5992125857 P1/P2 are fixed, answered4183724891/4183725128 and resolved. Independent final205e6aff ledger152public+13native/498bindings, prior71security+67extension exact-source proof. Python primary clean/fast-forwarded; pair B130 retirement still awaits R244, so no premature done claim. Its original WT is retained until paired cleanup.
 
 B433 root normal authenticated beat edd727f5684eab63f08d2ae7ee023852c159ad6a at12:02:56Z,lease16:02:56Z. Actual post-Python85base0052455 is used in a new root-owned isolated branch agent/B-433/a-c1bbb42efa975289. Minimal row64/adjacent registration/Unreleased Internal correction plus leadworkpad only; candidatef1749e3. Static proof458othertrackedpaths/42runtimeAST/271testfixtures/63unownedrows/releasedhistory exact in4.019s; ownchangelog9/parity64/diffpass, no runtime/full/site tests. Independent factual acceptance and finalheadCI remain pending. Future original R217/B132 and Python91/B386 handoffs are independently source-clear with90R and70paired context controls/469bindings; their ordinary actual-main integrations are deliberately sequenced after this pair/B433, not duplicated claims or administrative approval questions. B386's surviving parser/library differences and no-body fallback remain in permanent row62.
+
+
+### 2026-10-05 — B132 terminal-handoff intake next use after paired closure
+
+**Canonical closeout carried forward.** Actual main
+`6bb571f8db58fff4bd0fa17b04f0fc7d627c9a08` durably records B130 and B433's
+literal retirement, ordinary merges and completed-checkout cleanup. Python85
+merged 2026-10-05T12:03:45Z as
+`0052455b834617ec2a50dc0f7674f3087ca7efdf` from
+`2e9476058a87eded25c44f9d80540ababc678ae6`; R244 followed at12:24:53Z as
+`d5566476aed48f2f484a3142715d11b542f6f6c2` from
+`81a0e277c0d93144258fa8db1a33a77b04d58c66`. Both complete merge trees equal the
+reviewed publications. Python104/B433 merged at12:22:01Z as
+`94420c176c6a2fe54f0177f3b82019abbf97e0d5` from
+`f1749e3963090d04523a00ebd5d0a63817b622d4`; its full tree is exact and its factual
+row64 correction makes no new deliberate parity choice. Terminal handoffs
+`ccd6a26b9ac39e79dcd0193d41e2ed3f963d3ca4` and
+`41e574239032eafda197626829c6b18b833990e7`, original holders, branches and every
+RED/GREEN checkpoint remain. This appendix carries the existing closeout
+receipt, without repeating retirement or source acceptance probes.
+
+R244 exact-head RCI37307616936/job111755007467 passed full provider-isolated
+suite and strict R4.6.1 zero errors/warnings/notes (5m37.6s); five repository
+guards were green. Actual final Claude5994189775 had0important/4source-verified
+nits, but execution verification failed one denied `Bash:git log` call with
+arguments not exposed publicly. It remains a tool-permission failure, not a
+fresh completed review or quota claim. The approved independent implementation
+and test evidence substituted accurately before head-matched ordinary merge.
+All substantive findings were answered/fixed and four threads resolved; no bot
+reroll, server override, settings change or new approval question occurred.
+Python85 had six applicable green checks and its actual completed Codex findings
+were fixed/answered/resolved. Python104 had six green checks and completed
+Codex5994216251 with no findings. The full earlier evidence and all source/test
+isolation checkpoints remain in the preserved history above.
+
+Cleanup removed/pruned all three completed auxiliary checkouts only after
+clean/zero-unique/zero-unpushed/zero-untracked verification. Python85's5311
+ignored paths were archived and each source/archive member hash verified at
+`hub-worktrees/.completed-build-artifacts/metasalmonpy-B-130-2026-10-05`, archive
+SHA256`7c00103ec573bb32bb9351e9a9500e8c2fab50c25d7c8b3993d7797e0940481c`.
+R244 and B433 had zero ignored files; branches/checkpoints were retained.
+Final cleanup took3.340s and prior archive verification5.880s, as measured in
+that receipt. Queue lint329/check/render, parity64, changelog and OKF capture
+zero errors/warnings passed. No closure product/site/native/parser tests were
+repeated. Two useful source-bound independent helpers supported final
+acceptance, zero polling-only helpers/new bot requests/questions. Primary
+approved uncommitted AGENTS/HUB bytes and all unrelated/S16/dirty worktrees were
+preserved.
+
+**Coordination and instrumentation.** Root's archive manifest was a list, but a
+guessed dictionary summary printed all5311entries, then raised AttributeError
+and was truncated; the corrected bounded receipts verified every archived and
+source hash. This was a read/instrumentation miss, not mutation or product or
+environment failure. One `gh pr view 91` in the R repository resolved unrelated
+R91; the corrected explicit Python91 URL verified its original6d16 head/draft
+and absence of comments/reviews/threads. These are additional closeout-read
+measurements carried once from the root receipt; the older1185-entry binding
+read remains separately recorded above. This B132 preparation also had one
+broad combined policy/registry/log read truncated; bounded HUB review-section,
+latest dated section and compact audit-key reads corrected it. One guessed workflow-filename read found three absent filenames; discovered
+script names and explicit register paths corrected that diagnostic read without
+changing any workflow. No aggregate coordination duration is inferred from
+these asynchronous/model intervals.
+
+**Implementation.** Existing R217/B132's original terminal handoff branch was
+resumed after live public PR/source/terminal reads: original/public head
+`d37a57b9f83c24577f1397243d0116cb645c1737`, terminal
+`bc11ad82f08a67978be5734fa0363669727b53ef`, original holder
+`a-8b23709cce768317`. No new claim, holder impersonation or lease/claim write.
+One ordinary merge of actual settled6bb571f completed without conflicts in
+0.215082s (timed subprocess), preserving all incoming runtime/test/doc/native
+guards and the full381021-byte canonical log with SHA256
+`3f0294eb8e75ea0f557b1559e8ba98395e9a0fb0ad587bc1760bca165a47c0af` as an exact
+prefix. Original workpad bytes are an exact prefix as well. Only the original
+schema test, its appended handoff disposition and this substantive history
+append distinguish the local scope from settled main; package runtime, NEWS
+and generated site bytes remain incoming-main exact.
+
+**Verification.** Static staged binding took0.049248s:1186paths,1184incoming-main
+exact and the two original owned paths retained. Test blob13bc952e and loader
+blob14629e7c remain exact; complete wrapper/test AST and all22test blocks match
+the original handoff. Reuse the separate90-safeguards-assertion proof in0.802s
+(original audit time, not a new run), with zero warnings/unexpected errors and
+no audit case skipped. It checks only no-response transport skip eligibility,
+nine received-content/HTTP/unrelated-error refusal boundaries, successful
+remote provenance and timeout30 while runtime timeout2 remains unchanged. No
+local product/live-network/full/native/provider tests or NEWS/site build are
+repeated. Five proportionate local guards passed: queue lint0.223912s, queue freshness
+0.154875s, explicit-sibling parity64rows0.033606s, OKF capture0E/W0.766691s,
+and diff whitespace0.044347s. These separately timed concurrent subprocesses
+are not summed into an elapsed total. Separate integrated-candidate
+implementation acceptance and actual final-head
+hosted CI/review evidence remain pending gates. The original Claude36816821445
+model succeeded but supplies no verifiable implementation verdict; it is not
+relabeled as a completed clear review or assigned an invented failure cause.
+
+**One existing workflow adjustment, evaluated on its next useful handoff.** The
+expanded intake checks existing terminal handoffs as well as fresh claim
+eligibility. R217 is progressable even though its terminal claim hides it from
+fresh `hub ready`: exact source evidence supersedes the old blanket “a new skip
+is class6” administrative hold. This does not waive a weakened safeguard:
+received schemas remain subject to all original validation/assertions, and only
+no-response transport absence skips the live check, with an explicit local
+fixture retirement. The next use completed one clean source-identical
+integration with zero duplicate claims, unchanged90-control proof reused and
+zero repeated product/build verification. No new gate or policy adjustment is
+introduced by this evaluation. The maintenance implementer supplies binding,
+not self-declared independent clearance; another reviewer must clear the exact
+integrated candidate before publication.
+
+**Other overhead categories.** Environment repair: zero. Requested extra audit:
+zero beyond the useful existing implementation proof and required separate
+integration review. Passive waits in this B132 maintenance: none used; no
+guessed total includes the earlier B130 waits already preserved above.
+Polling-only helper spawns, new bot-review requests, approval questions,
+repository/public writes beyond this authorized local maintenance and new
+claim/identity overrides: zero. An overlapping helper preparation request was
+withdrawn when the parent reserved that helper for B386; the same available
+helper receives the final immutable B132 candidate afterward, with no new
+spawn or repeated source test. This is coordination overhead, not additional
+implementation or a claimed review completion.
