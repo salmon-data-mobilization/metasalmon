@@ -258,6 +258,10 @@ metasalmon (development version)
 
 ### Fixed
 
+- Text columns that readr would read as dates or date-times no longer seed
+  `codes.csv` rows. Factors retain their declared code-list intent. This
+  brings R's in-memory seeder into line with Python (hub B-310, parity row 64).
+
 * `REVIEW` IRI markers now use the ruled ASCII-only spelling in validation,
   review decisions, method migration, bundle checks and EML/KNB output guards:
   optional spaces or tabs before `REVIEW` and around its colon, with ASCII case
