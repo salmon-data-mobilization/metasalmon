@@ -1600,6 +1600,26 @@
     dplyr::arrange(.data$object_name, .data$pid, .locale = "C")
 }
 
+.ms_eml_add_temporal_date <- function(parent, value) {
+  # The package reader supplies its one persisted rendering as text. Split
+  # only the SDP profile's complete UTC instant: EML 2.2.0 stores its date and
+  # time in separate elements. Every other spelling goes to calendarDate
+  # unchanged so EML's schema still rejects malformed/out-of-profile values.
+  temporal_text <- as.character(value)
+  profile_instant <- paste0(
+    "\\A[0-9]{4}-[0-9]{2}-[0-9]{2}T",
+    "[0-9]{2}:[0-9]{2}:[0-9]{2}Z\\z"
+  )
+  if (grepl(profile_instant, temporal_text, perl = TRUE)) {
+    parts <- strsplit(temporal_text, "T", fixed = TRUE)[[1]]
+    .ms_eml_add_text(parent, "calendarDate", parts[[1]])
+    .ms_eml_add_text(parent, "time", parts[[2]])
+  } else {
+    .ms_eml_add_text(parent, "calendarDate", temporal_text)
+  }
+  invisible(parent)
+}
+
 .ms_eml_add_coverage <- function(dataset, dataset_meta, mapping) {
   temporal_start <- dataset_meta$temporal_start[[1]]
   temporal_end <- dataset_meta$temporal_end[[1]]
@@ -1660,17 +1680,18 @@
     # Not a third renderer (hub item B-162). `dataset_meta` is read back from
     # the package on disk as text: `metadata/dataset.csv` through
     # `.ms_read_metadata_csv()`, every column character, or `datapackage.json`
-    # when the package has no canonical metadata. So `as.character()` below is
-    # the identity on the one rendering that file already holds, and that file
-    # is the baseline. Routing these lines through the descriptor's renderer,
+    # when the package has no canonical metadata. So the helper's
+    # `as.character()` is the identity on the one rendering that file already
+    # holds, and that file is the baseline. It only splits a full instant at
+    # `T`, leaving the pair rejoinable byte for byte. Routing this text through
+    # the descriptor's renderer,
     # `.ms_descriptor_temporal_text()`, would re-render that text and pad a
     # short year, so the EML would disagree with the file it was built from.
-    # Pinned, with why a typed instant is not, in
-    # tests/testthat/test-canonical-date-render.R.
+    # Pinned in tests/testthat/test-canonical-date-render.R.
     begin <- xml2::xml_add_child(range, "beginDate")
-    .ms_eml_add_text(begin, "calendarDate", as.character(temporal_start))
+    .ms_eml_add_temporal_date(begin, temporal_start)
     end <- xml2::xml_add_child(range, "endDate")
-    .ms_eml_add_text(end, "calendarDate", as.character(temporal_end))
+    .ms_eml_add_temporal_date(end, temporal_end)
   }
 
   if (has_taxon) {
@@ -2927,8 +2948,9 @@ write_eml_from_sdp <- function(path,
     cli::cli_abort("EML export requires exactly one SDP dataset row.")
   }
 
-  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
-  mapping <- yaml::read_yaml(mapping_path, eval.expr = FALSE)
+  # Q62: the shared sidecar reader refuses unknown YAML tags before a tagged
+  # text value can flow into published EML; it also disables evaluation.
+  mapping <- .ms_eml_read_mapping_yaml(mapping_path)
   configs <- .ms_eml_validate_mapping(mapping, pkg)
   revision_key <- .ms_eml_revision_key(
     mapping,

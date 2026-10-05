@@ -41,7 +41,11 @@ A tibble with renamed columns, coerced types, and factor levels applied
 
 A value that is not in its column's code list has no factor level, so it
 becomes `NA`. Each such value is named in a warning, whatever `strict`
-is. Blank strings are treated as missing and are not reported.
+is. Blank strings are treated as missing and are not reported. A column
+backed by a vocabulary skips this codes step: any same-table codes row
+with a nonblank `vocabulary_iri` and missing or blank `code_value` marks
+the column as vocabulary-backed, even alongside explicit code rows.
+Independent declared type coercion still applies.
 
 ## Examples
 

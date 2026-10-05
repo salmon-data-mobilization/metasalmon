@@ -49,6 +49,11 @@ which is the failure mode a list of examples has and a rule does not.
 
 ## Primary workflow & entry points
 
+The R review walkthrough is `vignettes/semantic-review.Rmd`, linked from the
+quickstart and pkgdown's Guides index. It covers the review queue and metadata
+setters; `post-review-package-publication.Rmd` owns the publication steps.
+
+
 The headline path is one-shot package creation:
 
 ```
@@ -102,6 +107,19 @@ Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-pu
 `post-review-package-publication`, `reusing-standards-salmon-data-terms`,
 `github-csv-access`, `faq`, `glossary`, plus S11 slice 2's
 `migrating-to-sdp-0-3-0` and `tidy-data-for-sdp`.
+
+## Public API names
+
+New exports use lowercase `snake_case` and name the action before the object.
+Use the existing families where they fit: `read_`, `write_`, and `validate_`
+for persisted SDP artifacts; `infer_`, `suggest_`, and `detect_` for candidates;
+`review_`, `set_`, and `apply_` for explicit review or changes; `find_` and
+`*_codes` for lookups; and `publish_` for remote publication. Keep `sdp` in a
+name when it distinguishes the package artifact from a general mapping or
+ontology function. Integration-specific prefixes such as `ices_`, `dwc_dp_`,
+`edh_`, and `ms_` remain for their existing families. Existing exported names
+stay stable; a new name should join its closest family rather than rename an
+older API for symmetry alone.
 
 ## Domain glossary
 
@@ -420,6 +438,7 @@ every release — re-run the count rather than trusting these to the digit.
 
 | File | Lines | Responsibility |
 |---|---|---|
+| `configuration.R` | 125 (2026-09-30) | Option defaults and environment inventory; generates `metasalmon_configuration` help; `.onLoad` fills only missing concrete defaults. |
 | `package-helpers.R` | 3786 | SDP orchestration: `create_sdp`, `write_salmon_datapackage`, resource/codes/metadata inference, EDH post-processing. (God-file; split candidate.) |
 | `knb-publication.R` | 3704 | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
 | `eml-export.R` | 3001 | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
