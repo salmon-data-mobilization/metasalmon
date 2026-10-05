@@ -562,3 +562,107 @@ test_that("B130 public final URL reports remove only authority userinfo", {
     readBin(path, "raw", file.info(path)$size)
   }))
 })
+
+# These three files are already selected by the public verifier. Only fields
+# with an existing scalar contract are listed; an unknown extension _iri slot
+# must retain its prior representation rather than inherit a new convention.
+test_that("B130 known extension scalar owners preserve legal semicolons", {
+  owners <- list(
+    "metadata/methods.csv" = c("method_iri", "protocol_iri"),
+    "metadata/semantic/measurement-decompositions.csv" = c(
+      "measurement_concept_iri", "component_iri"
+    ),
+    "metadata/structure/observation_components.csv" = "component_relation_iri"
+  )
+  for (relative in names(owners)) {
+    for (field in owners[[relative]]) {
+      root <- withr::local_tempdir()
+      make_iri_fixture_sdp(root)
+      target <- paste0("https://example.org/", field, ";variant#exact")
+      rows <- tibble::tibble(value = target)
+      names(rows) <- field
+      rows$unknown_extension_iri <- "https://example.org/unknown-A; https://example.org/unknown-B"
+      write_iri_fixture_csv(root, relative, rows)
+      input_path <- file.path(root, relative)
+      before <- readBin(input_path, "raw", file.info(input_path)$size)
+      seen <- character()
+      result <- verify_sdp_semantic_iris(root, requester = function(iri) {
+        seen <<- c(seen, iri)
+        list(status = 200L, final_url = iri)
+      }, sleep_fn = function(delay) stop("Successful replies must not retry."))
+      expected <- sort(c(target, "https://example.org/unknown-A", "https://example.org/unknown-B"),
+                       method = "radix")
+      expect_identical(seen, expected, info = paste(relative, field))
+      expect_identical(result$iri, expected)
+      expect_false(sub(";.*$", "", target) %in% seen)
+      expect_identical(result$final_url, expected)
+      expect_identical(result$attempts, rep(1L, length(expected)))
+      expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+      expect_identical(before, readBin(input_path, "raw", file.info(input_path)$size))
+      report_path <- file.path(root, "reproducibility/provenance/semantic-iri-dereference.csv")
+      expected_rows <- result
+      expected_rows$iri <- expected
+      expected_rows$final_url <- expected
+      expect_identical(readBin(report_path, "raw", file.info(report_path)$size),
+                       .ms_sdp_extension_csv_bytes(expected_rows))
+    }
+  }
+})
+
+test_that("B130 native-valid extension selections remain exact", {
+  observation_root <- withr::local_tempdir()
+  make_structure_test_sdp(observation_root)
+  relation <- "https://example.org/relation;variant#exact"
+  components <- component_test_rows()
+  components$component_relation_iri[[1]] <- relation
+  suppressMessages(write_sdp_observation_structures(
+    observation_root, structure_test_rows(), components
+  ))
+  expect_true(isTRUE(suppressMessages(validate_sdp_observation_structures(observation_root))))
+
+  decomposition_root <- withr::local_tempdir()
+  concept <- "https://example.org/concept;variant#exact"
+  component <- "https://example.org/statistical-component;variant#exact"
+  make_eml_test_sdp(decomposition_root, measurement_term_iri = concept)
+  dictionary <- .ms_read_metadata_csv(file.path(decomposition_root, "metadata/column_dictionary.csv"))
+  measurement <- dictionary[dictionary$column_name == "count", , drop = FALSE]
+  decompositions <- tibble::tibble(
+    dataset_id = measurement$dataset_id[[1]], table_id = measurement$table_id[[1]],
+    column_name = "count", measurement_concept_iri = concept,
+    component_order = 1:4,
+    component_role = c("property", "entity", "unit", "statistical_modifier"),
+    component_status = "matched", component_relation = "",
+    related_component_order = NA_integer_,
+    component_iri = c(measurement$property_iri[[1]], measurement$entity_iri[[1]],
+                      measurement$unit_iri[[1]], component),
+    component_label = "Fixture component", rationale = "",
+    source = "Fixture", source_version = "1", source_url = "https://example.org/fixture",
+    provenance = "Offline exact-identifier control; no ontology selection is made."
+  )
+  write_sdp_measurement_decompositions(decomposition_root, decompositions)
+  expect_true(isTRUE(validate_sdp_measurement_decompositions(decomposition_root)))
+
+  for (entry in list(
+    list(root = observation_root, targets = relation),
+    list(root = decomposition_root, targets = c(concept, component))
+  )) {
+    input_files <- list.files(entry$root, recursive = TRUE, full.names = TRUE)
+    before <- lapply(input_files, function(path) readBin(path, "raw", file.info(path)$size))
+    seen <- character()
+    result <- verify_sdp_semantic_iris(entry$root, requester = function(iri) {
+      seen <<- c(seen, iri); list(status = 200L, final_url = iri)
+    }, sleep_fn = function(delay) stop("Successful replies must not retry."))
+    expect_true(all(entry$targets %in% seen))
+    # The concept is also a canonical dictionary term, so its pre-fix defect
+    # was an extra prefix request rather than an omitted full request. The
+    # relation/extra component independently demonstrate the missing-IRI case.
+    expect_false(any(sub(";.*$", "", entry$targets) %in% seen))
+    expect_identical(result$iri, seen)
+    expect_identical(result$final_url, seen)
+    expect_true(all(result$status == 200L & result$attempts == 1L))
+    expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+    expect_identical(before, lapply(input_files, function(path) {
+      readBin(path, "raw", file.info(path)$size)
+    }))
+  }
+})
