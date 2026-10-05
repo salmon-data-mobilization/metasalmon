@@ -286,7 +286,14 @@
   }
   list(
     status = status,
-    final_url = .ms_redact_secrets(final_url),
+    # A redirect can put credentials in the effective URL even when no
+    # credential header was sent. Remove only HTTP(S) authority userinfo at
+    # capture, before this value enters a returned row or persistent CSV.
+    # Stopping at /, ? or # preserves host/port and every path/query/fragment
+    # byte, including at-signs; a greedy authority match takes its final @.
+    final_url = .ms_redact_secrets(sub(
+      "(?i)^(https?://)[^/?#]*@", "\\1", final_url, perl = TRUE
+    )),
     error = .ms_redact_secrets(error),
     transient = transient
   )
