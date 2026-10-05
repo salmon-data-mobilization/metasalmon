@@ -111,6 +111,10 @@
 #   malformed claim records rather than presenting them as a valid action.
 #   43 checks that claim-time setup advice is shell-safe, appears again on an
 #   idempotent claim, and does not itself create a worktree or workpad.
+#   44 to 48 cover branchless chat handoffs: shared-member acceptance, solo
+#   refusal, and participation read from origin rather than local queue edits.
+#   Staged, unstaged, committed-ahead and local-only queue shapes are paired
+#   with canonical shared, unrelated-dirt and ordinary branch-handoff controls.
 #
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
@@ -621,6 +625,117 @@ advance_origin() {
   g git -C "$up" add -A >/dev/null 2>&1 || return 1
   g git -C "$up" commit -q -m "$message" >/dev/null 2>&1 || return 1
   g git -C "$up" push -q origin main >/dev/null 2>&1 || return 1
+}
+
+# chat_authority_case SCENARIO EXPECTATION - one independent queue origin,
+# locks repository and held ref. Local changes never reach another scenario's
+# origin or the main fixture, and the source repository is read-only.
+# RETIRES WHEN: chat handoffs stop depending on the canonical item's member
+# participation, at which point these origin-versus-local controls retire.
+chat_authority_case() {
+  local scenario="$1" expected="$2" dir="$TMPROOT/chat-authority-$1"
+  local locks="$dir.locks.git" cache="$dir.cache" out="$dir.out"
+  local id="$CHAT_SOLO_ID" changed="" ref seed tip rc bad=0 body
+  g git clone -q "$FIXTURE_REPO.origin.git" "$dir" >"$out" 2>&1 || return 1
+  # Each case needs its own origin: committing the solo:no control or a local
+  # ahead commit must not stale the existing legitimate shared-member cases.
+  g git clone -q --bare "$dir" "$dir.origin.git" >>"$out" 2>&1 || return 1
+  g git -C "$dir" remote set-url origin "$dir.origin.git" || return 1
+  g git init --bare -q --initial-branch=main "$locks" >>"$out" 2>&1 || return 1
+
+  case $scenario in
+    config-*|branch-config)
+      changed=queue/config.yaml
+      sed 's/solo: true/solo: false/' "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    item-*|branch-item)
+      case $scenario in
+        item-untracked|item-local-commit)
+          id=D-09
+          changed="queue/items/$id.yaml"
+          write_fixture_item "$dir/queue/items" "$id" salmon-data-standards-workshop ;;
+        *)
+          changed="queue/items/$id.yaml"
+          sed 's/^repo: metasalmon$/repo: salmon-data-standards-workshop/' \
+            "$dir/$changed" >"$dir/edit.tmp"
+          mv "$dir/edit.tmp" "$dir/$changed" ;;
+      esac ;;
+    solo-no)
+      changed=queue/config.yaml
+      sed 's/solo: true/solo: no/' "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    shared-working-solo)
+      id="$CHAT_SHARED_ID"
+      changed=queue/config.yaml
+      sed 's/solo: false/solo: true/' "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    shared-working-item)
+      id="$CHAT_SHARED_ID"
+      changed="queue/items/$id.yaml"
+      sed 's/^repo: salmon-data-standards-workshop$/repo: metasalmon/' \
+        "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    unrelated-dirt)
+      id="$CHAT_SHARED_ID"
+      printf 'Unrelated local fixture note.\n' >"$dir/local-note.txt" ;;
+    *) note "unknown chat authority scenario: $scenario"; return 1 ;;
+  esac
+
+  case $scenario in
+    *-staged|*-ahead|item-local-commit|solo-no|branch-item|shared-working-item)
+      g git -C "$dir" add -- "$changed" || return 1 ;;
+  esac
+  case $scenario in
+    *-ahead|item-local-commit|solo-no)
+      g git -C "$dir" commit -q -m "fixture $scenario" || return 1 ;;
+  esac
+  if [ "$scenario" = "solo-no" ]; then
+    # Unlike the spoof cases, no is committed to this case's authoritative
+    # origin; it must still be refused because the grant says false or absent.
+    g git -C "$dir" push -q origin main || return 1
+  fi
+  g git -C "$dir" merge-base --is-ancestor \
+    "$(git -C "$dir.origin.git" rev-parse main)" HEAD || return 1
+
+  ref="refs/heads/claim/$id"
+  seed=$(mk_commit "$CLONE_A" "claim $scenario" \
+          "$(claim_record "$id" "$HUB_AGENT_TOKEN" claim "$(ts_shift +30)")") || return 1
+  g git -C "$CLONE_A" push "$locks" "$seed:$ref" >>"$out" 2>&1 || return 1
+  if [ "$expected" = "branch" ]; then
+    ( HUB_LOCKS_URL="$locks" fixture_hub "$dir/scripts/hub" "$cache" \
+        "$HUB_AGENT_TOKEN" done "$id" --branch "agent/$id/$HUB_AGENT_TOKEN" ) >"$out" 2>&1
+  else
+    ( HUB_LOCKS_URL="$locks" fixture_hub "$dir/scripts/hub" "$cache" \
+        "$HUB_AGENT_TOKEN" done "$id" --chat ) >"$out" 2>&1
+  fi
+  rc=$?
+  tip=$(git -C "$locks" rev-parse "$ref" 2>/dev/null)
+  if [ "$expected" = "refuse" ]; then
+    [ "$rc" = "$EX_FAIL" ] || bad=1
+    [ "$tip" = "$seed" ] || bad=1
+    case $scenario in
+      item-untracked|item-local-commit)
+        grep -Eiq '(origin|canonical|authoritative).*(absent|missing|not.*(exist|found))|(absent|missing|not.*(exist|found)).*(origin|canonical|authoritative)' "$out" || bad=1 ;;
+      *) grep -Fq 'solo is false or absent' "$out" || bad=1 ;;
+    esac
+  else
+    [ "$rc" = "0" ] || bad=1
+    [ "$tip" != "$seed" ] || bad=1
+    [ "$(git -C "$locks" rev-parse "$ref^" 2>/dev/null)" = "$seed" ] || bad=1
+    body=$(git -C "$locks" show "$ref:claim.yaml" 2>/dev/null)
+    printf '%s\n' "$body" | grep -Fxq 'action: handoff' || bad=1
+    if [ "$expected" = "branch" ]; then
+      printf '%s\n' "$body" | grep -Fxq "branch: agent/$id/$HUB_AGENT_TOKEN" || bad=1
+    else
+      printf '%s\n' "$body" | grep -Fxq 'reason: hand-back in chat' || bad=1
+      printf '%s\n' "$body" | grep -q '^branch:' && bad=1
+    fi
+  fi
+  if [ "$bad" != "0" ]; then
+    note "$scenario: rc=$rc ref_changed=$([ "$tip" != "$seed" ] && echo yes || echo no)"
+    note "$(tail -n 3 "$out" | tr '\n' ' ')"
+  fi
+  return "$bad"
 }
 
 require_git_version() {
@@ -2022,6 +2137,27 @@ branch:" ;;
       note "solo: $(tail -n 2 "$TMPROOT/chat.$CHAT_SOLO_ID.out" | tr '\n' ' ')"
       note "unknown: $(tail -n 2 "$TMPROOT/chat.$CHAT_UNKNOWN_ID.out" | tr '\n' ' ')"
     fi
+
+    # -- 46 to 48 -----------------------------------------------------------
+    # Commit freshness alone cannot authorize local repo/solo values. Each
+    # refusal must preserve the held ref, while canonical shared members and
+    # the existing branch handoff remain usable with unrelated/local edits.
+    # RETIRES WHEN: chat handoffs no longer depend on canonical participation.
+    local chat_case chat_case_rc
+    for chat_case in config-unstaged config-staged config-ahead item-unstaged \
+                     item-staged item-ahead item-untracked item-local-commit; do
+      chat_authority_case "$chat_case" refuse; chat_case_rc=$?
+      assert 46 "client: chat hand-back refuses $chat_case authority spoof and preserves the held ref" "$chat_case_rc"
+    done
+    chat_authority_case solo-no refuse; chat_case_rc=$?
+    assert 47 "client: chat hand-back refuses committed solo:no without moving its held ref" "$chat_case_rc"
+    for chat_case in shared-working-solo shared-working-item unrelated-dirt \
+                     branch-config branch-item; do
+      case $chat_case in branch-*) chat_authority_case "$chat_case" branch ;;
+                        *) chat_authority_case "$chat_case" chat ;; esac
+      chat_case_rc=$?
+      assert 48 "client: canonical shared or legacy branch handoff survives $chat_case" "$chat_case_rc"
+    done
   else
     skip 22 "client: hand-back in a solo repository instructs one draft pull request"
     note "$CLIENT_SKIP_REASON"
@@ -2030,6 +2166,12 @@ branch:" ;;
     skip 44 "client: chat hand-back records a branchless handoff for shared members"
     note "$CLIENT_SKIP_REASON"
     skip 45 "client: chat hand-back refuses solo true and unknown"
+    note "$CLIENT_SKIP_REASON"
+    skip 46 "client: chat hand-back refuses local queue authority spoofing"
+    note "$CLIENT_SKIP_REASON"
+    skip 47 "client: chat hand-back refuses committed solo:no"
+    note "$CLIENT_SKIP_REASON"
+    skip 48 "client: canonical shared and legacy branch handoffs survive local edits"
     note "$CLIENT_SKIP_REASON"
   fi
 
