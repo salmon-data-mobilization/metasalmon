@@ -1460,6 +1460,14 @@ metasalmon (development version)
 
 ### Internal
 
+* **The hub worktree-removal check now verifies `HEAD` against the live
+  `origin` branch tip** (hub item B-203). A single-branch clone can have a
+  fully pushed work branch with no local `refs/remotes/origin/<branch>`;
+  the old `--remotes` walk called every commit on that branch unpushed.
+  The check in `HUB.md` now reads the exact branch SHA from `ls-remote`,
+  fails closed when the branch or commit cannot be verified, and still
+  reports genuinely unpushed commits. It does not remove a worktree.
+
 - Hub claim, done, and help guidance explains coherent pull-request batches.
   Related items held by the same claim-holder token may share one lead worktree,
   implementation branch, and detailed report while retaining per-ID claims,

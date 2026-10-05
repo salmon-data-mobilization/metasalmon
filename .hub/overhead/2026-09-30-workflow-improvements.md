@@ -3678,3 +3678,83 @@ changed ownership/source. Environment repair: none. Polling-only helper spawns:
 zero. Status-only Git/CI checkpoints: zero. This append carries actual new
 diagnostic/coverage measurements, not a periodic status snapshot. Passive
 hosted waits are separate from the R and Python implementation/verification.
+
+
+### 2026-10-04 Existing-handoff intake and B203 resumed maintenance
+
+**Coordination.** Brett's status question exposed an intake error: `hub ready`
+reports fresh claim eligibility, while terminal handoffs hide existing PRs to
+prevent duplicate implementation. The dated diagnostic found 30 ready records
+with terminal handoffs. That is not a standing queue count or proof that all
+are delegated. The heartbeat now inspects existing handoffs, beginning with
+R221/B203 and R237/B338, and distinguishes consequential decisions, original
+owner work, technical maintenance and superseded administrative holds. This
+one intake improvement changes no claim, approval, review or merge gate.
+Its next use immediately recovered existing routine work from an obsolete
+blanket policy-file approval note; source evidence, not that note, governs.
+
+Four recorded compact idle checks used 17 tool reads and no polling-only
+helper, implementation, tests, builds, environment repair or checkpoint write.
+The earlier 22:43 check used six reads; all five unchanged runs preserved the
+same holds. One useful diagnostic helper then identified the handoff-filter
+limitation. Those counts measure reads, not active effort or waste percentage.
+The follow-up maintenance uses independent implementation reviewers and one
+separate generation helper with disjoint scopes. No identity override or new
+claim is created: B203 terminal93c78bac (a-16638a45c615a2f8) and B338
+terminalc3c518ad (a-8b23709cce768317) remain held with their original ownership.
+Primary uncommitted AGENTS/HUB edits and unrelated dirty B384 work stay intact.
+
+**Implementation.** R221's original86f673a merges actual main d58ab951.
+Only NEWS and its generated pages/search conflict; the exact original eight-line
+B203 entry is retained with every incoming entry. The integrated HUB shell
+snippet remains byte-identical to the original, blob2e7dde38 and fence-content
+SHA2568acd8fadd0b692da572ac451f8dfb63675a2bd3fe58d9e5158f8d0b130a80003.
+Every R runtime file equals current main. The live-origin SHA corrects a
+false unpushed-work report while retaining refusal on dirty/detached/unavailable,
+ambiguous/missing-object/failed-walk and genuinely unpushed states. The snippet
+only reports and grants no removal, branch deletion or external write authority.
+No new source repair or historical tests-only checkpoint is claimed.
+
+**Independent verification.** ontology_fetch_peer cleared this exact integrated
+implementation with 102 assertions across 14 disposable Git scenarios in2.127s.
+Every execution preserved files, refs, HEAD, status and the worktree directory.
+Fixtures were outside the shared Git common directory and were removed after
+verification. Receipt: /tmp/b203-independent-proof/replay-receipt.json.
+Claude36818031396 did execute successfully with zero permission denials, but
+hidden output, no artifact and no published issue/inline/review verdict make
+a substantive verdict unavailable. It is not reported as a failed job or as a
+verified clear review. The exact-source independent implementation review and
+focused proof supply the approved evidence path. Final exact-head hosted CI
+and actual new findings remain gates; no bot reroll is requested.
+
+**Generation and environment.** One pinned NEWS-only build took19.752s and
+changed only the two NEWS pages and search JSON. Typed ordered-record proof
+preserves666 identities,665 unrelated raw records,596 non-NEWS records and225
+unrelated generated files. All314 frozen sources and the pre-build Git/index
+fingerprint were unchanged. Index68/64, parity64 and changelog16 released
+headings pass. No R runtime/full/strict local suite or full site build was
+repeated. No environment repair. Remote gate waits will be passive waiting,
+separate from implementation and verification; no total active-time estimate.
+
+**Prior completion receipt carried forward.** d58ab951 retires B223/B429 after
+R266b98b289 and Py9991fc420, preserving original partial47e54e98's honest
+six-failure/48-pass RED, R sourceGREENf9c018f/publicatione2ad72a/test-repair10a0f8a9,
+and Python genuine tests-onlyRED19e84519/fix818466b8. R final37239752974 full/
+strict4.6.1 zero errors/warnings/notes; five guards green. Final Claude37239752959
+execution verification failed on denied Bash:gh despite actual nits; frozen
+independent implementation/test proof substituted accurately. Python six gates
+green; Codex quota5985090304 failed before execution and independently verified
+202 controls substituted. No bot retry/server override/settings change.
+Terminalc751738c/6b6d123d, branches and original partial checkout remain.
+Completed clean/no-unique checkouts were removed, preserving Python's five
+ignored artifacts. No completed source/build/review is reopened. Closure
+lint326/check/parity64/OKF0 passed. Useful implementation/peer/generation/
+review-diagnostic work was separate from passive waits; polling-only helpers,
+manual bot requests, repeated local full/selected builds, approval questions
+and status-only checkpoints were zero in that completion. No waste percentage.
+
+This substantive maintenance append preserves all247735 canonical bytes and
+every earlier prefix, SHA256d5b20a338e5e95df25710b29f4efa14a48d003dffe5aa4b334a21dcf098407b6.
+Final gate/merge/claim receipts belong in the PR body rather than another
+source-identical Git/CI checkpoint. Further queued handoffs are reassessed
+individually from live source and findings, not treated as automatically clear.
