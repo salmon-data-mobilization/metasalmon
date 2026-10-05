@@ -115,14 +115,33 @@
   iris <- c(iris, .ms_semantic_iri_csv(
     file.path(path, "metadata/semantic_vocabulary.csv"), fields = "iri"
   ))
-  for (relative in c(
-    "reviewed_semantic_selections.csv",
-    "reproducibility/reviewed_semantic_selections.csv"
-  )) {
-    iris <- c(iris, .ms_semantic_iri_csv(
-      file.path(path, relative), accepted_only = TRUE
-    ))
+  # The reviewed EML sidecar chooses one authority when it explicitly names a
+  # supported ledger. A compatibility copy must not add stale accepted terms.
+  # Unqualified, absent and ordinary malformed sidecars retain the earlier
+  # union; shared native YAML parsing still refuses Q62 tags without evaluation.
+  # EML's checksum/target-completeness validation remains with that consumer.
+  ledger_names <- c("reviewed_semantic_selections.csv",
+                    "reproducibility/reviewed_semantic_selections.csv")
+  ledger_paths <- file.path(path, ledger_names)
+  mapping_file <- .ms_closure_mapping_file(path)
+  if (!is.null(mapping_file)) {
+    mapping <- tryCatch(.ms_eml_read_mapping_yaml(mapping_file), error = function(e) {
+      if (inherits(e, "metasalmon_eml_mapping_tag")) stop(e)
+      NULL
+    })
+    declared <- if (is.list(mapping) && is.list(mapping$semantic_review)) {
+      mapping$semantic_review$path
+    } else NULL
+    if (is.character(declared) && length(declared) == 1L &&
+        !is.na(declared) && declared %in% ledger_names) {
+      # Resolve the selected file once with the existing existence/containment
+      # guard. A missing or escaping authority cannot silently use its shadow.
+      ledger_paths <- .ms_eml_resource_path(path, declared)
+    }
   }
+  iris <- c(iris, unlist(lapply(ledger_paths, function(ledger_path) {
+    .ms_semantic_iri_csv(ledger_path, accepted_only = TRUE)
+  }), use.names = FALSE))
 
   # A reviewed SSSOM set is package semantics too. Read only manifest-bound
   # files, verify their hashes, and retain literal HTTP values; CURIE expansion
