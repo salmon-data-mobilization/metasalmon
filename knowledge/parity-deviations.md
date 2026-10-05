@@ -1570,3 +1570,17 @@ object on each row. B-278/B-279 preserve their respective ordinary SDP behavior.
 This is a preexisting difference, not a new design ruling or an assertion of
 universal payload parity; choosing a common normalization remains unresolved.
 No numbered deliberate-difference row is opened or claimed closed here.
+
+
+**Development SSSOM field-range port (2026-10-01), B-269 → B-270.**
+R validates `predicate_type` against SSSOM 1.1's entity-type enum (excluding
+`rdfs literal` and `composed entity expression`, which the schema explicitly
+forbids in this slot), including propagated mapping-set metadata.
+`subject_category`, `object_category` and `similarity_measure` are strings,
+not entity references; the remaining reference columns keep their checks.
+The four new tests in `test-sssom.R` pin each field, invalid predicate values,
+all predicate-legal enum values in rows/metadata and writer round-tripping.
+Python's equivalent column list still refuses these inputs on main e81cacd;
+B-270 owns that existing port. A hub claim covers one repository, so this is
+a port owed, not a new deliberate parity deviation. Schema source:
+[SSSOM snapshot](https://github.com/mapping-commons/sssom/blob/667d3c579d92ad2e1a480503625eeef1e6af8e6d/src/sssom_schema/schema/sssom_schema.yaml).

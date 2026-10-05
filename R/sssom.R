@@ -586,16 +586,39 @@
       )
     }
   }
+  if (!is.null(metadata$predicate_type)) {
+    .ms_sssom_validate_predicate_type(metadata$predicate_type)
+  }
+  invisible(TRUE)
+}
+
+# SSSOM 1.1's entity_type_enum, excluding the two values whose descriptions
+# explicitly forbid use in predicate_type: rdfs literal and composed entity
+# expression. Source snapshot, checked 2026-10-01:
+# https://github.com/mapping-commons/sssom/blob/667d3c579d92ad2e1a480503625eeef1e6af8e6d/src/sssom_schema/schema/sssom_schema.yaml
+# Update this set when this profile adopts a schema with a changed enum.
+.ms_sssom_predicate_types <- c(
+  "owl class", "owl object property", "owl data property",
+  "owl annotation property", "owl named individual", "skos concept",
+  "rdfs resource", "rdfs class", "rdfs datatype", "rdf property"
+)
+
+.ms_sssom_validate_predicate_type <- function(value, row = NULL) {
+  # Optional empty slots remain empty; a supplied value must name the enum.
+  if (!is.na(value) && nzchar(value) && !value %in% .ms_sssom_predicate_types) {
+    where <- if (is.null(row)) "" else paste0(" in row ", row)
+    .ms_sssom_abort(
+      "SSSOM predicate_type{where} must be an allowed SSSOM entity_type_enum value."
+    )
+  }
   invisible(TRUE)
 }
 
 .ms_sssom_reference_columns <- c(
   "record_id",
   "subject_id",
-  "subject_category",
   "predicate_id",
   "object_id",
-  "object_category",
   "mapping_justification",
   "author_id",
   "reviewer_id",
@@ -603,14 +626,12 @@
   "license",
   "subject_source",
   "object_source",
-  "predicate_type",
   "mapping_provider",
   "mapping_source",
   "mapping_tool_id",
   "curation_rule",
   "subject_match_field",
   "object_match_field",
-  "similarity_measure",
   "see_also",
   "issue_tracker_item"
 )
@@ -632,6 +653,12 @@
       .ms_sssom_abort(
         "SSSOM {.field {field}} cannot declare raw literal assignments in this SDP profile."
       )
+    }
+  }
+
+  if ("predicate_type" %in% names(mappings)) {
+    for (row in seq_len(nrow(mappings))) {
+      .ms_sssom_validate_predicate_type(mappings$predicate_type[[row]], row)
     }
   }
 
@@ -805,13 +832,18 @@
 #' assignments are refused because they belong in separate SDP semantic
 #' artifacts.
 #'
-#' Every CURIE prefix must be declared in `curie_map` except the SSSOM
+#' CURIE prefixes in identifier/reference fields must be declared in `curie_map`
+#' except the SSSOM
 #' built-in prefixes (`owl`, `rdf`, `rdfs`, `semapv`, `skos`, `sssom`, `xsd`
 #' and `linkml`), which the SSSOM specification lets a file omit, so a canonical
 #' SSSOM/TSV file that leaves them out is read. A `curie_map` that does declare
 #' a built-in prefix must give it the expansion the specification fixes for it
 #' (for example `http://www.w3.org/2004/02/skos/core#` for `skos`); any other
 #' expansion is refused.
+#'
+#' `predicate_type` uses SSSOM's entity-type enum, excluding the values the
+#' specification forbids for predicates. `subject_category`, `object_category`
+#' and `similarity_measure` are text, so their values need no CURIE declaration.
 #'
 #' @param path Path to one `.sssom.tsv` file.
 #' @param validate Logical; validate metadata, CURIEs, mappings, and no-match
