@@ -1696,16 +1696,18 @@ read_salmon_datapackage <- function(path) {
   issues
 }
 
-# The strict package gate sweeps the same tables.csv *_iri columns as the
-# REVIEW-marker collector above. Method/protocol placements already have an
-# unconditional shape check; excluding them here keeps one issue per bad cell.
-# A blank or recognized marker stays with its existing reporting path.
-.ms_collect_malformed_table_iri_issues <- function(df, source_name) {
+# The strict package gate follows the REVIEW-marker collector's *_iri sweep.
+# The historical table caller excludes method/protocol placements because
+# their unconditional check already owns malformed values. Dataset and codes
+# callers state their own placement exclusions, keeping one issue per bad
+# cell. A blank or recognized marker stays with its existing reporting path.
+.ms_collect_malformed_table_iri_issues <- function(
+    df, source_name, excluded_fields = c("method_iri", "protocol_iri")) {
   if (!is.data.frame(df) || nrow(df) == 0) {
     return(tibble::tibble())
   }
 
-  iri_cols <- setdiff(grep("_iri$", names(df), value = TRUE), c("method_iri", "protocol_iri"))
+  iri_cols <- setdiff(grep("_iri$", names(df), value = TRUE), excluded_fields)
   purrr::map_dfr(iri_cols, function(field) {
     vals <- as.character(df[[field]])
     # Exact empty values belong to existing missing-field checks. Parsed
@@ -2045,6 +2047,15 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       .ms_collect_review_placeholder_issues(pkg$tables, "metadata/tables.csv", id_fields = c("table_id", "file_name")),
       .ms_collect_missing_table_observation_unit_iri_issues(pkg$tables),
       .ms_collect_malformed_table_iri_issues(pkg$tables, "metadata/tables.csv"),
+      # B177 also sweeps dataset/codes for markers. Q63-excluded spellings
+      # must therefore reach the same absolute-IRI owner in those files.
+      # Dataset protocol has an unconditional placement owner; codes has none.
+      .ms_collect_malformed_table_iri_issues(
+        pkg$dataset, "metadata/dataset.csv", excluded_fields = "protocol_iri"
+      ),
+      .ms_collect_malformed_table_iri_issues(
+        pkg$codes, "metadata/codes.csv", excluded_fields = character()
+      ),
       .ms_collect_review_placeholder_issues(pkg$dictionary, "metadata/column_dictionary.csv", id_fields = c("table_id", "column_name")),
       .ms_collect_review_placeholder_issues(pkg$codes, "metadata/codes.csv", id_fields = c("table_id", "column_name", "code_value")),
       # #49: a blank schema-required field is the placeholder state minus the
@@ -2107,7 +2118,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         ifelse(nrow(final_review_issues) == 1, "", "s")
       ),
       .ms_cli_bullets(preview, "x"),
-      "i" = "Resolve placeholder metadata, blank schema-required fields, blank or malformed table IRIs, and any REVIEW-prefixed IRIs before strict validation."
+      "i" = "Resolve placeholder metadata, blank schema-required fields, blank table IRIs, malformed metadata IRIs, and any REVIEW-prefixed IRIs before strict validation."
     )
     if (nrow(final_review_issues) > length(preview)) {
       abort_lines <- c(
