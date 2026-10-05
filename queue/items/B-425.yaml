@@ -1,0 +1,13 @@
+id: B-425
+kind: defect
+title: 'Mirror B-424 in metasalmonpy, re-vendor the fixtures, and let two review records be concatenated'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: [B-424, B-327]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the fixes B-424 makes are mirrored, the shared fixtures are re-vendored byte for byte from the copy B-424 regenerates, and the cross-language test passes against metasalmon main. B-381, the Python half of B-380, lands with it and retires the bracket-class quirk metasalmonpy reproduced on purpose. And a review record that carries its findings in attrs can be pd.concat-ed with another, the hazard B-370 fixed in the retriever. Each is pinned by a test that fails before it, with a CHANGELOG entry under Unreleased. Brett, 2026-09-26, in chat: "yes or just fix them now", of the findings metasalmonpy pull request 72 (B-327) reported.'

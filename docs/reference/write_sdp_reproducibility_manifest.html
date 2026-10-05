@@ -94,6 +94,23 @@ must agree with the canonical directory layout.</p></dd>
     <p>The manifest path, invisibly.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">sdp_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"sdp-"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">sdp_path</span>, <span class="st">"reproducibility"</span>, <span class="st">"workflow"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>           recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"message('prepare data')"</span>,</span></span>
+<span class="r-in"><span>           <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">sdp_path</span>, <span class="st">"reproducibility"</span>, <span class="st">"workflow"</span>, <span class="st">"prepare.R"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">artifacts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  path <span class="op">=</span> <span class="st">"reproducibility/workflow/prepare.R"</span>,</span></span>
+<span class="r-in"><span>  role <span class="op">=</span> <span class="st">"workflow"</span>,</span></span>
+<span class="r-in"><span>  media_type <span class="op">=</span> <span class="st">"text/x-r-source"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">write_sdp_reproducibility_manifest</span><span class="op">(</span><span class="va">sdp_path</span>, <span class="va">artifacts</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="validate_sdp_reproducibility_manifest.html">validate_sdp_reproducibility_manifest</a></span><span class="op">(</span><span class="va">sdp_path</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">sdp_path</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

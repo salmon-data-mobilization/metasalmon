@@ -13,7 +13,8 @@ detect_semantic_term_gaps(
   suggestions = NULL,
   include_target_scopes = c("column", "code", "table", "dataset"),
   include_dictionary_roles = NULL,
-  min_score = NA_real_
+  min_score = NA_real_,
+  commons_gaps = NULL
 )
 ```
 
@@ -47,6 +48,14 @@ detect_semantic_term_gaps(
   Optional minimum score filter. Rows with score below this value are
   ignored when score is available.
 
+- commons_gaps:
+
+  Optional path to the JSON file emitted by
+  `salmon-knowledge-commons/scripts/okf-check.py . --gaps`. File paths
+  only; mutually exclusive with `dict` and `suggestions`. SDP-only
+  filters must retain their defaults on this path. Malformed records
+  fail rather than being coerced or dropped.
+
 ## Value
 
 A tibble with one row per unresolved semantic target. The existing
@@ -69,7 +78,10 @@ found" from "found and rejected". Key columns:
   `top_non_smn_score`;
 
 - `non_smn_sources`, `candidate_count`, `placement_recommendation`,
-  `placement_confidence`, `placement_rationale`.
+  `placement_confidence`, `placement_rationale`. Commons rows use
+  `gap_detection_basis = "commons_register"`; their `commons_blocked_by`
+  column is a list of concept identifiers and `commons_verified` is
+  logical. The default SDP result columns are unchanged.
 
 ## Details
 
@@ -85,6 +97,16 @@ It is designed to support a practical workflow:
 
 4.  optionally submit issues with
     [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md).
+
+Commons input retains every register row in source order, including
+multiple gaps on one concept. The usual gap columns retain their types,
+with dataset, candidate and LLM evidence missing. They are followed by
+`commons_` columns for all fifteen emitted fields and
+`commons_hold_reason`. Only open, unheld rows explicitly targeted to SMN
+or GCDFO can become a new request. Proposed/rejected, do-not-mint,
+blocked, conflicted, contested, evidence-needed, unsupported-target and
+deprecated-card rows remain visible on hold. Draft/unverified cards
+remain draft provenance, not approval.
 
 ## See also
 

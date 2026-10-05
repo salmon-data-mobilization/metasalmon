@@ -1,0 +1,13 @@
+id: B-420
+kind: defect
+title: 'R''s find_terms() searches the role''s sources_for_role() list when a caller names a role and no sources, as Brett ruled on Q-70'
+state: done
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'IN METASALMON, find_terms() called with a role and no sources searches that role''s sources_for_role() list, as metasalmonpy does, and a call with no role searches what it searches today. Pinned by a test that stubs every source and reads which ones a call with a role and no sources searched, failing before the change. The roxygen for role and sources says one thing, the NEWS entry names the changed default, and the pull request is Brett''s to merge because it changes the default of an exported function (HUB.md, Which pull requests need Brett, class 2). Brett ruled Q-70 on 2026-09-26 in chat: "R moves." No metasalmonpy half: metasalmonpy already does this.'

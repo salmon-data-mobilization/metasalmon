@@ -38,6 +38,7 @@ reference:
     desc: "One-shot package creation from raw tables"
     contents:
       - metasalmon
+      - metasalmon_configuration
       - create_sdp
       - infer_salmon_datapackage_artifacts
       - read_salmon_datapackage
@@ -181,6 +182,7 @@ articles:
     desc: "Step-by-step guides for common workflows"
     contents:
       - tidy-data-for-sdp
+      - semantic-review
       - post-review-package-publication
       - data-dictionary-publication
       - reusing-standards-salmon-data-terms
