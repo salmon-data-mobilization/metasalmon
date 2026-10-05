@@ -1,7 +1,7 @@
 id: B-230
 kind: defect
 title: 'The metasalmonpy half of the ruling on REVIEW-marked IRIs, so strict validation, the EDH gate and review_metadata() all cover the four metadata files'
-state: icebox
+state: done
 claimable: true
 repo: metasalmonpy
 venue: claude-code

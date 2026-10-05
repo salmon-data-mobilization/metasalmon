@@ -1,0 +1,13 @@
+id: B-421
+kind: defect
+title: 'R''s find_terms() normalises the source list it is given, as metasalmonpy does, so a source named in capitals is searched in both'
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMON, find_terms() trims, lower-cases and de-duplicates the sources it is given before it dispatches, as metasalmonpy does, so a source named in capitals or with stray spaces is searched in both packages, and once. Pinned by a test that fails before the change, with a NEWS entry. Found by the B-327 port (finding 6 in the backlog section of 2026-09-26), where the difference reached the source list a review packet records; metasalmonpy PARITY.md row 65 (g), which pull request 72 adds, records that touch and is amended when this lands. The direction, converging on metasalmonpy, is the coordinator''s under Brett, 2026-09-26, in chat: "yes or just fix them now", of the findings metasalmonpy pull request 72 (B-327) reported. It is not a ruling of Brett''s, and the pull request says so.'
