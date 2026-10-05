@@ -1,8 +1,8 @@
 id: B-342
 kind: defect
 title: 'Strict validation accepts text that is not an IRI in an _iri field, so a REVIEW: marker a detector misses passes it'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S1

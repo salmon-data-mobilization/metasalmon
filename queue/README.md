@@ -67,6 +67,9 @@ the owning system allocates IDs atomically.
 One file is one unit of work somebody could pick up, finish, and be done with.
 Its name is its id. Its fields say what the work is, where it happens, what it
 is waiting on, and what has to be true for the item to stop existing.
+IDs remain separate even when one same-repository pull request groups them.
+`HUB.md` § *Coherent batches* governs that grouping; it does not combine queue
+files, eligibility, or retirement conditions.
 
 ```yaml
 id: B-53
@@ -224,6 +227,8 @@ claim about everything an agent does: since 2026-09-10 an agent may also open
 one draft pull request per handed-back item, and may merge, promote, or push a
 small mechanical change under conditions `HUB.md` sets out. Read the register
 there for what is permitted; nothing in this section widens or narrows it.
+Later coherent-batch adoption is governed by `HUB.md` and the member repository's
+own `AGENTS.md`; this dated account of the 2026-09-10 grant is unchanged.
 
 **Git is the only write path, so nothing here is invisible to the
 private-terms guard by virtue of being an API call.** That much is true and it
@@ -274,8 +279,8 @@ reclaim reason as text that will be published unread, and write it that way.
 
 One consequence of the protocol is worth stating here because it surprises
 people: **a handoff does not release the claim.** The agent appends a `handoff`
-record and the item stays unclaimable until Brett merges the work, so finished
-work never looks free again while he is away.
+record and the item stays unclaimable through the merge and its own recorded
+retirement, so finished work never looks free before its closure is verified.
 
 ## Why there is no GitHub Project
 
@@ -309,6 +314,67 @@ remove was written by somebody who knew the fact was true when they wrote it.
 Correctness at the moment of writing is exactly what a restatement offers and
 exactly what it cannot keep, so the only durable defence is to have one home
 per fact and to treat any second answer as broken on sight.
+
+### The narrow prose check (B-209)
+
+The discrimination rule comes first. The check recognizes only a paragraph or list item
+beginning with a queue id (optionally an unordered/ordered list marker or
+Markdown emphasis) and a complete present-tense assertion in one of these forms:
+
+```text
+B-53 is ready.
+B-53 is currently not claimable.
+B-53 is blocked on B-90 and S-12.
+B-53 has state: review.
+B-53 has claimable: false.
+B-53 has blocked_by: [B-90, S-12].
+```
+
+ATX/setext headings and thematic breaks start the next paragraph even without
+a blank line. This is bounded block syntax, not a general Markdown parser.
+
+The recognized assertion ends at a period/exclamation or the paragraph's end;
+a question mark is an interrogative and passes.
+Trailing attribution such as “in the 2026-09-01 snapshot” or “, the old card
+said” is outside this grammar and passes. This is a conservative syntax rule,
+not a claim that a general history detector exists.
+
+State values come from the queue's existing state vocabulary. Inline code and
+bold around ids/values do not change the meaning. This rejects a second current
+answer even if it agrees with the queue today; the issue is the second owner.
+Use a link to the item, or the existing `hub:generated:items` renderer if a current
+state display is needed. The existing render-and-check step verifies those
+blocks; a hand-edited generated block must still fail freshness checking.
+
+Past tense, conditionals and attribution have different subjects and pass:
+
+- `B-161`'s question entry records that the emission work **moved out** to
+  `B-206` and `B-207`, each blocked on `B-161`. This is the dated explanation of
+  the split, not a standalone present-tense queue field.
+- The same entry says **“This said `B-161`…” until the review**. An attributed
+  earlier sentence is evidence about that review and is not a current claim.
+- B-207's queue card explains that it **“is blocked on it for that reason”** and
+  points to the shared writer path. The item owns its own primary queue fields;
+  item YAML is not downstream prose, and this guard does not validate prose
+  inside its retirement condition.
+- The backlog's B-394 evidence says “On an export of `349a443`, where” and
+  wraps to a second line beginning “B-234 is `done`…”. A physical line break
+  does not start a new assertion; this dated export description passes.
+- `If B-53 is ready, an agent may try to claim it.` is a conditional; `B-53 was
+  ready at the recorded observation.` is history. Neither asserts current state.
+
+The check reads `HUB.md`, `AGENTS.md`, `README.md`, `knowledge/`, `NEWS.md` and
+`notes/evidence/theme-a/`, outside generated blocks and fenced examples. It does
+not interpret arbitrary sentences, paragraph-internal facts, pronouns, historic
+attribution, or every possible wording of queue state. Those
+remain review subjects. This limited syntax is deliberate: extending it requires
+a failing real example and a historical/conditional control before CI changes.
+The exclusion of generated blocks relies on their existing freshness check;
+fenced examples describe syntax rather than current planning state.
+
+Retires when downstream prose no longer owns queue facts, or a successor
+structured renderer makes this syntax guard unnecessary. No per-file allowlist
+or approval step is introduced.
 
 ### Ten corollaries, each paid for once
 

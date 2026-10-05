@@ -1,7 +1,7 @@
 id: B-350
 kind: defect
 title: 'write_sdp_sssom() does not write canonical SSSOM/TSV, which the SSSOM specification says writers should'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

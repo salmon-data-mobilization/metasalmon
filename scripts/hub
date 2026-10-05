@@ -192,6 +192,12 @@ yaml_flow_list() { # file key -> one element per line
 # resolved, because that is the one place the answer has to be conservative.
 members_list() {
   [ -f "$CONFIG_FILE" ] || return 0
+  members_list_stream <"$CONFIG_FILE"
+}
+
+# The same member parser can consume an immutable origin-config snapshot.
+# A second parser would silently give participation two different meanings.
+members_list_stream() {
   awk -v sq="'" '
     function clean(s) {
       sub(/^[ \t]+/, "", s); sub(/[ \t]+#.*$/, "", s); sub(/[ \t]+$/, "", s)
@@ -241,7 +247,7 @@ members_list() {
       if (index(line, "solo:") == 1)  { solo  = clean(substr(line, 6)); next }
     }
     END { flush() }
-  ' "$CONFIG_FILE"
+  '
 }
 
 cfg() { yaml_scalar "$CONFIG_FILE" "$1"; }
@@ -1000,6 +1006,26 @@ member_solo_for_repo() { # repo -> yes only when the entry says so, otherwise no
   esac
 }
 
+# A chat hand-back is allowed only for a configured member whose solo key is
+# explicitly false or absent. An unrecognised value is not evidence that the
+# member is shared, even though ordinary participation instructions treat it
+# conservatively as not solo. Retires when the participation key stops gating
+# where a work branch may be pushed.
+member_chat_handoff_for_repo() { # repo [origin config snapshot] -> yes for false/absent
+  if [ $# -gt 1 ]; then
+    printf '%s\n' "$2" | members_list_stream
+  else
+    members_list
+  fi | awk -F'\t' -v r="$1" '
+    $1 == r {
+      print ($4 == "" || tolower($4) == "false") ? "yes" : "no"
+      found = 1
+      exit
+    }
+    END { if (!found) print "no" }
+  '
+}
+
 # ---------------------------------------------------------------------------
 # Is the checkout the queue is read from current? (hub item B-187)
 #
@@ -1195,10 +1221,10 @@ repo_freshness() { # -> the status checkout_freshness gave for REPO_ROOT
 #                 says so and still lists, as ready already does when the locks
 #                 repository cannot be read, because the claim that follows it
 #                 asks again and refuses honestly.
-#   warn          say so either way and go on. For done: the handoff it records
-#                 is this agent's own, only the text it prints after is read
-#                 from the queue, and a hand-back must not be stopped by a
-#                 merge that has nothing to do with it.
+#   warn          say so either way and go on. For done --branch: the handoff
+#                 it records is this agent's own, only the text it prints
+#                 after is read from the queue, and a hand-back must not be
+#                 stopped by a merge that has nothing to do with it.
 #
 # beat and release do not call this at all: each records this agent's own
 # claim, and a heartbeat refused over an unrelated merge would cost a lease.
@@ -1601,7 +1627,12 @@ print_setup_hints() {
   key="$owner-$repo-$id"
   worktree="../hub-worktrees/$key"
   say "worktree key: $key"
-  say "Setup hints (print only): set MEMBER_CHECKOUT to $repo's checkout and MEMBER_BASE to its fetched starting ref."
+  say "In a solo member after canonical HUB.md batching and this member's AGENTS.md"
+  say "adopt it, a later same-owner related claim REUSES the lead worktree: skip"
+  say "the worktree-add and mkdir hints below. Its exact branch name above is a"
+  say "handoff ref at the completed lead commit; verify its pushed tip before done."
+  say "Setup hints below are for a first or separate-owner item (print only):"
+  say "set MEMBER_CHECKOUT to $repo's checkout and MEMBER_BASE to its fetched starting ref."
   say "git -C \"\$MEMBER_CHECKOUT\" worktree add -b $(printf '%q' "$branch") $(printf '%q' "$worktree") \"\$MEMBER_BASE\""
   say "mkdir -p \"\$MEMBER_CHECKOUT\"/$(printf '%q' "$worktree/.hub/workpads")"
 }
@@ -2065,7 +2096,10 @@ claim_count_and_push() { # id action attempt parent token
       say ""
       if [ "$solo" = "yes" ]; then
         say "Participation: nobody but Brett has worked in $itemrepo, so you may push"
-        say "that branch there and, at hand-back, open one draft pull request for it."
+        say "that branch there. Unless HUB.md's batch policy is on the canonical"
+        say "default branch AND $itemrepo/AGENTS.md adopts it, open one draft"
+        say "for this item. After both, same-owner related IDs share the lead"
+        say "worktree and one assembled draft, with exact per-ID handoff refs."
       else
         say "Participation: $itemrepo is NOT a repository Brett works alone in."
         say "Do not push that branch and do not open a pull request. Do the work in a"
@@ -2200,16 +2234,18 @@ cmd_release() {
 
 cmd_done() {
   local id=$1; shift
-  local branch="" token tip rc act ag sha attempt slug forge solo itemrepo
+  local branch="" branch_given=0 chat=0 token tip rc act ag sha attempt slug forge solo itemrepo reason="" oldbranch origin_item origin_config
   while [ $# -gt 0 ]; do
     case $1 in
-      --branch)   shift; [ $# -gt 0 ] || fail "--branch needs a branch name"; branch=$1 ;;
-      --branch=*) branch=${1#--branch=} ;;
+      --branch)   shift; [ $# -gt 0 ] || fail "--branch needs a branch name"; branch=$1; branch_given=1 ;;
+      --branch=*) branch=${1#--branch=}; branch_given=1 ;;
+      --chat)     chat=1 ;;
       *)          fail "done: unknown argument '$1'" ;;
     esac
     shift
   done
-  [ -n "$branch" ] || fail "done needs --branch, naming the branch you pushed"
+  [ "$chat" = "0" ] || [ "$branch_given" = "0" ] || fail "done: --chat and --branch cannot be combined"
+  [ "$chat" = "1" ] || [ -n "$branch" ] || fail "done needs --branch, naming the branch you pushed, or --chat for an eligible shared member"
 
   token=$(agent_token) || exit $?
 
@@ -2223,8 +2259,29 @@ cmd_done() {
   # If the name looks right but the token does not, the claim is held by a
   # different session and the holder check below would have said so anyway.
   # Retires when: the authorization paragraph stops naming a branch pattern.
-  if [ "$branch" != "agent/$id/$token" ]; then
+  if [ "$chat" = "0" ] && [ "$branch" != "agent/$id/$token" ]; then
     fail "done: --branch '$branch' is not a branch this grant covers. The standing authorization in HUB.md permits pushes to 'agent/<queue-id>/<token>' and to nothing else, so for $id held by this session that is exactly 'agent/$id/$token'"
+  fi
+
+  # A branch handoff records only this agent's own claim and may proceed from a
+  # stale queue checkout. Chat handoff also depends on the item's repo and that
+  # member's participation key, so it must read a current queue before a push.
+  if [ "$chat" = "1" ]; then
+    require_current_queue refuse "$id" || return "$EX_FAIL"
+    item_exists "$id" || fail "$(absent_item_sentence "$id")"
+    # Commit freshness does not make locally edited queue fields authoritative.
+    # Read both participation inputs from the immutable origin tip already
+    # verified above, so staged, unstaged or ahead-branch edits cannot grant a
+    # branchless handoff (nor race a check followed by a working-file read).
+    # Retires when participation no longer gates the chat handoff route.
+    origin_item=$(git -C "$REPO_ROOT" show "$FRESH_TIP:queue/items/$id.yaml" 2>/dev/null) ||
+      fail "done --chat cannot read $id on origin/$FRESH_BRANCH; nothing was handed off"
+    origin_config=$(git -C "$REPO_ROOT" show "$FRESH_TIP:queue/config.yaml" 2>/dev/null) ||
+      fail "done --chat cannot read participation on origin/$FRESH_BRANCH; nothing was handed off"
+    itemrepo=$(printf '%s\n' "$origin_item" | yaml_scalar_stream repo)
+    [ "$(member_chat_handoff_for_repo "$itemrepo" "$origin_config")" = "yes" ] ||
+      fail "done --chat is allowed only when solo is false or absent for a configured member; $itemrepo does not qualify"
+    reason="hand-back in chat"
   fi
 
   # Before the handoff is pushed, not after: where it goes is the one thing a
@@ -2249,14 +2306,22 @@ cmd_done() {
     return "$EX_RACE"
   fi
   if [ "$act" = "handoff" ]; then
-    say "$id was already handed off on branch $(tip_field "$id" branch)"
+    oldbranch=$(tip_field "$id" branch)
+    if [ -n "$oldbranch" ]; then
+      say "$id was already handed off on branch $oldbranch"
+    elif [ "$(tip_field "$id" reason)" = "hand-back in chat" ]; then
+      say "$id was already handed off in chat"
+    else
+      warn "$id has a handoff without a branch or a chat reason; no new record was written"
+      return "$EX_FAIL"
+    fi
     return "$EX_OK"
   fi
 
   attempt=$(tip_attempt "$id")
-  # A handoff keeps the claim. The item stays unclaimable until Brett merges,
-  # so finished work never looks free again while he is away.
-  sha=$(write_claim_commit "$id" handoff "$(tip_field "$id" lease_until)" "$attempt" "$tip" "$branch") \
+  # A handoff keeps the claim. Local integration does not release it; the item
+  # stays unclaimable through the pull-request and retirement decision.
+  sha=$(write_claim_commit "$id" handoff "$(tip_field "$id" lease_until)" "$attempt" "$tip" "$branch" "$reason") \
     || { warn "cannot build the handoff commit"; return "$EX_FAIL"; }
 
   push_ref "$sha" "$(claim_ref "$id")"; rc=$?
@@ -2266,7 +2331,14 @@ cmd_done() {
     *) warn "the handoff push failed: $(printf '%s' "$HUB_GIT_OUT" | head -4 | tr '\n' ' ')"; return "$EX_FAIL" ;;
   esac
 
-  say "handed off $id on branch $branch; the claim stays held until Brett merges"
+  if [ "$chat" = "1" ]; then
+    say "handed off $id in chat; the claim stays held for Brett's decision"
+    say "The worktree diff and complete proposed pull request text are the hand-back in chat."
+    say "No member branch or pull request was pushed by this command."
+    return "$EX_OK"
+  fi
+
+  say "handed off $id on branch $branch; the claim stays held, not released"
   # Everything printed from here on is read from the queue -- the item's repo,
   # that member's forge and its participation answer -- so it is qualified when
   # this checkout is behind. Asked here and not before the handoff, and warned
@@ -2321,8 +2393,16 @@ cmd_done() {
   # member_solo_for_repo goes with it.
   say ""
   if [ "$solo" = "yes" ]; then
-    say "Open one draft pull request for this branch, labelled agent-run and naming"
-    say "$id in the body, and never a second one for this item."
+    say "Only when HUB.md's batch policy is on the canonical default branch AND"
+    say "$itemrepo/AGENTS.md adopts it: a same-owner constituent uses its exact"
+    say "pushed $branch handoff ref at a completed lead commit, not another"
+    say "worktree or pull request. Keep it held through the lead PR merge; close"
+    say "$id only when its own retires_when is met and recorded."
+    say "Open one draft pull request for the assembled lead branch,"
+    say "labelled agent-run and naming every declared ID, including $id, in the body."
+    say "Otherwise open one draft pull request for this branch, labelled agent-run"
+    say "and naming $id in the body."
+    say "Never a second pull request for any included item."
     say ""
     say "Then read \"Which pull requests need Brett\" in HUB.md and decide which"
     say "list this change is in. If it is one of his ten classes, leave it a draft"
@@ -2495,18 +2575,33 @@ hub - the queue client for the salmon ecosystem hub
                                  the ref, and exits 4 if somebody reclaimed it
                                  first
                                  Also print member-worktree and workpad setup
-                                 hints; no worktree or report is created
+                                 hints; no worktree or report is created. Under
+                                 adopted batching in a solo member, later
+                                 same-owner related IDs reuse the lead worktree;
+                                 verify each pushed handoff ref before done
   hub beat ID                    extend the lease you hold
   hub release ID [reason]        give the item back
   hub done ID --branch B         hand off: record the branch, keep the claim,
                                  print the compare URL, and say what to do with
                                  it. In a repository nobody but Brett has
-                                 contributed to that is one draft pull request;
+                                 contributed to, use one draft for this ID
+                                 unless the batch policy has merged to the
+                                 canonical hub branch AND its own AGENTS.md
+                                 adopts it; then a same-owner ID uses its exact
+                                 branch as a handoff ref at a completed lead
+                                 commit, with its tip checked by the agent;
+                                 one lead draft, and each claim stays
+                                 held through merge and per-ID retirement;
                                  in one he shares it is stop, draft the body in
                                  chat, and wait. B must be exactly
                                  agent/ID/<your token>, because that is the only
                                  branch the standing authorization covers;
                                  anything else exits 3
+  hub done ID --chat             hand off work shown in chat for a configured
+                                 member whose solo key is false or absent;
+                                 record reason 'hand-back in chat' with no
+                                 branch, keep the claim, and push no member
+                                 branch. Requires a current queue checkout
   hub reconcile                  expire dead leases back to claimable
   hub fresh [PATH...]            say whether each checkout named (default: this
                                  client's own) contains the tip of its origin's
@@ -2523,8 +2618,9 @@ Which checkout the queue is read from:
   default branch on origin, so it asks origin for that branch's tip first. From
   a checkout that does not contain it, claim, reconcile, ready and ready --set
   refuse, exit 3, naming the distance and both branches; claim and reconcile
-  also refuse when the question cannot be asked at all; done warns and hands
-  back anyway; beat and release go ahead, because they record your own claim;
+  also refuse when the question cannot be asked at all; done --branch warns and
+  hands back anyway, while done --chat refuses because its participation check
+  reads the queue; beat and release go ahead, because they record your own claim;
   doctor fails. And every command that pushes, beat, release and done
   included, first checks that locks_repo and claim_ref_prefix here are the
   ones origin's default branch names, and refuses (exit 3) if they are not: a

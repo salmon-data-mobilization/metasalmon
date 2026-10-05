@@ -1,8 +1,8 @@
 id: B-252
 kind: defect
 title: 'Under a selected schema, metasalmonpy synthesizes absent optional dataset, table and code fields in direct writes and table inference'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S5

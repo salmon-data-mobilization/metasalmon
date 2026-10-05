@@ -66,7 +66,7 @@ package could claim a key and ship duplicate rows.
 
 Declare it in `tables.csv`:
 
-```{r}
+```{r, purl = FALSE}
 tables <- readr::read_csv("escapement-sdp/metadata/tables.csv", na = "")
 
 tables$primary_key[tables$table_id == "escapement"] <- "stream_id,survey_year"
@@ -78,7 +78,7 @@ Three things can go wrong, and each produces a different message.
 
 ### The Key Repeats
 
-```{r}
+```{r, purl = FALSE}
 validate_salmon_datapackage("escapement-sdp", require_iris = FALSE)
 ```
 
@@ -145,7 +145,7 @@ The second check reads your **column names** and reports names that look like
 data. It is a **warning, never an error**. The SDP will still package untidy
 data; it just stops implying that it checked.
 
-```{r}
+```{r, purl = FALSE}
 wide <- tibble::tibble(
   stream_id = c("BEAR", "COHO"),
   `2021`    = c(310L, 980L),
@@ -198,7 +198,7 @@ pair is not flagged:
   `count_2000`, or `pass1`, `pass2`, `pass3`. The separator can be `_`, `.`,
   `-`, or nothing.
 
-```{r}
+```{r, purl = FALSE}
 # Flagged: three columns share the stem "count" with numeric tails.
 c("stream_id", "count_1998", "count_1999", "count_2000")
 
@@ -235,7 +235,7 @@ data is three new rows in a file whose shape never changes.
 values, what to call the column made from their *names*, and what to call the
 column made from their *values*.
 
-```{r}
+```{r, purl = FALSE}
 long <- tidyr::pivot_longer(
   wide,
   cols = c(`2021`, `2022`, `2023`),
@@ -273,7 +273,7 @@ Three arguments do the real work:
 
 Then package the long form and declare the key you now have:
 
-```{r}
+```{r, purl = FALSE}
 pkg_path <- create_sdp(
   long,
   path = file.path(tempdir(), "escapement-sdp"),
@@ -310,7 +310,7 @@ workflow is for.
 Sometimes a wide column name packs more than one variable — `coho_2021`,
 `chinook_2021`, `coho_2022`. Split them in one step with `names_sep`:
 
-```{r}
+```{r, purl = FALSE}
 wide_two <- tibble::tibble(
   stream_id    = c("BEAR", "COHO"),
   coho_2021    = c(310L, 980L),

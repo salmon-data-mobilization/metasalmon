@@ -2025,6 +2025,128 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
         self.assert_accepts()
 
 
+class TestQueueFactsInProse(QueueTestCase):
+    """B-209's stated syntax, with historical and conditional controls."""
+
+    def test_current_state_claimable_and_blockers_need_the_queue_owner(self):
+        self.write_item(BASE_DEFECT, state="done", claimable="false", legacy="''")
+        for sentence in (
+            "B-53 is ready.", "- **B-53** is currently `review`.",
+            "+ B-53 is ready.", "1. B-53 is ready.", "2) B-53 is ready.",
+            "B-53 is claimable.", "B-53 is currently not claimable.",
+            "`B-53` is blocked on B-90 and S-12.",
+            "B-53 has state: icebox.", "B-53 has claimable: false.",
+            "B-53 has blocked_by: [B-90, S-12].", "B-53 has blocked_by: [].",
+        ):
+            with self.subTest(sentence=sentence):
+                self.write_prose("knowledge/card.md", sentence + "\n")
+                output = self.assert_rejects("queue-fact-in-prose")
+                self.assertIn("knowledge/card.md:1:", output)
+                self.write_prose("knowledge/card.md", "Read queue/items/B-53.yaml for its state.\n")
+                self.assert_accepts()
+
+    def test_real_history_attribution_and_conditionals_are_not_current_fields(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        self.write_item(BASE_DEFECT, id="B-161", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-234", legacy="''")
+        history = (
+            # questions.md Q52: the dated account of the split.
+            "The emission work moved out to `B-206` (metasalmon) and `B-207`\n"
+            "(metasalmonpy), each blocked on `B-161` and each naming the other.\n"
+            # questions.md's attributed old wording is preserved.
+            'This said `B-161` "is now the **ruling alone**" until the Codex review.\n'
+            # B-207's own condition discusses why the primary edge exists.
+            "THIS ITEM DOES NOT REDO B-145'S WORK and is blocked on it for that reason.\n"
+            "B-53 was ready at the recorded observation.\n"
+            "If B-53 is ready, an agent may try to claim it.\n"
+            "> The old note said B-53 is ready.\n"
+            "\nOn an export of `349a443`, where\n"
+            "B-234 is `done` and the register's port section names it as `**B-234**`.\n"
+        )
+        self.write_prose("knowledge/card.md", history + "\nB-53 is ready.\n")
+        self.assert_rejects("queue-fact-in-prose")
+        self.write_prose("knowledge/card.md", history)
+        self.assert_accepts()
+        for attributed in (
+            "B-53 is ready in the 2026-09-01 snapshot.",
+            "B-53 is ready, the old card said.",
+            "B-53 is blocked on B-90 in that historical snapshot.",
+            "B-53 is ready\nin the 2026-09-01 snapshot.",
+            "B-53 is ready?",
+        ):
+            with self.subTest(attributed=attributed):
+                self.write_prose("knowledge/card.md", attributed + "\n")
+                self.assert_accepts()
+
+    def test_markdown_heading_and_separator_end_a_prose_block(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        boundaries = tuple("#" * n + " Status\n" for n in range(1, 7)) + (
+            "   ## Status\n", "Status\n===\n", "Status\n---\n",
+            "***\n", "* * *\n", "_ _ _\n", "---\n", "- - -\n",
+        )
+        for boundary in boundaries:
+            with self.subTest(boundary=boundary):
+                prefix = "Earlier prose.\n" + boundary
+                self.write_prose("knowledge/card.md", prefix + "B-53 is ready.\n")
+                output = self.assert_rejects("queue-fact-in-prose")
+                self.assertIn(f"knowledge/card.md:{prefix.count(chr(10)) + 1}:", output)
+
+    def test_unpunctuated_assertion_ends_before_a_markdown_block(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        for ending in ("## Next\n", "===\n", "---\n", "* * *\n", "_ _ _\n", "- - -\n"):
+            for newline in ("\n", "\r\n"):
+                with self.subTest(ending=ending, newline=newline):
+                    text = "## Status\nB-53 is ready\n" + ending + "Separate prose.\n"
+                    self.write_prose("knowledge/card.md", text.replace("\n", newline))
+                    self.assert_rejects("queue-fact-in-prose")
+        self.write_prose("knowledge/card.md", (
+            "## History\nB-53 is ready\nin the 2026-09-01 snapshot.\n## Next\nSeparate prose.\n"
+        ))
+        self.assert_accepts()
+
+    def test_heading_boundaries_preserve_history_and_literal_controls(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        for non_boundary in ("##Status\n", "####### Status\n", "**\n", "__\n"):
+            with self.subTest(non_boundary=non_boundary):
+                self.write_prose("knowledge/card.md", "The old record said\n" +
+                                 non_boundary + "B-53 is ready.\n")
+                self.assert_accepts()
+        self.write_prose("knowledge/card.md", (
+            "## History\nB-53 was ready at that observation.\n"
+            "## Conditional\nIf B-53 is ready, try the claim.\n"
+            "```md\n## Example\nB-53 is ready.\n```\n"
+        ))
+        self.assert_accepts()
+
+    def test_news_and_retained_evidence_are_inputs_too(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        for path in ("NEWS.md", "notes/evidence/theme-a/measurement.md"):
+            with self.subTest(path=path):
+                self.write_prose(path, "B-53 is ready.\n")
+                self.assert_rejects("queue-fact-in-prose")
+                self.write_prose(path, "B-53 was ready at that measurement.\n")
+                self.assert_accepts()
+
+    def test_generated_blocks_and_fenced_examples_keep_their_existing_checks(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        text = ("~~~text\nB-53 is ready.\n~~~\n"
+                "<!-- hub:generated:items:format=ids -->\n"
+                "B-53 is ready.\n<!-- /hub:generated:items:format=ids -->\n")
+        for path in ("knowledge/card.md", "NEWS.md", "notes/evidence/theme-a/measurement.md"):
+            with self.subTest(path=path):
+                self.write_prose(path, text + "B-53 is ready.\n")
+                self.assert_rejects("queue-fact-in-prose")
+                self.write_prose(path, text)
+                self.assert_accepts()
+                code, output = self.run_hub("check")
+                self.assertEqual(code, 1)  # Exclusion never waives freshness.
+                self.assertIn("items:format=ids", output)
+                code, _ = self.run_hub("render")
+                self.assertEqual(code, 0)
+                code, _ = self.run_hub("check")
+                self.assertEqual(code, 0)
+
+
 # The two passages B-202 reads, in the shapes they really have. B-124 is the
 # fourth instance: set done while the register read "Queued as B-124, blocked by
 # B-49" (a592c23, line 190) and the roadmap listed it with no landed marker.
@@ -2085,6 +2207,29 @@ class TestPortRecords(QueueTestCase):
         self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
         self.assert_accepts()
 
+    def test_a_named_done_mirror_port_needs_a_record_without_a_blocker(self):
+        """B-394: the B-234 shape escaped B-202's dependency-based reach.
+
+        Test each passage separately, then the existing bold-id/dependency
+        control. Clearing blocked_by must never clear a named port's debt.
+        """
+        for passage in ("register", "roadmap"):
+            for blockers in ("[]", "[B-49]"):
+                with self.subTest(passage=passage, blocked_by=blockers):
+                    self.write_item(BASE_DEFECT, id="B-49", repo="metasalmon", state="done",
+                                    claimable="false", legacy="''")
+                    self.write_item(BASE_DEFECT, id="B-124", repo="metasalmonpy", state="done",
+                                    title="The mirror half of B-49", claimable="false",
+                                    blocked_by=blockers, legacy="''")
+                    register = REGISTER_OWED + (REGISTER_CLOSED if passage == "roadmap" else "")
+                    roadmap = ROADMAP_OWED + (ROADMAP_LANDED if passage == "register" else "")
+                    self.write_passages(register, roadmap)
+                    output = self.assert_rejects("port-landed-unrecorded")
+                    self.assertIn("B-124", output)
+                    self.write_passages(REGISTER_OWED + REGISTER_CLOSED,
+                                        ROADMAP_OWED + ROADMAP_LANDED)
+                    self.assert_accepts()
+
     def test_a_record_for_a_port_that_is_not_done_is_refused(self):
         """Prose ahead of the queue. B-145 sat in `review` with its pull request
         open; a record written then would claim a landing that had not happened.
@@ -2136,13 +2281,12 @@ class TestPortRecords(QueueTestCase):
         self.write_passages(REGISTER_OWED, ROADMAP_OWED)
         self.assert_accepts()
 
-    def test_blockers_r_halves_and_the_window_halves_are_not_read_as_ports(self):
-        """The retirement condition's scope, as fixtures. B-49 is a blocker and an
-        R half; B-126 and B-153 closed the 0.4.0->0.5.0 window and have no
-        metasalmon blocker; B-145 is a port in `review` whose R half's own record
-        says `as metasalmon #118`. All four are done or named with no mirror
-        record, and none may be reported. B-124 done with no record is the
-        control that shows the passages were read at all."""
+    def test_r_halves_are_excluded_but_named_window_ports_need_records(self):
+        """R blockers are not mirror ports, and an R landing cannot close one.
+
+        Named historical window halves now need records too, even with no R
+        blocker. A positive control keeps the original dependent port visible.
+        """
         self.write_ports()
         self.write_item(BASE_DEFECT, id="B-115", repo="metasalmon", state="done",
                         claimable="false", legacy="''")
@@ -2158,10 +2302,22 @@ class TestPortRecords(QueueTestCase):
                    "whose R half **landed 2026-09-16 as metasalmon #118**), once the port lands.\n")
         self.write_passages(window + REGISTER_OWED + instant, window + ROADMAP_OWED + instant)
         output = self.assert_rejects("port-landed-unrecorded")
-        for other in ("B-49 ", "B-115", "B-126", "B-145", "B-153"):
+        for other in ("B-49 ", "B-115", "B-145"):
             self.assertNotIn(other, output.replace("half of B-49)", ""))
+        for port in ("B-124", "B-126", "B-153"):
+            self.assertIn(port, output)
+        window += ("`B-126` landed as metasalmonpy pull request #28.\n\n"
+                   "`B-153` landed as metasalmonpy pull request #33.\n\n")
         self.write_passages(window + REGISTER_OWED + REGISTER_CLOSED + instant,
                             window + ROADMAP_OWED + ROADMAP_LANDED + instant)
+        self.assert_accepts()
+
+    def test_passage_discovery_needs_neither_a_title_phrase_nor_an_r_item(self):
+        self.write_item(BASE_DEFECT, id="B-124", repo="metasalmonpy", state="done",
+                        claimable="false", legacy="''")
+        self.write_passages(REGISTER_OWED, ROADMAP_OWED + ROADMAP_LANDED)
+        self.assert_rejects("port-landed-unrecorded")
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
         self.assert_accepts()
 
     def test_a_line_that_opens_with_an_inline_code_span_is_not_a_fence(self):
