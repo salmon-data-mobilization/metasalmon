@@ -4006,3 +4006,132 @@ inferred. Hosted CI waits are passive and separate from implementation,
 verification, requested audit and coordination. This substantive append
 preserves every byte of the complete 262761-byte canonical prefix, including
 258757/253197/247735/244672/238582/234142/230015/225938/221386/208242 histories.
+
+### 2026-10-05 — Existing handoffs close and the next delegated port proceeds
+
+**Coordination and closure.** R231/B269 merged2026-10-05T05:20:59Z as
+f8f453075148c534345e86ff78149041bb414994 from exact dedf229. Final RCI
+37266241936/job111623583618 passed full provider-isolated suite and strict
+R4.6.1 zero errors/warnings/notes,5m1.7s; four guards green. Actual Claude
+5988485160 completed model/verifier with five verified nits; Codex5988456365
+code/security completed clear, no threads. The old failed373ms Claude with
+hidden cause stays failed/unknown, and cancelled push review is superseded.
+Source f766fe2a/test cbc4336f and all138 frozen R/test files are exact merged
+publication; focused214/independent84 proof reused without repeat.
+
+Primary fast-forward retains approved dirty AGENTS/HUB edits with backed-up
+three-way replay and exact reverse roundtrip. The complete269995-byte history
+became canonical before cleanup; SHA256700b1d12a0ed4d80aae6f5c703fb5d474a5929c2ccc0974878e7501e63d39b16.
+B269 auxiliary checkout removed/pruned only clean/zero-unique/unpushed/ignored;
+original branch/checkpoints/terminal1a27aca3 remain. Mechanical closeout
+8d64a95ba8a5f65bc5d38044b377f93986e8044e retires B203/B338/B269 from literal
+clauses, actual merge receipts and exact source/claim bindings once. Original
+B20393c78bac/B338c3c518ad and holders remain archival. No completed source
+tests/reviews/accepted NEWS builds repeated and no status-only log checkpoint.
+The durable closeout message carries the prior three useful maintenances and
+two next-handoff reassessments; queue lint326/check/parity64/OKF0 pass. Alan's
+established parent chat received the substantive three-merge/claim/checkpoint
+receipt and unchanged B421 writer route under Brett's existing reporting grant.
+
+**Next implementation and appropriate verification.** B270 promotion cites
+Brett's Sept23 R15 standing grant after B269done clears its sole blocker:
+Python solo:true, P3, exact nonempty retirement, no consequential decision.
+Fresh public claim/PR absence and normal doctor authentication/routing/cap
+verified; root ordinarily claimed7f9405a84909b8ee7ab87e8612b7ddbb0ab17a10 as
+a-c1bbb42efa975289 until2026-10-05T09:24:30Z, in its own protocol worktree
+on Python91fc420. B345 dirty workpad and all S16 worktrees remain untouched.
+No invented identity or duplicated implementation.
+
+Separate genuine tests-only RED60962045116f5db70fc10d82304e9f6f69494b46 gives
+24failed/10passed/133deselected,.71s on baseline91fc420. All ten legal metadata
+cases already pass; failures include allowed text/enum rows, invalid metadata
+acceptance and some changed old reference diagnostics. Not every new case
+failed. Fix GREEN84c788ca48955efeaf5a913c2c7bcaf8fdf4673c removes only four
+false reference columns and adds one shared ten-value predicate enum check.
+Correct-checkout SSSOM suite167pass core-only .31s then167pass extras .28s,
+zero failures/skips; both retain one startup urllib3 LibreSSL warning.
+Source752d710a86922e1cc16f25ba20b9656931e790c0/tests5604f235557b78685620c0c80ca36da080a59e21
+frozen; native subset parser/canonical bytes/public reader-writer-validator
+AST and38 other package modules remain exact. No full local/native corpus,
+new dependencies or environment repair. Independent implementation/public
+review follows on this frozen source. Draft Python100 at18d003eb026e3d6e80f451048a374ae02fa0b2e4
+preserves RED/fix, adds an unreleased changelog/meaningful workpad, is attached
+and labelled agent-run. Ordinary terminal handoff9aaa4cf466160a538646e5027e3566fc9424d5a5
+stays held; final source/review/CI gates still apply.
+
+**Existing handoff integration and review.** R224/B371 original d4e16566
+integrates settled8d64a95 once as946a6a93f5e812a41fc5719cad5d38c3f0bcf25e,
+retaining exact a48e0e0 test blob, original workpad prefix and all incoming main
+source/docs. Test-only scope, no local test or NEWS/full build repeat. Existing
+independent implementation review finds matching raw/API off-CI-only probes,
+retained package assertions/CI paths and B152 consistency; inherited expected
+404 ambiguity is disclosed rather than called a new regression or complete
+access-failure protection. Original terminale33c2628/holder remain. New actual
+Claude5988681021 completed model/verifier37267861970 with no blockers/two
+nits, checked against actual caller/source; Codex5988664772 code/security
+completed, inline empty. Old SDK's three permission denials/no published
+verdict remain accurately recorded, never relabelled a completed review.
+Final hosted CI is necessary despite unchanged-source proof reuse.
+
+**Instrument and environment separation.** Root first tried unsupported hub
+identity; it exited3 without mutation, then normal documented doctor confirmed
+the runtime token and dry-run reachability. A stale NEWS.md filename read in
+Python failed and was corrected to existing CHANGELOG.md before any edit.
+Broad /tmp generation-helper search accidentally reached cloned sources and
+one-line generated JSON, causing noisy truncated output; narrow file inventory
+then confirmed no retained standalone helper. These are coordination/search
+instrument corrections, not product failures or environment repairs. Current
+product typed ordered/raw-record preservation controls are reused for B137's
+necessary single generation. No bot/manual review retry, credits/settings/
+server override, polling-only helper, new approval question or status-only
+Git checkpoint. Hosted waits are passive, separate from implementation,
+verification, coordination and requested audit. Existing idle-read23 count
+remains its dated passive measurement; no overall waste percentage inferred.
+
+This is the same existing-handoff intake adjustment's next use: fresh ready
+eligibility and original handoff maintenance are both inspected. Superseded
+administrative holds do not hide technical work; actual safeguards are checked
+against code/rulings, not waived. B350/B351's quote-byte choice, B421's existing
+S16 writer route, Python75 ownership and every completed-item guard remain.
+This substantive append preserves every byte of canonical269995 and all prior
+262761/258757/253197/247735/244672/238582/234142/230015/225938/221386/208242
+histories. No second tracker or workflow experiment is introduced.
+
+**B137 integration, locale proof and generation.** Original f141c8ac ordinarily
+integrates settled8d64a95 in bb1aa5a1f90c9e879266c693b42ab95ed766eed7,
+retaining all138 R/test ASTs: four owned expressions and every other incoming
+assignment. Native SSSOMf766fe2a unchanged, no parser repeat. Source-backed
+row28 stricter-to-laxer corrects the description of adding PCRE; no new
+numbered difference or frozen contract decision. The locale skip is explicitly
+allowed by retirement, limited to exact UTF8 print bytes, while separate
+print/inertness assertions stay ungated and print runtime is unchanged.
+
+Sequential fresh correctly bound C leg:1380passes/zero failures/errors, one
+inherited dictionary semantic-field warning/one known exact-output print skip,
+6.517s. Explicit supported C.UTF8 leg:1381passes/zero failures/errors, same
+one warning/zero skips,6.600s. No full local suite or unchanged native corpus.
+One pinned NEWS-only build15.886s exit0: only two NEWS pages/search change;
+666 ordered typed identities,665 unrelated raw records,596 nonNEWS records
+in order,225 unrelated docs and138 R/test/938 tracked nondoc inputs exact.
+Native generated unrelated record multiset checked before retaining original
+canonical framing/order with only the owned Fixed text replacement. Eighteen
+external typed/malformed controls pass;35 array paths/35 missing IDs/71
+explicit nonstring IDs preserved without string coercion. Two external header
+selection failures stopped before integration edits; a count assumption of106
+explicit nonstrings instead of71plus35missing stopped before product build.
+Bounded instrument correction, one build only, no environment repair or
+unrelated generated-file restoration. Existing terminalcadf3a0a/original
+holder remains; actual new-head review/full hosted CI are still required.
+
+Independent B270 reviewer sssom_port_peer reviewed implementation and completed
+182 independent public controls plus123 source/runtime/schema/guard bindings
+(305 assertions), zero failures/errors/skips/execution warnings. Public probes
+took .058534s across two correctly bound core-only processes; loads .403778s/
+.382368s retain the known startup LibreSSL warning. Fresh-package writes and
+validateFalse-to-writer revalidation are included. Source752d710a/tests5604f235
+remain exact in final18d003eb publication;38 other modules,34 existing
+functions/classes and public signatures are unchanged. Final receipt/review
+is in /tmp/b270-independent-peer; no source/public edits, claims, focused/full/
+native repeats or builds. Final required hosted CI and any actual substantive
+reviews still gate merge, with final receipts in the PR body rather than another
+source-identical checkpoint.
