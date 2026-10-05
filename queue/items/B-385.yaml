@@ -1,7 +1,7 @@
 id: B-385
 kind: defect
 title: 'metasalmonpy follows metasalmon''s fix to the validator phrase anchor on multi-line chunks, the mirror half of B-384'
-state: ready
+state: done
 claimable: true
 repo: metasalmonpy
 venue: claude-code

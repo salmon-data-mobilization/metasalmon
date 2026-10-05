@@ -1068,6 +1068,17 @@ inference-supplied `update_frequency` and `constraint_iri`; R's
 2026-09-30 correction in `parity-deviations.md` records the exact field examples,
 probes, and proposed Python pull request 82 fix.
 
+**The multiline phrase-anchor mirror is closed.** `B-385` landed as metasalmonpy
+pull request **#102** on 2026-10-05, merge `ca49d48e9ee542cf2c36e5d673a770368d1b01a2`
+from reviewed publication `49db028b51e7c20f63d4320dcf6084b18e84bf46`.
+It follows R `B-384`/pull request #259, merged `126e576e2747fb25c99199a4559d348415649a46`:
+phrase anchoring uses the first token across newlines while preserving existing
+identifier, markup, first-token underscore/hyphen and phrase-boundary guards.
+The existing `multiline_chunk_phrase_anchor_quirk` expectation was regenerated
+by the unchanged R oracle against landed source; it is the sole expected-value
+change. This records the completed existing convergence, not a new deliberate
+parity difference or numbered register row.
+
 **`B-164` owes metasalmonpy nothing, because the shape it guards against has
 nowhere to live there.** The R guard fails when a vignette relies on a global
 `knitr::opts_chunk$set()` to keep display-only code out of the script

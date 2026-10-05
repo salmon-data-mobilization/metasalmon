@@ -257,6 +257,17 @@ from reviewed publication `cd9f295173bf47874e4839a5504897d01ff5ff71`. The
 selected-field/default-byte controls, caller extras and dictionary validator
 contract remain preserved.
 
+**The multiline phrase-anchor mirror is closed.** `B-385` landed as metasalmonpy
+pull request **#102** on 2026-10-05, merge `ca49d48e9ee542cf2c36e5d673a770368d1b01a2`
+from reviewed publication `49db028b51e7c20f63d4320dcf6084b18e84bf46`.
+It follows R `B-384`/pull request #259, merged `126e576e2747fb25c99199a4559d348415649a46`:
+phrase anchoring uses the first token across newlines while preserving existing
+identifier, markup, first-token underscore/hyphen and phrase-boundary guards.
+The existing `multiline_chunk_phrase_anchor_quirk` expectation was regenerated
+by the unchanged R oracle against landed source; it is the sole expected-value
+change. This records the completed existing convergence, not a new deliberate
+parity difference or numbered register row.
+
 **Correction, 2026-09-30 (B-252): the source-only R premise was too broad.**
 Paired executable probes at R `3364b975` and Python `e81cacd` show that
 `create_sdp()` writes both `update_frequency` and `constraint_iri` under a
