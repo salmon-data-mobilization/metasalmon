@@ -28,6 +28,7 @@ final LLM gap remains a gap even when SMN candidates exist."><meta property="og:
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
     <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
     <li><a class="dropdown-item" href="../articles/tidy-data-for-sdp.html">Tidy Data for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="../articles/semantic-review.html">Semantic Review in R</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -66,7 +67,8 @@ final LLM gap remains a gap even when SMN candidates exist.</p>
 <span>  suggestions <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  include_target_scopes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"column"</span>, <span class="st">"code"</span>, <span class="st">"table"</span>, <span class="st">"dataset"</span><span class="op">)</span>,</span>
 <span>  include_dictionary_roles <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  min_score <span class="op">=</span> <span class="cn">NA_real_</span></span>
+<span>  min_score <span class="op">=</span> <span class="cn">NA_real_</span>,</span>
+<span>  commons_gaps <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -102,6 +104,14 @@ the gap scan (for example <code>c("variable", "property", "entity")</code>).</p>
 <dd><p>Optional minimum score filter. Rows with score below this value
 are ignored when score is available.</p></dd>
 
+
+<dt id="arg-commons-gaps">commons_gaps<a class="anchor" aria-label="anchor" href="#arg-commons-gaps"></a></dt>
+<dd><p>Optional path to the JSON file emitted by
+<code>salmon-knowledge-commons/scripts/okf-check.py . --gaps</code>. File paths only;
+mutually exclusive with <code>dict</code> and <code>suggestions</code>. SDP-only filters must
+retain their defaults on this path. Malformed records fail rather than
+being coerced or dropped.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -120,7 +130,10 @@ Key columns:</p><ul><li><p><code>dataset_id</code>, <code>table_id</code>, <code
 <li><p><code>top_non_smn_source</code>, <code>top_non_smn_label</code>, <code>top_non_smn_iri</code>,
 <code>top_non_smn_score</code>;</p></li>
 <li><p><code>non_smn_sources</code>, <code>candidate_count</code>, <code>placement_recommendation</code>,
-<code>placement_confidence</code>, <code>placement_rationale</code>.</p></li>
+<code>placement_confidence</code>, <code>placement_rationale</code>.
+Commons rows use <code>gap_detection_basis = "commons_register"</code>; their
+<code>commons_blocked_by</code> column is a list of concept identifiers and
+<code>commons_verified</code> is logical. The default SDP result columns are unchanged.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -128,7 +141,15 @@ Key columns:</p><ul><li><p><code>dataset_id</code>, <code>table_id</code>, <code
 <li><p>detect unresolved gaps with <code>detect_semantic_term_gaps()</code>;</p></li>
 <li><p>render request payloads with <code><a href="render_ontology_term_request.html">render_ontology_term_request()</a></code>;</p></li>
 <li><p>optionally submit issues with <code><a href="submit_term_request_issues.html">submit_term_request_issues()</a></code>.</p></li>
-</ol></div>
+</ol><p>Commons input retains every register row in source order, including
+multiple gaps on one concept. The usual gap columns retain their types,
+with dataset, candidate and LLM evidence missing. They are followed by
+<code>commons_</code> columns for all fifteen emitted fields and <code>commons_hold_reason</code>.
+Only open, unheld rows explicitly targeted to SMN or GCDFO can become a
+new request. Proposed/rejected, do-not-mint, blocked, conflicted, contested,
+evidence-needed, unsupported-target and deprecated-card rows remain visible
+on hold. Draft/unverified cards remain draft provenance, not approval.</p>
+    </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="render_ontology_term_request.html">render_ontology_term_request()</a></code>, <code><a href="submit_term_request_issues.html">submit_term_request_issues()</a></code>,

@@ -1,8 +1,8 @@
 id: B-130
 kind: defect
 title: Add a bounded IRI-dereference verifier for the exact HTTP semantic IRIs a package carries
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S13

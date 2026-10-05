@@ -7,6 +7,9 @@ One-shot package creation from raw tables
 - [`metasalmon-package`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon.md)
   [`metasalmon`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon.md)
   : metasalmon: Utilities for Salmon Data Packages
+- [`metasalmon_configuration`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_configuration.md)
+  : Configure MetaSalmon
+
 - [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   : Create a Salmon Data Package directly from raw tables
 - [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
@@ -61,6 +64,16 @@ the remaining metadata, and write it all back — no spreadsheet required
 - [`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)
   : Target-level LLM assessments attached to a dictionary
 
+## Harness Review (packet and ingest)
+
+Model judgement runs outside the package: write a review packet, have
+your harness judge it, and read the assessments back
+
+- [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+  : Write a semantic review packet for a harness to judge
+- [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+  : Ingest a harness's semantic assessments
+
 ## Semantic Helpers
 
 Semantic suggestion, vocabulary search, and ranking benchmark
@@ -87,6 +100,8 @@ Fetch the ontology and validate semantic coverage
   : Fetch the Salmon Domain Ontology with caching
 - [`validate_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.md)
   : Validate semantics with graceful gap reporting
+- [`verify_sdp_semantic_iris()`](https://salmon-data-mobilization.github.io/metasalmon/reference/verify_sdp_semantic_iris.md)
+  : Verify selected HTTP semantic IRIs in a Salmon Data Package
 - [`suggest_facet_schemes()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_facet_schemes.md)
   : Suggest facet schemes for proposed terms
 

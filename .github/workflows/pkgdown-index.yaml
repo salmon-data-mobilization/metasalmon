@@ -45,7 +45,11 @@ concurrency:
 jobs:
   reference-index:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # PR254 run36914131218 exhausted 15 minutes in R/system dependency
+    # setup before the index assertion ran. Keep setup bounded separately
+    # from the cheap check; retire this allowance when setup reliably fits
+    # the former budget (for example, a supported preinstalled toolchain).
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -68,4 +72,13 @@ jobs:
           dependencies: '"hard"'
 
       - name: Every exported topic is in the reference index
+        timeout-minutes: 5
         run: Rscript scripts/check-pkgdown-index.R
+
+      # B-430 exercises the site wrapper on a disposable two-topic package.
+      # The fixture records the running toolchain in its own initial full
+      # build, so this does not rebuild metasalmon or accept a toolchain change
+      # for its committed site.
+      - name: Selected page builds preserve unrelated output and guards
+        timeout-minutes: 5
+        run: Rscript scripts/tests/test_build_pkgdown_targets.R
