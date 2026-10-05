@@ -279,10 +279,11 @@ rather than a file.
 
 Source selection distinguishes an omitted argument from an explicit value:
 
-- omit `sources` in `suggest_semantics()` or `semantic_sources` in
-  `create_sdp()` to use role-aware defaults;
+- omit `sources` in `find_terms()` or `suggest_semantics()`, or
+  `semantic_sources` in `create_sdp()`, to use role-aware defaults;
 - supply a vector to make it a strict allowlist for initial and retry
-  retrieval.
+  retrieval. Names are matched whatever their case or surrounding whitespace,
+  so `"SMN"` and `" smn "` both mean smn.
 
 For example, `sources = "smn"` deliberately excludes QUDT even for a unit slot.
 Use `sources_for_role("unit")` when you want the normal unit vocabulary set.

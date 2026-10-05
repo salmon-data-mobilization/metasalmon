@@ -3,7 +3,15 @@
 # Build the pkgdown site into docs/, which is committed and published as the
 # package website (the `url` in _pkgdown.yml).
 #
-# Usage: Rscript scripts/build-pkgdown.R [--accept-toolchain-change]
+# Usage: Rscript scripts/build-pkgdown.R [--news-only | --accept-toolchain-change]
+#        Rscript scripts/build-pkgdown.R [--article=NAME] [--reference=TOPIC]
+# Use --news-only when only NEWS changed: build its pages and search index,
+# retaining the same toolchain and publication checks as a full build.
+# Article names are vignette stems; reference names are canonical Rd topic
+# names. Both selectors may be repeated. Use a full build for site-wide changes
+# such as a new page, navigation, or a changed toolchain.
+# Article title changes also need a full build: pkgdown uses those titles in
+# navigation menus on other pages, which a selected build leaves intact.
 #
 # It does two things that `pkgdown::build_site()` alone does not (hub item
 # B-141).
@@ -71,17 +79,92 @@ repo_root <- normalizePath(
 setwd(repo_root)
 
 options_given <- commandArgs(trailingOnly = TRUE)
-unknown_options <- setdiff(options_given, "--accept-toolchain-change")
+article_options <- grep("^--article=", options_given, value = TRUE)
+reference_options <- grep("^--reference=", options_given, value = TRUE)
+unknown_options <- options_given[!
+  options_given %in% c(
+    "--accept-toolchain-change", "--news-only", article_options,
+    reference_options
+  )
+]
 if (length(unknown_options) > 0L) {
   stop(
     sprintf(
-      "Unknown argument: %s\nUsage: Rscript scripts/build-pkgdown.R [--accept-toolchain-change]",
+      paste0(
+        "Unknown argument: %s\nUsage: Rscript scripts/build-pkgdown.R ",
+        "[--news-only | --accept-toolchain-change | ",
+        "--article=NAME ... --reference=TOPIC ...]"
+      ),
       paste(unknown_options, collapse = " ")
     ),
     call. = FALSE
   )
 }
+article_targets <- unique(sub("^--article=", "", article_options))
+reference_targets <- unique(sub("^--reference=", "", reference_options))
+selected_build <- length(article_options) > 0L || length(reference_options) > 0L
+if (any(!nzchar(article_targets)) || any(!nzchar(reference_targets))) {
+  stop("Article and reference selectors must name an existing topic.", call. = FALSE)
+}
 accept_toolchain_change <- "--accept-toolchain-change" %in% options_given
+news_only <- "--news-only" %in% options_given
+if (news_only && accept_toolchain_change) {
+  stop("A toolchain change requires a full build; do not combine --news-only with --accept-toolchain-change.", call. = FALSE)
+}
+if (selected_build && (news_only || accept_toolchain_change)) {
+  stop(
+    "A selected build cannot be combined with --news-only or --accept-toolchain-change; use a full build for a toolchain change.",
+    call. = FALSE
+  )
+}
+
+if (selected_build) {
+  if (!file.exists(file.path("docs", "index.html"))) {
+    stop(
+      "Selected builds require an existing checked-in site; use a full build.",
+      call. = FALSE
+    )
+  }
+  # pkgdown::build_reference(topics=) silently filters names it does not know.
+  # Resolve both selectors before any page is written, including when a caller
+  # supplies one valid name beside an invalid one.
+  # Retires when pkgdown rejects unknown article/reference selectors, including
+  # mixed valid/invalid selections, before any output is written.
+  selected_pkg <- pkgdown::as_pkgdown(".")
+  missing_articles <- setdiff(article_targets, selected_pkg$vignettes$name)
+  missing_reference <- setdiff(reference_targets, selected_pkg$topics$name)
+  if (length(missing_articles) > 0L || length(missing_reference) > 0L) {
+    stop(
+      "Unknown selected article or reference topic: ",
+      paste(c(missing_articles, missing_reference), collapse = ", "),
+      call. = FALSE
+    )
+  }
+  # Narrow mode updates existing pages. Adding pages or changing navigation
+  # needs a full build, because other site sections can then depend on it.
+  selected_html <- c(
+    selected_pkg$vignettes$file_out[
+      match(article_targets, selected_pkg$vignettes$name)
+    ],
+    file.path("reference", selected_pkg$topics$file_out[
+      match(reference_targets, selected_pkg$topics$name)
+    ])
+  )
+  if (any(!grepl("\\.html$", selected_html))) {
+    stop(
+      "Selected pages must produce HTML; use a full build for other formats.",
+      call. = FALSE
+    )
+  }
+  absent_outputs <- selected_html[!file.exists(file.path("docs", selected_html))]
+  if (length(absent_outputs) > 0L) {
+    stop(
+      "Selected pages have no checked-in HTML; use a full build: ",
+      paste(absent_outputs, collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
 
 # Root and .github/ Markdown files that pkgdown renders as pages. Each one must
 # be in one of these two vectors; see (1) above.
@@ -89,6 +172,7 @@ internal_sources <- c(
   "AGENTS.md",
   "CLAUDE.md",
   "HUB.md",
+  "REVIEW.md",
   ".github/PULL_REQUEST_TEMPLATE.md"
 )
 public_sources <- character()
@@ -197,11 +281,98 @@ if (length(toolchain_differs) > 0L) {
   )
 }
 
-pkgdown::build_site(
-  new_process = FALSE,
-  install = TRUE,
-  lazy = FALSE
-)
+if (news_only) {
+  pkgdown::build_news()
+  # build_site() normally makes the Markdown companion later, for every page.
+  # Use that same converter for NEWS alone so its two public formats agree.
+  pkg <- getFromNamespace("as_pkgdown", "pkgdown")(".")
+  if (!isFALSE(pkg$meta$`llm-docs`)) {
+    news_paths <- getFromNamespace("get_site_paths", "pkgdown")(pkg)
+    news_paths <- news_paths[grepl("^news/.*\\.html$", news_paths)]
+    for (path in news_paths) {
+      getFromNamespace("convert_md", "pkgdown")(
+        file.path(pkg$dst_path, path),
+        file.path(pkg$dst_path, sub("\\.html$", ".md", path)),
+        getFromNamespace("full_url", "pkgdown")(pkg, path)
+      )
+    }
+  }
+} else if (selected_build) {
+  # Match build_site(install=TRUE, devel=FALSE) so article chunks and reference
+  # examples read this source revision, not a different installed release.
+  withr::local_temp_libpaths()
+  withr::with_options(
+    list(keep.source.pkgs = TRUE, keep.parse.data.pkgs = TRUE),
+    utils::install.packages(".", repos = NULL, type = "source", quiet = TRUE)
+  )
+
+  index_paths <- c(
+    if (length(article_targets) > 0L) "articles/index.html",
+    if (length(reference_targets) > 0L) "reference/index.html"
+  )
+  page_bytes <- function(path) {
+    if (!file.exists(path)) return(NULL)
+    readBin(path, what = "raw", n = file.info(path)$size)
+  }
+  index_before <- lapply(file.path("docs", index_paths), page_bytes)
+
+  if (length(article_targets) > 0L) {
+    pkgdown::build_articles_index()
+    for (name in article_targets) {
+      # Keep pkgdown's per-article process boundary: chunks may assign globals.
+      pkgdown::build_article(name, lazy = FALSE, new_process = TRUE)
+    }
+  }
+  if (length(reference_targets) > 0L) {
+    pkgdown::build_reference(
+      topics = reference_targets, lazy = FALSE, devel = FALSE
+    )
+  }
+
+  index_changed <- vapply(seq_along(index_paths), function(i) {
+    !identical(
+      index_before[[i]], page_bytes(file.path("docs", index_paths[[i]]))
+    )
+  }, logical(1))
+
+  # build_site() converts every HTML page to Markdown for llms.txt. A selected
+  # build converts only the requested pages and any index whose HTML changed.
+  # Converting all pages here would recreate the unrelated-output churn this
+  # mode exists to avoid.
+  if (!isFALSE(selected_pkg$meta$`llm-docs`)) {
+    markdown_sources <- c(selected_html, index_paths[index_changed])
+    for (path in markdown_sources) {
+      getFromNamespace("convert_md", "pkgdown")(
+        file.path(selected_pkg$dst_path, path),
+        file.path(selected_pkg$dst_path, sub("\\.html$", ".md", path)),
+        getFromNamespace("full_url", "pkgdown")(selected_pkg, path)
+      )
+    }
+    if (any(index_changed)) {
+      # Use the same three-file composition and UTF-8 helpers as pkgdown's
+      # build_llm_docs(), without converting every unrelated HTML page.
+      read_lines <- getFromNamespace("read_lines", "pkgdown")
+      read_optional <- getFromNamespace("read_file_if_exists", "pkgdown")
+      getFromNamespace("write_lines", "pkgdown")(
+        c(
+          read_lines(file.path(selected_pkg$dst_path, "index.md")), "",
+          read_optional(file.path(selected_pkg$dst_path, "reference/index.md")), "",
+          read_optional(file.path(selected_pkg$dst_path, "articles/index.md"))
+        ),
+        file.path(selected_pkg$dst_path, "llms.txt")
+      )
+    }
+  }
+  # The full site path checks images on the home page after rendering. Reuse
+  # that read-only check while updating a section of an existing site.
+  getFromNamespace("check_built_site", "pkgdown")(selected_pkg)
+} else {
+  pkgdown::build_site(
+    new_process = FALSE,
+    install = TRUE,
+    lazy = FALSE
+  )
+}
 
 # pkgdown writes each page as .html and, for its llms.txt support, as .md.
 # Neither may stay public or in the search and sitemap indexes rebuilt below.
@@ -216,11 +387,24 @@ pkgdown::build_search()
 getFromNamespace("build_sitemap", "pkgdown")(".")
 
 markdown_paths <- list.files(
-  "docs",
+  if (news_only) "docs/news" else "docs",
   pattern = "\\.md$",
   recursive = TRUE,
   full.names = TRUE
 )
+if (selected_build) {
+  # Full builds normalize all Markdown; selected builds must not rewrite pages
+  # outside their requested outputs just because they were built previously.
+  if (isFALSE(selected_pkg$meta$`llm-docs`)) {
+    markdown_paths <- character()
+  } else {
+    markdown_paths <- file.path(
+      selected_pkg$dst_path,
+      sub("\\.html$", ".md", c(selected_html, index_paths[index_changed]))
+    )
+    markdown_paths <- markdown_paths[file.exists(markdown_paths)]
+  }
+}
 for (path in markdown_paths) {
   lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
   normalized <- sub("[ \t]+$", "", lines)

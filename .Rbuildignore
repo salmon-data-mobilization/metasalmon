@@ -7,6 +7,7 @@
 ^\.github$
 ^\.hub$
 ^\.git$
+^\.metasalmonpy-sibling$
 ^notes$
 ^knowledge$
 ^\.DS_Store$
@@ -34,4 +35,5 @@ inst/extdata/\.gitkeep$
 ^metasalmon_.*\.tar\.gz$
 .*\.local\.md$
 ^HUB\.md$
+^REVIEW\.md$
 ^queue(/|$)

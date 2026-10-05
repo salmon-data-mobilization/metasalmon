@@ -26,6 +26,7 @@ default."><meta property="og:image" content="https://salmon-data-mobilization.gi
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
     <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
     <li><a class="dropdown-item" href="../articles/tidy-data-for-sdp.html">Tidy Data for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="../articles/semantic-review.html">Semantic Review in R</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -135,7 +136,12 @@ templates. Rendering never submits an issue.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>For interactive workflows this function can prompt users row-by-row for whether a
-gap should be requested as a shared SMN term, a profile-specific term, or skipped.</p>
+gap should be requested as a shared SMN term, a profile-specific term, or skipped.
+Commons register rows instead retain their explicit <code>mint_target</code> and
+lifecycle holds. The renderer rederives holds from source fields;
+<code>scope</code>, <code>scope_overrides</code> and <code>ask</code> cannot reopen or redirect them. Their
+bodies identify the concept card and draft gap note, and require a curator
+definition and term type rather than asserting dataset evidence.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

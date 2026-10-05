@@ -18,3 +18,28 @@ A list with \code{structures} and \code{components} tibbles.
 \description{
 Read measure-specific SDP observation structures
 }
+\examples{
+sdp_path <- create_sdp(
+  data.frame(stock_id = c("A", "B"), total_spawners = c(100, 200)),
+  path = tempfile("sdp-"), seed_semantics = FALSE,
+  seed_verbose = FALSE, check_updates = FALSE
+)
+structures <- data.frame(
+  dataset_id = "dataset-1", table_id = "table_1",
+  observation_structure_id = "spawners_by_stock",
+  structure_label = "Spawners by stock",
+  structure_description = "One count per stock"
+)
+components <- data.frame(
+  dataset_id = "dataset-1", table_id = "table_1",
+  observation_structure_id = "spawners_by_stock",
+  component_order = c(1L, 2L),
+  column_name = c("stock_id", "total_spawners"),
+  component_role = c("dimension", "measure"),
+  component_relation_iri = c(NA, NA),
+  required_when_observed = c(TRUE, TRUE)
+)
+write_sdp_observation_structures(sdp_path, structures, components)
+read_sdp_observation_structures(sdp_path)$structures
+unlink(sdp_path, recursive = TRUE)
+}
