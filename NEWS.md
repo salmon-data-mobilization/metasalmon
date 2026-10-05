@@ -266,7 +266,10 @@ metasalmon (development version)
   IRI validation. EML/KNB output guards inspect decoded IRI-bearing XML values,
   including escaped attribute tabs, and retain the prior exact, case-sensitive
   `REVIEW:` whole-document scan; ordinary `Review:` narrative remains valid
-  (hub B-344, Q63; Python mirror B-345).
+  (hub B-344, Q63; Python mirror B-345). Strict malformed-IRI checks cover
+  the same dataset and codes fields as the marker sweep, including excluded
+  line breaks before the colon. Existing placement and default-mode behavior
+  are retained.
 
 * **Strict validation now refuses `REVIEW:` IRIs in all four SDP metadata
   files, and `review_metadata()` lists the same blockers** (hub item B-177;
