@@ -135,8 +135,13 @@ malformed-URL/redirect-limit failures receive a permanent marker; existing
 injected curl/error-message rules remain unchanged. Python uses a killed-and-reaped
 worker with HTTPX's public
 `send(stream=True, follow_redirects=False)`/`next_request` flow, closing each
-response before following. HTTPX>=0.28.1 is declared and locked; Requests stays
-for the package's other clients and existing injected-error compatibility.
+response before following. Python repair `5bfe68a` puts HTTPX>=0.28.1 in the
+optional `metasalmonpy[verify]` extra, required only for the default verifier
+backend. The pandas+Requests core imports and injected-requester checks remain
+available without HTTPX; a missing default-backend extra raises an install hint
+before requests or report writes. Requests stays for the package's other
+clients and existing injected-error compatibility. This records the repaired
+dependency boundary, not a new deliberate parity difference.
 
 The earlier Requests103→final200 gap was reproduced before Brett authorized
 a supported backend on2026-10-01. The retained eleven-route localhost fixture
@@ -158,10 +163,18 @@ both sides. No release number, register number or new queue item changes.
 
 **B-130 exact-selection maintenance, 2026-10-05.** A source-bound public probe
 found that the drafted verifiers could report success after truncating scalar
-IRIs at a legal semicolon. The paired repair preserves all eleven scalar slots
-explicitly declared by the canonical metadata schemas, including descriptor
-fallback. Dictionary constraints retain their declared semicolon list; SSSOM
-pipes and ambiguous extension fields retain their existing behavior. This is
+IRIs at a legal semicolon. The initial paired repair covered eleven canonical
+metadata scalar slots, including descriptor fallback. Actual review exposed
+five more declared owners in the three extension files already selected:
+legacy `metadata/methods.csv` method/protocol IRIs, measurement-decomposition
+concept/component IRIs, and observation-component relation IRIs. The completed
+sixteen-owner map preserves these existing scalar contracts. Native validators
+accept semicolon-bearing relation and component identifiers that the drafted
+verifier previously omitted while reporting success; a decomposition concept
+also occurs in the canonical dictionary, so its residual defect was an extra
+truncated-prefix request, not omission of its full canonical identifier.
+Dictionary constraints retain their declared semicolon list; SSSOM pipes and
+undeclared extension fields retain their existing behavior. This is
 factual completion of the existing exact-selected-IRI contract, with no new
 ontology choice, deliberate parity row or report/retry contract. The October4
 compatible-addition grant supersedes the older administrative API hold above;

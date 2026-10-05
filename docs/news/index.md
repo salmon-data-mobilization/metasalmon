@@ -331,13 +331,15 @@
 ### Fixed
 
 - [`verify_sdp_semantic_iris()`](https://salmon-data-mobilization.github.io/metasalmon/reference/verify_sdp_semantic_iris.md)
-  preserves legal semicolons in the eleven scalar fields explicitly
-  declared by the canonical metadata schemas (B-130). The dictionary
-  constraint list and SSSOM pipe lists keep their existing separators;
-  unknown extension fields keep their existing representation. The
-  verifier previously could report success after checking a truncated
-  scalar prefix. No identifier, report column or retry policy is
-  changed.
+  preserves legal semicolons in sixteen scalar IRI fields declared by
+  canonical metadata schemas, current extension validators and the
+  retained legacy methods contract (B-130). Dictionary constraint lists
+  and SSSOM pipe lists keep their separators; undeclared extension
+  fields keep their existing representation. The verifier previously
+  could report success without checking the full identifier after
+  requesting a truncated prefix. Redirected final URLs now remove
+  credential userinfo before report capture. No identifier, report
+  column or retry policy changes.
 
 - Text columns that readr would read as dates or date-times no longer
   seed `codes.csv` rows. Factors retain their declared code-list intent.
