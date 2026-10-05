@@ -715,7 +715,7 @@ chat_authority_case() {
     [ "$tip" = "$seed" ] || bad=1
     case $scenario in
       item-untracked|item-local-commit)
-        grep -Eiq '(origin|canonical|authoritative).*(absent|missing|not.*(exist|found))|(absent|missing|not.*(exist|found)).*(origin|canonical|authoritative)' "$out" || bad=1 ;;
+        grep -Eiq 'cannot read .+ on origin/|(origin|canonical|authoritative).*(absent|missing|not.*(exist|found))|(absent|missing|not.*(exist|found)).*(origin|canonical|authoritative)' "$out" || bad=1 ;;
       *) grep -Fq 'solo is false or absent' "$out" || bad=1 ;;
     esac
   else

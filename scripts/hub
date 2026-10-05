@@ -192,6 +192,12 @@ yaml_flow_list() { # file key -> one element per line
 # resolved, because that is the one place the answer has to be conservative.
 members_list() {
   [ -f "$CONFIG_FILE" ] || return 0
+  members_list_stream <"$CONFIG_FILE"
+}
+
+# The same member parser can consume an immutable origin-config snapshot.
+# A second parser would silently give participation two different meanings.
+members_list_stream() {
   awk -v sq="'" '
     function clean(s) {
       sub(/^[ \t]+/, "", s); sub(/[ \t]+#.*$/, "", s); sub(/[ \t]+$/, "", s)
@@ -241,7 +247,7 @@ members_list() {
       if (index(line, "solo:") == 1)  { solo  = clean(substr(line, 6)); next }
     }
     END { flush() }
-  ' "$CONFIG_FILE"
+  '
 }
 
 cfg() { yaml_scalar "$CONFIG_FILE" "$1"; }
@@ -1005,10 +1011,14 @@ member_solo_for_repo() { # repo -> yes only when the entry says so, otherwise no
 # member is shared, even though ordinary participation instructions treat it
 # conservatively as not solo. Retires when the participation key stops gating
 # where a work branch may be pushed.
-member_chat_handoff_for_repo() { # repo -> yes for false/absent, no otherwise
-  members_list | awk -F'\t' -v r="$1" '
+member_chat_handoff_for_repo() { # repo [origin config snapshot] -> yes for false/absent
+  if [ $# -gt 1 ]; then
+    printf '%s\n' "$2" | members_list_stream
+  else
+    members_list
+  fi | awk -F'\t' -v r="$1" '
     $1 == r {
-      print ($4 == "" || tolower($4) == "false" || tolower($4) == "no") ? "yes" : "no"
+      print ($4 == "" || tolower($4) == "false") ? "yes" : "no"
       found = 1
       exit
     }
@@ -2224,7 +2234,7 @@ cmd_release() {
 
 cmd_done() {
   local id=$1; shift
-  local branch="" branch_given=0 chat=0 token tip rc act ag sha attempt slug forge solo itemrepo reason="" oldbranch
+  local branch="" branch_given=0 chat=0 token tip rc act ag sha attempt slug forge solo itemrepo reason="" oldbranch origin_item origin_config
   while [ $# -gt 0 ]; do
     case $1 in
       --branch)   shift; [ $# -gt 0 ] || fail "--branch needs a branch name"; branch=$1; branch_given=1 ;;
@@ -2259,8 +2269,17 @@ cmd_done() {
   if [ "$chat" = "1" ]; then
     require_current_queue refuse "$id" || return "$EX_FAIL"
     item_exists "$id" || fail "$(absent_item_sentence "$id")"
-    itemrepo=$(item_field "$id" repo)
-    [ "$(member_chat_handoff_for_repo "$itemrepo")" = "yes" ] ||
+    # Commit freshness does not make locally edited queue fields authoritative.
+    # Read both participation inputs from the immutable origin tip already
+    # verified above, so staged, unstaged or ahead-branch edits cannot grant a
+    # branchless handoff (nor race a check followed by a working-file read).
+    # Retires when participation no longer gates the chat handoff route.
+    origin_item=$(git -C "$REPO_ROOT" show "$FRESH_TIP:queue/items/$id.yaml" 2>/dev/null) ||
+      fail "done --chat cannot read $id on origin/$FRESH_BRANCH; nothing was handed off"
+    origin_config=$(git -C "$REPO_ROOT" show "$FRESH_TIP:queue/config.yaml" 2>/dev/null) ||
+      fail "done --chat cannot read participation on origin/$FRESH_BRANCH; nothing was handed off"
+    itemrepo=$(printf '%s\n' "$origin_item" | yaml_scalar_stream repo)
+    [ "$(member_chat_handoff_for_repo "$itemrepo" "$origin_config")" = "yes" ] ||
       fail "done --chat is allowed only when solo is false or absent for a configured member; $itemrepo does not qualify"
     reason="hand-back in chat"
   fi

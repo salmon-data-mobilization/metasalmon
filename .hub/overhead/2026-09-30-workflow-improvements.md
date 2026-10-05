@@ -3841,3 +3841,63 @@ read overhead, separate from implementation/tests and passive hosted waits.
 Source-identical status checkpoints, new claims, bot rerolls and approval
 questions zero. This substantive append preserves every prior byte, including
 253197/247735/244672/238582/234142/230015/225938/221386/208242 prefixes.
+
+
+### 2026-10-05 — B338 actual review repair after useful handoff maintenance
+
+**Requested audit and implementation.** Published R237 head 7b4ea43 completed
+its provider-isolated full suite and strict R4.6.1 check with zero errors,
+warnings and notes (RCI 37262717099/job 111613114151). Actual Claude ready run
+37262717162/job 111613117653 posted nits 5988028970; cancelled push run
+37262717103 is not a completed review. Actual Codex code/security summary
+5987988922 contains P2 comment 4180695523: locally edited participation/item
+fields could grant a chat handoff despite a committed solo member. The defect
+was reproduced, so green CI did not permit merge. No finding was waived.
+
+Tests-only RED cdb21db8864f4d3427bd48cd210616ca652d6913 preserves the expanded
+native harness: 48 passes, 11 failures, zero skips in 68.405s. The existing
+45 controls passed; new controls expose staged/unstaged/ahead/local-only queue
+spoofs, the undocumented solo:no alias and local vetoes of a committed shared
+member. Disposable clones own their refs and leave the shared checkout intact.
+The repair reads both item repository and membership from the immutable fresh
+origin tip, using the existing member parser with a stream entrypoint. Only
+false/absent participation grants chat; old branch mode, routing, holder,
+held-child shape, cap and CAS remain. Unreadable committed documents refuse.
+This strengthens the participation boundary without a new policy decision.
+
+**Verification.** Frozen source blob a3e9ee315535092737d428c53c2f0af422abcb3d,
+SHA256 b4bf41b2454eef7c7b8372676ab841bb8c7625231b3faf865f449108df0931a4,
+ran the native suite once: 57 passes, two diagnostic assertion failures, zero
+skips in 68.772s. Both affected cases already returned rc3 and preserved the
+held ref; their regex omitted the actual cannot-read-origin refusal. A bounded
+one-line diagnostic alternative retains those mandatory behavior assertions.
+Only those two cases were replayed: two passes in 1.823s. Final test blob
+868a4eee6a92160b9d02832c0d798b5478f7eea0. The initial run is not relabelled as
+59 passes, and no full repeat was run.
+
+Independent implementation reviewer ontology_fetch_peer cleared 105 assertions
+across 14 external own-ref fixtures, hub invocation time 2.720s: published
+reproduction, committed-origin authority, legitimate shared acceptance,
+missing/unavailable documents, false/absent versus no, holder/routing refusals,
+legacy branch and an actual intervening claim-ref CAS advance. All 632 tracked
+source/NEWS/generated hashes and HEAD stayed equal. An external status-only
+receipt assertion trimmed porcelain whitespace and assumed a status predating
+the other helper's diagnostic edit; the receipt was corrected without repeating
+fixtures. An earlier reporting count of 1,362 was corrected to 632. No source
+edit or substantive finding by that reviewer. Exact receipts are at
+/tmp/b338-chat-review-green-20261004/two-case-final-freeze.json and
+/tmp/b338-independent-proof/replay-receipt.json; the hashes and scenarios here
+remain durable even when disposable files are removed.
+
+**Coordination and generation.** The actual P2 is being fixed and answered;
+Claude's false/absent nit is fixed too. Remaining duplicated wording, harmless
+blank line, legacy refusal wording and NEWS classification nits were checked
+against the preserved contract. No bot reroll, approval question, duplicate
+claim or identity override. Original holder a-8b23709cce768317 and terminal
+c3c518ada64e7f61a52ad7509c67d54225b550e3 stay held. NEWS and its generated
+outputs are byte-identical to 7b4ea43: the prior 16.403s selected build and typed
+ordered-record proof remain applicable. No site/NEWS/R/package/full repeat or
+environment repair. New published-head hosted CI remains required. Hosted
+waiting is passive, separate from useful implementation and verification.
+This real repair append preserves every byte of the 258757-byte prefix and all
+253197/247735/244672/238582/234142/230015/225938/221386/208242 histories.
