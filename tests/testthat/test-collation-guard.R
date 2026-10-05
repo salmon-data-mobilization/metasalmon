@@ -19,6 +19,9 @@
 #   4. srcrefs are dropped on install, so failures name the function, not a line.
 
 collation_sensitive_fns <- c(
+  # Ontology cache identity uses URL/Accept bytes to name the persisted body.
+  ".ms_ontology_cache_entry",
+  ".ms_utf8_bytes",
   # KNB identifiers and plan fingerprints
   ".ms_knb_resource_map_pid",
   ".ms_knb_sdp_artifact_paths",

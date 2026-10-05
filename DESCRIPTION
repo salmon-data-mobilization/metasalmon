@@ -3,8 +3,6 @@ Type: Package
 Title: Utilities for Salmon Data Packages
 Version: 0.5.0
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
-Maintainer: Brett Johnson <brettthomasjohnson@gmail.com>
-Author: Brett Johnson [aut, cre], Codex [aut]
 Description: Tools to scaffold, standardize, validate, transform, and package
     salmon datasets using the DFO Salmon Ontology and Salmon Data Package
     conventions.
@@ -22,6 +20,7 @@ Imports:
     jsonlite,
     cli,
     rlang,
+    stringi,
     dplyr (>= 1.1.0),
     glue,
     purrr,
@@ -36,6 +35,7 @@ Imports:
     yaml (>= 2.2.0),
     zip (>= 3.0.1)
 Suggests:
+    tidyr,
     testthat (>= 3.2.1),
     knitr,
     rmarkdown,

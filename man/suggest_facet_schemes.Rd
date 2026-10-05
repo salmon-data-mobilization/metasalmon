@@ -18,9 +18,9 @@ Analyzes a proposed terms dataframe and suggests which facet schemes
 individual terms.
 }
 \examples{
-\dontrun{
-proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
+proposed <- tibble::tibble(
+  term_label = c("Spawner Age 1", "Spawner Age 2", "Spawner Age 3")
+)
 facets <- suggest_facet_schemes(proposed)
-print(facets)
-}
+facets$scheme_name
 }

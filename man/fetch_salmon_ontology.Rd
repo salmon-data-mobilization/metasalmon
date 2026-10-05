@@ -20,14 +20,41 @@ fetch_salmon_ontology(
 \item{cache_dir}{Directory to store cached ontology and headers. Defaults to
 a persistent user cache path.}
 
-\item{timeout_seconds}{Numeric timeout in seconds for each HTTP request.}
+\item{timeout_seconds}{Numeric timeout in seconds for each HTTP request. It
+bounds both the connection and the whole transfer.}
 
-\item{fallback_urls}{Optional fallback ontology URLs tried if the primary \code{url} fails.}
+\item{fallback_urls}{URLs tried in order when \code{url} fails. The implicit SMN
+fallback is used only when \code{url} is the default; callers naming another
+ontology must explicitly supply its fallback URLs. \code{NULL} or \code{character()}
+explicitly tries none.}
 }
 \value{
-Path to the cached ontology file (character string).
+Path to the cached copy that the answering URL returned (character
+string), which holds exactly the bytes that URL sent: it is not decoded,
+re-encoded or given a final newline. If every URL fails to refresh, a
+matching copy from an attempted URL and the requested \code{accept} is returned
+with a warning, provided it is not known to be stale. Unrelated, legacy,
+invalidated or mismatching copies are never used. A replacement response
+or contradictory ETag invalidates the previous representation, even when
+storing its replacement fails. The old body stays on disk for inspection
+with a \code{.invalid} marker until a successful replacement makes it reusable.
+Without an eligible matching copy the call errors with the last failure.
 }
 \description{
-Downloads the Salmon Domain Ontology using HTTP content negotiation and caches
-the response using ETag / Last-Modified headers when available.
+Downloads an ontology, by default the Salmon Domain Ontology (smn), using
+HTTP content negotiation, and caches each response with its ETag /
+Last-Modified validators when the server sends them, so that an unchanged
+ontology is not downloaded again.
+}
+\details{
+Each copy is cached under the URL that returned it and the \code{accept} it was
+fetched under: its file name is the first 16 hexadecimal digits of the
+SHA-256 of the URL, a newline and \code{accept} (as UTF-8), with the extension
+\code{.ttl} whatever the representation, and its validators sit beside it with
+the extensions \code{.etag} and \code{.last_modified}. Fetches of different URLs or
+representations into one \code{cache_dir} therefore never overwrite each other,
+a conditional request carries only the validators that the URL it is sent
+to returned under the same \code{accept}, and a \code{304} answer returns that URL's
+own copy. The matching metasalmonpy cache layout is still owed in its
+ontology-fetch stream (B-334/B-336 and PR75).
 }

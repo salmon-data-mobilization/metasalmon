@@ -629,7 +629,9 @@
     perl = TRUE
   )
   leading_token <- sub(
-    "^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$",
+    # Dot-all consumes later lines so sub() returns the leading token, rather
+    # than the whole chunk when a later line contains an underscore or hyphen.
+    "(?s)^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$",
     "\\1",
     unmarked_text,
     perl = TRUE
@@ -689,11 +691,12 @@
   for (role in names(fields)) {
     field <- fields[[role]]
     if (field %in% names(dict_row)) {
+      raw_value <- dict_row[[field]][[1]]
       value <- .ms_semantic_trim_string(
-        dict_row[[field]][[1]],
+        raw_value,
         default = ""
       )
-      if (nzchar(value) && !grepl("^REVIEW:\\s*", value, ignore.case = TRUE)) {
+      if (nzchar(value) && !.ms_is_review_iri(raw_value)) {
         selected[[role]] <- value
       }
     }

@@ -9,18 +9,17 @@
 # definition so they cannot drift apart again (backlog #85).
 #
 # **The regex engine is part of the contract here, not an implementation
-# detail.** TRE resolves `[[:space:]]` against Unicode; PCRE (`perl = TRUE`)
-# resolves it as ASCII-only. Under PCRE the pattern therefore *accepts* an IRI
-# containing U+3000 IDEOGRAPHIC SPACE or U+1680 OGHAM SPACE MARK -- characters
-# RFC 3987 requires to be percent-encoded -- while TRE rejects them. Accepting
-# them is the permissive-and-wrong answer, and it is invisible in a diff.
+# detail.** In a UTF-8 locale TRE resolves `[[:space:]]` against Unicode;
+# PCRE (`perl = TRUE`) resolves it as ASCII-only. Under the C locale TRE also
+# resolves that class as ASCII-only. The explicit non-ASCII members below make
+# the UTF-8-locale verdict stable in either locale: an IRI containing U+3000
+# IDEOGRAPHIC SPACE or U+1680 OGHAM SPACE MARK must be rejected, because RFC
+# 3987 requires those characters to be percent-encoded.
 #
-# So do not add `perl = TRUE` back here for speed or for habit. Beyond widening
-# what the validator accepts, metasalmonpy mirrors these validators by
-# enumerating R's TRE-resolved membership as `R_SPACE_CLASS`; switching engines
-# silently invalidates that enumeration and the Python mirror with it. See
-# `knowledge/parity-deviations.md` row 28, whose retirement condition names this
-# exact change.
+# So do not add `perl = TRUE` back here for speed or for habit: it changes how
+# the POSIX part of the class resolves. Check the effective membership against
+# metasalmonpy's `R_SPACE_CLASS` before changing this engine or the explicit
+# members. See `knowledge/parity-deviations.md` row 28.
 #
 # Deliberately NOT a caller: `.ms_sdp_decomposition_is_absolute_iri()`
 # (`R/measurement-decompositions.R`). It tests a different, narrower shape --
@@ -30,5 +29,14 @@
 
 # Vectorized over `value`; returns one logical per element, `NA` in, `NA` out.
 .ms_absolute_iri_shape <- function(value) {
-  grepl("^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$", value)
+  # TRE's POSIX class alone admits these characters when LC_CTYPE=C. Spell out
+  # its non-ASCII UTF-8-locale members, matching metasalmonpy's R_SPACE_CLASS.
+  unicode_spaces <- paste0(
+    "\u1680", "\u2000-\u2006", "\u2008-\u200a",
+    "\u2028\u2029\u205f\u3000"
+  )
+  grepl(
+    paste0("^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]", unicode_spaces, "]+$"),
+    value
+  )
 }

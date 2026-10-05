@@ -61,7 +61,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' df <- data.frame(
 #'   species = c("Coho", "Chinook"),
 #'   count = c(100, 200),
@@ -69,6 +68,7 @@
 #' )
 #' dict <- infer_dictionary(df)
 #'
+#' \dontrun{
 #' # Optional: seed semantic suggestions from vocabulary services
 #' # (SMN is queried first; GCDFO is a distinct DFO-specific source)
 #' dict <- infer_dictionary(
@@ -150,7 +150,8 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       guess_types = guess_types,
       dataset_id = dataset_id,
       semantic_sources = semantic_sources,
-      semantic_max_per_role = semantic_max_per_role,
+      # Preserve the widened shortlist if child seeding is ever enabled.
+      semantic_max_per_role = llm_review$semantic_max_per_role,
       seed_verbose = seed_verbose
     )
 
@@ -1407,6 +1408,36 @@ infer_column_role <- function(col_name, col) {
   c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri")
 }
 
+# Reviewed and LLM-reviewed measurements can write several constraint IRIs in
+# one dictionary cell, separated by semicolons. Trim ASCII spaces only beside
+# separators: the producer writes `; `, while outer whitespace still makes an
+# IRI malformed. Keep empty components, including a trailing one, so strict
+# validation cannot accept an incomplete list.
+.ms_constraint_iri_components <- function(value) {
+  value <- as.character(value)[[1]]
+  if (is.na(value) || !nzchar(value)) {
+    return(value)
+  }
+  components <- strsplit(value, ";", fixed = TRUE)[[1]]
+  if (endsWith(value, ";")) {
+    components <- c(components, "")
+  }
+  if (length(components) > 1L) {
+    before_separator <- seq_len(length(components) - 1L)
+    after_separator <- seq.int(2L, length(components))
+    components[before_separator] <- sub(" *$", "", components[before_separator])
+    components[after_separator] <- sub("^ *", "", components[after_separator])
+  }
+  components
+}
+
+.ms_constraint_iri_has_review_marker <- function(value) {
+  if (is.na(value)) {
+    return(FALSE)
+  }
+  any(.ms_is_review_iri(.ms_constraint_iri_components(value)))
+}
+
 #' Validate a salmon data dictionary
 #'
 #' Validates a dictionary tibble against the salmon data package schema.
@@ -1503,7 +1534,13 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 
   review_marker_rows <- lapply(iri_fields, function(field) {
     vals <- dict[[field]]
-    !is.na(vals) & grepl("^\\s*REVIEW\\s*:", as.character(vals), ignore.case = TRUE)
+    if (identical(field, "constraint_iri")) {
+      return(vapply(
+        vals, .ms_constraint_iri_has_review_marker,
+        logical(1), USE.NAMES = FALSE
+      ))
+    }
+    .ms_is_review_iri(vals)
   })
   names(review_marker_rows) <- iri_fields
 
@@ -1615,6 +1652,35 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         )
       }
     }
+
+    # The REVIEW and exact NA/empty checks above own those states. Every other
+    # semantic IRI, including whitespace-only text and optional
+    # constraint/modifier slots,
+    # must have the same absolute-IRI shape used by the package's other IRI
+    # validators. Check the rendered value rather than a trimmed copy: leading
+    # whitespace is part of the malformed value, even when it is not ASCII.
+    for (field in iri_fields) {
+      vals <- as.character(dict[[field]])
+      populated <- !is.na(vals) & vals != ""
+      shape_ok <- if (identical(field, "constraint_iri")) {
+        vapply(vals, function(value) {
+          if (is.na(value) || value == "") {
+            return(FALSE)
+          }
+          all(.ms_absolute_iri_shape(.ms_constraint_iri_components(value)))
+        }, logical(1), USE.NAMES = FALSE)
+      } else {
+        .ms_absolute_iri_shape(vals)
+      }
+      malformed <- which(
+        populated & !review_marker_rows[[field]] & !shape_ok
+      )
+      if (length(malformed) > 0) {
+        cli::cli_abort(
+          "{.field {field}} is not an absolute IRI in rows {malformed}."
+        )
+      }
+    }
   }
 
   # Check for duplicate column names within same table
@@ -1642,6 +1708,10 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 #' A value that is not in its column's code list has no factor level, so it
 #' becomes `NA`. Each such value is named in a warning, whatever `strict` is.
 #' Blank strings are treated as missing and are not reported.
+#' A column backed by a vocabulary skips this codes step: any same-table
+#' codes row with a nonblank `vocabulary_iri` and missing or blank `code_value`
+#' marks the column as vocabulary-backed, even alongside explicit code rows.
+#' Independent declared type coercion still applies.
 #'
 #' @param df A data frame or tibble to transform
 #' @param dict A validated dictionary tibble
@@ -1756,7 +1826,24 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
           .data$column_name == col_name
         )
 
-      if (nrow(col_codes) > 0) {
+      # A vocabulary-only row denotes an open vocabulary, not a code list.
+      # Brett ruled (2026-09-25, B-346) that any such row exempts this entire
+      # column's codes step, including when explicit code rows are also present.
+      # Determine this only after table/column filtering; another table's row
+      # cannot exempt this column. Missing optional code_value is blank too.
+      vocabulary_backed <- FALSE
+      if ("vocabulary_iri" %in% names(col_codes)) {
+        code_present <- if ("code_value" %in% names(col_codes)) {
+          .ms_apply_dictionary_present(col_codes$code_value)
+        } else {
+          rep(FALSE, nrow(col_codes))
+        }
+        vocabulary_backed <- any(
+          .ms_apply_dictionary_present(col_codes$vocabulary_iri) & !code_present
+        )
+      }
+
+      if (nrow(col_codes) > 0 && !vocabulary_backed) {
         code_values <- col_codes$code_value
         code_labels <- col_codes$code_label
 
