@@ -315,6 +315,14 @@
 
 ### Fixed
 
+- `hub done ID --chat` now records a branchless handoff when a shared
+  member’s work and proposed pull request are shown in chat (hub item
+  B-338). The claim remains held, with `reason: hand-back in chat` in
+  its claim record. The option requires a current queue checkout and a
+  configured member whose `solo` key is false or absent; solo and
+  unrecognized values are refused. The existing `--branch` handoff and
+  its branch-name check are unchanged.
+
 - **EML and KNB reads now refuse unknown YAML tags in
   `eml-mapping.yml`** (hub B-223, Brett’s Q62 ruling).
   [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
@@ -1804,6 +1812,15 @@
   metasalmonpy half is hub item B-199.
 
 ### Internal
+
+- **The hub worktree-removal check now verifies `HEAD` against the live
+  `origin` branch tip** (hub item B-203). A single-branch clone can have
+  a fully pushed work branch with no local
+  `refs/remotes/origin/<branch>`; the old `--remotes` walk called every
+  commit on that branch unpushed. The check in `HUB.md` now reads the
+  exact branch SHA from `ls-remote`, fails closed when the branch or
+  commit cannot be verified, and still reports genuinely unpushed
+  commits. It does not remove a worktree.
 
 - Hub claim, done, and help guidance explains coherent pull-request
   batches. Related items held by the same claim-holder token may share

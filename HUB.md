@@ -117,7 +117,11 @@ writes:
       max: 1 per claim
     - operation: push a handoff commit
       target: *claim_ref
-      shape: child of the tip you just read
+      shape: >-
+        Child of the tip you just read. A branch handoff records the pushed
+        branch. A chat handoff for a configured member whose solo key is false
+        or absent records no branch and uses the exact reason hand-back in chat,
+        after confirming the queue checkout is current.
       max: 1 per claim
     - operation: push a reclaim commit
       target: *claim_ref
@@ -660,13 +664,14 @@ a beat made early is not a breach (ruled 2026-09-24).
 same-owner batch, the lead file holds detailed evidence and each other file is
 a short linked handoff record.
 
-**7. Hand back.** Append a `handoff` commit and print the compare URL. In a
-member repository somebody other than Brett has contributed to, the branch is
-never pushed at all and the hand-back is a diff plus a pull request draft shown
-in chat; the Hand back section says how to tell which case you are in. There
-nothing is pushed, so there is no branch to pass `hub done`, and the client has
-no chat hand-back yet (queue item B-338): keep the claim alive with heartbeats
-until Brett answers in chat. Everywhere else, pass `hub done` the exact
+**7. Hand back.** Append a `handoff` commit; for a pushed branch, print its
+compare URL. In a shared member repository, the branch is never pushed and the
+hand-back is a worktree diff plus complete proposed pull request text shown in
+chat. After showing both, use `hub done ID --chat`: it keeps the claim with a
+branchless `handoff` record whose reason is `hand-back in chat`. It is allowed
+only when the configured member's `solo` key is false or absent, and requires a
+current queue checkout before using that participation fact.
+Everywhere else, pass `hub done ID --branch B` the exact
 `agent/<queue-id>/<token>` branch you pushed for that ID: its implementation
 branch, or a same-owner batch's lightweight handoff ref at the completed lead
 commit. The client checks the name against the grant and exits 3 on anything
@@ -830,17 +835,35 @@ handoff ref needs no additional worktree. Never work in the primary checkout:
 it is Brett's day-to-day workspace, and a claim is task-scoped rather than a
 parallel authority over it.
 
-**A worktree is removed only after verifying it holds no unpushed work.** Both
-checks, and both have to be clean:
+**A worktree is removed only after verifying it holds no unpushed work.** Use
+the current branch tip on `origin`, not a local remote-tracking ref: a
+single-branch clone may never create `refs/remotes/origin/<branch>` for the
+branch being checked. Set `WT` to the worktree path, then run this check. It
+does not remove anything.
 
 ```sh
-git -C "$WT" status --porcelain                  # empty
-git -C "$WT" log HEAD --not --remotes --oneline  # empty
+(
+  set -eu
+  leave() { printf 'Leave %s in place: %s\n' "$WT" "$1" >&2; exit 1; }
+  dirty=$(git -C "$WT" status --porcelain) || leave 'status failed'
+  [ -z "$dirty" ] || { printf '%s\n' "$dirty"; leave 'worktree is dirty'; }
+  branch=$(git -C "$WT" symbolic-ref --quiet --short HEAD) || leave 'detached HEAD'
+  remote_ref="refs/heads/$branch"
+  remote_line=$(git -C "$WT" ls-remote --exit-code --heads origin "$remote_ref") || leave 'remote branch is unavailable'
+  remote_sha=$(printf '%s\n' "$remote_line" | cut -f1)
+  [ "$remote_line" = "$(printf '%s\t%s' "$remote_sha" "$remote_ref")" ] || leave 'remote branch response is ambiguous'
+  git -C "$WT" cat-file -e "$remote_sha^{commit}" || leave 'remote tip is not available locally; fetch the branch and rerun'
+  unpushed=$(git -C "$WT" log HEAD --not "$remote_sha" --oneline) || leave 'revision walk failed'
+  [ -z "$unpushed" ] || { printf '%s\n' "$unpushed"; leave 'HEAD has unpushed commits'; }
+  printf 'Clean worktree; HEAD has no commits outside origin/%s at %s\n' "$branch" "$remote_sha"
+)
 ```
 
-If either prints anything, leave the worktree in place and say so in the
-report. Never remove a dirty worktree, and never delete its branch: branch
-deletion is Brett's call, and `--delete` is in the denied list above.
+Any failure leaves the worktree in place. A remote branch that has advanced
+may name an object this checkout does not have; fetch that branch and rerun
+rather than treating the missing object as proof of safety. Never remove a
+dirty worktree, and never delete its branch: branch deletion is Brett's call,
+and `--delete` is in the denied list above.
 
 `git stash list` is deliberately not a check, because a stash is
 repository-wide: it returns the same entries from inside every worktree, so it
@@ -878,10 +901,12 @@ Then:
   follows. `ready` and `ready --set` go on with a warning then, as `ready` does
   when the locks repository cannot be read, because the claim after them asks
   again.
-- **`beat` and `release` go ahead, and `done` warns and hands back anyway.**
-  Each records this agent's own claim, a worktree is routinely behind by the
-  time its work is handed back, and a heartbeat must never be lost to a merge
-  elsewhere.
+- **`beat` and `release` go ahead, and `done --branch` warns and hands back
+  anyway.** Each records this agent's own claim, a worktree is routinely behind
+  by the time its work is handed back, and a heartbeat must never be lost to a
+  merge elsewhere. **`done --chat` refuses a stale or uncomparable queue
+  checkout**, because it must confirm the item's repo and its participation
+  key before recording a branchless handoff.
 - **Every command that pushes, those three included, first checks that
   `locks_repo` and `claim_ref_prefix` in the checkout are the ones `origin`'s
   default branch names, and refuses if not**, because a push anywhere else lands
@@ -970,6 +995,13 @@ in its body. For a single-ID scope, that item's branch is the lead. A
 same-owner alias compare page is a handoff receipt, not a second pull request.
 Never open a second pull request for any included ID.
 
+A branch handoff records `branch:`. A chat handoff records no branch and the
+exact reason `hand-back in chat`. In a shared member repository, show the
+worktree diff and complete proposed pull request text in chat, run
+`hub done ID --chat` to record that hand-back, and leave the member branch and
+pull request unpushed until Brett authorizes them.
+
+
 **Whether it stays a draft depends on which list it falls into.** For a pull
 request in a class "Which pull requests need Brett" reserves to him it stays
 draft and unmerged, because hand-back is where he looks; the agent still replies
@@ -985,8 +1017,9 @@ the branch push as well as the pull request.** The grant is scoped by
 participation, not by ownership; the table in the standing authorization below
 says which member repositories pass and how to test it. In a shared member
 repository the hand-back ends before the push, not after it: the work stays in
-the worktree, and Brett sees the diff and the pull request text in chat and says
-yes before anything leaves the machine. Read the table before reaching for
+the worktree, Brett sees the diff and the pull request text in chat, and the
+branchless claim handoff records where the work was shown. Brett says yes
+before anything leaves the machine. Read the table before reaching for
 `git push` or `gh`.
 
 `gh pr create --draft` is the agent's own call, not a `hub` subcommand; the
