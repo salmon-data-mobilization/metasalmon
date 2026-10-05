@@ -11,6 +11,7 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/articles/migrating-to-sdp-0-3-0.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/articles/semantic-review.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/articles/tidy-data-for-sdp.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/authors.html</loc></url>
@@ -41,7 +42,9 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/index.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_configuration.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.html</loc></url>
@@ -84,5 +87,6 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_reproducibility_manifest.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_sssom.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.html</loc></url>
 </urlset>
 

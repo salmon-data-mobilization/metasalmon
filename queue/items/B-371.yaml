@@ -1,8 +1,8 @@
 id: B-371
 kind: defect
 title: 'Two live GitHub read tests in test-github-helpers.R still error rather than skip off CI when GitHub cannot be reached, because the guard B-152 added does not cover them'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 severity: P3

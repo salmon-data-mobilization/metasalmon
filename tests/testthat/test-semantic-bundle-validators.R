@@ -460,6 +460,24 @@ test_that("validator evidence accepts only distinctive local field anchors", {
   }
 })
 
+test_that("phrase anchors use the first token of a multiline context chunk", {
+  has_anchor <- metasalmon:::.ms_semantic_validator_chunk_has_anchor
+  anchor <- "phrase_start:catch count"
+  first_line <- "Catch count was enumerated using a visual survey protocol."
+
+  expect_true(has_anchor(paste(first_line, "Later table_2 note.", sep = "\n"), anchor))
+  expect_true(has_anchor(paste(first_line, "Later format-v2 note.", sep = "\n"), anchor))
+  expect_true(has_anchor(paste(first_line, "Later protocol note.", sep = "\n"), anchor))
+  expect_false(has_anchor(
+    paste("CATCH_COUNT_ESTIMATE was counted.", "Later table_2 note.", sep = "\n"),
+    anchor
+  ))
+  expect_false(has_anchor(
+    paste("Spawner count was counted.", "Later table_2 note.", sep = "\n"),
+    anchor
+  ))
+})
+
 test_that("newly accepted property and unit candidates are cross-validated", {
   selected <- list(
     property = tibble::tibble(

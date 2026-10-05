@@ -685,6 +685,23 @@ test_that("a package whose only gap is a REVIEW: IRI reaches strict validation t
   expect_false(refuses_review_marker(pkg))
 })
 
+test_that("a later constraint component REVIEW marker is listed once", {
+  pkg <- filled_coded_package()
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "spawner_count")
+  mark_metadata_field(
+    pkg, "column_dictionary.csv", "constraint_iri", row,
+    "https://example.org/First; REVIEW: https://example.org/Second"
+  )
+
+  expect_true(refuses_review_marker(pkg))
+  review <- review_metadata(pkg)
+  hit <- review[review$file == "column_dictionary.csv" &
+                  review$field == "constraint_iri", , drop = FALSE]
+  expect_identical(nrow(hit), 1L)
+  expect_identical(hit$reason[[1]], "iri")
+})
+
 test_that("a REVIEW: measurement IRI is reported once, and its call runs", {
   # The marker test runs in the scan's main loop and the measurement branch
   # keeps the prose test, so a marked measurement IRI is found by one of them

@@ -1,8 +1,8 @@
 id: B-269
 kind: defect
 title: 'The SSSOM reader validates predicate_type, subject_category, object_category and similarity_measure as CURIEs, so every value the specification allows there is refused'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S9

@@ -415,10 +415,17 @@
       # it also reaches `constraint_iri`, `statistical_modifier_iri` and
       # `tables.csv`'s method and protocol placements, which neither of those
       # branches visits.
-      if (.ms_review_iri_field_is_swept(file_name, field) &&
-          .ms_is_unresolved_iri(value)) {
-        add(row, field, "iri", hint = .ms_metadata_iri_hint(field))
-        next
+      if (.ms_review_iri_field_is_swept(file_name, field)) {
+        unresolved_iri <- if (identical(file_name, "column_dictionary.csv") &&
+                              identical(field, "constraint_iri")) {
+          .ms_constraint_iri_has_review_marker(value)
+        } else {
+          .ms_is_unresolved_iri(value)
+        }
+        if (unresolved_iri) {
+          add(row, field, "iri", hint = .ms_metadata_iri_hint(field))
+          next
+        }
       }
       if (field %in% keys) {
         next
@@ -508,11 +515,14 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' pkg <- create_sdp(resources, dataset_id = "demo-1")
+#' pkg <- create_sdp(
+#'   data.frame(spawner_count = c(12L, 19L)),
+#'   path = tempfile("sdp-review-"),
+#'   seed_semantics = FALSE,
+#'   seed_verbose = FALSE,
+#'   check_updates = FALSE
+#' )
 #' review_metadata(pkg)
-#' set_sdp_dataset(pkg, creator = "Fisheries and Oceans Canada")
-#' }
 review_metadata <- function(path) {
   if (!is.character(path) || length(path) != 1L || is.na(path) || !dir.exists(path)) {
     cli::cli_abort("{.arg path} must be an existing Salmon Data Package directory.")
@@ -1070,9 +1080,13 @@ print.ms_metadata_review <- function(x, ...) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' pkg <- create_sdp(resources, dataset_id = "demo-1")
-#' review_metadata(pkg)
+#' pkg <- create_sdp(
+#'   data.frame(spawner_count = c(12L, 19L)),
+#'   path = tempfile("sdp-setter-"),
+#'   seed_semantics = FALSE,
+#'   seed_verbose = FALSE,
+#'   check_updates = FALSE
+#' )
 #' set_sdp_dataset(
 #'   pkg,
 #'   creator = "Fisheries and Oceans Canada",
@@ -1080,9 +1094,7 @@ print.ms_metadata_review <- function(x, ...) {
 #'   contact_email = "data@example.org",
 #'   license = "CC-BY-4.0"
 #' )
-#' set_sdp_table(pkg, "spawners", description = "One row per stream and year.")
-#' set_sdp_column(pkg, "spawner_count", column_description = "Spawners counted.")
-#' }
+#' review_metadata(pkg)
 set_sdp_dataset <- function(path,
                             ...,
                             title = NULL,
