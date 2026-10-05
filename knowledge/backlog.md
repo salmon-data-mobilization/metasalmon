@@ -9058,3 +9058,22 @@ identified the absence of a queue record for this already measured residual.
 A new implementation must reproduce the public failure before repairing it;
 this source observation is not a completed public regression test. The
 separate quote-decoding/legacy-byte choice remains governed by B-350/B-351.
+
+
+## B-433 — Python row 64 factual code-row seeder correction
+
+R pull request #232 landed as `347f0d2cf28dae8b0a325b3982366abb87506470`
+from reviewed `e1443d5`. Its dictionary helper applies the already ruled readr
+date test to the code-list owner, and the bundled all-character sample test
+asserts no START_DTT/END_DTT code rows while retaining SPECIES. R row 64 records
+this move. The separate Python PARITY row 64 still describes the pre-fix R
+difference; B-310 explicitly mandates a Python PR for this factual amendment
+and excludes it from the R item's retirement condition.
+
+Record the completed code-row seeder convergence while retaining the September
+25 ruling, PR44/B-188 registration, historical `0cac6c8` measurement, row
+number, explicit factor/Categorical intent, original code bytes/order/limits
+and every unrelated row. Numeric columns held as text and other role/value-type
+inference remain outside this correction. Current Python metadata and the
+landed R helper/test blobs are the sources; no runtime or schema change follows.
+This is delegated factual registry maintenance under Brett's October 4 grant.
