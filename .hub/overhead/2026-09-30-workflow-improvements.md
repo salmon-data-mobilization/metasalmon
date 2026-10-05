@@ -4341,3 +4341,233 @@ approval questions, identity overrides, duplicate claims and status-only Git
 checkpoints. The useful existing-handoff intake experiment is unchanged;
 coordination/source binding, implementation integration, generation verification
 and passive hosted waits remain separate rather than a global waste ratio.
+
+### 2026-10-05 — B384 terminal handoff lands; existing B385 convergence resumes
+
+**Experiment and next-use result.** Continue the single existing-handoff intake
+adjustment: inspect terminal handed-back work as well as fresh `ready` pickups.
+R259/B384 is the next actual completion found through that broader intake,
+following R221/R237/R231 and the earlier family. Its one-flag correction was
+already implemented; actual maintenance removed a superseded blanket approval
+hold only after verifying the stipulated first-token contract, surviving S16
+scope, ownership and implementation. The failed bot runs did not produce
+another approval question. One bounded next-family scout then found three
+specific routine handed-back candidates with real conflicts and safeguard work;
+this is positive dated evidence that fresh-ready-only intake was incomplete,
+not a standing claim that the remaining backlog has no actionable work. No
+second tracker or new workflow experiment is introduced, and no general time-
+saving percentage is inferred from these completions.
+
+**Coordination, publication and genuine gate repair history.** R259 exact
+`e5c98aee76ca13a4a2565ed599f0186a45d9f335` was ordinarily pushed and its
+complete substantive body updated. The first `gh pr ready` request failed with
+GitHub GraphQL EE1A. Root checked actual state (`isDraft:true`) before one
+ordinary retry, which succeeded; later actual state was `isDraft:false`.
+That was a transient ready-transition API failure/state check, not a bot
+review reroll, permission-policy change or source repair. A guessed locks
+repository read also failed; root used the normal client's doctor/config
+boundary and current ownership checks instead of inventing a ref or holder.
+That failed tool read and correction are coordination; they made no ownership
+mutation. Their wall times were not instrumented and are not fabricated.
+
+The preceding canonical prefix preserves the actual `6bbf795` B252 lint failure
+and erroneous shell continuation into commit/push, followed by the substantive
+`da3dbf6` two-record repair and inspected passing gates. Nothing here changes
+that published history, treats its initial failed closeout as clean, or relabels
+it environment repair. This appended completion follows actual repaired main.
+
+**Implementation and integration evidence retained.** Original combined
+source-and-test checkpoint `7db0136`, publication `48383412`, original holder
+`a-8b23709cce768317` and terminal `d5d4e6f1` remain. No separate historical
+tests-only checkpoint is invented. The ordinary integration retains validator
+blob `7d5cd898` and test `ad0027f`, all 50 other R files and all 255 other
+tracked testthat paths exactly from `da3dbf6`; NAMESPACE/DESCRIPTION are
+main-exact. Inventory is 51 R files, 87 testthat R files including helpers
+(79 test-* files), and 256 total testthat files. This is source binding, not
+307 executed tests. The original dirty workpad remains exactly 5817 bytes,
+SHA256 `ef658cff2cdf2029f256ea406422b4ffcd92dc88bd589dc7ee487f7d3e72435d`,
+unstaged throughout integration and publication. Its checkout was deliberately
+retained after merge; no dirty-worktree removal or note overwrite. Primary
+dirty AGENTS/HUB bytes were preserved through verified fast-forward backup/
+replay, and unrelated worktrees/branches remain.
+
+The already recorded one necessary pinned NEWS build was 16.072681s. Eighteen
+typed positive/malformed controls preceded assertions: 666 ordered identities,
+665 unrelated raw records, 596 ordered non-NEWS records and 225 unrelated
+files remain exact. Native reordered search records; the existing typed owned-
+text raw-span control retained main framing/order without unrelated native
+output restoration. This receipt is reused, not a second build. Likewise the
+pure independent 41 controls in0.156s (zero warnings/failures/skips) and final
+312 immutable bindings in0.065542s are source-identical proof, not repeated
+local full/native/provider suites. Local gate timings from their receipts are
+lint0.281210s, queue freshness0.091627s, parity0.031003s, index2.088994s,
+OKF0.919636s and committed changelog0.863362s. These individual operation
+measurements overlap in places and are not summed as task wall time.
+
+**Final hosted verification and actual reviews.** RCI37272649283/
+job111642752511 completed the actual provider-isolated full suite from
+06:30:52 to06:34:37Z (225s), then its R CMD check step from06:34:37 to
+06:39:25Z (288s). Actual R4.6.1 strict output reports zero errors, warnings
+and notes. Final changelog37272649225, queue37272649217, parity37272649182
+and index37272649239 passed on exact e5c98aee. Seven rollup entries were
+successful, including two Claude accounting entries; seven entries are not
+seven fresh implementation reviews. The hosted suite's assertion/warning/skip
+counts were not reconstructed from the historical 9087/38/6 local receipt.
+
+Claude37272649223/job111642752178 and ready37272711991/job111642946257
+skipped both model and execution-verifier steps under accounting. They reuse
+actual completed earlier nits5942527451/36939638008; they are not fresh reviews.
+Ready-triggered Codex5989309563 reported both code and security FAILED at
+06:30:30Z and06:32:52Z. Public cause remains unknown: neither is described as
+quota, pre-execution rejection, completed review or a finding. Final actual
+comment/review/thread read06:40:41Z found the earlier Claude nits plus the
+failed summary, zero review objects/threads and no unresolved substantive
+finding. Approved October4 independent implementation review41/final312,
+source-identical RED/GREEN/focused/full/strict acceptance and final hosted
+checks substituted accurately; no new approval, bot request, credits/settings
+change or server-required check override.
+
+The final-gate helper used 19 bounded public reads: four PR metadata snapshots,
+one head-run inventory, two Claude job-step reads, seven R job-step reads,
+three thread queries and two completed logs. Root's independently fetched
+final R log duplicated the helper's just-completed download before the reuse
+instruction arrived: two final R-log downloads total, one extra duplicate
+coordination read. It changed no evidence/source and was not followed by a
+third download, test or source review. Six explicit bounded sleeps total300s
+requested (about300.04s reported elapsed); other deliberation/read intervals
+are not mislabeled passive wait. Hosted 225s/288s execution runs concurrently
+with human/agent work; it is verification execution, while awaiting it is
+passive wait. Zero polling-only helper spawns or status-only Git checkpoints.
+
+**Delegated merge and literal retirement.** R259 merged06:41:28Z as
+`126e576e2747fb25c99199a4559d348415649a46` from exact e5c98aee. Routine
+source-verified false-rejection repair under the October4 standing grant is
+the durable class: the first token now spans later lines correctly while
+identifier/markup/underscore/hyphen/phrase mismatch guards remain intact.
+B329/B330 explicitly keep deterministic validators; live R ingest and the
+existing read-only Python b327 draft reach that driver. No provider/request/
+retry/options or S16 writer repair. Literal queue closeout
+`cb390928e35de535b5e39a5a4df099f85e203029` marks B384 done and promotes the
+existing B385, with inspected lint328/check/parity64/OKF0/scoped diff. Complete
+293302-byte history returned canonical, SHA256
+`499c8b06898de1398b7295a2323bc2dd3e974e5760aad15fefda2ef3f605a2b0`;
+every 279858/269995/262761 and earlier prefix remains intact. All original
+branches/checkpoints/terminal handoffs remain; dirty B384 checkout retained.
+
+**Normal B385 intake and completion.** Both recorded
+blockers B384 and B360 now are done (B360 landed Python56/7715e43). Under the
+existing September23 R15 widening, this already claimable solo member/P2 item
+with exact nonempty retirement is promoted, not a new deliberate parity choice.
+Root's normal claim `ec46149b97f40ad21d63945efa7625b23ba59548`, holder
+`a-c1bbb42efa975289`, attempt1, was acquired06:42:39Z until10:42:39Z. Its own
+isolated Python worktree/branch begins at accepted Python82 main420a8058;
+no B384-holder impersonation, duplicate claim or S16/Python82 branch takeover.
+The prior public claim ref was absent; normal client ownership established the
+new claim rather than a guessed locks route. Source baseline and copied claim
+are preserved in the existing proof receipts.
+
+B385 actually completed in PythonPR102. Genuine tests-onlyRED
+1c9a713d13b1c95cf8ea1005a1f81d9ac488496e leaves production0e71fc35 exactbase:
+three failures/34passes/zero skips, pytest0.140595s (0.573399s bootstrap).
+Failures are later underscore, later hyphen and the existing regenerated
+field-evidence case. MinimalfixGREEN49db028b51e7c20f63d4320dcf6084b18e84bf46
+changes only leading-tokenre.ASCII|re.DOTALL and the factual helper docstring:
+37passes/zero failures/skips/pytest warnings,0.097129s (0.559699s bootstrap).
+Inherited startupurllib3/LibreSSL warning occurs before pytest, separately.
+An external pytest recorder used an invalid hook parameter and failed before
+collection; correcting that recorder was not productRED or environment repair.
+Actual fix-head changelog/diff gate passed; an earlier committed-head checker
+had inspectedRED instead, so the0.430417s actualGREEN gate was necessary.
+
+One existing R-oracle regeneration passed1.496630s, with namespace path,
+exacthelper body, Rcb390928 head and landed7d5cd898 source asserted. Input and
+native driver bytes unchanged. Sole JSON semantic delta is evidence.
+multiline_chunk_phrase_anchor_quirk, adding the matching procedure chunk with
+laterfork_length. The pinned key and old98cb9e6 provenance remain; no guessed
+expectation/role or newdeliberate parity. Source0ce89d0744475c0152167a4ca776a019628a0800,
+testd0fd6343e3e6ff123865e84f8c7ad10363e2df17,expecteda41ef0cd0dc069c412daa7b09be34fe712493072
+remain exactRED/GREEN bindings as applicable. Other38production modules,
+all other tests/fixtures, public signatures, guards and dependencies unchanged.
+
+Independent sssom_port_peer actual implementation/Rcontract review cleared:
+33pure controls0.008552s (process0.701134s),134AST assertions,306immutable
+source/test bindings0.131229s and16oracle provenance bindings0.138101s,
+zero warnings/failures/skips/substantive findings. No R/native/provider/full
+or unchanged acceptance rerun; one required oracle regeneration and focused
+RED/GREEN are separate usefulverification. The same genuine rootclaim was
+handed off as terminaleb3a572added911301da85f55c20d4d679792e39, heldnotreleased.
+No identity override/newclaim/holderimpersonation. Draft publication was then
+ordinarily markedready; exact49db028 stayed frozen throughout remote gates.
+
+All six applicable exact-head hostedchecks passed: Offline/Rparity37275113331
+(core111650318256/extras111650318260/bare111650318070/parity111650318246),
+documentation37275113319/job111650318223 andchangelog37275113333/job111650318700.
+Actual steps confirmdependency configuration/core/extras/bare suites, smoke,
+distribution/API/docs build and installedR parity. PRdeploy/PagesSKIP is
+inapplicable, not a greenrequiredcheck. Codex5989652539 actually completed
+CodeReview07:02:50Z withno publishedfindings; no separateSecurityrow is claimed.
+There was no failed B385 review/substitution, manualbotrequest/reroll,
+serveroverride, credits/settings change or approval question. Waiting for the
+actual requestedreview outcome was passivewait, not implementation/verification
+runtime. Rpublishedmain stayedcb39092 duringparity; no source-identical CI churn.
+
+Ordinary delegated routine mirror merged07:06:32Z as
+ca49d48e9ee542cf2c36e5d673a770368d1b01a2 fromexact49db028. Whole merge tree equals
+publication. Literalretirement is proved by landedsource/tests, actualcomputed
+oracle andguard controls; the canonical done closeout records the landedport
+insideboth factual debtpassages without changing64numberedrows. All RED/GREEN,
+originalclaim/terminal/branches remain. Pythonprimary clean atca49d48. OwnWT
+removed/pruned afterclean/zero unique/zero unpushed/zero ignored verification;
+no artifactarchive needed. OriginalB384dirtyWP andunrelatedB345dirtyWP retained,
+primary uncommittedAGENTS/HUB edits remain excluded.
+
+The next R225/B177 read-only source reassessment found a concrete runtime
+integration conflict: all-four-file marker coverage must retain incoming
+.ms_constraint_iri_has_review_marker semicolon-list handling andB342malformed
+table safeguards. It is already ruled routine behavior, not newIRI/parity
+choice; historical policyhold is superseded. Bounded original-branch local
+integration was authorized afterthat evidence; it is stillunpublished and
+notclaimedcomplete here. Sources freeze forpeer andone necessaryNEWS build;
+actualsettledmain will be integratedbeforefinalpublication, avoiding a
+predictably stale intermediate fullCI. No newclaim/holderimpersonation.
+
+**Requested audit and bounded next-family scout.** The useful read-only scout
+at06:37:35Z inspected exactly three terminal handoffs, not all 328 queue items:
+R225/B177 `1ca3e89d`/terminal4fd63ebc; R260/B344 `dd8808ec`/terminal5c48add0;
+Python94/B345 `327ac6d6`/terminalcad8c5b1. All three have actual current-main
+conflicts. R177's all-four-metadata marker coverage is already ruled; actual
+old Claude36819236720 failed with `is_error:true` and two permission denials,
+not a completed review. R344 Q63 has actual completed nits5943920949 and
+resolved important prose false-positive findings; preserve literal and scoped
+emitted-IRI guards. Python345 has source-bound prior independent75 controls,
+six historical applicable green checks and an existing dirty workpad to retain.
+No new ontology/marker definition is delegated by inspection alone. Normal
+bounded maintenance can follow B385, sequenced for shared package-helper hunks;
+B230 is the existing Python companion eligible only after R177. Incoming
+B342/YAML/B252/B384/B385 changes and original owner branches must be retained.
+The scout did not take over semantic meaning, release/SSSOM-byte decisions,
+shared sentinel coordination, B328 or S16 branches, and did not broaden into
+a fourth candidate.
+
+Scout public reads were20: two open-PR inventories, six metadata reads, one
+batched claim-tip read, three immutable claim-content reads on first observed
+terminal tips, six comment endpoints, one review-run metadata read and one
+failed log. Initial raw body output truncated, causing the compact external
+pass; use that compact receipt on unchanged heads. Zero repository edits,
+claims, tests/builds, public writes, polling-only helpers or status-only
+checkpoints. This is requested diagnostic work yielding a concrete next family,
+not empty polling. Its dated heads/claims/holds must be rechecked before action;
+the external receipt is reusable evidence, not another live queue.
+
+**Category boundaries and next evaluation.** Coordination covers ownership,
+API/state/publication reads, conflict sequencing, transient ready/locks read
+failures and the extra parallel log read. Implementation is the actual scoped
+integration/port and factual generated/closure work. Verification covers the
+pure implementation controls, immutable/source binding, typed preservation,
+local gates and required hosted execution. The bounded three-candidate scout
+and S16 survival reassessment are requested audit; explicit sleeps are passive
+wait. There was no environment repair or new dependency. Keep this one intake
+adjustment for its next use: use exact live handoff/decision/ownership evidence,
+freeze sources and reuse unchanged proof, then measure the ensuing meaningful
+family closure. Required review, CI, claim, ownership, person-contact and
+consequential-decision gates are unchanged.
