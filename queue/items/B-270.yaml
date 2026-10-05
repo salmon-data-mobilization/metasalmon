@@ -1,8 +1,8 @@
 id: B-270
 kind: defect
 title: 'metasalmonpy''s SSSOM reader refuses the values the specification allows in predicate_type, subject_category, object_category and similarity_measure, the mirror half of B-269'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S9

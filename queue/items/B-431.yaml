@@ -1,8 +1,8 @@
 id: B-431
 kind: defect
 title: Python's row 28 and whitespace comments omit R's explicit Unicode-space supplement
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 severity: P3

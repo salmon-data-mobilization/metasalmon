@@ -1580,7 +1580,11 @@ forbids in this slot), including propagated mapping-set metadata.
 not entity references; the remaining reference columns keep their checks.
 The four new tests in `test-sssom.R` pin each field, invalid predicate values,
 all predicate-legal enum values in rows/metadata and writer round-tripping.
-Python's equivalent column list still refuses these inputs on main e81cacd;
-B-270 owns that existing port. A hub claim covers one repository, so this is
-a port owed, not a new deliberate parity deviation. Schema source:
+Python PR 100 landed the matching field/enum rules on 2026-10-05 as
+`29539c74a7ff519cf37941bdc129700b835b7d19`, from reviewed publication
+`295912800d2ce62e62207b2c2e571dcb2c9a565a` (B-270). Its tests-only
+checkpoint `60962045` reproduces the former refusals and missing metadata
+checks; the implementation retains the genuine identifier/profile guards.
+Both implementations follow the same pinned schema rule. This completed
+existing port creates no new deliberate parity deviation. Schema source:
 [SSSOM snapshot](https://github.com/mapping-commons/sssom/blob/667d3c579d92ad2e1a480503625eeef1e6af8e6d/src/sssom_schema/schema/sssom_schema.yaml).
