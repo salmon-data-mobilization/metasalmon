@@ -273,7 +273,7 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
   bindings <- .ms_sdp_methods_column_bindings(root)
   registry <- .ms_sdp_methods_read_legacy(root)
 
-  review_marked <- grepl("^REVIEW:", bindings$method_iri, ignore.case = TRUE)
+  review_marked <- .ms_is_review_iri(bindings$method_iri)
   dropped_review <- bindings[review_marked, , drop = FALSE]
   # Canonical order: `dropped_review` is part of the exported report.
   dropped_review <- dropped_review[

@@ -385,6 +385,36 @@ absolute-IRI shape in dictionary semantic fields and table IRI fields, with
 the supported constraint-list representation preserved. No new numbered
 parity row or term selection was made.
 
+**Development-version port, 2026-10-05: the ruled ASCII REVIEW marker
+(B-344 → B-345).** This R change implements Brett's Q63 ruling: optional
+ASCII spaces or tabs, REVIEW in any mix of ASCII case, optional ASCII spaces
+or tabs, then a colon. Stripping consumes ASCII spaces or tabs after the colon
+and nothing else. Unicode spaces and line breaks, form feeds or vertical tabs
+before REVIEW or the colon are excluded; raw suffix bytes are preserved.
+Q63 detection and stripping share one predicate, and decoded EML/ORE checks
+visit emitter IRI locations while retaining the inherited exact case-sensitive
+whole-document `REVIEW:` refusal. Ordinary review prose retains its existing
+literal-guard boundary.
+
+The Python implementation is already owed under **B-345**, the paired item,
+and must carry the same detector, strip, review-decision and output-guard
+behavior. **B-177/B-230** have extended the marker sweep to all four metadata
+files; the port must also retain malformed-IRI ownership in every swept field when
+Q63 excludes a former marker: the six dictionary semantic IRI fields and every
+`*_iri` column in dataset, tables and codes metadata. B344's public regression
+pins internal LF, FF and VT before the colon in codes `term_iri`,
+`vocabulary_iri` and custom dataset/codes IRI fields. The fix reuses the existing
+absolute-IRI shape; blank and recognized-marker paths remain separate, table
+method/protocol and dataset protocol keep their existing placement owners, and
+default validation and input bytes are unchanged. B345 owes the same coverage
+on the landed B230 baseline.
+
+This is the already ruled port and its required guard completeness, not a new
+deliberate difference, numbered parity row or version change. **Row 61's deliberate
+marker-producer byte distinction and the separate Q18 question are unchanged:** R still emits a space
+after `REVIEW:` and Python does not; Q63 governs recognition and stripping,
+not that deliberately registered output spelling.
+
 **SSSOM tag-refusal port landed, 2026-10-01.** `B-353` landed as metasalmonpy
 pull request **#88**, merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`;
 its R half `B-352` landed in metasalmon pull request **#255**, merged as

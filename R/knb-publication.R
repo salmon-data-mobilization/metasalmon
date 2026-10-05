@@ -830,7 +830,7 @@
 
   xml <- as.character(document)
   if (grepl("file:", xml, fixed = TRUE) ||
-      grepl("REVIEW:", xml, fixed = TRUE) ||
+      .ms_document_has_review_iri(document, "ore") ||
       !grepl(
         utils::URLencode(resource_map_pid, reserved = TRUE),
         xml,

@@ -34,7 +34,7 @@
   value <- as.character(value)
   valid <- !.ms_sdp_extension_is_blank(value) &
     .ms_absolute_iri_shape(value) &
-    !grepl("^REVIEW:", value, ignore.case = TRUE)
+    !.ms_is_review_iri(value)
   web <- valid & grepl("^https?:", value, ignore.case = TRUE)
   # No `perl = TRUE`: keep the same TRE engine as the shape check above. The
   # shared predicate already rejects the explicit Unicode whitespace that

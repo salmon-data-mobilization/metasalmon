@@ -1409,11 +1409,7 @@ infer_column_role <- function(col_name, col) {
   if (is.na(value)) {
     return(FALSE)
   }
-  any(grepl(
-    "^\\s*REVIEW\\s*:",
-    .ms_constraint_iri_components(value),
-    ignore.case = TRUE
-  ))
+  any(.ms_is_review_iri(.ms_constraint_iri_components(value)))
 }
 
 #' Validate a salmon data dictionary
@@ -1518,7 +1514,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         logical(1), USE.NAMES = FALSE
       ))
     }
-    !is.na(vals) & grepl("^\\s*REVIEW\\s*:", as.character(vals), ignore.case = TRUE)
+    .ms_is_review_iri(vals)
   })
   names(review_marker_rows) <- iri_fields
 
