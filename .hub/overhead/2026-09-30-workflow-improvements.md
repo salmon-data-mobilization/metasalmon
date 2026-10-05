@@ -4135,3 +4135,16 @@ is in /tmp/b270-independent-peer; no source/public edits, claims, focused/full/
 native repeats or builds. Final required hosted CI and any actual substantive
 reviews still gate merge, with final receipts in the PR body rather than another
 source-identical checkpoint.
+
+B371 final receipt arrived before B137 publication: R224 merged2026-10-05
+05:39:11Z asbbf94c40ca0343e5a8a07bfb84da7d92d2ce476b from exact946a6a93.
+Hosted37267850409/job111628333956 fullsuite/strictR4.6.1 zeroE/W/N3m53.1s,
+all four guards pass; actualClaude5988681021 only two verified nits and
+Codex5988664772 code/security completed clear, no threads. Literal test-only
+retirement met without weakened CI or new local source/build repeats. B137
+receives this actual-main test/workpad integration before final publication;
+it introduces no NEWS/runtime or affected locale changes, so the accepted
+15.886s generation and two locale proofs remain applicable. New incoming
+github-helper test binds to actual merged B371 source once. Cleanup/closure
+receipts follow in PR body/durable queue commit, preserving terminale33c2628
+and original branch/checkpoints. No status-only Git/CI checkpoint.
