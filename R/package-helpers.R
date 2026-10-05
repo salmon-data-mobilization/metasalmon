@@ -2057,9 +2057,17 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
   dict <- validate_dictionary(pkg$dictionary, require_iris = require_iris)
   semantic_validation <- validate_semantics(dict, require_iris = require_iris)
-  table_review_issues <- .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv")
-  if (nrow(table_review_issues) > 0) {
-    semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, table_review_issues)
+  # The dictionary validator has its own fixed IRI-field sweep. The other
+  # three metadata files use the same *_iri sweep as the EDH rebuild gate, so
+  # a draft marker cannot pass strict validation in one path and fail in the
+  # other. Keep these issues visible in non-strict validation as well.
+  metadata_review_issues <- dplyr::bind_rows(
+    .ms_collect_review_iri_issues(pkg$dataset, source_name = "metadata/dataset.csv"),
+    .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv"),
+    .ms_collect_review_iri_issues(pkg$codes, source_name = "metadata/codes.csv")
+  )
+  if (nrow(metadata_review_issues) > 0) {
+    semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, metadata_review_issues)
   }
   # Unconditional: a method or protocol placement that is not an absolute IRI
   # is malformed in every validation mode, not only under `require_iris`.
@@ -2085,7 +2093,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     # validation must block it, exactly as it blocks a REVIEW: marker.
     final_review_issues <- dplyr::bind_rows(
       final_review_issues,
-      table_review_issues,
+      metadata_review_issues,
       placement_issues
     )
   }

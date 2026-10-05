@@ -4,6 +4,39 @@
 
 ### Breaking changes
 
+- **A custom ontology URL no longer implicitly falls back to smn**
+  (B-333).
+  [`fetch_salmon_ontology()`](https://salmon-data-mobilization.github.io/metasalmon/reference/fetch_salmon_ontology.md)
+  keeps its public fallback default `c("https://w3id.org/smn")`, but
+  uses that implicit fallback only for the default
+  `url = "https://w3id.org/smn/"`. A custom URL that fails now errors
+  unless its caller explicitly supplies fallback URLs or it has an
+  eligible matching cache. It previously could return smn’s body for
+  another ontology. Named fallbacks are tried as before; explicit `NULL`
+  and [`character()`](https://rdrr.io/r/base/character.html) name none.
+  The package’s own callers already name their fallbacks. The Python
+  mirror remains owed in B-334 and the existing unmerged PR75.
+
+- **[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  searches the sources a role calls for when you name a role and no
+  sources** (hub item B-420; ruled by Brett on 2026-09-26,
+  `knowledge/questions.md` Q70: R moves). `sources` now defaults to
+  `NULL`, which means `sources_for_role(role)`, as it already did in
+  metasalmonpy and as
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  already resolved an omitted list here. So
+  `find_terms("kilogram", role = "unit")` searches QUDT, NVS and OLS,
+  where it searched smn, gcdfo, OLS and NVS whatever the role, and a
+  direct unit search now reaches QUDT. A call with no role searches the
+  same four sources as before, and a vector you name is still a strict
+  allowlist. An explicit `sources = NULL` now means the same as leaving
+  the argument out; pass
+  [`character()`](https://rdrr.io/r/base/character.html) to search
+  nothing. The documentation described both behaviours, one under `role`
+  and one under `sources`, and now describes one. Pinned by
+  `tests/testthat/test-find-terms-sources.R`, which stubs every source
+  and failed before the change.
+
 - **A package’s ownership sentinel is now `.sdp-package`, holding the
   line `sdp-owned`, and `.metasalmon-package` is no longer written or
   recognised** (hub item B-113; ruled by Brett 2026-08-24,
@@ -36,6 +69,28 @@
   meantime, but a package written by both carries both files until then.
 
 ### Added
+
+- `detect_semantic_term_gaps(commons_gaps = "gaps.json")` reads the
+  commons `okf-check.py --gaps` export (B-278), retaining lifecycle,
+  source order, repeated concepts and draft provenance. Commons-specific
+  request rendering preserves declared targets and unresolved holds;
+  only open, unheld SMN/GCDFO rows reach
+  `submit_term_request_issues(dry_run = TRUE)`. It selects no term IRI,
+  definition or type. Existing SDP input and result columns are
+  unchanged. The matching Python behavior and shared fixtures remain
+  owed under B-279.
+
+- The repository site builder accepts repeatable `--article=NAME` and
+  `--reference=TOPIC` selectors for existing pages (hub B-430). It
+  updates their HTML, Markdown companions and derived indexes without
+  rebuilding unrelated pages, while retaining the recorded-toolchain and
+  publication checks. New pages and site-wide changes still require a
+  full build.
+
+- A dedicated semantic-review walkthrough covers the R review queue,
+  accept and reject decisions, metadata setters and the optional
+  decomposition dialogue. `tidyr` is now declared in Suggests for the
+  tidy-data guide’s `pivot_longer()` examples (hub B-129).
 
 - **Model judgement runs outside the package:
   [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
@@ -260,16 +315,195 @@
 
 ### Fixed
 
-- `REVIEW` IRI markers now use the ruled ASCII-only spelling in
-  validation, review decisions, method migration, bundle checks and
-  EML/KNB output guards: optional spaces or tabs before `REVIEW` and
-  around its colon, with ASCII case variants accepted. Stripping removes
-  only spaces or tabs after the colon. Excluded line breaks or Unicode
-  spaces stay in the value for strict malformed IRI validation. EML/KNB
-  output guards inspect decoded IRI-bearing XML values, including
-  escaped attribute tabs, and retain the prior exact, case-sensitive
-  `REVIEW:` whole-document scan; ordinary `Review:` narrative remains
-  valid (hub B-344, Q63; Python mirror B-345).
+- **Strict validation now refuses `REVIEW:` IRIs in all four SDP
+  metadata files, and
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  lists the same blockers** (hub item B-177; Brett’s 2026-09-23 ruling).
+  The EDH rebuild gate already swept `dataset.csv`, `tables.csv`,
+  `column_dictionary.csv` and `codes.csv`, but strict validation passed
+  a marker in `dataset.csv` or `codes.csv` and the metadata review scan
+  omitted it. Strict validation now reports those markers through the
+  same IRI issue collector as the EDH gate, including in non-strict
+  results; the review scan covers every schema-declared field it
+  refuses. The validator-driven test checks each declared IRI field in
+  turn. The Python mirror change is owed under B-230.
+
+- Semantic bundle validation now checks a context chunk’s leading phrase
+  across lines. A later `table_2` or hyphenated note no longer hides a
+  matching first line; a leading underscored identifier remains
+  ineligible (hub B-384; metasalmonpy companion B-385 follows).
+
+- IRI shape validation now rejects Unicode whitespace consistently under
+  C and UTF-8 locales (B-137). The shared validator uses the same
+  non-ASCII space membership metasalmonpy already applies; previously a
+  C-locale run admitted an ideographic space that a UTF-8-locale run
+  rejected.
+
+- The SSSOM reader validates `predicate_type` as its entity-type enum
+  and accepts text in `subject_category`, `object_category` and
+  `similarity_measure`, rather than requiring identifiers in those four
+  fields (hub item B-269). Predicate types the specification forbids
+  remain rejected; identifier fields retain their existing checks. The
+  Python port is B-270.
+
+- `hub done ID --chat` now records a branchless handoff when a shared
+  member’s work and proposed pull request are shown in chat (hub item
+  B-338). The claim remains held, with `reason: hand-back in chat` in
+  its claim record. The option requires a current queue checkout and a
+  configured member whose `solo` key is false or absent; solo and
+  unrecognized values are refused. The existing `--branch` handoff and
+  its branch-name check are unchanged.
+
+- **EML and KNB reads now refuse unknown YAML tags in
+  `eml-mapping.yml`** (hub B-223, Brett’s Q62 ruling).
+  [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  and both KNB publication reads name the sidecar in the error instead
+  of carrying the text of `!expr` or another unknown local tag into an
+  output or plan. Untagged mappings and supported YAML core tags remain
+  readable; expressions remain inert. The semantic-closure path is the
+  separate B-340 implementation.
+
+- **Semantic closure refuses unknown YAML tags in its EML sidecar before
+  writing either closure file** (hub item B-340; Q62). The refusal names
+  `metadata/eml-mapping.yml` and leaves that sidecar unchanged. Untagged
+  declared paths, recognized standard YAML tags and literal bang text
+  retain their meaning; the existing malformed/nonmapping fallback stays
+  in place. Expression evaluation remains disabled. This is the R half
+  of B-340/B-341, with no new parity deviation.
+
+- **A matching ontology cache remains usable with a warning after failed
+  refresh** (B-422; Brett’s Q71 clarification, 2026-10-03). A transport
+  or server failure alone does not prove that copy stale. Only bodies
+  belonging to an attempted URL and the requested Accept are eligible;
+  unqualified legacy caches and other URL/Accept entries are excluded. A
+  replacement response or contradictory ETag invalidates the previous
+  copy persistently, so failed replacement storage cannot revive it on a
+  later offline call. Its bytes remain available for inspection with a
+  `.invalid` marker until a successful replacement clears that marker.
+  Without an eligible matching copy the call errors. No freshness time
+  limit or public argument is added. The Python ontology-fetch stream
+  owes the same behavior before parity is complete.
+
+- **[`fetch_salmon_ontology()`](https://salmon-data-mobilization.github.io/metasalmon/reference/fetch_salmon_ontology.md)
+  no longer answers a request for one ontology with another’s body, or
+  one representation’s request with another’s** (hub items B-333 and
+  B-335; the Python mirror remains owed in B-334/B-336 and the existing
+  unmerged PR75). Each is pinned by
+  `tests/testthat/test-ontology-fetch.R`, which stubs
+  [`httr::GET()`](https://httr.r-lib.org/reference/GET.html) and failed
+  before the change.
+
+  1.  **Each URL and representation has its own cached copy and
+      validators.** Every body used to be written to
+      `salmon-ontology.ttl` in `cache_dir`, beside one `etag.txt` and
+      one `last_modified.txt`. So fetching smn and then gcdfo into one
+      directory left gcdfo at the path the smn call had returned, and
+      the gcdfo request carried smn’s ETag; a Turtle and then an RDF/XML
+      fetch of one url did the same; and a fallback’s ETag, sent to the
+      url on the next call, could bring back the fallback’s body as the
+      url’s on a `304`. A copy is now `<key>.ttl`, where `<key>` is the
+      first 16 hexadecimal digits of the SHA-256 of the url as
+      requested, a newline and `accept`, taken as UTF-8 bytes whatever
+      the session’s locale, and its validators are `<key>.etag` and
+      `<key>.last_modified`. A request carries only the validators of
+      the copy that URL returned under that `accept`, a `304` returns
+      that copy, and a `200` replaces the copy’s validators rather than
+      keeping any the new answer did not send. **The returned file name
+      changes accordingly.** Copies cached by earlier versions –
+      `salmon-ontology.ttl`, `etag.txt` and `last_modified.txt` directly
+      under `cache_dir`, which by default is the persistent
+      `file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology")`
+      – are no longer read, and you can delete them.
+  2.  **A `304` with no cached copy is that url’s failure**, and the
+      next url is tried. It used to stop the call with “Not Modified
+      (HTTP 304)”.
+  3.  **A copy holds exactly the bytes the server sent.** The body used
+      to be decoded as UTF-8 and written back with
+      [`writeLines()`](https://rdrr.io/r/base/writeLines.html), so every
+      copy gained a final newline and a body that was not valid UTF-8
+      was stored as the two characters `NA`. The copy is now the raw
+      body, still written to a temporary file in `cache_dir` and renamed
+      into place, and a validator file is the header’s bytes and a
+      newline, written in binary so that it is the same file on every
+      platform. The matching Python storage remains owed in the existing
+      unmerged PR75; its default branch still decodes a text type sent
+      with no charset as ISO-8859-1 and rewrites it. `timeout_seconds`
+      is unchanged in R: it bounds both connection and whole transfer.
+      Python’s default branch uses a fixed 15 s per request, and PR75’s
+      proposed configurable connect/read timeout does not bound the
+      whole transfer.
+
+- **Source lists are normalised consistently across R’s readers**
+  (B-421). Unicode lower-casing uses an explicit locale, so the
+  session’s `LC_CTYPE` cannot change a supported source name or a review
+  packet’s recorded source list. Shared dotted-I and Greek-final-sigma
+  controls match Python’s lower-casing. `stringi` is now a declared
+  runtime dependency for this fold; this is not a claim that differing
+  Unicode versions map every unknown name identically.
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md),
+  and the source policy that
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  and
+  [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+  build (and so
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  and
+  [`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md),
+  which pass their sources to
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)),
+  now trim each name you supply of exactly what Python’s `str.strip()`
+  removes, lower-case it, and drop a missing or empty name and any
+  repeat after its first appearance, keeping your order. Measured before
+  the change: `find_terms(sources = "SMN")` and `sources = " smn "`
+  searched nothing and reported a successful search with no rows, where
+  metasalmonpy searched smn; and an `NA` was dispatched, failed, and was
+  reported as a source that did not answer. An injected `search_fn`, the
+  bundle-review payload and a review packet’s recorded
+  `explicit_allowlist` now see the normalised list, as they do in
+  metasalmonpy. A name that is none of the sources is still kept and
+  searches nothing. The pending metasalmonpy port in PR75 must also drop
+  missing entries (`None`, NaN); its default branch still turns `None`
+  into a source called `"none"`. Pinned by
+  `tests/testthat/test-find-terms-sources.R`.
+
+  [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
+  reads its `sources` by the same rule. It had its own,
+  [`trimws()`](https://rdrr.io/r/base/trimws.html) and
+  [`unique()`](https://rdrr.io/r/base/unique.html) with no lower-casing,
+  so `" SMN"` and `"smn"` were two sources there and a no-break space
+  survived; metasalmonpy’s closure has a third rule of its own. All
+  three R readers now read a list one way; the corresponding Python
+  reader port remains owed in PR75. A list with no name left is still
+  refused. Pinned by `tests/testthat/test-semantic-closure.R`, which
+  failed before the change.
+
+- The bundled NuSEDS dictionaries now describe `AREA` as a DFO
+  sub-district code, following NuSEDS’s data dictionary and sub-district
+  map (B-401). The gold-standard cards no longer treat its lettered
+  values as PFMA Subareas; whether a sub-district vocabulary term is
+  needed remains open. The metasalmonpy and SDP-example corrections are
+  B-402 and B-403.
+
+- [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
+  now points a code-resolved procedure’s gap or incomplete-evidence row
+  to the `codes.csv` `term_iri` cell that carries it, with its table,
+  column, code value and full row key (hub item B-265). When several
+  code rows carry one procedure IRI, each address is reported.
+  [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
+  renders those as separate candidate requests; review them before
+  filing so one missing term does not become duplicate ontology issues.
+  The metasalmonpy port is B-266.
+
+- CI review-completion failures identify known Git actions after
+  directory or configuration options through fixed diagnostic
+  categories. Paths and option values remain private, and denied tool
+  calls still block review completion.
+
+- [`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
+  reaches its existing PAT, SSO and missing-path remedies for HTTP 401,
+  403 and 404. Other HTTP errors and transport failures still raise
+  normally (hub B-256).
 
 - **The migration and tidy-data vignettes now tangle without executable
   code** (hub item B-133). Their 25 display-only examples each declare
@@ -882,20 +1116,17 @@
 
   A marker is now listed wherever strict validation refuses one, with
   the `set_sdp_*()` call that replaces it: in any schema-declared
-  `*_iri` field of `tables.csv`, and in the six semantic IRI fields of
-  `column_dictionary.csv`. The six are read from the list
+  `*_iri` field of `dataset.csv`, `tables.csv` and `codes.csv`, and in
+  the six semantic IRI fields of `column_dictionary.csv`. The six are
+  read from the list
   [`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md)
   sweeps, not from the schema. So when a schema selected through the
   options declares a seventh dictionary `*_iri` field, a marker there is
   not listed, because strict validation accepts it (raised in the Codex
   review of
   [\#144](https://github.com/salmon-data-mobilization/metasalmon/issues/144)).
-  Also still not listed:
-
-  - a marker in `codes.csv` or `dataset.csv`, because strict validation
-    does not refuse one there yet (hub item B-177);
-  - a marker in a `*_iri` column the schema does not declare, which has
-    no setter to print (hub item B-185).
+  A marker in a `*_iri` column the schema does not declare is still not
+  listed, because it has no setter to print (hub item B-185).
 
   The fix is a second test for the marker rather than a wider
   placeholder test, because other callers depend on the placeholder
@@ -905,13 +1136,13 @@
   validation refuses it. A second test does the same for a configured
   schema’s extra dictionary field.
 
-  metasalmonpy fixed the same defect in [pull request
-  28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28),
-  and its scan also lists a marker in `codes.csv`, the one file where
-  the two differ. Brett ruled on 2026-09-23 that strict validation
-  refuses a marker there, so R is the side that moves, when B-177 lands.
-  Until then the difference is tracked as a port owed in
-  `knowledge/parity-deviations.md`, not as a register row.
+  metasalmonpy fixed the same scan defect in [pull request
+  28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28).
+  B-177 subsequently added `dataset.csv` and `codes.csv` to R’s strict
+  validator and review scan under Brett’s 2026-09-23 ruling. The Python
+  validator and its dataset scan still owe the matching change under
+  B-230, tracked as a port in `knowledge/parity-deviations.md` rather
+  than a register row.
 
 - **`apply_salmon_dictionary(strict = TRUE)` now stops on the coercion
   failure it used to let through, and the codes step names the values it
@@ -1422,6 +1653,11 @@
 
 ### Changed
 
+- The publication guide distinguishes strict SDP validation and folder
+  sharing from the reviewed closure and EML facts required for EML/KNB
+  export or deposit. Closure comments describe the ledger’s field
+  coverage accurately (hub B-262).
+
 - **[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   and
   [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
@@ -1604,6 +1840,40 @@
   metasalmonpy half is hub item B-199.
 
 ### Internal
+
+- **The hub worktree-removal check now verifies `HEAD` against the live
+  `origin` branch tip** (hub item B-203). A single-branch clone can have
+  a fully pushed work branch with no local
+  `refs/remotes/origin/<branch>`; the old `--remotes` walk called every
+  commit on that branch unpushed. The check in `HUB.md` now reads the
+  exact branch SHA from `ls-remote`, fails closed when the branch or
+  commit cannot be verified, and still reports genuinely unpushed
+  commits. It does not remove a worktree.
+
+- Hub claim, done, and help guidance explains coherent pull-request
+  batches. Related items held by the same claim-holder token may share
+  one lead worktree, implementation branch, and detailed report while
+  retaining per-ID claims, handoff refs, and linked workpads. A
+  substantial one-item capability is also ordinary; the one-item route
+  remains in force until the hub policy and member `AGENTS.md` adopt
+  batching.
+
+- `scripts/ci-attempt-history.py` reports failures hidden by successful
+  CI reruns using the Actions per-attempt endpoints. Counts explicitly
+  distinguish runs from attempts; a caller-supplied, known
+  failed-then-successful rerun checks API reach before JSON is emitted.
+  API, schema or control failures stop the read (hub B-229).
+
+- Hub queue lint rejects a narrow set of standalone present-tense queue
+  facts in paragraph/list starts outside generated blocks (B-209):
+  state, claimability and blockers. Historical, conditional and
+  attributed prose stays readable; generated blocks keep their existing
+  freshness check.
+
+- Hub queue lint checks landed records for every Python item named in
+  the mirror debt passages, including ports filed without a dependency
+  (B-394). R blockers remain excluded; existing window and follow-up
+  landings are recorded in the form the checker can read.
 
 - **The CI metasalmonpy checkout is excluded from R source tarballs**
   (hub item B-268). `.Rbuildignore` now omits `.metasalmonpy-sibling`,

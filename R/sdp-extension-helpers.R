@@ -36,10 +36,9 @@
     .ms_absolute_iri_shape(value) &
     !.ms_is_review_iri(value)
   web <- valid & grepl("^https?:", value, ignore.case = TRUE)
-  # No `perl = TRUE`: this must resolve `[[:space:]]` the same way
-  # `.ms_absolute_iri_shape()` above does, or an http IRI could clear the shape
-  # check and then be scored for its authority under a different definition of
-  # whitespace. See `R/iri-predicates.R` for why the engine is contractual.
+  # No `perl = TRUE`: keep the same TRE engine as the shape check above. The
+  # shared predicate already rejects the explicit Unicode whitespace that
+  # TRE's POSIX class misses under LC_CTYPE=C, before this authority check runs.
   valid[web] <- grepl(
     "^https?://[^/[:space:]]+",
     value[web],

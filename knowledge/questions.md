@@ -84,7 +84,7 @@ Seven-plus authenticated lookups over sixteen days is not transient. **Only you
 can send an outbound support request.** After the series resolves and a receipt
 is written, the recipe migrates — assign that an owner and a date then, or
 "after" becomes "never". **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
-**Superseded in part, 2026-09-26 (Q70):** the Fraser case is now rebuilt from
+**Superseded in part, 2026-09-26 (Q72):** the Fraser case is now rebuilt from
 scratch rather than migrated, so no migration waits on this series. Whether to
 send the support request, or rule the series abandoned, is still open.
 
@@ -464,50 +464,6 @@ this entry still owes the hub is one sentence: whether R2 needs any amendment
 for PSC *public* releases or was never engaged by them. It stays open here
 until Brett says so, for the reason Q65's note gives.)*
 
-### Q70 — Which sources should `find_terms()` search when a caller names a role and no sources?
-**Unblocks:** a difference neither register records. R's `find_terms()`
-searches one fixed set of four sources whatever the role, and metasalmonpy's
-searches `sources_for_role(role)`, so a direct unit search in R that names no
-sources never reaches QUDT. Inside `suggest_semantics()` the two agree,
-because R resolves omitted sources by role there. R's roxygen for
-`find_terms()` describes both behaviours, one under `role` and one under
-`sources`, so whichever way this goes, one of its two sentences is wrong today.
-Found by the run that rewrote a downstream plugin to call both packages at
-`v0.5.0`, and measured on both sides on 2026-09-25. **The measurements are in [`backlog.md`](backlog.md)** under
-*The 2026-09-25 plugin-thinning findings*, and are not restated here.
-**Recommendation, the filing's and not ruled:** R moves, and an omitted
-`sources` becomes the role's `sources_for_role()` list. R's `@param role`
-already promises that, R's own pipeline already does it, and a call with no
-role would search exactly what it searches today. The case the other way is
-real, which is why this is a question: it changes the default of an exported R
-function, and what an existing call that names a role and no sources returns.
-**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-70`.
-
-### Q71 — Which ontology should `fetch_salmon_ontology()` fetch by default, and what should it return when every URL fails and a copy is cached?
-**Unblocks:** two differences neither register records, and what replaces
-metasalmonpy's default URL, which no longer answers. (1) R's defaults fetch smn
-and metasalmonpy's fetch gcdfo, each with a fallback URL for its own ontology.
-(2) When every URL fails and a copy is cached, R returns the copy with a warning
-and metasalmonpy raises. Two defects in the same function were found beside
-these, and each is a pair: the default fallback is tried whatever `url` a caller
-names (`B-333` and `B-334`), and every fetch is cached under one file name,
-whatever its `url` or representation (`B-335` and `B-336`). Both are defects under any ruling here. Found by the
-same run as Q70, and measured on both sides on 2026-09-25.
-**The measurements are in [`backlog.md`](backlog.md)** under *The 2026-09-25
-plugin-thinning findings*, and are not restated here.
-**Recommendation, the filing's and not ruled:** on (1), metasalmonpy moves to
-smn. Its default has to change anyway; smn is the ontology both packages search
-first and rank above gcdfo; and it is the one R's documentation names. The case
-the other way: metasalmonpy's bare call gets gcdfo today, which is what its
-documentation promises, so the smaller change is a live gcdfo URL and a pair of
-register rows. On (2), R moves to raising. R returns a copy of any age as an
-ordinary value, with only a warning, which is a failure read as a success, the
-thing `find_terms()` refuses to do with its own cache; and R's documentation
-promises no fallback. The case the other way: a user who has fetched once can
-keep working offline in R and cannot in metasalmonpy, whose own module
-docstring names offline work as a purpose of its cache.
-**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-71`.
-
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
@@ -717,27 +673,23 @@ Read it as exactly that and no wider: gcdfo is **not** de-prioritised in full an
 and proceeds; everything else in gcdfo stays de-prioritised, and
 `psc-salmon-vocabularies` stays fully de-prioritised.
 
-**The subset, as far as the cards know it today, is one item: PFMA subareas.**
-The gold standard's `AREA` column holds `29F`, `29G`, `29J`, `29K` — Subareas,
-which gcdfo PR #86 deliberately did not mint (it minted the 48 Areas and said so
-in a `skos:scopeNote`). Q8 sends subareas to gcdfo, so that mint **is** the
-carve-out. Nothing else in the example needs gcdfo work: `SPECIES` goes to an
-external taxonomy under Q8, and the other two unmapped code columns were
-metasalmon wiring defects already fixed in the development version
-(backlog **#101** the `ESTIMATE_CLASSIFICATION` crosswalk, **#102** the
-enumeration crosswalk `create_sdp()` did not use).
+**The former example of that subset was wrong.** The gold standard's `AREA`
+values `29F`, `29G`, `29J` and `29K` are DFO sub-district codes according to the
+[NuSEDS data dictionary](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Data_Dictionary_NuSEDS_EN.csv)
+and its [sub-district map](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Map%20of%20Areas.pdf).
+PFMA Subareas are numbered `29-1`, `29-2` and so on under the
+[Regulations](https://laws-lois.justice.gc.ca/eng/regulations/SOR-2007-77/FullText.html).
+Q8 still sends actual PFMA Subareas to `gcdfo`; it does not establish that this
+`AREA` column needs them. `SPECIES` still goes to an external taxonomy under Q8.
 
-**What is genuinely a next step, with an owner.** The ruling fixes *what class*
-of term is carved out; it does not fix the **mint scope** — the four Subareas the
-example actually holds, or all 604 of SOR/2007-77 Schedule 2. That is the next
-decision, and it is a vocabulary-completeness call rather than a priority one.
-**Owner:** [S12](sequences/s12-fraser-coho-gold-standard.md) states the need and
-holds the evidence; [S9 step 7](sequences/s9-ontology-alignment.md) routes the
-request into gcdfo through `detect_semantic_term_gaps()` →
-`render_ontology_term_request()` → `submit_term_request_issues()`; the carve-out
-itself is recorded in the [roadmap](roadmap.md)'s active sequencing constraints.
-Note **#97**: that detector is blind to a zero-candidate search, which is the
-shape this gap has, so filing it today is manual work.
+**What remains open, with an owner.** The
+[commons gap card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/main/concepts/nuseds-area-is-a-subdistrict.md)
+records the missing DFO sub-district term and its sources. Brett and
+[S12](sequences/s12-fraser-coho-gold-standard.md) must appraise what term, if
+any, the gold standard needs from `gcdfo`; Q5 alone does not choose a mint.
+[S9 step 7](sequences/s9-ontology-alignment.md) supplies the term-request
+route once that need is established. Note **#97**: its detector is blind to a
+zero-candidate search, so a request in that case needs manual handling today.
 
 **Recorded in:** [roadmap](roadmap.md) (active sequencing constraints),
 [S12](sequences/s12-fraser-coho-gold-standard.md), and the PFMA section of the
@@ -1957,7 +1909,11 @@ work. Admitting the plugin would be a membership ruling.
 **Owner:** [S14](sequences/s14-salmon-science-foundry.md), whose execplan the
 Foundry plan is.
 
-### Q70 — Is PSC data that is already published online in scope, and is the Fraser case migrated or rebuilt? — ANSWERED 2026-09-26 (Brett)
+### Q72 — Is PSC data that is already published online in scope, and is the Fraser case migrated or rebuilt? — ANSWERED 2026-09-26 (Brett)
+
+*(Recorded as Q70 on 2026-09-26 by pull request 205 and renumbered Q72 the same
+day, because Q70 and Q71 were already open, filed by pull request 189, which
+merged first. The number moved in the S13 card with it.)*
 
 **Ruling:** *"PSC data is back in scope as long as its already published online
 like the Fraser Sockeye Recruit dataset."* And: *"Rather than migrating why dont
@@ -1978,3 +1934,86 @@ migration clause lapses with it; the support request itself is still open.
 **Where it is recorded:** the [S13](sequences/s13-fraser-recruits-case-study.md)
 card, and the `retires_when` of `S-13` and `Q-13`, all corrected in the change
 that recorded this ruling. **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
+
+### Q70 — Which sources should `find_terms()` search when a caller names a role and no sources? — ANSWERED 2026-09-26 (Brett)
+
+**Ruling:** *"Q70: R moves."* — Brett, 2026-09-26, in chat, taking the filing's
+recommendation.
+
+**What it changes:** R's `find_terms()` searches the role's `sources_for_role()`
+list when a caller names a role and passes no sources, as metasalmonpy does, and
+a call with no role searches what it searches today. That changes the default of
+an exported R function, so its pull request is Brett's to merge. The
+implementing item is `B-420`; metasalmonpy owes nothing. `B-421` converges the
+two packages on how a source list they are given is normalised, which the B-327
+port found beside this.
+
+**As filed:**
+**Unblocks:** a difference neither register records. R's `find_terms()`
+searches one fixed set of four sources whatever the role, and metasalmonpy's
+searches `sources_for_role(role)`, so a direct unit search in R that names no
+sources never reaches QUDT. Inside `suggest_semantics()` the two agree,
+because R resolves omitted sources by role there. R's roxygen for
+`find_terms()` describes both behaviours, one under `role` and one under
+`sources`, so whichever way this goes, one of its two sentences is wrong today.
+Found by the run that rewrote a downstream plugin to call both packages at
+`v0.5.0`, and measured on both sides on 2026-09-25. **The measurements are in [`backlog.md`](backlog.md)** under
+*The 2026-09-25 plugin-thinning findings*, and are not restated here.
+**Recommendation, the filing's and not ruled:** R moves, and an omitted
+`sources` becomes the role's `sources_for_role()` list. R's `@param role`
+already promises that, R's own pipeline already does it, and a call with no
+role would search exactly what it searches today. The case the other way is
+real, which is why this is a question: it changes the default of an exported R
+function, and what an existing call that names a role and no sources returns.
+**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-70`.
+
+### Q71 — Which ontology should `fetch_salmon_ontology()` fetch by default, and what should it return when every URL fails and a copy is cached? — ANSWERED 2026-09-26; CLARIFIED 2026-10-03 (Brett)
+
+**Earlier ruling, retained as provenance:** *"Q71: smn should be the default
+starting point so python changes and make R error on a cached copy thats
+stale."* — Brett, 2026-09-26, in chat. PR209 and PR211 interpreted the second
+part as an error after every failed refresh, even with a matching cache. That
+interpretation is superseded by the clarification below; failed refresh alone
+does not establish that a matching cached body is stale.
+
+**Clarification:** *"For Q71, if the cache matches the requested ontology and
+refresh fails, continue with a warning. Do not use unrelated, mismatching or
+otherwise known-stale caches."* — Brett, 2026-10-03, in chat.
+
+**What it changes:** (1) metasalmonpy's `fetch_salmon_ontology()` fetches smn by
+default, from metasalmon's default URL with the fallback that goes with it
+(`B-423`); this part is unchanged. (2) R returns an eligible body cached for an
+attempted URL and the requested `Accept` with a warning when refresh fails
+(`B-422`). Unrelated, unqualified legacy, mismatching or otherwise known-stale
+bodies are ineligible. A replacement response or a contradictory validator
+makes the old representation ineligible on subsequent calls as well. This
+ruling adds no freshness interval: inability to refresh by itself is not
+staleness. The clarification requires reconciling the existing PR211 with this
+behavior, preserving the `B-333`/`B-335` tests-only and fix checkpoints and
+existing claims. The related
+Python work stays in the existing ontology-fetch stream.
+
+**As filed, retained as history rather than the current ruling:**
+**Unblocks:** two differences neither register records, and what replaces
+metasalmonpy's default URL, which no longer answers. (1) R's defaults fetch smn
+and metasalmonpy's fetch gcdfo, each with a fallback URL for its own ontology.
+(2) When every URL fails and a copy is cached, R returns the copy with a warning
+and metasalmonpy raises. Two defects in the same function were found beside
+these, and each is a pair: the default fallback is tried whatever `url` a caller
+names (`B-333` and `B-334`), and every fetch is cached under one file name,
+whatever its `url` or representation (`B-335` and `B-336`). Both are defects under any ruling here. Found by the
+same run as Q70, and measured on both sides on 2026-09-25.
+**The measurements are in [`backlog.md`](backlog.md)** under *The 2026-09-25
+plugin-thinning findings*, and are not restated here.
+**Recommendation, the filing's and not ruled:** on (1), metasalmonpy moves to
+smn. Its default has to change anyway; smn is the ontology both packages search
+first and rank above gcdfo; and it is the one R's documentation names. The case
+the other way: metasalmonpy's bare call gets gcdfo today, which is what its
+documentation promises, so the smaller change is a live gcdfo URL and a pair of
+register rows. On (2), R moves to raising. R returns a copy of any age as an
+ordinary value, with only a warning, which is a failure read as a success, the
+thing `find_terms()` refuses to do with its own cache; and R's documentation
+promises no fallback. The case the other way: a user who has fetched once can
+keep working offline in R and cannot in metasalmonpy, whose own module
+docstring names offline work as a purpose of its cache.
+**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-71`.

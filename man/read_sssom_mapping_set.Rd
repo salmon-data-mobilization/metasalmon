@@ -26,13 +26,18 @@ assignments are refused because they belong in separate SDP semantic
 artifacts.
 }
 \details{
-Every CURIE prefix must be declared in \code{curie_map} except the SSSOM
+CURIE prefixes in identifier/reference fields must be declared in \code{curie_map}
+except the SSSOM
 built-in prefixes (\code{owl}, \code{rdf}, \code{rdfs}, \code{semapv}, \code{skos}, \code{sssom}, \code{xsd}
 and \code{linkml}), which the SSSOM specification lets a file omit, so a canonical
 SSSOM/TSV file that leaves them out is read. A \code{curie_map} that does declare
 a built-in prefix must give it the expansion the specification fixes for it
 (for example \verb{http://www.w3.org/2004/02/skos/core#} for \code{skos}); any other
 expansion is refused.
+
+\code{predicate_type} uses SSSOM's entity-type enum, excluding the values the
+specification forbids for predicates. \code{subject_category}, \code{object_category}
+and \code{similarity_measure} are text, so their values need no CURIE declaration.
 }
 \examples{
 # Illustrative mapping only; curate real assertions before publication.

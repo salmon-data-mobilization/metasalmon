@@ -226,6 +226,9 @@ test_that("max_candidates truncates the shortlist", {
 })
 
 test_that("print() emits exactly the rendered lines", {
+  # R's cat() escapes box-drawing characters under a non-UTF-8 LC_CTYPE,
+  # while the renderer returns the Unicode characters themselves.
+  skip_if(!isTRUE(l10n_info()[["UTF-8"]]), "Exact Unicode print output requires a UTF-8 locale")
   review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
   printed <- capture.output(print(review))
   expect_equal(printed, .ms_review_render_lines(review, object_name = "review"))

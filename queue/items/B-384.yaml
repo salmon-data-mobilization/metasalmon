@@ -1,7 +1,7 @@
 id: B-384
 kind: defect
 title: 'metasalmon''s validator phrase anchor fails on a multi-line context chunk whose later lines contain an underscore or hyphen'
-state: ready
+state: done
 claimable: true
 repo: metasalmon
 venue: claude-code

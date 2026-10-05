@@ -629,7 +629,9 @@
     perl = TRUE
   )
   leading_token <- sub(
-    "^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$",
+    # Dot-all consumes later lines so sub() returns the leading token, rather
+    # than the whole chunk when a later line contains an underscore or hyphen.
+    "(?s)^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$",
     "\\1",
     unmarked_text,
     perl = TRUE

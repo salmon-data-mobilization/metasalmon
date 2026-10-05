@@ -1,7 +1,7 @@
 id: B-129
 kind: defect
 title: Write the R semantic-review vignette for the 0.5.0 flow and declare tidyr in Suggests
-state: ready
+state: done
 claimable: true
 repo: metasalmon
 venue: claude-code
