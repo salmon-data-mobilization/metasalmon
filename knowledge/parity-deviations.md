@@ -586,32 +586,31 @@ yields no gap row. Both packages still reserve `user` in the `source` column,
 so a caller's own `search_fn` that labels a candidate `user` loses it in both;
 that is a pair of its own, **B-249** and **B-250**, not part of this port.
 
-**The development version after 0.5.0 adds to what the port owes (2026-09-24):
-a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
+**The development version after 0.5.0 added a `REVIEW:` marker scan;
+B-177 completes its R file scope under Brett's ruling.**
 `review_metadata()` now lists a draft `REVIEW:` IRI wherever
 `validate_salmon_datapackage(require_iris = TRUE)` refuses one (hub item
-**B-174**, pull request #144). That means any declared `*_iri` field of
-`tables.csv` and the six semantic IRI fields of `column_dictionary.csv`. This is
-the R half of metasalmonpy #28's `_is_unresolved_iri()`, and it is one file
-short. metasalmonpy's `_REVIEW_IRI_FILES` also lists `codes.csv`. R's scan does
-not, because R's strict validation does not yet refuse a marker there and the
-scan lists exactly what the validator refuses. The state is reachable only by
-hand-editing: no producer in either package writes a marker into `codes.csv`.
+**B-174**, pull request #144). At B-174's landing, that meant declared `*_iri`
+fields of `tables.csv` and the six semantic IRI fields of
+`column_dictionary.csv`. R's strict validation still passed a marker in
+`codes.csv` or `dataset.csv`, so its scan omitted both while metasalmonpy's
+`_REVIEW_IRI_FILES` already listed `codes.csv`. The state is reachable only by
+hand-editing or third-party production: no producer in either package writes
+a marker into those two files.
 
 **Brett ruled the direction on 2026-09-23: "Yes; Refuse it for the strict
-validation."** Strict validation will refuse a `codes.csv` marker. metasalmonpy's
-scan therefore already gives the ruled answer, and R is the side that moves.
-**B-177** makes R's strict validation sweep all four metadata files and extends
-the scan's file list in the same change; its card records the ruling, from the
-queue sweep of 2026-09-23 (pull request 150). The ruling covers both
+validation."** With **B-177**, R strict validation sweeps all four metadata
+files, and `review_metadata()` reports markers in the same declared IRI fields;
+the interim two-file scan list has been retired. Its card records the ruling
+from the queue sweep of 2026-09-23 (pull request 150). The ruling covers both
 implementations, and the Python side owes a widening too. Its strict validation
 does not yet refuse a marker in `codes.csv` or `dataset.csv`, and its EDH gate
 and scan both leave out `dataset.csv`. That half was filed in the same sweep as
 **B-230**, and each item names the other.
 
-**It is owed as a port, not a register row**, for the reason this section gives
-throughout. A ruled direction with an owner on each side is lag being closed,
-not a difference anyone wants, and once B-177 and B-230 land the two
+**The Python half remains owed as a port, not a register row**, for the reason
+this section gives throughout. A ruled direction with an owner on each side is
+lag being closed, not a difference anyone wants, and once B-230 lands the two
 implementations behave alike. No numbered row was added, so
 `scripts/check-parity-registers.py` has nothing new to compare.
 

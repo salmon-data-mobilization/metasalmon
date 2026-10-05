@@ -560,7 +560,7 @@ mark_metadata_field <- function(pkg, file_name, field, row, value) {
 # Refusal for any other reason is an error here rather than a `TRUE`, so a
 # fixture that broke for an unrelated reason cannot pass for a refused marker.
 # The two phrases are the two sweeps: `.ms_collect_review_iri_issues()` for
-# `tables.csv` and `validate_dictionary()` for the dictionary.
+# dataset, tables and codes; `validate_dictionary()` for the dictionary.
 refuses_review_marker <- function(pkg) {
   outcome <- tryCatch(
     {
@@ -584,11 +584,10 @@ test_that("review_metadata() reports a REVIEW: IRI exactly where strict validati
   pkg <- filled_coded_package()
   mark <- "REVIEW:https://example.org/Undecided"
 
-  # Every expectation is written out rather than read from
-  # `.ms_review_iri_files()`: a test comparing the scan against the list the
-  # scan is built from passes for any value of that list, which is no test at
-  # all. `refused` is what `validate_salmon_datapackage(require_iris = TRUE)`
-  # does with a marker in that field; `reported` is whether the scan lists it.
+  # Every expectation is written out rather than read from the metadata files
+  # the scan visits: a test comparing the scan against its own input list would
+  # pass if that list omitted a file. `refused` is what strict validation does
+  # with a marker in that field; `reported` is whether the scan lists it.
   expected <- tibble::tribble(
     ~file,                   ~field,                     ~refused, ~reported,
     "tables.csv",            "observation_unit_iri",     TRUE,     TRUE,
@@ -600,14 +599,11 @@ test_that("review_metadata() reports a REVIEW: IRI exactly where strict validati
     "column_dictionary.csv", "unit_iri",                 TRUE,     TRUE,
     "column_dictionary.csv", "constraint_iri",           TRUE,     TRUE,
     "column_dictionary.csv", "statistical_modifier_iri", TRUE,     TRUE,
-    # Strict validation does not sweep these two files for the marker (hub
-    # item B-177), so reporting one would claim a block that does not exist.
-    # If one of these rows starts failing because strict validation now
-    # refuses the marker, that is B-177 landing: move `.ms_review_iri_files()`
-    # with it and flip both columns, rather than deleting the row.
-    "codes.csv",             "term_iri",                 FALSE,    FALSE,
-    "codes.csv",             "vocabulary_iri",           FALSE,    FALSE,
-    "dataset.csv",           "protocol_iri",             FALSE,    FALSE
+    # Brett's B-177 ruling makes these three markers strict-validation blocks
+    # too; the review scan must list every one it refuses.
+    "codes.csv",             "term_iri",                 TRUE,     TRUE,
+    "codes.csv",             "vocabulary_iri",           TRUE,     TRUE,
+    "dataset.csv",           "protocol_iri",             TRUE,     TRUE
   )
 
   # Coverage comes from the schema, so a newly declared IRI field fails here
@@ -897,12 +893,10 @@ test_that("the REVIEW: marker has its own predicate, and the prose ones stay nar
     c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE)
   )
   # Widening either prose test instead would have pushed the marker into
-  # strict validation's placeholder sweep, which would then refuse it as
-  # prose -- in `dataset.csv` and `codes.csv` too, which strict validation does
-  # not sweep for the marker today. That scope is interim rather than chosen:
-  # hub item B-177 widens it, and moves `.ms_review_iri_files()` in the same
-  # change. The marker would also have reached the hint `.ms_metadata_gap_row()`
-  # builds from a value's own text.
+  # strict validation's placeholder sweep, duplicating the dedicated IRI
+  # refusal that now covers all four metadata files. The marker would also
+  # have reached the hint `.ms_metadata_gap_row()` builds from a value's own
+  # text.
   expect_identical(
     .ms_is_unfilled_metadata(values),
     c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)

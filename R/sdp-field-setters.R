@@ -70,21 +70,21 @@
 # the prose test above cannot see -- the value is non-blank, and it is not one
 # of the three `MISSING ...:` / `REVIEW REQUIRED:` spellings. Strict validation
 # does see it: `.ms_collect_review_iri_issues()` refuses one in any `*_iri`
-# column of `tables.csv`, and `validate_dictionary(require_iris = TRUE)` in any
-# of the dictionary's six IRI fields. The marker is matched by
-# `.ms_is_review_iri()`, the same pattern both of those sweeps use.
+# column of `dataset.csv`, `tables.csv` and `codes.csv`, and
+# `validate_dictionary(require_iris = TRUE)` does so in the dictionary's six
+# IRI fields. The marker is matched by `.ms_is_review_iri()`, the same pattern
+# both of those sweeps use.
 #
 # A SECOND test rather than a wider `.ms_is_review_placeholder()`. That one
 # names only the three prose spellings, and callers across the package depend
 # on its narrowness. Widened, strict validation's placeholder sweep
 # (`.ms_collect_review_placeholder_issues()`) would refuse the marker as if it
-# were prose: a second refusal in the two files the marker sweeps already
-# cover, and a first one in `dataset.csv` and `codes.csv` that would arrive by
-# accident, through the wrong channel. Refusing a `codes.csv` marker is ruled
-# (Brett, 2026-09-23), and hub item B-177 implements it on purpose. And
-# `.ms_metadata_gap_row()` would take an IRI's own text for a usable hint. The
-# marker has its own reporting path, as the placement check in
-# `R/package-helpers.R` says where it excludes one. Nor is
+# were prose and duplicate the dedicated refusal in every file. Refusing a
+# `codes.csv` marker was ruled by Brett on 2026-09-23 and implemented by
+# B-177 through the IRI reporting path, not the prose predicate. Widening the
+# predicate would also make `.ms_metadata_gap_row()` take an IRI's own text
+# for a usable hint. The marker has its own reporting path, as the placement
+# check in `R/package-helpers.R` says where it excludes one. Nor is
 # `.ms_review_is_unfilled()` (`R/review-console.R`) a substitute: it is
 # IRI-aware and blind to the prose spellings, so putting it on this path would
 # trade one half of the defect for the other.
@@ -212,24 +212,9 @@
   c("term_iri", "property_iri", "entity_iri", "unit_iri")
 }
 
-# The metadata files in which the scan reports an unresolved `REVIEW:` IRI:
-# exactly the files `validate_salmon_datapackage(require_iris = TRUE)` refuses
-# one in. Measured rather than assumed, because the package's gates do not all
-# sweep the same files: a marker in `codes.csv` or `dataset.csv` passes strict
-# validation, while the EDH XML gate refuses it (hub item B-177). Reporting one
-# of those here would make the scan claim a block that does not exist, the same
-# class of error as missing one, pointing the other way.
-#
-# metasalmonpy's `_REVIEW_IRI_FILES` also lists `codes.csv`, on purpose,
-# because its EDH gate refuses a marker there. That is the one file where the
-# two scans disagree. Brett ruled on 2026-09-23 that strict validation refuses
-# a `codes.csv` marker, so metasalmonpy already gives the ruled answer and this
-# list is the side that moves: B-177 makes R's validator refuse the marker and
-# extends this list in the same change. Until then the difference is a port
-# still owed, not a deliberate deviation, and `knowledge/parity-deviations.md`
-# tracks it in its port section.
-#
-# Which fields within these files is a second question, and it has two tests.
+# The scan visits every metadata file the schema declares, as strict validation
+# now does for `REVIEW:` markers (B-177). Which fields within those files it
+# visits is a separate question, and it has two tests.
 # The field must be SCHEMA-DECLARED, because every row the scan reports prints
 # a runnable `set_sdp_*()` call and the setters refuse an undeclared field. An
 # undeclared `*_iri` column hand-added to `tables.csv` is swept by the
@@ -239,21 +224,12 @@
 # as its name ending in `_iri`; `.ms_review_iri_field_is_swept()` below says
 # where the two differ.
 #
-# Retires when strict validation sweeps every metadata file for the marker
-# (B-177), at which point this list is all four files and should be deleted
-# rather than maintained. Until then the validator-driven test in
-# `tests/testthat/test-sdp-field-setters.R` fails if strict validation changes
-# what it sweeps and this list does not move with it.
-.ms_review_iri_files <- function() {
-  c("tables.csv", "column_dictionary.csv")
-}
-
 # Whether strict validation refuses a `REVIEW:` marker in this field of a file
-# in `.ms_review_iri_files()`. The two sweeps choose their fields differently,
-# so the answer depends on the file:
+# that `review_metadata()` scans. The two sweeps choose their fields
+# differently, so the answer depends on the file:
 #
 # * `.ms_collect_review_iri_issues()` takes every `*_iri` column of
-#   `tables.csv`;
+#   `dataset.csv`, `tables.csv` and `codes.csv`;
 # * `validate_dictionary()` takes the fixed list `.ms_dictionary_iri_fields()`,
 #   whatever the schema declares.
 #
@@ -265,7 +241,7 @@
 #
 # Retires when every file's sweep takes the same fields. That happens if
 # strict validation reads the dictionary's IRI fields from the schema, which
-# retires `.ms_dictionary_iri_fields()` too, or if B-177 changes both sweeps.
+# retires `.ms_dictionary_iri_fields()` too.
 .ms_review_iri_field_is_swept <- function(file_name, field) {
   if (identical(file_name, "column_dictionary.csv")) {
     return(field %in% .ms_dictionary_iri_fields())
@@ -439,8 +415,7 @@
       # it also reaches `constraint_iri`, `statistical_modifier_iri` and
       # `tables.csv`'s method and protocol placements, which neither of those
       # branches visits.
-      if (file_name %in% .ms_review_iri_files() &&
-          .ms_review_iri_field_is_swept(file_name, field)) {
+      if (.ms_review_iri_field_is_swept(file_name, field)) {
         unresolved_iri <- if (identical(file_name, "column_dictionary.csv") &&
                               identical(field, "constraint_iri")) {
           .ms_constraint_iri_has_review_marker(value)
