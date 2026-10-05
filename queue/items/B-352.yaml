@@ -1,8 +1,8 @@
 id: B-352
 kind: defect
 title: 'read_sssom_mapping_set() drops a YAML tag from a metadata value and returns the rest, where the ruled behaviour is to refuse'
-state: icebox
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S9

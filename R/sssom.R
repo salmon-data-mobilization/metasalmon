@@ -259,9 +259,103 @@
   parts
 }
 
+.ms_sssom_metadata_has_yaml_tag <- function(yaml_text) {
+  # Retires when the YAML parser offers a native reject-explicit-tags mode
+  # covering local, standard and verbatim tags while the public controls below
+  # keep passing without this probe.
+  if (!grepl("!", yaml_text, fixed = TRUE)) {
+    return(FALSE)
+  }
+
+  # Give every possible tag token a private name in a disposable copy, then
+  # let libyaml decide which names are actual node properties. Changing only
+  # suffix characters or handle bangs leaves quotes and flow delimiters in
+  # place; ordinary exclamation text cannot shift the parse boundaries.
+  # Registering handlers for the private names also avoids built-in handlers
+  # such as `str`, which run on implicit values that have no explicit tag.
+  probe_lines <- strsplit(yaml_text, "\n", fixed = TRUE)[[1]]
+  # A directive can rebind the primary `!` handle, so omit it only from the
+  # disposable parse. The normal read below still sees the original bytes.
+  probe_lines[grepl("^%TAG[[:space:]]", probe_lines)] <- ""
+  probe <- paste(probe_lines, collapse = "\n")
+  tag_token <- "!<[^>]*>|!+[^[:space:]\\[\\]{},\"\\\\]+|!"
+  token_at_bang <- paste0("(?=(", tag_token, "))")
+  locations <- gregexpr(token_at_bang, probe, perl = TRUE)[[1]]
+  if (identical(locations[[1]], -1L)) {
+    return(FALSE)
+  }
+  token_starts <- attr(locations, "capture.start")[, 1L]
+  token_lengths <- attr(locations, "capture.length")[, 1L]
+  chars <- strsplit(probe, "", fixed = TRUE)[[1]]
+  for (candidate_id in seq_along(locations)) {
+    position <- locations[[candidate_id]]
+    if (chars[[position]] != "!") {
+      next
+    }
+    token <- substr(
+      probe,
+      token_starts[[candidate_id]],
+      token_starts[[candidate_id]] + token_lengths[[candidate_id]] - 1L
+    )
+    if (startsWith(token, "!<") && endsWith(token, ">") && nchar(token) > 3L) {
+      chars[[position + 2L]] <- "x"
+    } else if (grepl("!", substring(token, 2L), fixed = TRUE)) {
+      # Convert a standard or custom handle to a local tag. Internal `!`
+      # bytes in a literal are harmless and will never call the handler.
+      bangs <- which(strsplit(token, "", fixed = TRUE)[[1]] == "!")[-1L]
+      chars[position + bangs - 1L] <- "x"
+    } else if (nchar(token) > 1L &&
+               grepl("^[A-Za-z0-9]", substring(token, 2L))) {
+      chars[[position + 1L]] <- "x"
+    } else if (nchar(token) == 1L) {
+      # A bare `!` is itself an explicit non-specific tag at node position.
+      chars[[position]] <- "!x"
+    }
+  }
+  probe <- paste(chars, collapse = "")
+  private_locations <- gregexpr(token_at_bang, probe, perl = TRUE)[[1]]
+  private_starts <- attr(private_locations, "capture.start")[, 1L]
+  private_lengths <- attr(private_locations, "capture.length")[, 1L]
+  private_names <- vapply(seq_along(private_locations), function(candidate_id) {
+    token <- substr(
+      probe,
+      private_starts[[candidate_id]],
+      private_starts[[candidate_id]] + private_lengths[[candidate_id]] - 1L
+    )
+    if (startsWith(token, "!<") && endsWith(token, ">")) {
+      substring(token, 3L, nchar(token) - 1L)
+    } else {
+      substring(token, 2L)
+    }
+  }, character(1), USE.NAMES = FALSE)
+  # libyaml percent-decodes tag suffixes before handing their names to R.
+  # The handler keys must use those decoded names, including a verbatim URI.
+  private_names <- utils::URLdecode(private_names)
+
+  found <- FALSE
+  handler <- function(value) {
+    found <<- TRUE
+    value
+  }
+  handlers <- stats::setNames(
+    rep(list(handler), length(unique(private_names))),
+    unique(private_names)
+  )
+  suppressWarnings(tryCatch(
+    yaml::yaml.load(probe, handlers = handlers, eval.expr = FALSE),
+    error = function(e) NULL
+  ))
+  found
+}
+
 .ms_sssom_parse_metadata <- function(comment_lines, path) {
   yaml_lines <- sub("^# ?", "", comment_lines)
   yaml_text <- paste(yaml_lines, collapse = "\n")
+  if (.ms_sssom_metadata_has_yaml_tag(yaml_text)) {
+    .ms_sssom_abort(
+      "Embedded SSSOM metadata in {.file {path}} is not valid YAML: explicit YAML tags are not supported."
+    )
+  }
   metadata <- tryCatch(
     # Never evaluate `!expr`: this block is collaborator-authored and reached
     # by routine validation, and yaml's default follows `getOption("yaml.eval.expr")`
@@ -492,16 +586,39 @@
       )
     }
   }
+  if (!is.null(metadata$predicate_type)) {
+    .ms_sssom_validate_predicate_type(metadata$predicate_type)
+  }
+  invisible(TRUE)
+}
+
+# SSSOM 1.1's entity_type_enum, excluding the two values whose descriptions
+# explicitly forbid use in predicate_type: rdfs literal and composed entity
+# expression. Source snapshot, checked 2026-10-01:
+# https://github.com/mapping-commons/sssom/blob/667d3c579d92ad2e1a480503625eeef1e6af8e6d/src/sssom_schema/schema/sssom_schema.yaml
+# Update this set when this profile adopts a schema with a changed enum.
+.ms_sssom_predicate_types <- c(
+  "owl class", "owl object property", "owl data property",
+  "owl annotation property", "owl named individual", "skos concept",
+  "rdfs resource", "rdfs class", "rdfs datatype", "rdf property"
+)
+
+.ms_sssom_validate_predicate_type <- function(value, row = NULL) {
+  # Optional empty slots remain empty; a supplied value must name the enum.
+  if (!is.na(value) && nzchar(value) && !value %in% .ms_sssom_predicate_types) {
+    where <- if (is.null(row)) "" else paste0(" in row ", row)
+    .ms_sssom_abort(
+      "SSSOM predicate_type{where} must be an allowed SSSOM entity_type_enum value."
+    )
+  }
   invisible(TRUE)
 }
 
 .ms_sssom_reference_columns <- c(
   "record_id",
   "subject_id",
-  "subject_category",
   "predicate_id",
   "object_id",
-  "object_category",
   "mapping_justification",
   "author_id",
   "reviewer_id",
@@ -509,14 +626,12 @@
   "license",
   "subject_source",
   "object_source",
-  "predicate_type",
   "mapping_provider",
   "mapping_source",
   "mapping_tool_id",
   "curation_rule",
   "subject_match_field",
   "object_match_field",
-  "similarity_measure",
   "see_also",
   "issue_tracker_item"
 )
@@ -538,6 +653,12 @@
       .ms_sssom_abort(
         "SSSOM {.field {field}} cannot declare raw literal assignments in this SDP profile."
       )
+    }
+  }
+
+  if ("predicate_type" %in% names(mappings)) {
+    for (row in seq_len(nrow(mappings))) {
+      .ms_sssom_validate_predicate_type(mappings$predicate_type[[row]], row)
     }
   }
 
@@ -711,13 +832,18 @@
 #' assignments are refused because they belong in separate SDP semantic
 #' artifacts.
 #'
-#' Every CURIE prefix must be declared in `curie_map` except the SSSOM
+#' CURIE prefixes in identifier/reference fields must be declared in `curie_map`
+#' except the SSSOM
 #' built-in prefixes (`owl`, `rdf`, `rdfs`, `semapv`, `skos`, `sssom`, `xsd`
 #' and `linkml`), which the SSSOM specification lets a file omit, so a canonical
 #' SSSOM/TSV file that leaves them out is read. A `curie_map` that does declare
 #' a built-in prefix must give it the expansion the specification fixes for it
 #' (for example `http://www.w3.org/2004/02/skos/core#` for `skos`); any other
 #' expansion is refused.
+#'
+#' `predicate_type` uses SSSOM's entity-type enum, excluding the values the
+#' specification forbids for predicates. `subject_category`, `object_category`
+#' and `similarity_measure` are text, so their values need no CURIE declaration.
 #'
 #' @param path Path to one `.sssom.tsv` file.
 #' @param validate Logical; validate metadata, CURIEs, mappings, and no-match

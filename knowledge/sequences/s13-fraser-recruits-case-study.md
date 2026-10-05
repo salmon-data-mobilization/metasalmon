@@ -30,7 +30,7 @@ The recipe is `fraser-sockeye-stock-recruit-detailed` — the Fraser sockeye
 stock-recruit case study, "Fraser Recruits" in conversation. It is the only
 place anything built by this package has been deposited to a live repository.
 
-**Rebuilt from scratch, 2026-09-26 (Brett's rulings, recorded as Q70 in
+**Rebuilt from scratch, 2026-09-26 (Brett's rulings, recorded as Q72 in
 [questions](../questions.md)).** PSC data is in scope as long as PSC has already published it
 online. The Fraser sockeye stock-recruit case is rebuilt from scratch from
 PSC's public files (the Production Dataset, release 2026.05.07) rather than
@@ -100,7 +100,7 @@ the bound vocabulary, `write_sdp_semantic_closure()` is the supported route.
 
 ## Requirement 2 — a migration path off sdp-0.2.0 and metasalmon 0.1.8
 
-**Superseded 2026-09-26 (Brett, Q70).** The hub no longer owes this migration:
+**Superseded 2026-09-26 (Brett, Q72).** The hub no longer owes this migration:
 the case is rebuilt from scratch from PSC's public files with current metasalmon
 (the dated paragraph above), so nothing in this section needs scheduling. The
 section stays as the record of what the migration would have crossed.
@@ -143,7 +143,7 @@ vocabulary host turns a publication step into an outage amplifier.
 
 ## The open KNB incident — read this before scheduling requirement 2
 
-*Since 2026-09-26 (Q70) there is no requirement 2 to schedule, and the rebuilt
+*Since 2026-09-26 (Q72) there is no requirement 2 to schedule, and the rebuilt
 case makes no deposit. The incident itself is still open (Q13), so the rest of
 this section still describes a live series.*
 

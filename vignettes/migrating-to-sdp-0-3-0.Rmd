@@ -93,7 +93,7 @@ Use this when every row of a table was produced the same way. A table of weir
 counts is the classic case: the weir is the method, and it applies to the whole
 table.
 
-```{r}
+```{r, purl = FALSE}
 tables <- readr::read_csv("weir-counts-sdp/metadata/tables.csv", na = "")
 
 tables$method_iri[tables$table_id == "escapement"] <-
@@ -124,14 +124,14 @@ not checked against the ontology.
 Put them on `tables.csv` when the protocol governs one table, and on
 `dataset.csv` when it governs the whole dataset.
 
-```{r}
+```{r, purl = FALSE}
 tables$protocol_iri[tables$table_id == "escapement"] <-
   "https://example.org/protocols/weir-2019"
 tables$protocol_citation[tables$table_id == "escapement"] <-
   "Salmon Program. 2019. Weir enumeration protocol v3.1."
 ```
 
-```{r}
+```{r, purl = FALSE}
 readr::write_csv(tables, "weir-counts-sdp/metadata/tables.csv", na = "")
 ```
 
@@ -151,7 +151,7 @@ Add the column to your data, describe it in the dictionary as a code column,
 and then give each code a definition in `metadata/codes.csv`, pointing
 `term_iri` at the shared-vocabulary procedure it means.
 
-```{r}
+```{r, purl = FALSE}
 # 1. The method becomes a column in the data itself.
 escapement <- readr::read_csv("weir-counts-sdp/data/escapement.csv", na = "")
 escapement$enumeration_method <- c("weir", "aerial", "weir")
@@ -208,7 +208,7 @@ requires adding a column to your data — a change only you can make correctly.
 If your method values come from NuSEDS, the bundled crosswalks give you a
 starting map from the legacy labels to canonical method families:
 
-```{r}
+```{r, purl = FALSE}
 nuseds_enumeration_method_crosswalk()
 nuseds_estimate_method_crosswalk()
 ```
@@ -237,7 +237,7 @@ When you do want candidates for the slot, `sources_for_role()` knows the role.
 `sources_for_role()` is a local lookup; `find_terms()` queries vocabulary
 services and needs a network connection.
 
-```{r}
+```{r, purl = FALSE}
 sources_for_role("statistical_modifier")
 
 find_terms("mean", role = "statistical_modifier")
@@ -257,7 +257,7 @@ the problem and run it again.
 
 ### Always Dry-Run First
 
-```{r}
+```{r, purl = FALSE}
 library(metasalmon)
 
 report <- migrate_sdp_methods("weir-counts-sdp", dry_run = TRUE)
@@ -277,7 +277,7 @@ First, write the legacy package: three columns, one measurement column carrying
 a dictionary `method_iri`, and a `metadata/methods.csv` registry describing that
 method.
 
-```{r}
+```{r, purl = FALSE}
 library(metasalmon)
 
 legacy_path <- file.path(tempdir(), "weir-counts-sdp")
@@ -350,7 +350,7 @@ readr::write_csv(
 
 Now preview the migration:
 
-```{r}
+```{r, purl = FALSE}
 report <- migrate_sdp_methods(legacy_path, dry_run = TRUE)
 ```
 
@@ -371,7 +371,7 @@ The report is also returned, invisibly, as a list with three parts: `tables`
 it will drop), and `registry` (the rows of the old `methods.csv`, so you can
 relocate their content).
 
-```{r}
+```{r, purl = FALSE}
 report$tables
 ```
 
@@ -382,7 +382,7 @@ report$tables
 1 escapement https://example.org/methods/weir-count spawner_count
 ```
 
-```{r}
+```{r, purl = FALSE}
 report$registry[c("method_label", "method_version", "citation")]
 ```
 
@@ -395,7 +395,7 @@ report$registry[c("method_label", "method_version", "citation")]
 
 The dry run agrees with what we intended, so run it for real:
 
-```{r}
+```{r, purl = FALSE}
 report <- migrate_sdp_methods(legacy_path)
 ```
 
@@ -408,7 +408,7 @@ The same report prints, followed by:
 
 Check the result. The method is now a property of the table:
 
-```{r}
+```{r, purl = FALSE}
 tables <- readr::read_csv(
   file.path(legacy_path, "metadata", "tables.csv"),
   show_col_types = FALSE, na = ""
@@ -425,7 +425,7 @@ tables[c("table_id", "method_iri", "protocol_iri", "protocol_citation")]
 
 The dictionary has lost `method_iri` and gained `statistical_modifier_iri`:
 
-```{r}
+```{r, purl = FALSE}
 names(readr::read_csv(
   file.path(legacy_path, "metadata", "column_dictionary.csv"),
   show_col_types = FALSE, na = ""
@@ -445,7 +445,7 @@ names(readr::read_csv(
 
 And the registry is gone:
 
-```{r}
+```{r, purl = FALSE}
 file.exists(file.path(legacy_path, "metadata", "methods.csv"))
 #> [1] FALSE
 ```
@@ -464,7 +464,7 @@ schema declares.
 
 ### Finally, Validate
 
-```{r}
+```{r, purl = FALSE}
 validate_salmon_datapackage(legacy_path, require_iris = FALSE)
 ```
 
@@ -608,7 +608,7 @@ The migration *reports* the registry rows rather than relocating their labels,
 and that report is the input here — the migrated dictionary no longer carries
 the registry's fields, so reading it back would find nothing to request.
 
-```{r}
+```{r, purl = FALSE}
 # `report$registry` is what migrate_sdp_methods() returned above.
 reviewed_dict <- read_salmon_datapackage(legacy_path)$dictionary
 
@@ -648,7 +648,7 @@ are the same procedure, differently written down — which is exactly what
 Take them from `report$registry` and place them by hand, deciding as you go
 whether the protocol governs one table or the whole dataset:
 
-```{r}
+```{r, purl = FALSE}
 report <- migrate_sdp_methods("weir-counts-sdp", dry_run = TRUE)
 
 report$registry[c("method_version", "protocol_iri", "citation")]

@@ -1407,7 +1407,7 @@ create_sdp <- function(
         }
         any(vapply(
           x[iri_cols],
-          function(col) any(grepl("^\\s*REVIEW\\s*:", as.character(col), ignore.case = TRUE), na.rm = TRUE),
+          function(col) any(.ms_is_review_iri(col)),
           logical(1)
         ))
       },
@@ -1678,7 +1678,7 @@ read_salmon_datapackage <- function(path) {
 
   issues <- purrr::map_dfr(iri_cols, function(field) {
     vals <- as.character(df[[field]])
-    rows <- which(!is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE))
+    rows <- which(.ms_is_review_iri(vals))
     if (length(rows) == 0) {
       return(tibble::tibble())
     }
@@ -1694,6 +1694,38 @@ read_salmon_datapackage <- function(path) {
   })
 
   issues
+}
+
+# The strict package gate follows the REVIEW-marker collector's *_iri sweep.
+# The historical table caller excludes method/protocol placements because
+# their unconditional check already owns malformed values. Dataset and codes
+# callers state their own placement exclusions, keeping one issue per bad
+# cell. A blank or recognized marker stays with its existing reporting path.
+.ms_collect_malformed_table_iri_issues <- function(
+    df, source_name, excluded_fields = c("method_iri", "protocol_iri")) {
+  if (!is.data.frame(df) || nrow(df) == 0) {
+    return(tibble::tibble())
+  }
+
+  iri_cols <- setdiff(grep("_iri$", names(df), value = TRUE), excluded_fields)
+  purrr::map_dfr(iri_cols, function(field) {
+    vals <- as.character(df[[field]])
+    # Exact empty values belong to existing missing-field checks. Parsed
+    # whitespace-only text in an optional extension IRI is populated but
+    # malformed and must not disappear through trimws().
+    populated <- !is.na(vals) & vals != ""
+    marker <- .ms_is_review_iri(vals)
+    rows <- which(populated & !marker & !.ms_absolute_iri_shape(vals))
+    if (length(rows) == 0) {
+      return(tibble::tibble())
+    }
+    tibble::tibble(
+      message = sprintf(
+        "%s row %s field %s is not an absolute IRI.",
+        source_name, rows, field
+      )
+    )
+  })
 }
 
 .ms_validation_row_context <- function(df, row, id_fields = character()) {
@@ -1800,10 +1832,12 @@ read_salmon_datapackage <- function(path) {
   for (field in present) {
     vals <- as.character(meta[[field]])
     populated <- !is.na(vals) & nzchar(trimws(vals))
-    # `REVIEW:` markers have their own dedicated reporting path.
+    # The marker collector owns every spelling it currently recognizes. Keep
+    # this exclusion aligned so a placement is not reported once as a marker
+    # and again as a malformed IRI.
     invalid <- which(
       populated &
-        !grepl("^REVIEW:", trimws(vals), ignore.case = TRUE) &
+        !.ms_is_review_iri(vals) &
         !.ms_sdp_extension_is_absolute_iri(vals)
     )
     for (row in invalid) {
@@ -2012,6 +2046,16 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       .ms_collect_review_placeholder_issues(pkg$dataset, "metadata/dataset.csv", id_fields = "dataset_id"),
       .ms_collect_review_placeholder_issues(pkg$tables, "metadata/tables.csv", id_fields = c("table_id", "file_name")),
       .ms_collect_missing_table_observation_unit_iri_issues(pkg$tables),
+      .ms_collect_malformed_table_iri_issues(pkg$tables, "metadata/tables.csv"),
+      # B177 also sweeps dataset/codes for markers. Q63-excluded spellings
+      # must therefore reach the same absolute-IRI owner in those files.
+      # Dataset protocol has an unconditional placement owner; codes has none.
+      .ms_collect_malformed_table_iri_issues(
+        pkg$dataset, "metadata/dataset.csv", excluded_fields = "protocol_iri"
+      ),
+      .ms_collect_malformed_table_iri_issues(
+        pkg$codes, "metadata/codes.csv", excluded_fields = character()
+      ),
       .ms_collect_review_placeholder_issues(pkg$dictionary, "metadata/column_dictionary.csv", id_fields = c("table_id", "column_name")),
       .ms_collect_review_placeholder_issues(pkg$codes, "metadata/codes.csv", id_fields = c("table_id", "column_name", "code_value")),
       # #49: a blank schema-required field is the placeholder state minus the
@@ -2024,9 +2068,17 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
   dict <- validate_dictionary(pkg$dictionary, require_iris = require_iris)
   semantic_validation <- validate_semantics(dict, require_iris = require_iris)
-  table_review_issues <- .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv")
-  if (nrow(table_review_issues) > 0) {
-    semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, table_review_issues)
+  # The dictionary validator has its own fixed IRI-field sweep. The other
+  # three metadata files use the same *_iri sweep as the EDH rebuild gate, so
+  # a draft marker cannot pass strict validation in one path and fail in the
+  # other. Keep these issues visible in non-strict validation as well.
+  metadata_review_issues <- dplyr::bind_rows(
+    .ms_collect_review_iri_issues(pkg$dataset, source_name = "metadata/dataset.csv"),
+    .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv"),
+    .ms_collect_review_iri_issues(pkg$codes, source_name = "metadata/codes.csv")
+  )
+  if (nrow(metadata_review_issues) > 0) {
+    semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, metadata_review_issues)
   }
   # Unconditional: a method or protocol placement that is not an absolute IRI
   # is malformed in every validation mode, not only under `require_iris`.
@@ -2052,7 +2104,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     # validation must block it, exactly as it blocks a REVIEW: marker.
     final_review_issues <- dplyr::bind_rows(
       final_review_issues,
-      table_review_issues,
+      metadata_review_issues,
       placement_issues
     )
   }
@@ -2066,7 +2118,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         ifelse(nrow(final_review_issues) == 1, "", "s")
       ),
       .ms_cli_bullets(preview, "x"),
-      "i" = "Resolve placeholder metadata, blank schema-required fields, blank table observation-unit IRIs, and any REVIEW-prefixed IRIs before strict validation."
+      "i" = "Resolve placeholder metadata, blank schema-required fields, blank table IRIs, malformed metadata IRIs, and any REVIEW-prefixed IRIs before strict validation."
     )
     if (nrow(final_review_issues) > length(preview)) {
       abort_lines <- c(
@@ -3833,9 +3885,18 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   "REVIEW: "
 }
 
+# Q63's ASCII-only marker is shared by each IRI reader. The explicit letter
+# pairs and literal space/tab avoid locale-dependent case and whitespace rules.
+.ms_review_iri_pattern <- function() {
+  "^[ \t]*[Rr][Ee][Vv][Ii][Ee][Ww][ \t]*:"
+}
+
 .ms_is_review_iri <- function(x) {
-  text <- .ms_scalar_text(x)
-  nzchar(text) && grepl("^\\s*REVIEW\\s*:", text, ignore.case = TRUE)
+  if (length(x) == 0L) {
+    return(logical())
+  }
+  text <- as.character(x)
+  !is.na(text) & grepl(.ms_review_iri_pattern(), text, perl = TRUE)
 }
 
 .ms_strip_review_iri <- function(x) {
@@ -3843,8 +3904,59 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(x)
   }
   out <- as.character(x)
-  out <- gsub("^\\s*REVIEW\\s*:\\s*", "", out, ignore.case = TRUE)
+  marked <- .ms_is_review_iri(out)
+  out[marked] <- sub(
+    paste0(.ms_review_iri_pattern(), "[ \t]*"),
+    "", out[marked], perl = TRUE
+  )
   out
+}
+
+# Inspect decoded values only where the EML/ORE emitters put IRIs. Scanning
+# every text node would mistake an abstract beginning "Review:" for an IRI;
+# scanning every attribute would do the same to a term label. The serializer
+# escapes an attribute tab as `&#9;`, so the decoded pass is still necessary.
+# Keep the inherited exact `REVIEW:` whole-document check for older markers.
+.ms_document_has_review_iri <- function(document, profile = c("eml", "ore")) {
+  profile <- match.arg(profile)
+  if (identical(profile, "eml")) {
+    text_xpath <- paste(c(
+      "//*[local-name()='annotation']/*[local-name()='propertyURI' or local-name()='valueURI']",
+      "//*[local-name()='codeDefinition']/*[local-name()='source']",
+      "//*[local-name()='distribution']/*[local-name()='online']/*[local-name()='url']",
+      "//*[local-name()='userId'][@directory='https://orcid.org']",
+      "//*[local-name()='otherEntity']/*[local-name()='alternateIdentifier'][@system='DataONE']"
+    ), collapse = " | ")
+    attribute_xpath <- paste(c(
+      "/*[local-name()='eml']/@packageId",
+      "/*[local-name()='eml']/@xsi:schemaLocation",
+      "//*[local-name()='userId']/@directory"
+    ), collapse = " | ")
+    text_values <- xml2::xml_text(xml2::xml_find_all(document, text_xpath))
+    attribute_values <- xml2::xml_text(xml2::xml_find_all(
+      document, attribute_xpath,
+      ns = c(xsi = "http://www.w3.org/2001/XMLSchema-instance")
+    ))
+    # schemaLocation is one namespace URI followed by its schema URI. Check
+    # the second URI without trimming a leading newline or non-ASCII space
+    # into Q63's narrower ASCII marker spelling.
+    schema_location <- xml2::xml_attr(xml2::xml_root(document), "schemaLocation")
+    if (!is.na(schema_location)) {
+      second_uri <- sub("^[ \t]*[^ \t]+[ \t]", "", schema_location, perl = TRUE)
+      if (!identical(second_uri, schema_location)) {
+        text_values <- c(text_values, second_uri)
+      }
+    }
+  } else {
+    attribute_values <- xml2::xml_text(xml2::xml_find_all(
+      document,
+      "//@rdf:about | //@rdf:resource | //@rdf:datatype",
+      ns = c(rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    ))
+    text_values <- character()
+  }
+  any(.ms_is_review_iri(c(text_values, attribute_values))) ||
+    grepl("REVIEW:", as.character(document), fixed = TRUE)
 }
 
 .ms_mark_reviewed_dictionary_iris <- function(dict, original_dict, suggestions, strategy = c("top", "llm")) {

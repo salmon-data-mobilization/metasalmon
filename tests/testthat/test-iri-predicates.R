@@ -1,9 +1,8 @@
-# The regex engine is the contract: TRE resolves `[[:space:]]` against Unicode,
-# PCRE resolves it as ASCII-only, so the same pattern gives different answers on
-# non-ASCII whitespace depending on `perl`. metasalmon's IRI validators must all
-# give the SAME answer -- a package that clears SDP-extension validation and
-# then fails EML export on an invisible character is the defect these tests pin
-# (backlog #85).
+# The regex engine and explicit Unicode members are the contract: TRE resolves
+# `[[:space:]]` against Unicode in a UTF-8 locale but against ASCII under C;
+# PCRE resolves it as ASCII-only. The shared predicate adds TRE's non-ASCII
+# UTF-8-locale members explicitly so metasalmon's absolute-IRI validators give
+# the same answer under either locale (backlog #85, hub B-137).
 #
 # Characters are built with `intToUtf8()` on purpose. A literal U+3000 in this
 # file would be invisible in review and in a diff, which is the whole problem.
@@ -20,12 +19,10 @@ iri_with <- function(codepoint) {
   paste0("http://example.org/a", intToUtf8(codepoint), "b")
 }
 
-# Expected answers under TRE, this package's chosen engine. U+00A0 and U+2007
-# are NOT members of TRE's `[[:space:]]`, so they are accepted by both engines
-# and are the control cases; U+3000 IS a member, and is exactly where PCRE used
-# to disagree. If a future R/TRE release changes a membership, this table is the
-# thing that fails, which is the intended signal -- re-enumerate rather than
-# relax it, and see `knowledge/parity-deviations.md` row 28 for the Python side.
+# Expected answers for the locale-stable shared predicate. U+00A0 and U+2007
+# are not in its whitespace class, so they are accepted controls; U+3000 is in
+# the explicitly enumerated part. If its membership changes, re-enumerate
+# rather than relax the table; see parity-deviations row 28 for Python's class.
 ws_expected <- c(
   ascii_space = FALSE,
   ascii_tab = FALSE,
@@ -60,6 +57,22 @@ test_that("the shared shape predicate is the one the other validators use", {
       info = case
     )
   }
+})
+
+test_that("the shared IRI predicate rejects Unicode whitespace in the C locale", {
+  # The package can run in a container with LC_CTYPE=C. TRE's POSIX space
+  # class alone admits these codepoints there, even though it rejects them in
+  # UTF-8 locales. These are the non-ASCII members of metasalmonpy's
+  # R_SPACE_CLASS, which records the package's UTF-8-locale verdicts.
+  withr::local_locale(c(LC_CTYPE = "C"))
+  unicode_spaces <- c(
+    0x1680L, 0x2000L:0x2006L, 0x2008L:0x200AL,
+    0x2028L, 0x2029L, 0x205FL, 0x3000L
+  )
+  iris <- vapply(unicode_spaces, iri_with, character(1))
+
+  expect_identical(.ms_absolute_iri_shape(iris), rep(FALSE, length(iris)))
+  expect_true(.ms_absolute_iri_shape(iri_with(0x2007L)))
 })
 
 test_that("EML export and SDP-extension validation agree on Unicode whitespace", {
@@ -106,11 +119,11 @@ test_that("EML export and SDP-extension validation agree on Unicode whitespace",
 })
 
 test_that("the shared IRI predicate is not compiled under PCRE", {
-  # A drift guard, not a proof: `perl = TRUE` here is a silent behaviour widening
-  # -- it makes `[[:space:]]` ASCII-only and re-admits the IRIs above -- and it
-  # is the kind of thing added back as a performance "optimization". It also
-  # invalidates metasalmonpy's enumerated `R_SPACE_CLASS`. Retire this guard only
-  # if the predicate stops resolving a POSIX character class.
+  # A drift guard, not a proof: `perl = TRUE` changes the POSIX component to
+  # PCRE's ASCII class. The explicit members protect the points pinned above,
+  # but a different engine still needs a full membership and Python parity
+  # check. Retire this guard only if the predicate stops resolving a POSIX
+  # class and both language implementations are checked.
   body_text <- paste(
     deparse(body(get(".ms_absolute_iri_shape", envir = asNamespace("metasalmon")))),
     collapse = " "
