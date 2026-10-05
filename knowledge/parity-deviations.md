@@ -245,13 +245,17 @@ writers read it. Codex review carried the port on to R's writers: under a
 selected schema the setters, `write_salmon_datapackage()` and
 `apply_sdp_semantics()` add each declared column a file lacks, empty, and write
 the declared order, as R's `.ms_align_cols()` does, and every file is
-byte-identical under the shipped settings, measured. One part is not ported and
-is owed: `normalize_*()` still synthesises a bundled field that a selected
-schema removes, and the writers put it after the declared fields, where R writes
-no such column into a frame that lacked it. That predates the port. The B-215
+byte-identical under the shipped settings, measured. One part remained unported after B-215: `normalize_*()` synthesised a bundled
+field that a selected schema removed, and the writers put it after the declared
+fields, where R wrote no such column into a frame that lacked it. That predated
+the port. The B-215
 workpad found it by reading both sides, and the 2026-09-25 queue sweep measured
 it on `2405df2`, before the port, and on `f1f7230`, after it. Its metasalmonpy
-queue item is **B-252**.
+queue item is **B-252**. **This one is closed.** `B-252` landed as metasalmonpy
+pull request **#82** on 2026-10-05, merge `420a8058157fbbca701b29856f1d3e2d49cbb25f`
+from reviewed publication `cd9f295173bf47874e4839a5504897d01ff5ff71`. The
+selected-field/default-byte controls, caller extras and dictionary validator
+contract remain preserved.
 
 **Correction, 2026-09-30 (B-252): the source-only R premise was too broad.**
 Paired executable probes at R `3364b975` and Python `e81cacd` show that

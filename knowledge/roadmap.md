@@ -1056,7 +1056,10 @@ kept that while taking R's default options offline. It is owed as a port, not a
 register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. Recorded there and here in the same change, as the rule
 above requires. `B-215` **landed 2026-09-25 as metasalmonpy #47**, `ed5e22e`.
-One part of that behaviour was not ported and is owed as `B-252`. The paired
+One part of that behaviour remained unported after B-215, tracked as `B-252`.
+**This one is closed.** `B-252` landed as metasalmonpy pull request **#82** on
+2026-10-05, merge `420a8058157fbbca701b29856f1d3e2d49cbb25f` from reviewed
+publication `cd9f295173bf47874e4839a5504897d01ff5ff71`. The paired
 R/Python probes narrowed it to direct dataset/table/codes inputs that genuinely
 lack an optional field omitted by the selected schema, plus table inference's
 minimal frame. Both writers preserve fields already present, including the
