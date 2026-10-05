@@ -499,3 +499,66 @@ test_that("B130 public declared constraint list and scalar ledger keep their own
   expect_identical(result$attempts, rep(1L, 3L))
   expect_identical(lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size)), before)
 })
+
+test_that("B130 public final URL reports remove only authority userinfo", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  final_urls <- c(
+    "https://audit-user:audit-password@example.org/final?x=1#frag",
+    "http://audit-user@example.org:8080/final",
+    "https://audit%40user:audit%3Apassword@[::1]:8443/a;b?q=a@b#c@d",
+    "HTTPS://:audit-password@example.org/a%2Fb?q=one%20two#fragment",
+    "http://@example.org/final",
+    "https://audit@user:audit-password@example.org/final",
+    "https://audit-user:audit-password@example.org/a@b?q=c@d#e@f",
+    "https://example.org/a@b?q=c@d#e@f",
+    "http://[::1]:8080/a;b?q=one%20two#fragment",
+    "HTTPS://example.org/a%2Fb"
+  )
+  expected_urls <- c(
+    "https://example.org/final?x=1#frag",
+    "http://example.org:8080/final",
+    "https://[::1]:8443/a;b?q=a@b#c@d",
+    "HTTPS://example.org/a%2Fb?q=one%20two#fragment",
+    "http://example.org/final",
+    "https://example.org/final",
+    "https://example.org/a@b?q=c@d#e@f",
+    final_urls[8:10]
+  )
+  selected <- sprintf("https://example.org/selected-%02d", seq_along(final_urls))
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = selected
+  ))
+  input_files <- list.files(file.path(root, "metadata"), full.names = TRUE)
+  before <- lapply(input_files, function(path) readBin(path, "raw", file.info(path)$size))
+  requested <- character()
+  requester <- function(iri) {
+    requested <<- c(requested, iri)
+    list(status = 200L, final_url = final_urls[[match(iri, selected)]])
+  }
+  result <- verify_sdp_semantic_iris(
+    root, requester = requester,
+    sleep_fn = function(delay) stop("Successful replies must not retry.")
+  )
+  for (index in seq_along(final_urls)) {
+    expect_identical(result$final_url[[index]], expected_urls[[index]],
+                     info = paste("final URL boundary", index))
+  }
+  expect_identical(requested, selected)
+  expect_identical(result$iri, selected)
+  expect_identical(result$status, rep(200L, length(selected)))
+  expect_identical(result$attempts, rep(1L, length(selected)))
+  expect_true(all(is.na(result$error)))
+  expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+  expect_identical(read_iri_report(root)$final_url, expected_urls)
+  report_path <- file.path(root, "reproducibility/provenance/semantic-iri-dereference.csv")
+  report_bytes <- readBin(report_path, "raw", file.info(report_path)$size)
+  expected <- result
+  expected$final_url <- expected_urls
+  expect_identical(report_bytes, .ms_sdp_extension_csv_bytes(expected))
+  expect_false(grepl("audit-user|audit-password|audit%40user|audit%3Apassword",
+                    rawToChar(report_bytes)))
+  expect_identical(before, lapply(input_files, function(path) {
+    readBin(path, "raw", file.info(path)$size)
+  }))
+})
