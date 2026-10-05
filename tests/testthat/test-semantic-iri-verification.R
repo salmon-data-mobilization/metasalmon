@@ -441,8 +441,15 @@ test_that("default redirect-limit failure retains its supported curl class and i
 # list syntax; checking a truncated prefix violates B130's exact-IRI retirement.
 test_that("B130 public scalar metadata IRIs preserve legal semicolons", {
   for (slot in list(
-    c("metadata/column_dictionary.csv", "property_iri"),
+    c("metadata/column_dictionary.csv", "unit_iri"),
     c("metadata/column_dictionary.csv", "term_iri"),
+    c("metadata/column_dictionary.csv", "property_iri"),
+    c("metadata/column_dictionary.csv", "entity_iri"),
+    c("metadata/column_dictionary.csv", "statistical_modifier_iri"),
+    c("metadata/dataset.csv", "protocol_iri"),
+    c("metadata/tables.csv", "observation_unit_iri"),
+    c("metadata/tables.csv", "protocol_iri"),
+    c("metadata/tables.csv", "method_iri"),
     c("metadata/codes.csv", "term_iri"),
     c("metadata/codes.csv", "vocabulary_iri")
   )) {
