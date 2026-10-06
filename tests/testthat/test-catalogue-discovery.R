@@ -463,3 +463,51 @@ test_that("an interrupted capture retains its raw pages and original interrupt",
   if (file.exists(file.path(incomplete, "page-0000.json")))
     expect_identical(catalogue_read_bytes(file.path(incomplete, "page-0000.json")), first)
 })
+
+
+test_that("a genuine unhandled native interrupt retains evidence without becoming an error", {
+  skip_on_os("windows")
+  root <- normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
+  sandbox <- tempfile("catalogue-native-interrupt-")
+  dir.create(sandbox)
+  on.exit(unlink(sandbox, recursive = TRUE), add = TRUE)
+  out <- file.path(sandbox, "capture")
+  script <- file.path(sandbox, "interrupt.R")
+  encode <- function(value) paste(capture.output(dput(value)), collapse = "\n")
+  # Development loads the exact checkout; installed R CMD check uses its own
+  # installed package. The child has no outer exiting interrupt/error handler.
+  code <- c(
+    paste0("root <- ", encode(root)),
+    "if (file.exists(file.path(root, 'R', 'catalogue-discovery.R'))) {",
+    "  pkgload::load_all(root, quiet = TRUE)",
+    "} else {",
+    "  library(metasalmon, lib.loc = dirname(root))",
+    "}",
+    paste0("out <- ", encode(out)),
+    "calls <- 0L",
+    "fetch <- function(...) {",
+    "  calls <<- calls + 1L",
+    "  if (calls == 1L) return(charToRaw('{\"response\":{\"numFound\":2,\"start\":0,\"docs\":[{\"id\":\"a\"}]}}'))",
+    "  tools::pskill(Sys.getpid(), 2L)",
+    "  Sys.sleep(5)",
+    "  stop('native interrupt was not delivered')",
+    "}",
+    "capture_catalogue_query('q', out, max_records = 2L, page_size = 1L, fetch = fetch, captured_at = '2026-10-06T09:00:00+00:00')",
+    "writeLines('capture unexpectedly returned', file.path(dirname(out), 'returned'))"
+  )
+  writeLines(code, script)
+  stdout <- file.path(sandbox, "stdout")
+  stderr <- file.path(sandbox, "stderr")
+  status <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"),
+    c("--vanilla", shQuote(script)), stdout = stdout, stderr = stderr))
+  diagnostics <- paste(readLines(stderr, warn = FALSE), collapse = "\n")
+  expect_false(identical(status, 0L))
+  expect_false(grepl("bad error message|native interrupt was not delivered", diagnostics))
+  expect_false(file.exists(file.path(sandbox, "returned")))
+  incomplete <- paste0(out, ".incomplete")
+  expect_true(file.exists(file.path(incomplete, "failure.json")))
+  expect_identical(catalogue_read_bytes(file.path(incomplete, "page-0000.json")),
+    charToRaw('{"response":{"numFound":2,"start":0,"docs":[{"id":"a"}]}}'))
+  expect_false(file.exists(file.path(incomplete, "capture.json")))
+  expect_false(file.exists(file.path(out, "capture.json")))
+})
