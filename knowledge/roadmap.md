@@ -635,6 +635,9 @@ stream for the structural reason every entry above shares: a hub claim covers on
 branch in one repository. Recorded here and in the register in the same change,
 as the rule above requires.
 
+`B-199`, which **landed 2026-10-06 as metasalmonpy #76**, merge `92df2ffddd9bdb4918617e7c601c3dcb1268c7ca`, from accepted head `13e17faebcb7bfbf779189766afb4f12f2ce5773`, completes the schema-pin and eight-file bundle port. The packet bundle-version prerequisite is closed; B327 remains under its existing source/owner route.
+
+
 **The 2026-09-16 changelog-window rule is metasalmon-only in this stream, and
 this is the record the mirror contract requires for that.** `AGENTS.md`'s
 *Releases* section now says where an entry goes when it merges after a version

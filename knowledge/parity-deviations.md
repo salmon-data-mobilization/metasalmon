@@ -1477,6 +1477,9 @@ past the bundle itself. A semantic review packet records the vendored bundle's
 version in `pins.sdp_profile.version`, so this change regenerated the packet
 conformance fixtures, and every golden `packet_id` moved. At that observation, metasalmonpy did not vendor those fixtures yet. Its packet half, B-327, would build packets against its own vendored bundle. B-327’s dependency remains governed by B-199’s authoritative queue state; this source comparison does not close that dependency or record B-327 as landed.
 
+**This mirror debt is closed.** `B-199` landed as metasalmonpy pull request **#76** on 2026-10-06, merge `92df2ffddd9bdb4918617e7c601c3dcb1268c7ca`, from accepted head `13e17faebcb7bfbf779189766afb4f12f2ce5773`. The completed port restores the shared `sdp-0.3.2` pin and eight-file manifest-bound bundle; it records no B327 completion or new parity choice.
+
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
