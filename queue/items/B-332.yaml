@@ -1,8 +1,8 @@
 id: B-332
 kind: defect
 title: 'Amend metasalmonpy PARITY.md row 45 when the Theme A harness loses its live half, the mirror half of B-328'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S16
