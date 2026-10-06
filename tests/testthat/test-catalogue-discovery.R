@@ -359,3 +359,107 @@ test_that("default public transport bounds streaming bytes without credentials",
     req_perform_connection = bad_status, .package = "httr2"
   ), "HTTP 503")
 })
+
+
+test_that("the mirrored shared catalogue capture fixtures retain their outcomes", {
+  fixture <- jsonlite::fromJSON(
+    test_path("fixtures", "catalogue-capture", "shared-v1.json"),
+    simplifyVector = FALSE
+  )
+  for (case in fixture$cases) {
+    out <- tempfile("catalogue-shared-")
+    on.exit(unlink(c(out, paste0(out, ".incomplete")), recursive = TRUE), add = TRUE)
+    calls <- 0L
+    fetch <- function(url, timeout, max_bytes) {
+      calls <<- calls + 1L
+      if (calls > length(case$pages)) stop("unexpected fixture request")
+      charToRaw(enc2utf8(case$pages[[calls]]))
+    }
+    result <- tryCatch(capture_catalogue_query(
+      fixture$query, out, catalogue = case$catalogue,
+      max_records = case$max_records, page_size = case$page_size,
+      fetch = fetch, captured_at = fixture$captured_at
+    ), error = identity)
+    if (identical(case$status, "success")) {
+      expect_false(inherits(result, "error"), info = case$name)
+      expect_identical(result$captured_metadata_records, as.integer(case$captured))
+      expect_identical(result$complete_for_reported_count, case$complete)
+      expect_identical(result$annotation_status, "pending")
+      expect_null(result$independent_dataset_count)
+      expect_false(result$transactional_snapshot)
+      expect_true(file.exists(file.path(out, "capture.json")))
+      for (i in seq_along(case$pages)) {
+        path <- file.path(out, sprintf("page-%04d.json", i - 1L))
+        expect_identical(catalogue_read_bytes(path), charToRaw(enc2utf8(case$pages[[i]])))
+        expect_identical(result$pages[[i]]$sha256,
+          digest::digest(charToRaw(enc2utf8(case$pages[[i]])), algo = "sha256", serialize = FALSE))
+      }
+    } else {
+      expect_true(inherits(result, "error"), info = case$name)
+      incomplete <- paste0(out, ".incomplete")
+      expect_false(file.exists(file.path(out, "capture.json")))
+      expect_false(file.exists(file.path(incomplete, "capture.json")))
+      expect_true(file.exists(file.path(incomplete, "failure.json")))
+      for (i in seq_along(case$pages)) {
+        expect_identical(catalogue_read_bytes(file.path(incomplete,
+          sprintf("page-%04d.json", i - 1L))), charToRaw(enc2utf8(case$pages[[i]])))
+      }
+    }
+    expect_identical(calls, length(case$pages))
+  }
+})
+
+
+test_that("failed capture cleanup preserves the original condition under warning escalation", {
+  out <- tempfile("catalogue-cleanup-warning-")
+  on.exit(unlink(c(out, paste0(out, ".incomplete")), recursive = TRUE), add = TRUE)
+  old <- options(warn = 2)
+  on.exit(options(old), add = TRUE)
+  original <- structure(list(message = "original transport condition", call = NULL),
+    class = c("catalogue_original_failure", "error", "condition"))
+  result <- tryCatch(testthat::with_mocked_bindings(
+    catalogue_test_capture(out, function(...) stop(original)),
+    .ms_catalogue_write_receipt = function(...) stop("failure receipt filesystem error")
+  ), error = identity)
+  expect_identical(result, original)
+  expect_false(file.exists(file.path(out, "capture.json")))
+  expect_false(file.exists(file.path(paste0(out, ".incomplete"), "capture.json")))
+})
+
+test_that("an incomplete-directory exception cannot mask the original capture failure", {
+  out <- tempfile("catalogue-cleanup-reservation-")
+  on.exit(unlink(c(out, paste0(out, ".incomplete")), recursive = TRUE), add = TRUE)
+  original <- structure(list(message = "original transport condition", call = NULL),
+    class = c("catalogue_original_failure", "error", "condition"))
+  reserve <- .ms_catalogue_reserve_directory
+  result <- tryCatch(suppressWarnings(testthat::with_mocked_bindings(
+    catalogue_test_capture(out, function(...) stop(original)),
+    .ms_catalogue_reserve_directory = function(path) {
+      if (identical(path, paste0(out, ".incomplete"))) stop("reservation filesystem error")
+      reserve(path)
+    }
+  )), error = identity)
+  expect_identical(result, original)
+  expect_true(file.exists(file.path(out, "failure.json")))
+  expect_false(file.exists(file.path(out, "capture.json")))
+})
+
+test_that("an interrupted capture retains its raw pages and original interrupt", {
+  out <- tempfile("catalogue-interrupt-")
+  on.exit(unlink(c(out, paste0(out, ".incomplete")), recursive = TRUE), add = TRUE)
+  original <- structure(list(message = "fixture interrupt", call = NULL),
+    class = c("catalogue_test_interrupt", "interrupt", "condition"))
+  calls <- 0L
+  first <- catalogue_page_bytes(2L, 0L, "a")
+  result <- tryCatch(catalogue_test_capture(out, function(...) {
+    calls <<- calls + 1L
+    if (calls == 1L) first else stop(original)
+  }, page_size = 1L), interrupt = identity)
+  expect_identical(result, original)
+  incomplete <- paste0(out, ".incomplete")
+  expect_true(file.exists(file.path(incomplete, "failure.json")))
+  expect_true(file.exists(file.path(incomplete, "page-0000.json")))
+  expect_false(file.exists(file.path(incomplete, "capture.json")))
+  if (file.exists(file.path(incomplete, "page-0000.json")))
+    expect_identical(catalogue_read_bytes(file.path(incomplete, "page-0000.json")), first)
+})
