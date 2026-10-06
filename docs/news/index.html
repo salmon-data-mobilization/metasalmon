@@ -62,6 +62,7 @@
 <li>
 <strong>An existing <code>.metasalmon-package</code> is left where it is.</strong> A rewrite no longer manages it, so it survives unless <code>prune = TRUE</code> empties the directory. Nothing reads it any more, and you can delete it.</li>
 </ul><p>metasalmonpy writes <code>.metasalmonpy-package</code> until its half of the change lands (hub item B-127). This package still recognises a package metasalmonpy wrote by its SDP metadata, so nothing is refused in the meantime, but a package written by both carries both files until then.</p>
+<p><strong>Update (2026-10-06, development branches):</strong> The matching Python change landed in metasalmonpy <a href="https://github.com/salmon-data-mobilization/metasalmonpy/pull/65" class="external-link">pull request 65</a> (B-127, <code>3ebb3cf</code>). Both development branches now use <code>.sdp-package</code> containing <code>sdp-owned</code> followed by a newline as their shared ownership sentinel. The preceding pending note records the state when the R change was introduced. Existing SDP metadata still establishes ownership; neither old per-language sentinel is read as an ownership fallback or managed by a rewrite, except that <code>prune = TRUE</code> can empty the directory. No automatic sentinel migration is performed.</p>
 </li>
 </ul></div>
 <div class="section level3">

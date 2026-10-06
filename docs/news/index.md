@@ -81,6 +81,17 @@
   metasalmonpy wrote by its SDP metadata, so nothing is refused in the
   meantime, but a package written by both carries both files until then.
 
+  **Update (2026-10-06, development branches):** The matching Python
+  change landed in metasalmonpy [pull request
+  65](https://github.com/salmon-data-mobilization/metasalmonpy/pull/65)
+  (B-127, `3ebb3cf`). Both development branches now use `.sdp-package`
+  containing `sdp-owned` followed by a newline as their shared ownership
+  sentinel. The preceding pending note records the state when the R
+  change was introduced. Existing SDP metadata still establishes
+  ownership; neither old per-language sentinel is read as an ownership
+  fallback or managed by a rewrite, except that `prune = TRUE` can empty
+  the directory. No automatic sentinel migration is performed.
+
 ### Added
 
 - [`capture_catalogue_query()`](https://salmon-data-mobilization.github.io/metasalmon/reference/capture_catalogue_query.md)
