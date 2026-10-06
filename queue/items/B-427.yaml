@@ -1,7 +1,7 @@
 id: B-427
 kind: defect
 title: Start bounded public KNB and DataONE catalogue capture in the packages
-state: ready
+state: done
 claimable: false
 repo: metasalmon
 venue: claude-code
