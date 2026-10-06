@@ -933,7 +933,8 @@ so a package written by both carries both files until its half lands. That half
 is owed as the move row 51 of `parity-deviations.md` records, with the name and
 content line it must take, and not as a new register row. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
-queue item is `B-127`.
+queue item is `B-127`, which **landed 2026-10-06 as metasalmonpy #65**,
+`3ebb3cf`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the ICES helpers warn when the request fails.** Hub item **B-377** makes

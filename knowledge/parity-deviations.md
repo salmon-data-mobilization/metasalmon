@@ -1563,7 +1563,8 @@ numbers, and no number was spent. This is the one live disagreement; the
 paragraph beneath is otherwise still true. **Row 51 moved again with queue
 B-113**, which chose the shared name and changed metasalmon's half, so its twin
 now owes both the ruling and that record; queue B-127 carries them, in the pull
-request that changes the metasalmonpy half.
+request that changes the metasalmonpy half. B-127 **landed 2026-10-06 as
+metasalmonpy #65**, `3ebb3cf`.
 
 **No other disagreement with the twin is live** (2026-08-21). Three were,
 and all three are discharged rather than carried forward: row 25's Kind (this
