@@ -1587,8 +1587,10 @@ the post-0.3.0 fixes needs a later commit than the tag.
 as serious as a failing test, and unlike a failure most will not announce
 themselves.
 
-- Suite: **0 failures**. CI skips: **exactly 4** (Theme A integrity, in
-  `theme-a-integrity.yaml`). Local: 5, adding the CI-only optional-dependency guard.
+- Suite: **0 failures**. Investigate any unexpected skip. The former four
+  Theme A integrity skips retired with B-328; offline replay and packet
+  conformance now run in `theme-a-integrity.yaml`. Read current CI and local
+  skip counts from their runs, rather than carrying forward the old 4/5 count.
 - `R CMD check`: **Status: OK**, no NOTEs.
 - CI runs under a **non-C ambient collation** (`LC_ALL=en_US.UTF-8`), so the
   byte-reproducibility guards are exercised rather than skipped.
