@@ -6843,3 +6843,8 @@ The original 18-case cross-language proof was rebound without replay: its fixed 
 
 
 The final scoped whitespace gate stopped before commit on one generated blank line at EOF in the new catalogue HTML page. Removing only that final extra newline corrected the new output; all page content, inherited outputs and every history prefix remain exact. No site or product test was repeated.
+
+
+#### Factual correction to the preceding Python candidate wording
+
+The earlier 135 Python candidate was never given whole-implementation clearance: the independent reviewer retained the supported-3.9 timestamp blocker in its actual receipt. References above to an earlier 135 clearance mean the accepted failure-preservation boundaries only and must not be read as a clear final verdict. The actual complete Python implementation acceptance is cafbaf20 after the genuine timestamp repair, bound by the final71fc1564 receipt. Earlier pending findings and every preceding append remain exact history; this correction introduces no source change, new review verdict or repeated test/build.
