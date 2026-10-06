@@ -260,6 +260,12 @@ capture_catalogue_query <- function(query, out, catalogue = "knb",
     }, interrupt = function(e) {
       warn_cleanup("Incomplete capture cleanup interrupted; inspect the reserved output directories")
     })
+    if (inherits(error, "interrupt")) {
+      # A genuine interrupt has no message. Signal the original condition for
+      # outer handlers, then use the native abort restart if it remains unhandled.
+      signalCondition(error)
+      invokeRestart("abort")
+    }
     stop(error)
   }
   tryCatch({
