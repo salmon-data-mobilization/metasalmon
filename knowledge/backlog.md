@@ -5715,8 +5715,7 @@ that `B-236` cuts, which contains `f86d9b4` and is the ref the remote pin names,
 so the vendored and remote bundles cannot differ (their queue cards are the
 authority on the ref), and adding the test that was actually missing: a
 comparison of a written package's temporal fields to the profile's own
-pattern, with a four-digit-year fixture. Nothing on
-either side does that, which is why this went unseen, so re-vendoring without the
+pattern, with a four-digit-year fixture. Neither side did that when the defect was recorded, which is why this went unseen, so re-vendoring without the
 comparison would leave the hole it came through. `B-199` was filed depending on `B-145`, and
 the reason is durable whatever the field says later: the instant the Python
 descriptor writes is `B-145`'s output, so widening the pattern does not by itself
