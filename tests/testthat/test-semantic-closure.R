@@ -119,6 +119,15 @@ closure_clear <- function(path) {
   invisible(path)
 }
 
+closure_capture_warnings <- function(expr) {
+  messages <- character()
+  value <- withCallingHandlers(expr, warning = function(warning) {
+    messages <<- c(messages, conditionMessage(warning))
+    invokeRestart("muffleWarning")
+  })
+  list(value = value, messages = messages)
+}
+
 test_that("the vocabulary field order matches the digest verifier exactly", {
   # The digest is over these ten values joined by "\r". If the producer's field
   # list and the verifier's ever diverge, every hash the producer writes is
@@ -347,6 +356,99 @@ test_that("a code-resolved procedure is a vocabulary term and never a review tar
   )
   expect_identical(nrow(.ms_eml_read_vocabulary(path, pkg, mapping)), 6L)
   expect_identical(nrow(.ms_eml_read_semantic_review(path, pkg, mapping)), 5L)
+})
+
+test_that("procedure gaps and incomplete evidence name their carrying code rows", {
+  path <- withr::local_tempdir()
+  make_closure_procedure_sdp(path)
+  closure_clear(path)
+  codes <- read_salmon_datapackage(path)$codes
+  procedure_iris <- codes$term_iri
+  code_keys <- function(rows) {
+    paste(rows$dataset_id, rows$table_id, rows$column_name, rows$code_value, sep = "/")
+  }
+
+  absent <- closure_capture_warnings(write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = closure_search_stub(),
+    quiet = TRUE
+  ))
+  gaps <- absent$value$gaps[absent$value$gaps$unresolved_iri %in% procedure_iris, , drop = FALSE]
+  carrying <- codes[match(gaps$unresolved_iri, codes$term_iri), , drop = FALSE]
+  expect_identical(nrow(gaps), 2L)
+  expect_identical(gaps$target_sdp_file, rep("codes.csv", 2L))
+  expect_identical(gaps$target_sdp_field, rep("term_iri", 2L))
+  expect_identical(gaps$table_id, carrying$table_id)
+  expect_identical(gaps$column_name, carrying$column_name)
+  expect_identical(gaps$code_value, carrying$code_value)
+  expect_identical(gaps$target_row_key, code_keys(carrying))
+  expect_true(all(grepl("term_iri", gaps$placement_rationale, fixed = TRUE)))
+  expect_false(any(grepl("method_iri", gaps$placement_rationale, fixed = TRUE)))
+  expect_true(any(grepl("term_iri", absent$messages, fixed = TRUE)))
+
+  requests <- render_ontology_term_request(gaps, scope = "smn", ask = FALSE)
+  expect_identical(nrow(requests), 2L)
+  expect_identical(requests$target_row_key, gaps$target_row_key)
+
+  procedure_search <- closure_procedure_stub(new.env())
+  short_definition <- function(query, role, sources) {
+    hits <- procedure_search(query, role = role, sources = sources)
+    hits$definition[hits$iri %in% procedure_iris] <- ""
+    hits
+  }
+  partial <- closure_capture_warnings(write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = short_definition,
+    quiet = TRUE
+  ))
+  incomplete <- partial$value$incomplete[
+    partial$value$incomplete$iri %in% procedure_iris, , drop = FALSE
+  ]
+  carrying <- codes[match(incomplete$iri, codes$term_iri), , drop = FALSE]
+  expect_identical(nrow(incomplete), 2L)
+  expect_identical(incomplete$target_sdp_file, rep("codes.csv", 2L))
+  expect_identical(incomplete$target_sdp_field, rep("term_iri", 2L))
+  expect_identical(incomplete$table_id, carrying$table_id)
+  expect_identical(incomplete$column_name, carrying$column_name)
+  expect_identical(incomplete$code_value, carrying$code_value)
+  expect_identical(incomplete$target_row_key, code_keys(carrying))
+  expect_true(any(grepl("term_iri", partial$messages, fixed = TRUE)))
+})
+
+test_that("every code row sharing one procedure IRI keeps its own gap address", {
+  path <- withr::local_tempdir()
+  make_closure_procedure_sdp(path)
+  closure_clear(path)
+  pkg <- read_salmon_datapackage(path)
+  codes <- pkg$codes
+  codes$term_iri[[2]] <- codes$term_iri[[1]]
+  # The fixture's structure descriptor is already complete; only this valid
+  # codes.csv value changes, so keep the descriptor and all keys intact.
+  readr::write_csv(codes, file.path(path, "metadata", "codes.csv"), na = "")
+
+  captured <- closure_capture_warnings(write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = closure_search_stub(),
+    quiet = TRUE
+  ))
+  gaps <- captured$value$gaps[
+    captured$value$gaps$unresolved_iri == codes$term_iri[[1]], , drop = FALSE
+  ]
+  expected_keys <- paste(codes$dataset_id, codes$table_id,
+                         codes$column_name, codes$code_value, sep = "/")
+  expect_identical(nrow(gaps), 2L)
+  expect_setequal(gaps$code_value, codes$code_value)
+  expect_setequal(gaps$target_row_key, expected_keys)
+  expect_true(all(gaps$target_sdp_field == "term_iri"))
+
+  # Rendering is row-for-row: one candidate request per carrying code address.
+  requests <- render_ontology_term_request(gaps, scope = "smn", ask = FALSE)
+  expect_identical(nrow(requests), 2L)
+  expect_setequal(requests$target_row_key, expected_keys)
+  expect_identical(length(unique(requests$request_body)), 2L)
 })
 
 test_that("both written files satisfy the validators that had no producer", {
@@ -1012,4 +1114,218 @@ test_that("a failure in the third write leaves the first two unchanged", {
   )
   expect_identical(read_bytes(first$files[["vocabulary"]]), before_vocabulary)
   expect_identical(readLines(mapping_path, warn = FALSE), before_mapping)
+})
+
+test_that("the closure reads its source list the way find_terms() does (hub B-421)", {
+  # write_sdp_semantic_closure() used to apply its own rule: trimws() and
+  # unique(), with no lower-casing, so " SMN" and "smn" were two sources and a
+  # no-break space survived. It now reads the list with
+  # `.ms_normalize_explicit_sources()`, as find_terms() and the source policy
+  # do, and metasalmonpy's closure takes the same rule from
+  # `_normalize_explicit_sources()`.
+  path <- withr::local_tempdir()
+  make_eml_test_sdp(path)
+  closure_clear(path)
+
+  seen <- list()
+  stub <- closure_search_stub()
+  spy <- function(query, role = NA_character_, sources = NULL, ...) {
+    seen[[length(seen) + 1L]] <<- sources
+    stub(query, role = role, sources = sources)
+  }
+  write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = spy,
+    sources = c(" SMN", "smn", "\u00a0Gcdfo", NA),
+    quiet = TRUE
+  )
+  expect_gt(length(seen), 0L)
+  for (sources in seen) {
+    expect_identical(sources, c("smn", "gcdfo"))
+  }
+
+  # A list that normalises to nothing is refused before anything is read.
+  expect_error(
+    write_sdp_semantic_closure(path, search_fn = spy, sources = c(" ", NA, "\u3000"), quiet = TRUE),
+    "must name at least one vocabulary source"
+  )
+})
+
+# Q62 / B-340: a tagged sidecar must not become either an output path or a
+# silent default. This public path verifies refusal before the atomic install.
+test_that("closure refuses unknown sidecar tags before any write", {
+  for (declaration in c(
+    "  path: !expr metadata/declared-vocabulary.csv",
+    "  path: !foo metadata/declared-vocabulary.csv",
+    "  path: !str metadata/declared-vocabulary.csv",
+    # B-429 pins the Python follow-up to this R Q62 refusal: a native
+    # undefined handle is a tag error, not the unrelated malformed fallback.
+    "  path: !e!foo metadata/declared-vocabulary.csv",
+    "  path: &v !foo metadata/declared-vocabulary.csv",
+    "  path: !<tag:example.org,2026:unknown> metadata/declared-vocabulary.csv",
+    "  path: metadata/declared-vocabulary.csv\nnotes: [!foo ignored]",
+    "  path: metadata/declared-vocabulary.csv\nnotes: {? !foo key: value}",
+    "  path: metadata/declared-vocabulary.csv\n---\nnotes: !foo ignored",
+    "  path: metadata/declared-vocabulary.csv\nnotes: !foo ignored\nbroken: [unterminated",
+    '  path: metadata/declared-vocabulary.csv\nnotes: ["!<text", !foo value # > later\n]',
+    "  path: metadata/declared-vocabulary.csv\nnotes: !foo [unterminated",
+    "  path: metadata/declared-vocabulary.csv\nnotes: !<tag:example.org,2026:unknown> [unterminated",
+    '  path: metadata/declared-vocabulary.csv\ndescription: "first\n%TAG ! tag:yaml.org,2002:\n# last"\n---\nx: !str value'
+  )) {
+    path <- withr::local_tempdir()
+    make_eml_test_sdp(path)
+    closure_clear(path)
+    sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+    writeLines(c("semantic_vocabulary:", declaration,
+                 "semantic_review:", "  path: declared-review.csv"), sidecar)
+    before <- readBin(sidecar, "raw", n = file.info(sidecar)$size)
+
+    error <- tryCatch(write_sdp_semantic_closure(
+      path, evidence = closure_reviewed_evidence(),
+      search_fn = closure_search_stub(), quiet = TRUE
+    ), error = identity)
+
+    expect_true(inherits(error, "error"), info = declaration)
+    if (inherits(error, "error")) {
+      expect_match(conditionMessage(error), "eml-mapping.yml", fixed = TRUE)
+      expect_match(conditionMessage(error), "tag", fixed = TRUE)
+    }
+    expect_identical(readBin(sidecar, "raw", n = file.info(sidecar)$size), before)
+    expect_false(file.exists(file.path(path, "metadata", "declared-vocabulary.csv")))
+    expect_false(file.exists(file.path(path, "declared-review.csv")))
+    expect_false(file.exists(file.path(path, "metadata", "semantic_vocabulary.csv")))
+    expect_false(file.exists(file.path(path, "reviewed_semantic_selections.csv")))
+  }
+})
+
+test_that("closure honors untagged and recognized standard tagged paths", {
+  for (value in c("metadata/declared-vocabulary.csv",
+                  "!!str metadata/declared-vocabulary.csv",
+                  "!<tag:yaml.org,2002:str> metadata/declared-vocabulary.csv")) {
+    path <- withr::local_tempdir()
+    make_eml_test_sdp(path)
+    closure_clear(path)
+    sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+    writeLines(c("semantic_vocabulary:", paste("  path:", value),
+                 "semantic_review:", "  path: declared-review.csv",
+                 'notes: "!foo literal"'), sidecar)
+    closure <- write_sdp_semantic_closure(
+      path, evidence = closure_reviewed_evidence(),
+      search_fn = closure_search_stub(), quiet = TRUE
+    )
+    expect_identical(closure$files[["vocabulary"]],
+                     normalizePath(file.path(path, "metadata", "declared-vocabulary.csv")))
+    expect_identical(closure$files[["review"]], normalizePath(file.path(path, "declared-review.csv")))
+    expect_true(file.exists(closure$files[["vocabulary"]]))
+    expect_true(file.exists(closure$files[["review"]]))
+  }
+})
+
+test_that("closure refuses implicit-end directive tags before any write", {
+  for (namespace in c("tag:example.org,2026:", "tag:yaml.org,2002:")) {
+    path <- withr::local_tempdir()
+    make_eml_test_sdp(path)
+    closure_clear(path)
+    sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+    text <- paste0(
+      "semantic_vocabulary:\n  path: metadata/declared-vocabulary.csv\n",
+      "semantic_review:\n  path: declared-review.csv\n",
+      "%TAG !e! ", namespace, "\n---\nx: !e!",
+      if (namespace == "tag:yaml.org,2002:") "str" else "foo", " value"
+    )
+    expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+    writeLines(text, sidecar)
+    before <- readBin(sidecar, "raw", n = file.info(sidecar)$size)
+    result <- tryCatch(write_sdp_semantic_closure(
+      path, evidence = closure_reviewed_evidence(),
+      search_fn = closure_search_stub(), quiet = TRUE
+    ), error = identity)
+
+    if (namespace == "tag:yaml.org,2002:") {
+      # Preserve the existing first-document path baseline for known tags.
+      expect_false(inherits(result, "error"))
+      expect_true(file.exists(file.path(path, "metadata", "declared-vocabulary.csv")))
+      expect_true(file.exists(file.path(path, "declared-review.csv")))
+    } else {
+      expect_identical(readBin(sidecar, "raw", n = file.info(sidecar)$size), before)
+      expect_s3_class(result, "metasalmon_eml_mapping_tag")
+      expect_false(file.exists(file.path(path, "metadata", "declared-vocabulary.csv")))
+      expect_false(file.exists(file.path(path, "declared-review.csv")))
+      expect_false(file.exists(file.path(path, "metadata", "semantic_vocabulary.csv")))
+      expect_false(file.exists(file.path(path, "reviewed_semantic_selections.csv")))
+    }
+  }
+})
+
+test_that("long required tagged keys are refused before any closure write", {
+  for (key_length in c(10L, 1000L)) {
+    for (sentinel in c(FALSE, TRUE)) {
+      path <- withr::local_tempdir()
+      make_eml_test_sdp(path)
+      closure_clear(path)
+      sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+      text <- paste0(
+        "semantic_vocabulary:\n  path: metadata/declared-vocabulary.csv\n",
+        "semantic_review:\n  path: declared-review.csv\n",
+        "a: 1\n!foo ", strrep("k", key_length), ": 2\n"
+      )
+      expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+      writeLines(text, sidecar)
+      targets <- c(file.path(path, "metadata", "declared-vocabulary.csv"),
+                   file.path(path, "declared-review.csv"))
+      if (sentinel) for (target in targets) writeLines("ORIGINAL-SENTINEL", target)
+      before <- readBin(sidecar, "raw", n = file.info(sidecar)$size)
+      result <- tryCatch(write_sdp_semantic_closure(
+        path, evidence = closure_reviewed_evidence(),
+        search_fn = closure_search_stub(), quiet = TRUE
+      ), error = identity)
+      expect_s3_class(result, "metasalmon_eml_mapping_tag")
+      expect_identical(readBin(sidecar, "raw", n = file.info(sidecar)$size), before)
+      if (sentinel) {
+        for (target in targets) expect_identical(readLines(target), "ORIGINAL-SENTINEL")
+      } else {
+        expect_false(any(file.exists(targets)))
+      }
+    }
+  }
+})
+
+test_that("required tagged sequence keys cannot change closure output bytes", {
+  for (key_length in c(10L, 1000L)) {
+    for (sentinel in c(FALSE, TRUE)) {
+      path <- withr::local_tempdir()
+      make_eml_test_sdp(path)
+      closure_clear(path)
+      sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+      text <- paste0(
+        "semantic_vocabulary:\n  path: metadata/declared-vocabulary.csv\n",
+        "semantic_review:\n  path: declared-review.csv\n",
+        "a: 1\n!foo [", strrep("k", key_length), "]: 2\n"
+      )
+      expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+      writeLines(text, sidecar)
+      targets <- c(file.path(path, "metadata", "declared-vocabulary.csv"),
+                   file.path(path, "declared-review.csv"))
+      if (sentinel) for (target in targets) writeLines("ORIGINAL-SENTINEL", target)
+      before <- readBin(sidecar, "raw", n = file.info(sidecar)$size)
+      target_bytes <- if (sentinel) lapply(targets, function(target) {
+        readBin(target, "raw", n = file.info(target)$size)
+      }) else NULL
+      result <- tryCatch(write_sdp_semantic_closure(
+        path, evidence = closure_reviewed_evidence(),
+        search_fn = closure_search_stub(), quiet = TRUE
+      ), error = identity)
+      expect_s3_class(result, "metasalmon_eml_mapping_tag")
+      expect_identical(readBin(sidecar, "raw", n = file.info(sidecar)$size), before)
+      if (sentinel) {
+        for (i in seq_along(targets)) expect_identical(
+          readBin(targets[[i]], "raw", n = file.info(targets[[i]])$size),
+          target_bytes[[i]]
+        )
+      } else {
+        expect_false(any(file.exists(targets)))
+      }
+    }
+  }
 })

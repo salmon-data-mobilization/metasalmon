@@ -719,8 +719,8 @@ test_that("validate_salmon_datapackage never evaluates an !expr tag in SSSOM met
   # reader passes `eval.expr = FALSE` explicitly so that option cannot reach
   # it. The tag is installed by patching the bytes the manifest already
   # binds (and its SHA-256) so the only reader that meets it is the
-  # validator's. yaml 2.3.12 returns the unevaluated expression as text with
-  # no warning; newer versions may warn, which is tolerated here.
+  # validator's. The reader must refuse the tag rather than return its
+  # unevaluated payload as a metadata value.
   root <- withr::local_tempdir()
   make_eml_test_sdp(root)
   source <- file.path(withr::local_tempdir(), "approved.sssom.tsv")
@@ -757,19 +757,424 @@ test_that("validate_salmon_datapackage never evaluates an !expr tag in SSSOM met
   )
 
   withr::local_options(yaml.eval.expr = TRUE)
-  verdict <- tryCatch(
+  expect_error(
     suppressWarnings(suppressMessages(validate_salmon_datapackage(root))),
-    error = identity
+    "explicit YAML tags"
   )
   expect_false(file.exists(sentinel))
-  expect_false(
-    inherits(verdict, "error"),
-    info = if (inherits(verdict, "error")) conditionMessage(verdict)
+  expect_error(
+    suppressWarnings(read_sssom_mapping_set(installed)),
+    paste0(basename(installed), ".*explicit YAML tags")
   )
-  # The tag reaches the package as the text it is, not as its value.
+  expect_false(file.exists(sentinel))
+})
+
+test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
+  root <- withr::local_tempdir()
+  tagged <- c(
+    "! X",
+    "!!! X",
+    "!foo X",
+    "!foo'bar X",
+    "!f%6fo X",
+    "!!str X",
+    "&a !foo X",
+    "!<tag:yaml.org,2002:str> X",
+    "!<tag:yaml.org,2002:%73tr> X",
+    "!<tag:example.org,2026:foo'bar> X",
+    "!<tag:example.org,2026:f%6fo> X",
+    "[!foo X]",
+    "[!foo'bar X]",
+    '["!foo", !foo\'bar X]',
+    "{item: !foo X}",
+    "{item: !foo'bar X}",
+    "{'x !a': ', !b', k: !foo X}",
+    "[&a !foo X]",
+    '{"item":!foo X}',
+    "{? !foo x: y}",
+    "[? !foo x: y]",
+    "{? &a !foo x: y}"
+  )
+  for (i in seq_along(tagged)) {
+    path <- file.path(root, sprintf("tagged-%02d.sssom.tsv", i))
+    sssom_test_write_raw(
+      path,
+      sssom_test_text(extra_metadata = paste0("# mapping_set_title: ", tagged[[i]]))
+    )
+    expect_error(
+      read_sssom_mapping_set(path),
+      paste0(basename(path), ".*explicit YAML tags"),
+      info = tagged[[i]]
+    )
+  }
+
+  nested <- sub(
+    "#   psc: https://w3id.org/psc/vocab/concept/",
+    "#   psc: !foo https://w3id.org/psc/vocab/concept/",
+    sssom_test_text(),
+    fixed = TRUE
+  )
+  nested_path <- file.path(root, "nested-tag.sssom.tsv")
+  sssom_test_write_raw(nested_path, nested)
+  expect_error(
+    read_sssom_mapping_set(nested_path),
+    paste0(basename(nested_path), ".*explicit YAML tags")
+  )
+
+  multiline <- list(
+    c("# mapping_set_title: [", "#   Good,", "#   !foo X", "# ]"),
+    c("# mapping_set_title: {", "#   item: !foo X", "# }")
+  )
+  for (i in seq_along(multiline)) {
+    path <- file.path(root, sprintf("multiline-%02d.sssom.tsv", i))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = multiline[[i]]))
+    expect_error(
+      read_sssom_mapping_set(path),
+      paste0(basename(path), ".*explicit YAML tags")
+    )
+  }
+
+  ordinary <- c(
+    '"!foo X"' = "!foo X",
+    '"!f%6fo X"' = "!f%6fo X",
+    "\"!foo'bar X\"" = "!foo'bar X",
+    "'!!str X'" = "!!str X",
+    "'!<tag:yaml.org,2002:%73tr> X'" = "!<tag:yaml.org,2002:%73tr> X",
+    "'!<tag:example.org,2026:f%6fo> X'" = "!<tag:example.org,2026:f%6fo> X",
+    "'? !foo X'" = "? !foo X",
+    '["!foo X"]' = "!foo X",
+    "[\"!foo'bar X\"]" = "!foo'bar X",
+    "Good !foo title" = "Good !foo title",
+    "Good [!foo] title" = "Good [!foo] title",
+    "[https:!text]" = "https:!text",
+    "[Good ? !foo]" = "Good ? !foo"
+  )
+  for (i in seq_along(ordinary)) {
+    path <- file.path(root, sprintf("ordinary-%02d.sssom.tsv", i))
+    sssom_test_write_raw(
+      path,
+      sssom_test_text(extra_metadata = paste0("# mapping_set_title: ", names(ordinary)[[i]]))
+    )
+    expect_identical(
+      read_sssom_mapping_set(path)$metadata$mapping_set_title,
+      unname(ordinary[[i]])
+    )
+  }
+
+  # Multiple quoted bangs in one flow mapping must not create a tag when the
+  # disposable bulk replacement realigns the quote boundaries.
+  quoted_flow_path <- file.path(root, "quoted-flow-bangs.sssom.tsv")
+  sssom_test_write_raw(
+    quoted_flow_path,
+    sssom_test_text(
+      extra_metadata = "# mapping_set_title: {'x !a': ', !b', k: v}"
+    )
+  )
   expect_identical(
-    suppressWarnings(read_sssom_mapping_set(installed))$metadata$mapping_set_title,
-    expression_title
+    read_sssom_mapping_set(quoted_flow_path)$metadata$mapping_set_title,
+    ", !b|v"
   )
-  expect_false(file.exists(sentinel))
+
+  block_path <- file.path(root, "block-text.sssom.tsv")
+  sssom_test_write_raw(
+    block_path,
+    sssom_test_text(extra_metadata = c("# mapping_set_title: |", "#   !foo X"))
+  )
+  expect_identical(
+    read_sssom_mapping_set(block_path)$metadata$mapping_set_title,
+    "!foo X"
+  )
+
+  # Quoting may span physical YAML lines. A leading exclamation mark on the
+  # next line is still part of the quoted scalar, not a node tag.
+  for (quote in c('"', "'")) {
+    path <- file.path(root, paste0("multiline-quoted-", charToRaw(quote), ".sssom.tsv"))
+    sssom_test_write_raw(
+      path,
+      sssom_test_text(extra_metadata = c(
+        paste0("# mapping_set_title: ", quote),
+        paste0("#   !foo X", quote)
+      ))
+    )
+    expect_identical(
+      read_sssom_mapping_set(path)$metadata$mapping_set_title,
+      "!foo X"
+    )
+  }
+
+  # A quote or tag-looking token inside earlier plain text, a YAML comment,
+  # or a block scalar cannot hide a real tag or become one itself.
+  preceding_values <- c("a:'", 'a:"', "Good # note:'", '"!foo"', "'!foo'")
+  for (i in seq_along(preceding_values)) {
+    preceding <- preceding_values[[i]]
+    path <- file.path(root, sprintf("tag-after-text-%02d.sssom.tsv", i))
+    sssom_test_write_raw(
+      path,
+      sssom_test_text(extra_metadata = c(
+        paste0("# mapping_set_description: ", preceding),
+        "# mapping_set_title: !foo X"
+      ))
+    )
+    expect_error(read_sssom_mapping_set(path), "explicit YAML tags")
+  }
+
+  explicit_key_path <- file.path(root, "explicit-mapping-key-tag.sssom.tsv")
+  explicit_key <- sub(
+    "#   psc: https://w3id.org/psc/vocab/concept/",
+    paste("#   ? psc", "#   : !foo https://w3id.org/psc/vocab/concept/", sep = "\n"),
+    sssom_test_text(),
+    fixed = TRUE
+  )
+  sssom_test_write_raw(explicit_key_path, explicit_key)
+  expect_error(read_sssom_mapping_set(explicit_key_path), "explicit YAML tags")
+
+  tag_directive_path <- file.path(root, "primary-tag-directive.sssom.tsv")
+  sssom_test_write_raw(
+    tag_directive_path,
+    paste0(
+      "# %TAG ! tag:example.org,2026:\n",
+      "# ---\n",
+      sssom_test_text(extra_metadata = "# mapping_set_title: !foo X")
+    )
+  )
+  expect_error(read_sssom_mapping_set(tag_directive_path), "explicit YAML tags")
+
+  custom_handle_path <- file.path(root, "custom-tag-directive.sssom.tsv")
+  sssom_test_write_raw(
+    custom_handle_path,
+    paste0(
+      "# %TAG !e! tag:example.org,2026:\n",
+      "# ---\n",
+      sssom_test_text(extra_metadata = "# mapping_set_title: !e!foo X")
+    )
+  )
+  expect_error(read_sssom_mapping_set(custom_handle_path), "explicit YAML tags")
+
+  # A verbatim-tag-looking literal must not consume a later real tag in the
+  # disposable probe, even when YAML has no whitespace around a flow comma.
+  verbatim_literal_cases <- list(
+    c('# mapping_set_description: "!<text" # > later',
+      "# mapping_set_title: !foo X"),
+    '# mapping_set_title: ["!<text", !foo X>]',
+    '# mapping_set_title: [Good !<text,!foo,more>]'
+  )
+  for (i in seq_along(verbatim_literal_cases)) {
+    path <- file.path(root, sprintf("verbatim-looking-text-%02d.sssom.tsv", i))
+    sssom_test_write_raw(
+      path,
+      sssom_test_text(extra_metadata = verbatim_literal_cases[[i]])
+    )
+    expect_error(read_sssom_mapping_set(path), "explicit YAML tags")
+  }
+
+  literal_bang_key_path <- file.path(root, "literal-bang-key-tag.sssom.tsv")
+  sssom_test_write_raw(
+    literal_bang_key_path,
+    sssom_test_text(extra_metadata = "# mapping_set_title: {a!text: !foo X}")
+  )
+  expect_error(read_sssom_mapping_set(literal_bang_key_path), "explicit YAML tags")
+
+  continuations <- list(
+    c("# mapping_set_title: Good", "#   !foo"),
+    c("# mapping_set_title: Good", "#   - !foo")
+  )
+  for (i in seq_along(continuations)) {
+    path <- file.path(root, sprintf("plain-continuation-%02d.sssom.tsv", i))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = continuations[[i]]))
+    expect_identical(
+      read_sssom_mapping_set(path)$metadata$mapping_set_title,
+      c("Good !foo", "Good - !foo")[[i]]
+    )
+  }
+
+  flow_text_path <- file.path(root, "flow-text.sssom.tsv")
+  sssom_test_write_raw(
+    flow_text_path,
+    sssom_test_text(extra_metadata = '# mapping_set_title: [Good "text":!foo]')
+  )
+  expect_identical(
+    read_sssom_mapping_set(flow_text_path)$metadata$mapping_set_title,
+    'Good "text":!foo'
+  )
+
+  sequence_block_path <- file.path(root, "sequence-block-text.sssom.tsv")
+  sssom_test_write_raw(
+    sequence_block_path,
+    sssom_test_text(extra_metadata = c("# creator_label:", "#   - |", "#     !foo"))
+  )
+  expect_identical(
+    read_sssom_mapping_set(sequence_block_path)$metadata$creator_label,
+    "!foo"
+  )
+})
+
+test_that("an explicit YAML tag after a document boundary is still refused", {
+  root <- withr::local_tempdir()
+  two_documents <- function(second_title) {
+    sub(
+      "\nsubject_id\t",
+      paste0("\n# ---\n# mapping_set_title: ", second_title, "\nsubject_id\t"),
+      sssom_test_text(),
+      fixed = TRUE
+    )
+  }
+
+  plain_path <- file.path(root, "plain-second-document.sssom.tsv")
+  sssom_test_write_raw(plain_path, two_documents("Plain title"))
+  expect_identical(
+    read_sssom_mapping_set(plain_path)$metadata$mapping_set_id,
+    "https://example.org/mappings/psc-to-gcdfo"
+  )
+
+  tagged_path <- file.path(root, "tagged-second-document.sssom.tsv")
+  sssom_test_write_raw(tagged_path, two_documents("!foo X"))
+  expect_error(
+    read_sssom_mapping_set(tagged_path),
+    paste0(basename(tagged_path), ".*explicit YAML tags")
+  )
+})
+
+test_that("ordinary SSSOM exclamation text does not reparse metadata per bang", {
+  root <- withr::local_tempdir()
+  bangs <- paste(rep("!", 80L), collapse = "")
+  original_yaml_load <- yaml::yaml.load
+
+  ordinary <- list(
+    quoted = paste0('# mapping_set_title: "', bangs, '"'),
+    comment = c(paste0("# # ", bangs), "# mapping_set_title: Plain"),
+    block = c("# mapping_set_title: |", paste0("#   ", bangs)),
+    plain = paste0("# mapping_set_title: Plain ", bangs),
+    flow = paste0("# mapping_set_title: ['", bangs, "']"),
+    multiline = c('# mapping_set_title: "first', paste0("#   ", bangs, '"')),
+    single_quote_bang = "# mapping_set_title: '!'",
+    flow_single_quote_bang = "# mapping_set_title: ['!']"
+  )
+  for (case in names(ordinary)) {
+    path <- file.path(root, paste0(case, "-many-bangs.sssom.tsv"))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = ordinary[[case]]))
+    parse_calls <- 0L
+    parsed <- testthat::with_mocked_bindings(
+      read_sssom_mapping_set(path),
+      yaml.load = function(...) {
+        parse_calls <<- parse_calls + 1L
+        original_yaml_load(...)
+      },
+      .package = "yaml"
+    )
+    expected <- switch(case,
+      comment = "Plain",
+      plain = paste0("Plain ", bangs),
+      multiline = paste("first", bangs),
+      single_quote_bang = "!",
+      flow_single_quote_bang = "!",
+      bangs
+    )
+    expect_identical(parsed$metadata$mapping_set_title, expected, info = case)
+    # The public reader also parses the unmodified metadata once. A bounded
+    # number of probe parses keeps literal text linear in its own length.
+    expect_lte(parse_calls, 3L)
+  }
+
+  # Masking a literal line must leave a later real tag visible after each
+  # syntax class, without reparsing the whole document 80 times.
+  before_tag <- list(
+    quoted = paste0('# mapping_set_description: "', bangs, '"'),
+    comment = paste0("# # ", bangs),
+    block = c("# mapping_set_description: |", paste0("#   ", bangs)),
+    plain = paste0("# mapping_set_description: Plain ", bangs),
+    flow = paste0("# mapping_set_description: ['", bangs, "']"),
+    multiline = c('# mapping_set_description: "first', paste0("#   ", bangs, '"')),
+    single_quote_bang = "# mapping_set_description: '!'",
+    flow_single_quote_bang = "# mapping_set_description: ['!']"
+  )
+  for (case in names(before_tag)) {
+    path <- file.path(root, paste0(case, "-bangs-then-tag.sssom.tsv"))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = c(
+      before_tag[[case]], "# mapping_set_title: !foo X"
+    )))
+    parse_calls <- 0L
+    testthat::with_mocked_bindings(
+      expect_error(read_sssom_mapping_set(path), "explicit YAML tags"),
+      yaml.load = function(...) {
+        parse_calls <<- parse_calls + 1L
+        original_yaml_load(...)
+      },
+      .package = "yaml"
+    )
+    expect_lte(parse_calls, 3L)
+  }
+})
+
+# B-269: schema ranges are distinct. These optional fields are not CURIEs.
+sssom_test_optional_slots <- function(values) {
+  lines <- strsplit(sssom_test_text(), "\n", fixed = TRUE)[[1]]
+  header <- which(startsWith(lines, "subject_id\t"))
+  lines[[header]] <- paste(lines[[header]], paste(names(values), collapse = "\t"), sep = "\t")
+  lines[[header + 1L]] <- paste(lines[[header + 1L]], paste(values, collapse = "\t"), sep = "\t")
+  paste0(paste(lines, collapse = "\n"), "\n")
+}
+
+test_that("SSSOM optional fields use their enum or string schema ranges", {
+  root <- withr::local_tempdir()
+  values <- c(
+    predicate_type = "owl annotation property",
+    subject_category = "fishing gear",
+    object_category = "sampling method",
+    similarity_measure = "Levenshtein distance"
+  )
+  for (field in names(values)) {
+    path <- file.path(root, paste0(field, ".sssom.tsv"))
+    sssom_test_write_raw(path, sssom_test_optional_slots(values[field]))
+    result <- tryCatch(read_sssom_mapping_set(path), error = identity)
+    expect_false(inherits(result, "error"), info = field)
+    if (!inherits(result, "error")) {
+      expect_identical(result$mappings[[field]], unname(values[[field]]), info = field)
+      expect_true(isTRUE(validate_sdp_sssom(path)), info = field)
+    }
+  }
+
+  # An identifier-shaped free-text value needs no prefix declaration.
+  path <- file.path(root, "free-text.sssom.tsv")
+  sssom_test_write_raw(path, sssom_test_optional_slots(c(subject_category = "undeclared:category")))
+  expect_no_error(read_sssom_mapping_set(path))
+  # The ordinary entity-reference slots keep their existing rejection.
+  sssom_test_write_raw(path, sssom_test_optional_slots(c(mapping_tool_id = "plain tool name")))
+  expect_error(read_sssom_mapping_set(path), "mapping_tool_id.*absolute URI or compact CURIE")
+})
+
+test_that("SSSOM predicate types reject values the specification forbids", {
+  path <- file.path(withr::local_tempdir(), "types.sssom.tsv")
+  for (value in c("not an entity type", "owl:Class", "rdfs literal", "composed entity expression")) {
+    sssom_test_write_raw(path, sssom_test_optional_slots(c(predicate_type = value)))
+    expect_error(read_sssom_mapping_set(path), "predicate_type.*entity_type_enum", info = value)
+  }
+})
+
+test_that("SSSOM packages round-trip the four correctly typed optional fields", {
+  path <- file.path(withr::local_tempdir(), "optional.sssom.tsv")
+  values <- c(predicate_type = "owl annotation property", subject_category = "fishing gear",
+              object_category = "sampling method", similarity_measure = "Levenshtein distance")
+  sssom_test_write_raw(path, sssom_test_optional_slots(values))
+  sdp <- withr::local_tempdir()
+  expect_no_error(write_sdp_sssom(sdp, mapping_sets = path))
+  expect_true(isTRUE(validate_sdp_sssom(sdp)))
+  written <- read_sssom_mapping_set(file.path(sdp, "metadata", "semantic", "optional.sssom.tsv"))
+  for (field in names(values)) {
+    expect_identical(written$mappings[[field]], unname(values[[field]]), info = field)
+  }
+})
+
+test_that("SSSOM predicate_type has the same schema range in metadata and mappings", {
+  path <- file.path(withr::local_tempdir(), "predicate-types.sssom.tsv")
+  # All predicate-legal entity_type_enum spellings from the source snapshot.
+  for (value in c("owl class", "owl object property", "owl data property",
+                  "owl annotation property", "owl named individual", "skos concept",
+                  "rdfs resource", "rdfs class", "rdfs datatype", "rdf property")) {
+    sssom_test_write_raw(path, sssom_test_optional_slots(c(predicate_type = value)))
+    expect_no_error(read_sssom_mapping_set(path))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = paste0("# predicate_type: ", value)))
+    expect_no_error(read_sssom_mapping_set(path))
+  }
+  sssom_test_write_raw(path, sssom_test_text(extra_metadata = "# predicate_type: not an entity type"))
+  expect_error(read_sssom_mapping_set(path), "predicate_type.*entity_type_enum")
 })

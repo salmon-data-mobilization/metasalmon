@@ -63,6 +63,11 @@ default.
 \details{
 For interactive workflows this function can prompt users row-by-row for whether a
 gap should be requested as a shared SMN term, a profile-specific term, or skipped.
+Commons register rows instead retain their explicit \code{mint_target} and
+lifecycle holds. The renderer rederives holds from source fields;
+\code{scope}, \code{scope_overrides} and \code{ask} cannot reopen or redirect them. Their
+bodies identify the concept card and draft gap note, and require a curator
+definition and term type rather than asserting dataset evidence.
 }
 \examples{
 gap <- dplyr::tibble(

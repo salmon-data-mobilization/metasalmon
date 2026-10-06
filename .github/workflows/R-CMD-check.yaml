@@ -21,13 +21,12 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: "yes"
       _R_CHECK_CRAN_INCOMING_REMOTE_: "false"
-      # Ordinary CI is isolated from LLM providers. Live benchmarks require an
-      # explicit CLI opt-in and credentials supplied outside this workflow.
+      # Ordinary CI is isolated from LLM providers while the deprecated
+      # in-package model path remains until S16's removal step (B-329).
       OPENAI_API_KEY: ""
       OPENROUTER_API_KEY: ""
       METASALMON_LLM_API_KEY: ""
       CHAPI_API_KEY: ""
-      METASALMON_RUN_THEME_A_INTEGRITY: "false"
       # Run the suite under a non-C ambient collation. Generating `en_US.UTF-8`
       # was not enough on its own: R takes its collator from the startup locale
       # (ICU on Linux), so a later `Sys.setlocale("LC_COLLATE", ...)` did not
@@ -82,8 +81,21 @@ jobs:
         with:
           use-public-rspm: true
 
+      - name: Verify the CI bootstrap failure path offline
+        run: Rscript scripts/tests/test_install_ci_pak.R
+
+      - name: Install CI toolchain (pak with bounded retries)
+        env:
+          # Use the library setup-r already puts on R's normal search path:
+          # setup-r-dependencies' early repo_status() uses pak:: without lib.loc.
+          R_LIB_FOR_PAK: ${{ env.R_LIBS_USER }}
+        run: Rscript scripts/install-ci-pak.R
+
       - uses: r-lib/actions/setup-r-dependencies@v2
+        env:
+          R_LIB_FOR_PAK: ${{ env.R_LIBS_USER }}
         with:
+          pak-version: none
           extra-packages: |
             any::devtools
             any::rcmdcheck

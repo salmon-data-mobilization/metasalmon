@@ -1,8 +1,8 @@
 id: B-127
 kind: defect
 title: Converge on one shared package-ownership sentinel, the metasalmonpy half
-state: review
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S10

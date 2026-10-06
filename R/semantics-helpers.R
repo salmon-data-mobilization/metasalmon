@@ -55,7 +55,15 @@
   structure(
     list(
       mode = if (omitted) "role_defaults" else "explicit",
-      sources = unname(as.character(sources))
+      # An explicit list is read the way metasalmonpy's `make_source_policy()`
+      # reads it (hub B-421), so an injected search function, the bundle
+      # payload and a review packet's recorded allowlist all see the names
+      # `find_terms()` searches.
+      sources = if (omitted) {
+        unname(as.character(sources))
+      } else {
+        .ms_normalize_explicit_sources(sources)
+      }
     ),
     class = "metasalmon_source_policy"
   )
@@ -761,16 +769,17 @@ suggest_semantics <- function(df,
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' dict <- infer_dictionary(my_data, dataset_id = "example", table_id = "main")
-#' dict <- suggest_semantics(my_data, dict)
-#'
-#' # Fill only the missing semantic fields for one measurement column
-#' dict <- apply_semantic_suggestions(dict, columns = "SPAWNER_COUNT")
-#'
-#' # Require stronger lexical matches when score is available
-#' dict <- apply_semantic_suggestions(dict, min_score = 2)
-#' }
+#' dict <- infer_dictionary(data.frame(spawner_count = c(12L, 19L)))
+#' # Example-only IRI: replace it with a reviewed term for a real SDP.
+#' reviewed <- tibble::tibble(
+#'   column_name = "spawner_count", dictionary_role = "variable",
+#'   iri = "https://example.org/terms/spawner-count", score = 3
+#' )
+#' filled <- apply_semantic_suggestions(
+#'   dict, suggestions = reviewed, columns = "spawner_count",
+#'   min_score = 2, verbose = FALSE
+#' )
+#' filled$term_iri
 apply_semantic_suggestions <- function(dict,
                                        suggestions = attr(dict, "semantic_suggestions"),
                                        strategy = c("top", "reviewed", "llm"),

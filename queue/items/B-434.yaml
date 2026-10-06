@@ -1,0 +1,13 @@
+id: B-434
+kind: defect
+title: Hub row 62 still describes Python HTML extraction as collecting every data node
+state: done
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P3
+blocked_by: [B-386]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMON, knowledge/parity-deviations.md row 62 records the already landed B-386 Python HTML body/script/style selection and its whole-document no-body fallback; the unchanged native R reader description accurately records the same no-body fallback. Preserve the permanent Idiom kind, remaining parser/library/text/repair differences, all PDF/DOCX/spreadsheet clauses, ruling/history and row retirement condition, every other numbered row and raw unowned span, and unchanged runtime/tests. This source-verified hub factual companion follows Python91/B-386 landing; it makes no new deliberate parity decision and has no Python implementation half.'

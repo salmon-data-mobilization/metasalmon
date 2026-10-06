@@ -1,0 +1,12 @@
+id: B-432
+kind: defect
+title: R's direct SSSOM reference parser still resolves whitespace against the locale
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The direct SSSOM reference-parser paths in R/sssom.R reject the same non-ASCII whitespace under C and UTF-8 locales as the shared absolute-IRI predicate, with a failing-before public metadata and mapping-cell control for the existing whitespace contract. Retain bare prefixes, composed references, native-parser and identifier/cardinality guards, malformed input diagnostics and byte-preserving writer behavior. Do not decide the separate B-350/B-351 quote-decoding versus legacy-byte question.'

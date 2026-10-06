@@ -1,8 +1,8 @@
 id: B-256
 kind: defect
 title: 'read_github_csv()''s 401, 403 and 404 messages can never be shown, because httr2 raises inside ms_github_get() before the status is read'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 severity: P3

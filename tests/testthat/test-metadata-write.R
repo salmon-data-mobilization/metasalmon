@@ -174,6 +174,35 @@ test_that("only decided fields are written; undecided slots keep their markers",
   expect_true(grepl("^REVIEW", row$property_iri[[1]]))
 })
 
+test_that("a hand-edited missing accepted IRI becomes an empty write value", {
+  path <- review_fixture_package()
+  review <- accept_suggestion(
+    suppressMessages(review_semantics(path)), "spawner_count", "variable", rank = 1
+  )
+  review$decision_iri[!is.na(review$decision)] <- NA_character_
+
+  # CSV renders NA and empty with the same bytes. Observe the value handed to
+  # that renderer so the old missing-to-empty behavior remains explicit.
+  original_renderer <- .ms_sdp_extension_csv_bytes
+  rendered_iri <- NULL
+  suppressMessages(with_mocked_bindings(
+    .ms_sdp_extension_csv_bytes = function(rows, ...) {
+      if ("column_name" %in% names(rows) && "term_iri" %in% names(rows)) {
+        rendered_iri <<- rows$term_iri[rows$column_name == "spawner_count"]
+      }
+      original_renderer(rows, ...)
+    },
+    apply_sdp_semantics(path, review)
+  ))
+  expect_identical(rendered_iri, "")
+
+  dictionary <- readr::read_csv(
+    file.path(path, "metadata", "column_dictionary.csv"),
+    col_types = readr::cols(.default = readr::col_character()), na = character()
+  )
+  expect_identical(dictionary$term_iri[dictionary$column_name == "spawner_count"], "")
+})
+
 test_that("accepting a term also records its term_type, and rejecting clears both", {
   path <- review_fixture_package()
   review <- accept_suggestion(
