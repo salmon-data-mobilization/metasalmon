@@ -466,6 +466,9 @@ test_that("an interrupted capture retains its raw pages and original interrupt",
 
 
 test_that("a genuine unhandled native interrupt retains evidence without becoming an error", {
+  # tools::pskill uses TerminateProcess on Windows, which cannot deliver SIGINT.
+  # Retires when: a Windows-native interrupt driver exercises this same
+  # unhandled-condition boundary without terminating before evidence is saved.
   skip_on_os("windows")
   root <- normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
   sandbox <- tempfile("catalogue-native-interrupt-")
@@ -474,14 +477,15 @@ test_that("a genuine unhandled native interrupt retains evidence without becomin
   out <- file.path(sandbox, "capture")
   script <- file.path(sandbox, "interrupt.R")
   encode <- function(value) paste(capture.output(dput(value)), collapse = "\n")
-  # Development loads the exact checkout; installed R CMD check uses its own
-  # installed package. The child has no outer exiting interrupt/error handler.
+  # Development loads the exact checkout. In installed R CMD check, root is
+  # the metasalmon.Rcheck library containing the installed metasalmon directory.
+  # The child has no outer exiting interrupt/error handler.
   code <- c(
     paste0("root <- ", encode(root)),
     "if (file.exists(file.path(root, 'R', 'catalogue-discovery.R'))) {",
     "  pkgload::load_all(root, quiet = TRUE)",
     "} else {",
-    "  library(metasalmon, lib.loc = dirname(root))",
+    "  library(metasalmon, lib.loc = root)",
     "}",
     paste0("expected_body <- ", encode(deparse(body(capture_catalogue_query)))),
     "stopifnot(identical(deparse(body(capture_catalogue_query)), expected_body))",
