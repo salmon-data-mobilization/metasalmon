@@ -1,8 +1,8 @@
 id: B-435
 kind: defect
 title: Python HTML context extraction leaks head text when an implicit body has no text
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S16
