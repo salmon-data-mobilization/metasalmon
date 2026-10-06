@@ -5934,3 +5934,667 @@ proposal/version; it does not reopen merged R239, make new substantive intake
 on main, or decide permanent HTML parser/library parity. Actual final a41
 body/no-body source determines the factual row62 correction, while permanent
 parser/library differences and all other rows remain.
+
+
+## 2026-10-06 — R267/B434 and Python106/B332 completion; shared-sentinel factual closure preparation
+
+This substantive append preserves the complete preceding 452115 bytes.
+The retained external note below records its successive pending and actual
+phases; dated completion sections supersede pending states without deleting
+those receipts. None of the retained historical pending fields is a current
+approval or ownership gate. Current final facts and still-pending B127/heartbeat
+fields are recorded after that exact note.
+
+# External next-use overhead note — R267 completion and B332 preparation
+
+This note is unpublished preparation for the next substantive authorized route.
+Do not append it to the current frozen/landed 452115-byte canonical history or
+make a status-only Git checkpoint. Preserve all prior versions and authority /
+actual failure distinctions. B332 source/publication/CI/merge/closeout outcome
+is still pending, so no retirement or future command count is asserted here.
+
+## Actual R267 and source-verified B434 closure
+
+R267 merged exact 8b75cd9e as 1cc58fcbd7af473caf5fe46d5c9ffe6c0cecfeed at
+2026-10-06T05:31:17Z under the successful matched-head checked controller.
+Actual 5 policy checks/full 3m20/strict R4.6.1 4m22 zero E/W/N passed. Actual Claude
+37417902864 verifier FAILED from tool denial despite 5 verified nits/0 Important;
+exact separate 1270 source/history bindings substituted accurately under the
+approved grant. Actual Codex Code + Security completed; no reroll/server override.
+The final receipt and fully checked source/body evidence retain that failure.
+
+First closeout attempt genuinely stopped process exit 1 after 9 commands /
+8 successes when normal hub status returned rc3: primary 2e6 was behind actual
+remote 1cc before its planned FF. The client correctly refused stale queue data;
+no repository mutation followed. Root reviewed the minimal external correction:
+retain authenticated public claim-tip proof before FF, then verified source /
+policy-preserved FF before normal terminal status and every queue write.
+The original failed script/events/logs are archived verbatim. This is real
+orchestration failure and repair, not product/test/review failure or approval.
+
+The corrected actual pipeline succeeded 149 checked commands/0 failures in
+15.668883290956728s. Mechanical queue closeout
+fbc0b465c4bab08844c5f45361a54496d17c6d95 changes only existing B434 state/claimable;
+full 452115/c55e6c76 history, approved dirty policy and all unrelated worktrees
+were preserved. Own completed B434 checkout was clean/no-unique/no-unpushed /
+no-untracked with zero ignored files, then removed; branch/terminal retained.
+No claim/bot/post-merge PR/product/native/full/site repeats or log checkpoint.
+Actual receipt `/tmp/b434-postmerge-closeout/final-closeout-receipt.json`, SHA
+25aac956aaccab499e12705b1e64b0d317fc11b530a0f794fe2769ffeefaab75.
+
+## Substantive report and purpose-built automation readback
+
+Root sent the authorized substantive completion report to Alan's established
+parent chat 01a0f2a9-8da9-7252-b293-c326ee80b018, Summarize Saul routing evidence;
+the MCP send returned success and the receipt records actual_Alan_message_sent
+and Alan_substantive_receipt_sent true. This is one useful cross-chat completion
+receipt, not a polling message, new chat, review request or person contact.
+Exact 3383-byte report words remain in the external batch continuation JSON.
+
+The purpose-built heartbeat update succeeded and was read back exact at
+2026-10-06T05:44:04.988820Z: ACTIVE, existing hourly recurrence/name/thread target
+preserved. Exact saved prompt hash without the extra ending newline is
+3f98409deea3bafbd18b04b1d4f1cd0d4f1e815f1a4846779ad1fc2c059c92ec.
+Actual continuation receipt
+`/tmp/metasalmon-reinstated-final-batch-continuation.json`, SHA
+086f24c4aaad7c513e161701a2acd7d4c045859a0e4e4f9b66ccb35c3c9dbede;
+exact prompt `/tmp/metasalmon-reinstated-final-automation-prompt.md`.
+The then-historical diagnosed unclaimed-next B332 state is superseded by the
+new normal B332 claim only in this subsequent work; no old history is rewritten.
+
+## Current B332 local preparation and next-use evaluation token
+
+Root normally claimed existing B332 as 96a8be10badcc6b2b67206ca21169c929a8691f2
+under its actual a-c1bbb42efa975289 identity through 09:46:32Z and created its
+own clean Python worktree/branch from merged 3a3eb1f. No helper claim or identity
+override exists. This helper prepared a disabled external closeout using the
+corrected source-settlement-before-normal-status order, left every final
+candidate/source/peer/PR/body/normal-terminal/merge binding null, compiled only
+syntax, and reused 17 protected worktree snapshots from actual verified R267
+cleanup rather than repeating a full inventory. Current own intake is clean /
+zero ignored; final clean-source/ignored snapshot remains pending author freeze.
+
+The script keeps every queue write behind actual merged source/tree proof,
+clean Python FF and current canonical R hub status. It only closes existing
+B332 state/claimable after its actual source retirement; no R row45 annotation
+under the Python claim, other item/new prose/intake or primary policy/history
+edit. Fill the next-use evaluation only after an actual checked invocation:
+normal status follows source settlement, source proof reused once, no ignored
+failure reaches queue commit/push, and cleanup follows actual preservation.
+No successful B332 gate/merge/retirement is inferred from this preparation.
+
+## Honest coordination/instrument costs carried forward
+
+Root's current B332 intake combined-read outputs truncated twice; unsupported
+`hub ready --repo` returned rc3 after a read-only query. Root corrected the normal
+`hub ready B-332 B-350` read before claiming B332; no failed dependent write was
+ignored. Its later attempted `/tmp/metasalmon-reinstated-final-gate/PR105-plan.json`
+read raised FileNotFoundError before mutation; `rg --files` located the actual
+PR105-a41-plan.json and the selected scalar-schema read passed. These are small
+read/coordination repairs, not product/test/source/review failures.
+
+The participant query returned BrJohnson and claudeUser. Root checked the actual
+three Claude commits' Git name Claude/email noreply@anthropic.com, plus two fully
+paginated 105 issue/PR author records containing only BrJohnson, to support the
+existing solo/source permission evidence. This is the reported bounded proof;
+it does not invent a new human participant, identity or permission exception.
+
+Prior unsupported `hub claim --help`/`whoami` rc3 and wrong guessed configured
+claim prefix repaired before ownership writes, plus repeated full preparation
+JSON cats/truncations, are preserved in the earlier external B434 next-use
+notes. This helper also first looked for a continuation scalar at the top level;
+it found the real nested actual_completion_update_receipt before interpreting
+its success fields. No product or source rerun resulted. No aggregate CLI-read
+total is invented across these different scopes.
+
+Coordination comprises these source/receipt/schema reads, ownership/route
+handoffs and disabled external controller assembly. Implementation is the
+ongoing source-verified B332 factual author scope and later actual mechanical
+state operation, not completed by this preparation. Verification comprises the
+already actual R267 gates and source/cleanup receipts, plus this syntax-only
+external preparation; final B332 independent/hosted gates remain pending.
+Requested audit was useful independent/source/history acceptance, not idle
+polling agents. Environment repair is none. Passive wait durations remain
+unmeasured. This helper made zero repo/public/claim writes, product/native/full/
+site runs, polling agent spawns or status-only Git checkpoints.
+
+## Actual B332 publication binding and bounded next-use coordination
+
+At 2026-10-06T06:04:56.551912+00:00, actual Python106 publication is bound to 5d52aeacb668d6dedc3c59a501bfee161104f56b and the two accepted factual paths only: PARITY.md and .hub/workpads/B-332.md. The author publication controller records 67 checked commands, zero failures; root ready receipt records authentication/current draft read and a successful ready transition. Independent ontology_fetch_peer acceptance preserves its actual verdict, “clear within existing source-verified factual B332 companion scope”, 688 immutable bindings, 63 other raw rows, 40 root modules and 272 test paths unchanged. This is exact-source local acceptance; final hosted CI/findings/controller/merge/retirement are not inferred. Published body /private/tmp/b332-factual-preparation/complete-publication-body.md is 5293 bytes, SHA256 dcf84f42ba3961d6ccdd5920a1baba04b17f295f1c254564da122e3b14ec4ad0. Final gate body may be appended later and remains unset in this disabled closeout.
+
+The author log filename collision was caught before publication and corrected to unique per-phase execution log directories; original author evidence remains preserved. Root also caught the external closeout’s mistaken generic literal “clear” expectation before any invocation: only that schema check was repaired to required exact receipt assertions, retaining the scoped verdict, receipt hash, roles, head and zero findings. No reviewer receipt was rewritten, source changed or product test inferred.
+
+The next-intake mapping was corrected before source/claim takeover: actual R248 is the open draft “Draft B-238 decision and owner routing” at unchanged 65bee09c01acf61392104db95505ace9e2c11e51 on feature/b238-decision-routing; B393 is a separate icebox item. Source /tmp/b393-next-intake-proof/metadata.json. No promotion, takeover or conclusion that all work is unavailable follows from the correction.
+
+This helper’s bounded receipt assembly encountered absent shell alias `python` (rc127), then used python3; one broad `rg --files` result truncated and subsequent reads narrowed to named receipt paths. One read-only schema summary assumed a receipt object where the saved author gate receipt is a list (AttributeError); the next read used the correct list shape. No dependent repository or protocol mutation occurred, no failed test/gate is claimed, and no source/product/native/full/site repetition resulted. These are coordination/read costs, not environment or product repair. This phase writes external preparation/notes only; merge and enabling authorization remain null, and the unconditional pre-tool STOP remains.
+
+At 2026-10-06T06:06:00.194697+00:00, the sole collector’s actual terminal ebdcb941b46998d83dfc1aa6b4af43dd7c2dea7a and fresh clean 5d52 own-WT inventory were reused, not queried a second time. Zero ignored/nonignored untracked files are bound; no premerge zero-unique claim is made. Actual author publication command-time sum is 21.125451463s across 67 successful commands (sum, not phase elapsed time). All six checks are reported green, while actual sole bot artifact 6010358086 failed before review due to quota; no completed bot review is invented. Approved independent substitution and final root plan/body/controller remain pending binding.
+
+Root’s final evidence preparation printed a full actual-evidence.json once and output truncated at 23418 tokens. It then read explicit actual review/check/job-step/run scalar allowlists to complete required evidence, with no new API, product/source or test repeats. This is a coordination/output cost separate from actual CI/review outcomes. This helper also reused the collector’s compact ownership/inventory receipts and hash-read the complete evidence file without printing or re-reviewing its arrays.
+
+## B332 actual completion and next-use ordering evaluation — 2026-10-06T06:10:49.575867+00:00
+
+The historical pending/disabled sections above are retained. Root’s checked
+ordinary merge completed at 2026-10-06T06:06:48Z: Python PR106 landed exact
+5d52aeacb668d6dedc3c59a501bfee161104f56b as
+86cca9c24c3576e0d95c1c5d83abcbac288d1283. The successful same-process merge
+receipt records equal live snapshots, one actual quota artifact and zero review
+threads; the quota failure 6010358086 remains a failed request, not a completed
+review. The final body accurately recorded the approved independent factual
+source/history substitution, scoped 688-binding acceptance and actual six green
+checks. No bot request was repeated to clear an administrative hold.
+
+Root then invoked the specifically enabled mechanical closeout, exit0:
+queue commit 6f57def05b44fbc95a3ecb2563eeecd29e419f5a changes only existing
+queue/items/B-332.yaml to done/nonclaimable. Registered retirement and every
+other item byte remain exact. Python primary is clean at actual 86cca9c; the own
+completed B332 checkout was removed after clean/no unique/no unpushed/no
+nonignored untracked/no ignored checks. Zero ignored files required an archive.
+The original branch and terminal ebdcb941 remain, all 17 protected worktrees
+were preserved, approved dirty R policy bytes round-trip exact, the complete
+452115-byte canonical history is unchanged, and the whole R parity register
+including row45 is byte-exact. The Python factual claim did not edit R prose.
+
+Actual receipt /tmp/b332-postmerge-closeout/final-closeout-receipt.json,
+1438 bytes / SHA 8141f00472608b35685548e4c375cbcf5e90318d4438ff7077e9c3aecb392a6c,
+records 17.624506666s pipeline elapsed. execution-events.json is SHA
+4e9cf843b22d8bc2711d969820f5ee8744b6fd82cd4bd1419e9225d12ccad7f9:
+145 checked commands, zero failures; command time sum 17.511023415s is a sum,
+not elapsed phase time. There were zero claim mutations/manual bot requests/
+postmerge PR writes/product native/full/site repeats/status-only log appends.
+
+### Evaluate one workflow improvement on its next use
+
+The corrected source-settlement-before-normal-status ordering passed its
+next use. Actual Python primary FF is command 27, successful current canonical
+normal B332 status is command 33, queue commit is 52, mechanical R-main push 60,
+and own checkout removal 69. The source/tree/policy/ownership gates preceded
+queue mutation; no ignored failure reached commit or push. Reused immutable
+source/retirement proof once and did not repeat product/native/full/site tests
+or source reviews. This evaluates the earlier R267 rc3 ordering repair; it
+does not widen any ownership, approval, review, CI, merge or cleanup gate.
+The earlier stopped attempt and subsequent repair remain in the dated history.
+
+### Phase accounting and still-pending communication
+
+Coordination: actual normal claim/handoff, proper publication/ready, final
+merge-plan assembly and measured orchestration/read corrections are recorded
+above; author publication used 67 successful commands with 21.125451463s command
+time sum. The sole collector’s 15 remote calls and fresh terminal/own-WT receipt
+were reused rather than duplicated by this closeout-preparation helper. Final
+controller and mechanical pipeline are separate actual operations, not idle
+polling reads. Implementation: the one source-verified row45/workpad candidate
+and subsequent existing-item mechanical state/cleanup operation completed;
+no runtime/source behavior changed. Verification: independent 688 bindings,
+authored proportional light guards, actual current-head hosted CI and checked
+merge/source/policy/retirement/cleanup proof are retained; pipeline elapsed
+includes coordination and verification and is not labelled pure coding time.
+Requested audit: the useful independent factual/source/history acceptance,
+not a polling helper or fresh product test corpus. Environment repair: none;
+read schema/log-name/command-form corrections are coordination. Passive waits:
+not measured, no duration or aggregate count invented.
+
+Root is preparing an authorized substantive Alan completion receipt and
+purpose-built automation update. Their actual send/update/readback fields
+remain null here until root supplies completed receipts. No message, prompt
+update, heartbeat or future intake is inferred from intent. The next disjoint
+read-only handoff diagnosis is separate useful work and does not change this
+completed B332 source or retirement. These words remain external; canonical
+452115 history stays frozen until an appropriate substantive PR route.
+
+
+### Actual B332 completion report and current ordinary-documentation route
+
+Root sent the authorized substantive B332 completion to Alan’s existing parent
+chat “Summarize Saul routing evidence” (01a0f2a9-8da9-7252-b293-c326ee80b018).
+The actual tool-send receipt at 2026-10-06T06:12:14.424370Z is
+/tmp/b332-final-plan-preparation/Alan-actual-send-receipt.json, SHA
+4228884bfd95d47121430147c906fecc8542634d3cc78d8a494e8958a03c8a43.
+It binds the complete 3281-byte report at Alan-completion-receipt.md, SHA
+a4665d131439f5272a1f43f75e0a2eb51d6dd1825b80e4c45dd4c98fe4113d68.
+The report’s preliminary Python65 assessment is honestly dated before that
+worktree’s restoration and subsequent maintenance; it is not the final source
+verdict. This is one meaningful authorized completion report, not polling, a
+new chat or contact with a person. The B332 continuation-proposal.json remains
+DRAFT: no purpose-built automation update/readback has executed for this new
+B332 completion. That actual field is pending, not inferred from the draft.
+The earlier R267 automation update/readback above remains historical true.
+
+The B127 claim’s repo is Python and its existing terminal/sole Python65 PR
+remain authentic. Current bounded maintenance implements the already-ruled
+Q14 shared sentinel through the original handoff. R B113 is done and its
+pinned .sdp-package / sdp-owned\n literals are unchanged; neither side removes
+the other’s old sentinel, and no migration is introduced. A bounded route
+analysis identified the real distinction between the Python claim’s branch/
+one-PR scope, linter-owned mechanical landed records, and substantive R
+numbered-row/history documentation. It did not treat factual delegation as
+permission to invent a second B127 protocol PR or a new P4 promotion. Root
+then classified the postlanding R row51 historical/convergence correction and
+this full-history append as ordinary repository documentation under HUB
+scope_note and AGENTS’ explicit routine/factual grant. The dated ambiguity
+analysis is preserved externally; the classification is root’s, not a helper
+approval or retroactive ownership change.
+
+This ordinary docs PR makes no claim, agent/B127 R branch, queue edit, handoff
+or landed debt-passage record. After actual Python65 and then this factual R
+documentation PR land, the existing B127 done mark and its two debt-passage
+landed records belong in one separately checked mechanical closure. That order
+prevents port-landed-early and records real convergence rather than merely
+matching row numbers. R row45/B332 is excluded; no new ID, duplicate claim,
+new tracker, guard/meaning/contract decision or old B113 runtime reopening is
+introduced. Complete canonical history and approved primary policy stay exact.
+
+Current B127 actual source/GREEN/test/peer/CI/Python65 merge fields:
+__PENDING_FINAL_B127_SOURCE_AND_CHECKPOINT_RECEIPTS__
+__PENDING_FINAL_B127_FOCUSED_ACCEPTANCE_AND_INHERITED_WARNING_RECEIPTS__
+__PENDING_FINAL_B127_SEPARATE_INDEPENDENT_REVIEW__
+__PENDING_ACTUAL_PYTHON65_FINAL_HEAD_REQUIRED_CI_AND_REVIEW_DISPOSITIONS__
+__PENDING_ACTUAL_PYTHON65_MERGE_SHA_AND_TIME__
+No future source/CI/review/merge, cleanup or retirement count is claimed.
+
+Phase separation: coordination is this useful source/ownership/route diagnosis
+and complete documentation preparation, plus retained concrete log/schema/
+read corrections; implementation is the actual B127 repair performed by its
+author, with receipts still pending here; verification is existing reusable
+Q14/B113 native/oracle proof and eventual exact-source independent/hosted gates,
+not a replayed corpus. Requested audit is the disjoint useful source review,
+not a polling-only helper. Environment repair is none in this documentation
+preparation; any author harness repair must retain its actual receipt. Passive
+wait time remains unmeasured. No product/native/full/site/build, bot request or
+source-corpus repeat was run by this preparation helper. Two combined route-
+source outputs truncated; bounded line reads completed the required clauses,
+with no ignored dependent write. Those are coordination costs, not test failures.
+
+Next-use evaluation carries the already actual source-FF-before-status result
+from B332: 145 checked commands/0 failures, 17.624506666s elapsed. Do not infer
+a new experiment success from this draft; the later ordinary docs publication
+and mechanical B127 closure must supply their own actual checked receipts.
+
+
+### 2026-10-06 — actual continuation update and separately audited ordinary docs gate
+
+The earlier dated statements that the B332 continuation was still a draft are
+retained above as the state observed then. Root subsequently performed the
+purpose-built update and read back its complete saved configuration at
+2026-10-06T06:36:52.958610Z. The actual receipt is
+/tmp/b332-final-plan-preparation/continuation-actual-update-receipt.json
+(589 bytes; SHA 91d4f23ca8b5766ebab78015e5363b01ee87044eaeb947697d91eb3f12407050).
+It records one successful update, exact prompt readback, ACTIVE status, hourly
+recurrence and the same parent thread. The prompt is 24543 bytes, SHA
+0503080024cd3639ae9bdccb538882e839b3082929a0eccd8da2f45c23ee1a47.
+The actual tool result is continuation-actual-tool-result.json (275 bytes;
+SHA c1fde441fecf266c6a1803154d85e0996fecaf2d32728340d14dae7debbbb54c).
+The prompt accurately records B332 done and the original Python65 local
+integration 1e9d1d79 and selected-writer test repair 15f08406. Its final peer,
+publication and merge were still pending at that observation. A purpose-built
+prompt update is not a Git, queue, claim or PR write; no future Python landing
+is inferred from it. The prior draft and earlier R267 update remain historical
+records rather than being silently replaced.
+
+The separate ordinary-documentation wrapper received a useful independent
+controller audit before any publication. The first wrapper (SHA
+2ad4cf8607d20739a39bb9ad908bd6df84abb1983f8d28fa3a8d8efe590288f0)
+accepted prior Python merge/head fields merely as nonempty SHA strings. That
+was a real prerequisite-evidence gap: a factual convergence PR must depend on
+actual landing, not plausible tokens. It also lacked the positive PR/nonempty
+authentication/head checks normally supplied by the common executor. Root
+repaired those gaps with hash-bound successful Python65 controller and merged
+whole-tree receipts, plus fresh actual PR65 MERGED/head/merge/time metadata
+before the R gates. The intermediate wrapper SHA was
+f0bd02f498e37701096e28f13a473b3fc07aedf7a1652890ab0fa0d15b10ca5e.
+The independent audit then required the prior receipt to say execute=true and
+the ordinary branch base to be main. Those two consistency checks are in the
+final wrapper; they prevent a dry-run receipt or a different base being treated
+as the approved route. No actual Python65 landing or R publication is claimed
+by this controller review.
+
+The frozen final wrapper is 6576 bytes, SHA
+48c7d7c244126239293c8860d92b20bb8f4a3958b6ba4aae7ca2813e245415a1,
+at /tmp/b127-root-maintenance/merge_ordinary_docs.py. The separate reviewer
+remaining_work_explanation accepted that exact root-authored source with zero
+substantive findings within the ordinary-documentation controller scope. The
+1794-byte final review receipt has SHA
+063eda19f8031ec745a849fa675d26926c1938a0d01f0f366e1f0b6934b280b5
+at /tmp/b127-ordinary-wrapper-independent/final-review-receipt.json.
+This mode retains the exact feature/shared-sentinel-convergence-record branch,
+explicit root ordinary-docs classification, actual R base ancestry and exactly
+the two permitted documentation paths. It adds no protocol claim, queue or
+port-landed debt record. The common protocol controller remains byte-exact at
+SHA 34328fe1a70373aceb6d8f70726d7baa3fa176d407ddf8c5e6af1c5304a2a5f0
+and still requires authentic nonempty claims. The wrapper preserves its live
+source/authority, current CI/job-step and server-check gates, full paginated
+review surfaces, two equal snapshots, final reread and same-process complete
+body plus matched-head ordinary merge. This review is not a waiver of those
+future live conditions.
+
+The chronology of new-mode negative controls is preserved rather than
+collapsed into a single result. The first 10 controls belong to the original
+wrapper and are archived in ordinary-mode-controls.before-prerequisite-repair.json
+(SHA eb163f4f9db574ac18386e5bdb8e1fc1bb1744174e5dbce9f07b4cdf79bfef98).
+The intermediate 18 controls belong to the prerequisite-repaired wrapper and
+are archived in ordinary-mode-controls.before-consistency-repair.json (SHA
+b7948daf8fb711d9a3d990608ed2f2b6fce112712da8a1daa0ae4f6714f3b763).
+The actual final wrapper has 20 specific expected-stop controls, all passed in
+0.010958916s, recorded by ordinary-mode-controls.json (4283 bytes; SHA
+1cfa8f02b04937331a6bfa50b7bf9498fd4d36dbff8fc8064d9b3ba449b586c8).
+They use simulated reads, not live API calls. Prior 10/18 passes did not prove
+the later discovered prerequisites, and neither those nor the final 20 are a
+real publication invocation. The 46 unchanged common-controller failure
+controls were not replayed; the independent audit bound existing evidence
+without rerunning the 20 controls or any product suite.
+
+Phase separation: coordination covers the actual purpose-built update/readback,
+source/route receipt assembly and bounded evidence reads. Implementation is
+root's external wrapper repair, with no repository or runtime edit from this
+helper. Verification is the root's 20 new-mode fault controls and exact-source
+independent audit; requested audit is that useful disjoint controller review,
+not a polling helper. Environment repair is zero. Passive waits remain
+unmeasured. The initial helper snapshot hash assertion stopped because root
+had concurrently repaired the external wrapper; it failed before saving that
+snapshot or invoking any controller/API and was corrected by reading only the
+actual new source/delta. This is a coordination/instrumentation miss, not a
+product regression or ignored dependent gate. The archived 10/18 receipts and
+all earlier dated pending text remain intact. No product, native, full-suite,
+site build, old corpus, bot review, claim or public repository action was
+performed for this addendum. The actual later Python65 source/peer/CI/merge and
+ordinary-docs publication tokens remain conditional until real receipts arrive.
+
+
+### 2026-10-06 — Python65 exact local acceptance and a stopped authority formatter gate
+
+The earlier dated Python65 peer-pending preparation remains above unchanged.
+The actual final local candidate is now independently accepted at
+703275c0096d03e196c897bc3a6a5fbeccc9afe6. Separate reviewer ontology_fetch_peer
+cleared sssom_port_peer's implementation with zero substantive findings in
+/tmp/b127-independent-review/review.md, SHA
+d3ef280da2791c0cb13379a722f42798498c4b02ed897b0d43ed98b99ae22db4.
+The final-review-receipt.json is 8061 bytes, SHA
+f3eed7bc8385dd1dbb6627228c6548b98c83a18fd53153ded7c88ead95e4194d.
+It binds the actual clean final checkout, all nine owned files and incoming
+composition. The original branch agent/B-127/a-7ebad96ec86a8d88, authentic
+holder and terminal de05a1434b3fb9eeae4fd9c7868b43c42828a862 remain preserved;
+root maintenance uses its normal identity with no new claim or impersonation.
+
+Ordinary integration 1e9d1d79e8e5528e73dcc05da58439f49696ef0f retains ordered
+parents original af47c7b01e28d397b2ac65b2cca2a0ecc43dcc48 and actual main
+86cca9c24c3576e0d95c1c5d83abcbac288d1283. The original combined source/test
+195bfa1234df6b240f83ba0ca9c270c80e3ce3d9, operational 91bb31a, completed-review
+c50ed656 and prior integration checkpoints are preserved. The historical
+5-failure/29-pass overlay had no separate historical tests-only commit; none
+is invented now. Committed integration 1e9d1d79 had a genuine existing shipped-
+byte test RED: one failure, zero passes/errors/skips, pytest 0.08s and measured
+bootstrap plus pytest 1.217872959s. It exposed only the obsolete sentinel
+filename/digest; the six other digests were identical.
+
+Tests-only 15f0840685a9271aada71218c0eb4b6b68de5c5e preserves the historical
+manifest blob 96bee02581a10ecbc593550e1c5283635ec072a8 and SHA
+85698a8a28dfc32403fada1bb15ad15fd3ea596adf75eee32a8c234c10501bff.
+It asserts that exact old marker digest, substitutes the ruled shared path and
+fixed b"sdp-owned\n" digest, and retains full strict path/digest equality. This
+is the already-ruled Q14 ten-ASCII-byte sentinel; no accept-either expectation,
+skip, migration or changed runtime was introduced. Four focused files passed
+43 cases, zero failures/errors/skips, pytest 0.92s and bootstrap plus pytest
+1.515215917s on committed 15f08406. The 36 inherited semantic warning reports
+and inherited urllib3/LibreSSL startup warning are retained, not labelled
+product or environment failures. All five proportionate guards passed:
+whitespace, Python-local changelog with its unchanged B201 ruling, explicit-
+path 64-row twin numbering, queue lint and generated queue check. Raw receipt
+and stdout/stderr hashes were verified by the independent reviewer without
+replaying these author cases or guards.
+
+Immutable independent proof passed 604 bindings in 0.568926541s. All 458
+unowned paths, 39 other root modules, 269 other test paths and 63 other raw
+numbered rows are incoming-main exact. The nine exact owned blobs are in the
+final receipt: package_io a6fca133102d0bff86a99a6bea402873c3019e74;
+strict selected-writer test cccb7ac6070d8a2705fd133c98bfaf32d5045d1a;
+workpad b58f4cd06993a0e6302cf9521fe06aadd54ac1b0;
+CHANGELOG 9d14c2dff778d5021956ce5f5981b481f6471e19;
+PARITY 636e0f820563f9e9f2444ce68eed6cb3ecb3db3d;
+getting-started 49db9df3d2ff130880c298dd3dfa6d7af29b979f;
+current-workflow test 2e7b70a34f9d823c5521987e500fb9e5ee27102e;
+ownership test 0362db0c9e04cd21a77bcfa813449e91560e069b;
+sentinel test 98ba008961e08700fb57d53f5ad6292d5e6e861c.
+Whole AST/raw inverses bind original owned sentinel hunks and every incoming
+public/default/atomic/containment/metadata fallback/selected-schema guard,
+complete released changelog, row framing and landed B332 row45. All original
+15735 workpad bytes remain the prefix of the 23547-byte current record.
+
+Fifteen new independent public/output negative controls passed in 3.203891s,
+using one actual public writer call explicitly bound to this checkout. The
+captured seven-file output then rejected wrong shared-marker bytes, the old
+filename, each of six unrelated file corruptions, a missing marker and an
+extra output, while restored exact output passed. These controls retain the
+historical oracle; they are not another native/full/provider replay. Two
+inherited startup/missing-semantic-fields warnings were recorded. The actual
+old two failed bot comments 5840876588/5840923557 have unknown public causes;
+completed Code Review 5842200611 remains scoped to unchanged c50ed656 owned
+hunks. The three-request cap is preserved. No fourth review or settings/credit
+change was made. Current-head hosted CI and the live fully paginated review
+surface remain future publication/merge gates.
+
+Root read and prepared the complete 8980-byte Python65 publication body at
+/tmp/b127-root-maintenance/PR65-publication-body.md, SHA
+529c7885bb773703d153aadcd42045caf680effdc909eafdb87302fc50c6b978.
+Its original peer-pending words are dated preparation; the later actual
+independent acceptance explicitly supersedes that pending phase without
+claiming hosted gates or foreign whole-item retirement. The first actual
+publisher invocation stopped at the authority formatter assertion, error
+"actual reinstatement missing". Its receipt and all 15 logs plus exact old
+publisher are preserved in failed-authority-formatter-stop. All 15 preceding
+local read commands succeeded; the overall gate/publication result was false
+and measured invocation elapsed was 0.148878458s. It stopped before any remote
+or API read/write, push, PR update or dependent action. The actual approval was
+present in unchanged HUB; a literal raw-word check had missed folded YAML
+whitespace. This is an actual fail-fast orchestration/formatter stop, not an
+absent approval, source defect, new suspension or ignored gate.
+
+The narrow publisher repair uses the common unique-section parsing and
+whitespace folding, then verifies actual approval words and date. The repaired
+publisher SHA is 85dd5bc30dc746d2e53dd9334054c17703e35b994a7c01a218fe69f5af383782.
+/tmp/b127-root-maintenance/folded-authority-repair-receipt.json (SHA
+ dd38c572663fd75a76235337b3991d208885974d3f0564be3f846fa36396a5f4)
+binds unchanged authority HUB SHA
+ede69e46dff8e9d79cac18ca47a91b700cb14ce191e23b104c797b96c84ea047,
+actual reinstatement words/date and the prior stop before remote reads/writes.
+Its separate narrow publisher audit is pending at this preparation phase; no
+publication outcome has been supplied for this addendum. No source, test,
+author case, old native/oracle corpus or full/site build was repeated to fix
+the authority formatter. Prior stopped evidence is retained rather than
+rewritten as success.
+
+Phase separation: implementation is the bounded sentinel integration and
+strict tests-only consumer correction; verification is author focused43/five
+guards and fresh independent604 bindings/15 purposeful controls. Requested
+audit is that useful separate implementation review and the separately
+pending narrow external publisher audit. Coordination includes complete body
+and receipt reads, authority formatter stop/repair and prior honestly retained
+output/equality instrumentation misses. Environment repair is zero; the
+inherited warnings are disclosed separately. Passive waits remain unmeasured.
+This helper only reads existing evidence and appends external preparation:
+zero product/native/full/site runs, repository/public/claim writes or new bot
+requests. Actual Python65 publication/head CI/merge and dependent ordinary R
+docs branch/peer/CI/merge/queue-closeout fields remain unfilled. Earlier dated
+pending statements and every complete canonical/history prefix are retained.
+
+
+### 2026-10-06 — repaired Python65 publication actually completed
+
+The preceding stopped invocation and then-pending parser/publication words
+remain historical exact. Separate ontology_fetch_peer reviewed the narrow
+publisher authority parser at SHA
+85dd5bc30dc746d2e53dd9334054c17703e35b994a7c01a218fe69f5af383782
+and found zero substantive issues. Seven scoped controls passed in
+0.005813250s: actual and additionally folded approval words pass; missing,
+wrong-date, wrong-grant, duplicate entry and outside-section words refuse.
+The parser and re import are the only changed bytes/execute-AST nodes. Common
+controller, authority HUB and source acceptance f3eed7bc remain unchanged.
+The actual 10140-byte authority-parser-receipt.json at
+/tmp/b127-independent-review has SHA
+a2e9989c842ad175a9d1fc9edb9b17eacafac41e0ff634586b0d3bfa33813e62.
+Its broad rg display and first inverse assertion misses are recorded: the
+latter initially omitted the re import/indentation, stopped locally, then a
+line-exact inverse and import reversal proved the actual narrow diff. Neither
+probe invoked a publisher/API or product test. These are coordination harness
+costs, not a relaxed authority gate or false approval.
+
+Root subsequently executed the corrected publisher successfully. The actual
+publication receipt at /tmp/b127-root-maintenance/publication-receipt.json is
+11918 bytes, SHA
+057d37c158e8f466b7840d6dfdee96e5ae667bb5a2b03534f675c6da7706f622.
+It records 24 checked commands, all exit0, measured elapsed 8.275247834s;
+command-time sum 8.263166748s is a sum, not the invocation duration. It
+ordinarily pushed exact 703275c0096d03e196c897bc3a6a5fbeccc9afe6 to the existing
+agent/B-127/a-7ebad96ec86a8d88 branch and updated original Python PR65 with the
+complete 8980-byte body SHA
+529c7885bb773703d153aadcd42045caf680effdc909eafdb87302fc50c6b978.
+Authentication, genuine existing claim tip/content, original PR metadata and
+remote branch/main were checked before the push; publication was then bound
+by the remote branch read. The original de05a1434b3fb9eeae4fd9c7868b43c42828a862
+terminal and a-7ebad96ec86a8d88 holder remain authentic; normal root identity
+a-c1bbb42efa975289 maintained the handoff without a new claim or impersonation.
+The receipt records zero claim writes and zero bot requests. The source,
+strict-test/oracle/604-binding/15-control acceptance is the already recorded
+frozen evidence, not another author, peer, native or full-suite replay.
+
+One root CI collector watches this exact publication. This helper starts no
+second collector or poll. Exact-head hosted CI, actual fully paginated review
+and final matched-head Python merge remain pending here; a successful push
+and complete PR body are not their substitutes. The subsequent ordinary R
+row51/history PR and mechanical whole-item retirement still require actual
+Python landing and their own later checked evidence. All those actual merge,
+CI and R documentation publication fields stay unfilled. Prior failed
+publisher, pending draft and separate audit states are preserved by append,
+not rewritten to imply earlier success.
+
+Phase separation: coordination is the scoped publisher gate/authority parser
+repair, actual authenticated publication and complete evidence/body read.
+Requested audit and verification are the separate seven parser controls and
+narrow source-inverse review; no product implementation or source repair
+occurred after the frozen Python acceptance. Environment repair is zero.
+Passive CI waits are not measured or counted as implementation. During this
+external appendix preparation, an unnecessary complete parser-receipt print
+included its embedded failed-command history and was truncated; a selected
+scalar/controls/disclosure read then completed the exact receipt binding.
+No result was inferred from truncation, no test or API was rerun, and no
+dependent write was ignored. This helper adds only external append/body/
+receipt preparation, with zero repository/public/claim writes or product,
+native, full or site runs. The canonical452115 prefix and every prior dated
+append remain exact.
+
+
+### 2026-10-06 — actual Python65 merge and a published queue ownership transition
+
+Python65 actually merged at 2026-10-06T06:53:31Z as
+3ebb3cf32160485ca9324628e08623e72b94a5fd from exact
+703275c0096d03e196c897bc3a6a5fbeccc9afe6. Root's actual merged-source
+receipt at /tmp/b127-final-plan-preparation/actual-Python65-merge-source-receipt.json
+is 1630 bytes, SHA 9f172527afae71e7b20b15d87304f76c90497341da8e413ae16ba5ba6852d262. It binds
+fresh MERGED/head/merge/time metadata and whole merged tree
+2379c2539ab680d0382b800d93aad789493cd6cb equal to the final independently accepted
+publication. Existing source review f3eed7bc was reused, with zero postmerge PR
+writes and no product/native/full/site repeats. This is actual landing evidence,
+not a future token or a conclusion inferred from green checks.
+
+All six applicable checks completed successfully on the exact published 703 head.
+Core-only, [eml]/[context] extras, bare pytest and R/Python parity executed in
+37425693995 (jobs 112144699159/250/351/398); documentation rendered in
+37425694015/job112144700358 and changelog passed in
+37425693983/job112144700098. The inapplicable deploy check was skipped and is
+not a completed deployment. The complete actual-current-head-CI.json is 93353
+bytes, SHA b3d889ed57388a93275963c9e1da2770dff9c1afc924c3e256dfb4b6dc27b052; it binds actual critical job/run/step
+execution and records eight remote read commands. No final suite pass count or
+aggregate wait duration is invented. The fully paginated review surface has
+six historical artifacts, zero threads, zero substantive findings and no
+waiting person. Completed c50 review is reused only for its exact original
+sentinel hunks; independent final703 composition/test proof covers later
+integration and repair. The two unknown-error review failures retain unknown
+causes, not invented quota/tool labels. There was no fourth request or new
+Python Security/Claude-completion claim.
+
+The checked common final controller succeeded in one fail-fast process with
+two equal live snapshots, actual source/authority/ownership/authentication,
+current CI/job and complete review checks. Its ordinary-merge-receipt.json is
+555 bytes, SHA facb5a199535362f569223abd7de3680b65ae2030e215d40396d7e99286dc845, with execute/gate_success/
+snapshots_equal/matched-head ordinary merge completed all true, six artifacts
+and zero threads. Final PR words were 10905 bytes, SHA
+4cbdb7c13d89af3d0ad969db952309c21d36475107085ae4f029307ecf8d003a; the exact plan SHA was
+778a7f39211da6d4a112bc4e5aee41db6d291c0dfa24dc7ca377696a97fee336. Body update and ordinary matched-head
+merge were in that successful checked process; merge was the last PR action.
+Root then made three checked fresh metadata/tree read operations to verify the
+actual landing; their source receipt is retained. Earlier draft CI/merge
+pending statements remain exact dated history above, not silently rewritten.
+
+A separate published state transition was then observed: another writer
+advanced R main from 6f57def to
+9f4613a29376a115560fac97f0dfd7f0be90fbfa. Its three-file diff marks the existing
+B127 done/claimable false and records the actual Python merge in both landed
+debt passages. Root did not author this commit. Its queue and both debt-passage
+changes are preserved; no duplicate queue closeout or undo is proposed. Numbered
+row51 itself remains the old pending-language record, so the ordinary factual
+row51/history PR remains useful. This supersedes the earlier proposed ordering
+where this root would close the queue after the R documentation merge. That
+was the then-plan; the actual other-writer closure is now a separate recorded
+fact, not an action attributed to this root or this helper. The existing
+disabled duplicate mechanical closure must not execute against this state.
+
+The external ordinary-docs proposal is rebound to actual 9f4613a. Four precise
+numbered-row51 spans record actual Python merge/time and the ruled shared
+sentinel, retaining Q14/B113 history, literal ten bytes, old-marker nonmigration,
+managed ownership and fallback scope. Inverting those exact four substitutions
+recovers the whole new 237209-byte register byte-for-byte, including its new
+landed-debt passage; all other 63 raw rows/framing and row45 remain exact.
+The new base register SHA is 445e8852bf499858a33f9f78215b6826cd6159e7dc54ed10816c0638c504b204. The base
+452115-byte workflow history remains SHA
+c55e6c767826a2814f41d379bab4606c4696966991f1ea40e2272b5043e36eb5, exact in both 6f and 9f; the entire
+previous 490465-byte external full history remains the prefix of this append.
+A narrow artifact consistency check found the older external patch had not
+reflected the already-correct historical wrote span in its proposed register.
+It was regenerated against actual 9f from the verified four substitutions
+before any repository edit/publication; both proposed register and patch now
+match. This was an external preparation mismatch, not a source/test regression.
+
+Phase separation: coordination is actual checked publication/merge sequencing,
+fully paginated review and CI/source evidence reads, the observed other-writer
+queue transition and external draft rebase. Verification is actual hosted jobs,
+checked equal live snapshots and one whole merged-tree binding, reusing the
+existing focused 43 / 604 bindings / 15 public strict evidence. No new product
+implementation, local corpus/native/site replay or environment repair occurred.
+Requested audit remains the prior distinct implementation/controller reviews;
+R docs peer/head/local hosted gates are still pending and no independent R
+clearance is self-asserted. Passive wait duration remains unmeasured. The R
+ordinary documentation proposal contains only row51 plus this substantive
+full-history log; it makes no queue, roadmap/debt, claim, item, handoff, row45,
+policy/runtime/release or old B113 change. Existing published B127 retirement
+state is preserved while factual numbered-row convergence is corrected.
+
+
+### 2026-10-06 — ordinary R documentation workspace coordination
+
+Root safely fast-forwarded the primary R checkout to actual 9f4613a while
+preserving the exact approved dirty policy bytes and complete 452115-byte
+canonical log. The separate ordinary documentation worktree is now created at
+/Users/brettjohnson/code/hub-worktrees/metasalmon-shared-sentinel-convergence-record, branch
+feature/shared-sentinel-convergence-record, actual base
+9f4613a29376a115560fac97f0dfd7f0be90fbfa. This creates no claim or protocol B127
+handoff and contains no copied proposed source yet at that observation. Its
+candidate/peer/local and hosted gates remain pending.
+
+The first worktree-absence preflight stopped before mutation: git show-ref
+--verify for an absent ref returned 128 rather than the anticipated 1. The
+actual stopped receipt is worktree-first-absence-stop.json, SHA
+564ee5a4aaf656cb4f1d9c54809fcef4baa0b419bb81d0620ce41642f74c3132. Root corrected only that query to
+--verify --quiet and required the exact expected absence rc1; it did not
+ignore the failure or bypass the existence check. The subsequent creation
+receipt ordinary-R-worktree-create-receipt.json (1711 bytes; SHA
+9f3aa7ad87fd7bbd139f7da9fd01d10749c686e5cc2bdd35c3cd8ebca07c9833) records five checked commands with
+zero unexpected failures: one intentional absence rc1 and four successful rc0
+commands. It is not described as five exit0 results. The clean isolated
+feature worktree was then created on settled actual main, without a new claim,
+source/test repair, product/native/full/site run or public publication.
+
+This is coordination/instrumentation cost. Environment repair and additional
+product verification are zero. No passive-wait duration is invented. The
+other writer's B127 queue/debt closeout remains preserved; root will assert the
+whole literal numbered-row convergence only after this separate factual docs
+PR actually merges, without a duplicate queue commit. All earlier pending and
+stopped phases remain exact historical prefixes.

@@ -928,10 +928,14 @@ repository. Its metasalmonpy queue item is `B-302`.
 in metasalmon. `write_salmon_datapackage()`, and `create_sdp()` through it, now
 write, manage and recognise only `.sdp-package`, so a directory whose only sign
 of being a package is the old `.metasalmon-package` is no longer replaced.
-metasalmonpy still writes `.metasalmonpy-package`, measured on `main` `cae3d83`,
-so a package written by both carries both files until its half lands. That half
-is owed as the move row 51 of `parity-deviations.md` records, with the name and
-content line it must take, and not as a new register row. **Why not in the
+At that 2026-09-25 record, metasalmonpy wrote `.metasalmonpy-package`, measured
+on `main` `cae3d83`, so a package written by both carried both files. That then-
+owed port took the name and content line from row 51 of `parity-deviations.md`,
+without introducing a new register row. The Python port has now landed: both
+implementations write, manage and recognise `.sdp-package` holding exactly
+`sdp-owned\n`, ten ASCII bytes ending in one LF. Both retain the ordinary
+SDP-CSV ownership fallback; neither removes the other's old sentinel, and the
+Q14-approved change owes no read-both transition or migration. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is `B-127`, which **landed 2026-10-06 as metasalmonpy #65**,
 `3ebb3cf`.

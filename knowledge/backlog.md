@@ -1389,23 +1389,24 @@ authoritative and deliberately not reviewable.
 ### Correctness and conformance debt
 
 **Mixed state; read each item's first line, not this heading.** Open: **#86**,
-**#87**, **#82**, **#83**, **#111**, **#113**. Fixed but unreleased in gcdfo:
+**#87**, **#82**, **#83**, **#111**. Fixed but unreleased in gcdfo:
 **#81**, **#84**. Superseded: **#75**. They stay interleaved because the
 resolved ones carry reasoning the open ones refer back to; the top-of-file
 snapshot is the index.
 
 **#113 One shared package-ownership sentinel, replacing the two per-language
-ones. RULED; the metasalmon half is implemented (queue B-113) and the
-metasalmonpy half is not (queue B-127).** A package directory written by metasalmon
-and then rewritten by metasalmonpy ends up holding **both**
+ones. RULED; the metasalmon implementation (queue B-113) and metasalmonpy
+implementation (queue B-127, Python PR #65, `3ebb3cf`) have landed.** In the
+original measured state, a package directory written by metasalmon and then
+rewritten by metasalmonpy ended up holding **both**
 `.metasalmon-package` (content `metasalmon-owned\n`) and `.metasalmonpy-package`
 (`metasalmonpy-owned\n`), because each writer's managed-path inventory —
-`.ms_package_managed_paths()` in R, `_package_managed_paths()` in Python — names
-only its own, so neither ever removes the other's. Measured 2026-08-22 during
+`.ms_package_managed_paths()` in R, `_package_managed_paths()` in Python — named
+only its own, so neither ever removed the other's. Measured 2026-08-22 during
 S10 chunk H, on a package that came out byte-identical on all six shared files
-and differed **only** in the sentinel. Harm is low — a stray dot-file — but it is
-undeclared package content that a hand-made ZIP carries, and the count grows with
-every cross-implementation rewrite. Registered as
+and differed **only** in the sentinel. Harm was low — a stray dot-file — but it
+was undeclared package content that a hand-made ZIP carried, and the count grew
+with every cross-implementation rewrite. Registered as
 [parity-deviations](parity-deviations.md) row **51** and its `PARITY.md` twin;
 the file was renamed with the package on 2026-08-13, exactly the class of change
 that looks cosmetic and is not.
@@ -1424,12 +1425,16 @@ implementer would reach for: **do not** make each writer remove the other's file
 whole stream removing, and it makes a third implementation a two-repository
 change.
 
-**What is left to do, and neither half is decided by the ruling:** pick the name
-(`.sdp-package` was the illustration in Q14, not a decision) and its content
-line, then land it in both repositories — R's `.ms_package_managed_paths()` and
-its writer, Python's `_package_managed_paths()` and its writer, plus whatever
-each side's ownership test reads. Both sides already fall back to the SDP-CSV
-check, so no package is refused during the change. *Retires when:* both
+**What remained after Q14, and what is now landed:** Q14 did not choose the
+filename or content line; `.sdp-package` was its illustration. B-113 chose
+`.sdp-package` holding exactly `sdp-owned\n`, ten ASCII bytes ending in one LF,
+and landed the R writer, managed-path and ownership helpers. Python B-127 then
+landed the same literal name and bytes in PR #65 (`3ebb3cf`, 2026-10-06), with
+its writer, managed-path and ownership helpers aligned. Neither implementation
+writes a per-language sentinel. Both retain the ordinary SDP-CSV fallback and
+recognise a package carrying only the shared sentinel. Old per-language files
+are left untouched: neither writer removes the other's file, and Q14 requires
+no read-both transition or migration. *Retires when:* both
 implementations write and recognise the one name, neither writes a per-language
 sentinel, and parity row 51 records the convergence in both registers.
 
