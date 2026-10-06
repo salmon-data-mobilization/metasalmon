@@ -19,6 +19,10 @@
 #   4. srcrefs are dropped on install, so failures name the function, not a line.
 
 collation_sensitive_fns <- c(
+  # Bounded public catalogue receipts carry page bytes and ordered records.
+  "capture_catalogue_query",
+  ".ms_catalogue_url",
+  ".ms_catalogue_write_receipt",
   # Ontology cache identity uses URL/Accept bytes to name the persisted body.
   ".ms_ontology_cache_entry",
   ".ms_utf8_bytes",

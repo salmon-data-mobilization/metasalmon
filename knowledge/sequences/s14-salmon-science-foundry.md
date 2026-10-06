@@ -20,6 +20,11 @@ Both carry an authority note saying they activate nothing, and admission to
 this hub does not change that: what is ruled is that the hub sequences this
 work, not that any stage is funded or started.
 
+Related draft package implementation:
+[Public catalogue capture and prototype migration](../plans/2026-09-30-public-catalogue-capture-migration.md),
+scoped to bounded metadata capture under the existing section 3.5 and Q27
+package placement.
+
 **Nothing exists yet.** As of 2026-09-09 there is no `salmon-science-foundry`
 commit, no SalmonBench repository, and no GitHub organization for the
 **Symecology Institute**. The institute was renamed twice in five days, so the

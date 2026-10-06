@@ -193,6 +193,14 @@ reproducibility sidecars
 - [`validate_sdp_reproducibility_manifest()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_reproducibility_manifest.md)
   : Validate an SDP reproducibility manifest
 
+## Public Catalogue Metadata
+
+Bounded public query captures with provenance receipts; no source-object
+fetch, submission or semantic approval
+
+- [`capture_catalogue_query()`](https://salmon-data-mobilization.github.io/metasalmon/reference/capture_catalogue_query.md)
+  : Capture a bounded public catalogue metadata query
+
 ## EML and KNB
 
 Reviewed EML 2.2.0 export and verified DataONE/KNB publication, starting

@@ -69,6 +69,14 @@ metasalmon (development version)
 
 ### Added
 
+* `capture_catalogue_query()` captures bounded public KNB/DataONE metadata
+  pages and a checksum-bearing query receipt, with explicit record/page/byte
+  limits, stable-count and duplicate-PID checks, and preserved incomplete
+  evidence on failure. It uses existing production endpoint configuration,
+  does not fetch source objects or accept semantics, and is an interim helper
+  rather than the full DatasetReceipt/source-fetch interface. Its bounded
+  public streaming transport requires the already imported httr2 >= 1.2.0.
+
 * **`verify_sdp_semantic_iris()` checks every selected HTTP semantic IRI in a
   Salmon Data Package with bounded retries** (hub item B-130, S13 requirement
   3). It includes reviewed SSSOM mappings, preserves exact identifiers and
