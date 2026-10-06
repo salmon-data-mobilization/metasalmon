@@ -483,6 +483,8 @@ test_that("a genuine unhandled native interrupt retains evidence without becomin
     "} else {",
     "  library(metasalmon, lib.loc = dirname(root))",
     "}",
+    paste0("expected_body <- ", encode(deparse(body(capture_catalogue_query)))),
+    "stopifnot(identical(deparse(body(capture_catalogue_query)), expected_body))",
     paste0("out <- ", encode(out)),
     "calls <- 0L",
     "fetch <- function(...) {",
