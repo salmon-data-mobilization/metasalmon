@@ -6598,3 +6598,89 @@ other writer's B127 queue/debt closeout remains preserved; root will assert the
 whole literal numbered-row convergence only after this separate factual docs
 PR actually merges, without a duplicate queue commit. All earlier pending and
 stopped phases remain exact historical prefixes.
+
+## 2026-10-06 — Actual shared-sentinel convergence outcomes and row45 postlanding factual follow-through
+
+This substantive ordinary documentation proposal records the already landed Python106/B332 mirror update and removes only the hub's temporary owed-port annotation. It retains the replay Gap and its existing retirement condition. It creates no queue item, claim, protocol handoff, port record or replay implementation.
+
+The following dated external continuation is preserved byte-for-byte. Its earlier pending and noncanonical statements describe the preparation stages at their recorded times; the later actual-completion section carries the observed outcomes. No earlier log section is rewritten.
+
+# Next useful workflow append: Python65 and ordinary R convergence
+
+This external continuation is not canonical and creates no status-only Git checkpoint. The R268 candidate0d04135d remains frozen with complete498455-byte history; append these later actual outcomes on the next substantive route, preserving every byte.
+
+Root R source copy/stage/commit/freeze:16 checked commands/zero unexpected failures,1.5163609579904005s; five local guards passed. Independent factual/source/history acceptance:1339 bindings0.2517970829503611s +58 material facts0.004327333066612482s, zero substantive findings, all1187 unowned paths and52R/262tests/63rows exact. R publication:10 checked commands/zero failures,8.382915624999441s, proper ordinary feature PR268, two files, no claims. Actual ready followed on exact head; one hosted watch, no polling helper/collector or bot reroll. Future CI/review/merge fields remain pending here.
+
+Cleanup-controller audit found a genuine final archive-destination preservation gap before root enabling. Author added one destination hash/type/mode comparison immediately before removal; independent narrow review found zero remaining findings at4620033358cca09cec4a30db13990f5a18635da6f7fc4b0708541ea3e0e58ed8, with exact one-line inverse and reuse of30 prior static/pure controls. The original24fce source and obsolete disabled queue controller remain exact. No product or shared-Git mock tests were run. Root selected only completed Python65 cleanup, with R tokens still unselected/pending, and isolated invocation logs in Python-execution so future R logs cannot overwrite them.
+
+{
+  "actual_Python_cleanup": {
+    "targets": [
+      "Python"
+    ],
+    "removed": [
+      {
+        "source": "/Users/brettjohnson/code/hub-worktrees/salmon-data-mobilization-metasalmonpy-B-127",
+        "head": "703275c0096d03e196c897bc3a6a5fbeccc9afe6",
+        "archive": null,
+        "ignored_count": 0,
+        "hash_type_mode_verified": true
+      }
+    ],
+    "reused_exact_merge_tree_receipts": {
+      "Python": {
+        "tree": "2379c2539ab680d0382b800d93aad789493cd6cb",
+        "canonical_main": "3ebb3cf32160485ca9324628e08623e72b94a5fd"
+      }
+    },
+    "original_terminal_preserved": "de05a1434b3fb9eeae4fd9c7868b43c42828a862",
+    "branches_unrelated_registrations_policies_preserved": true,
+    "queue_card_API_PR_claim_push_writes": 0,
+    "tree_recomputations_product_tests_native_full_site_replays": 0,
+    "command_seconds_sum": 6.836544082034379
+  },
+  "checked_commands": 42,
+  "nonzero_commands": 0,
+  "receipt_SHA256": "4176c6ebbc35f13fc116d2fc9228fd75c7096f9a9115ddba9e765ff0485dab45",
+  "aggregate_pipeline_elapsed_not_measured": true
+}
+
+## R268 actual premerge P2 and bounded repair
+
+Actual complete original-head review scan e011c90dbc9135da2013ba3b484b3217772bf924403b36f3db6cb818fd6420d5 found Code/Security completed and Claude nits, but substantive Codex comment4192548832/threadPRRT_kwDOSoVfrc6pW5LB remained unresolved. Root independently confirmed it against current source. A completed summary and original green CI were not treated as settlement.
+
+Only the cited present-state roadmap/backlog prose was corrected in861f98b49caafce4473e47b96ff82dbdb75f4c60: one roadmap and five backlog substitutions, including removal of only#113 from the mixed Open list. Exact Q14 quote, B113 measured tests/source paragraph, oldcae3d83/Aug22 observations, literal retirement criterion and other-writer9f landed debt records are retained. Full inverses bind original files. The complete498455-byte overhead and original row51 remain exact from0d. Operative HUB forbids putting review history into the files reviewed as a fix; the helper's3976-byte append stayed external, not applied.
+
+Root frozen repair19 checked commands, zero failures,1.4162062919931486seconds; five documentation guards pass. No product/native/full/site rerun, new claim, identity override, bot request or public write in this local phase. The sole old-head hosted watcher completedrc0 after677.4467151670251seconds; this is passive wait/old-head evidence, not repaired-head CI or review clearance. Distinct immutable repaired-source review, publication, source-backed actual reply/resolution and new-head hosted gates remain pending at this dated entry.
+
+## Actual final R268 completion, cleanup, reporting and continuation
+
+R268 matched-head controller succeeded with two equal snapshots, six artifacts and one resolved historical substantive thread; merged 2026-10-06T07:48:05Z as 7014a0a2312c9c8ac7ecb4dea4f77b57bb17e654 from 861f98b49caafce4473e47b96ff82dbdb75f4c60. The actual valid P2 had been fixed/published/replied 4192693755/resolved before merge. First wrong replies endpoint returned HTTP404, three checked commands (two success/one failed), stopped before reply/resolution; corrected four-command route succeeded in 4.132604333 seconds. No ignored failure or zero-thread fiction.
+
+Actual original Codex Code/Security and Claude completed. Current Claude model/verifier skipped after verified nits is explicitly not fresh review, failure substitution or quota. Narrow independently audited own-head prior/current job/check-run binding composes unchanged original two sources and independently reviewed two-document repair; exact R268/source/identity scope, all common final CI/findings/authority/source/two snapshots and matched-head mutation gates retained. 42 author controls (3 positive/39 expected stops), 38 independent assertions, prior46/20 controls reused. Wrapper2d8b57/common34328 exact; wrapper acceptance8c21163. Full source861 acceptance70bcdf28, fresh78 bindings0.200066875seconds with unchanged1339+58 proofs reused; no source corpus replay.
+
+Final RCI37430401935/job112159671756 full provider-isolated suite257seconds and strictR4.6.1 check339seconds passed0E/W/N; all five applicable hosted gates green. Log8cd01e93; final CI receipt5d575e1e. Required hosted tests on changed final head were not local completed-source replays. Sole original watch677.446715167seconds and final watch645.564384167seconds are passive waits; zero bot requests/rerolls/polling-only helpers.
+
+Actual complete merged tree fbe40065c6e635eefdb49205b8f794f4815fcf2f equals accepted source; 12 checked source/merge reads in1.948634875seconds, receipt2b251e79. Matched gate40d5d485; complete final body29237a49. No postmerge PR actions. R-only explicit cleanup reused immutable tree proof, fresh metadata/auth/ancestry and normal clean/no-unique/no-unpushed/no-untracked/zero-ignored checks:39 commands0fail, command-time sum5.251207248seconds. Receipt300dda1a. Default remove/prune succeeded, feature branch/approved dirty policies/all unrelated/S16 checkouts preserved. Python cleanup42 commands0fail remains4176c6eb and was not reselected.
+
+Primary R now7014a0a with canonical complete498455-byte history SHA bc3e46d859401a9d05b7e1ada16c0043e38658f95d7ed01aaa6b18300e77a8e6; exact452115-byte and every preceding prefix preserved. No deleted-worktree canonical route. Py primary clean3ebb3cf. Other-writer9f B127 done/debt records preserved with no duplicate queue closure. Source log remained498455 bytes through the review fix; later actual events stay here/body for the next useful substantive append per HUB, avoiding review-history/source loop or status-only Git checkpoint.
+
+Authorized Alan parent01a0f2a9-8da9-7252-b293-c326ee80b018 received one substantive Python65/R268 final report after cleanup, observed07:53:26.823781Z, body4441bytes SHA9b0a1906. Earlier B332 report was not repeated. Actual result/receipt under /tmp/b127-ordinary-R-final/review-fix/. Purpose-built automation update/readback succeeded with complete32866-byte saved prompt SHA969b768ef08fa3547cb12fc3177dbd0d53ebd802c67daed47a9c8eb33ab39e82, preserving prior24543-byte prefix exact; active schedule/target/name unchanged and actual completions/holds current. Input32867 bytes SHA4ca12de0 is preserved; tool removed precisely one terminal LF. Initial strict readback stopped on that concrete normalization before later recording, then exact one-LF comparison verified it without another tool update.
+
+An earlier broad display-spacing transform split immutable hex identities and stopped before any tool update; stopped proposal archived and known-prefix-only correction restored/checked exact identities before the single purpose-built update. These external coordination costs are separate from product/source verification; no manual TOML write or protocol mutation accompanied either repair. No new claim/identity override/tracker/human contact or completed-source native/full/site rerun.
+
+Next bounded intake must inspect live existing PR handoffs plus fresh ready eligibility. Completed B332/Python65/R268 sources stay done. Separate later Rrow45 temporary-annotation factual route and preexisting NEWS nit are not retroactively folded into completed R268. Consequential decisions/S16 owners unchanged. Preserve these entire external next-use notes in the next substantive append, without another status-only Git checkpoint.
+
+### Phase separation and next-use evaluation
+
+Coordination: the preserved continuation records actual publication, checked-controller preparation, authorized Alan reporting and the single purpose-built automation update/readback. Its formatter, endpoint, source-hash and output-normalization stops remain honest instrument costs; no product failure is inferred from them. This row45 preparation also exposed one broad adjacent-table display truncation, then used the exact raw row and selected receipt fields. An external proposal script stopped at parse time on a non-ASCII bytes literal, before any file or tool action; only that literal's encoding was corrected. Neither instrument miss caused a repository/API/claim write or product run. No tool-read total is invented.
+
+Implementation: R268's factual repair changed only the six cited roadmap/backlog spans; its reviewed history and row51 stayed exact. This proposal changes two exact spans in row45, recording Python106's actual 2026-10-06T06:06:48Z merge 86cca9c, without changing the retained replay capability, rationale or retirement condition. All other 63 register rows and framing are byte-exact. Root created clean ordinary workspace `/Users/brettjohnson/code/hub-worktrees/metasalmon-row45-postlanding-convergence` on `feature/row45-postlanding-convergence` at actual base 7014a0a; no source was applied at that observation. The external author is remaining_work_explanation. Actual candidate, publication and merge remain pending.
+
+Verification and requested audit: original and repaired R268 source proof and prior review-job evidence were reused only for exact unchanged bytes; new factual spans and reusable-job routing received separate independent review. Final-head hosted full/strict CI remained required. The continuation reports real completed review and current skipped accounting steps separately. This row45 proposal has only author-owned byte/source binding; its separate independent candidate acceptance, local repository guards, publication, hosted CI and merge remain pending. No product/native/full/site corpus or old audit was rerun. The adjacent NEWS 'tracked separately as B332' nit remains for a later sweep; it creates no change or build here.
+
+Environment repair: zero in this row45 preparation. Controller and external read/instrument corrections are coordination, not dependency or runtime repair.
+
+Passive waits: the continuation separately records the actual old-head 677.446715167s and final-head 645.564384167s watches, without counting them as implementation or verification. No new wait is attributed to this preparation.
+
+Next use: narrowly routed completed-Claude reuse was evaluated on actual R268—old 0d model/verifier success and own-head check-run, final 861 skipped model/verifier and current accounting check, unchanged original two blobs plus independent final four-source proof—and reached the checked merge only after current full/strict CI and the actual P2 settlement. The common controller stayed unchanged. This proposal reuses the already verified Python106 landing and original B332 retirement rather than reopening completed protocol work; the full-register inverse and complete 498455-byte prefix carry that evidence into one proper ordinary docs PR. No new workflow policy, approval exception or status-only checkpoint is introduced.
