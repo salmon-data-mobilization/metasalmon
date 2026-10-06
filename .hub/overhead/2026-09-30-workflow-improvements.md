@@ -5165,3 +5165,772 @@ allowed bounded integration and one necessary NEWS build while retaining all
 incoming guards. This changes no gate and grants no reinstatement. The next
 publication remains held by the actual protocol suspension; final peer/current
 CI evidence and Brett's reinstatement cannot be replaced by this measurement.
+
+
+### 2026-10-06 — final implicit-body repair, actual reinstatement and companion closeout preparation
+
+This is a proposed substantive append for the next owned change. It follows,
+rather than replaces, the complete400683-byte R239 history (SHA256
+469297157c18d86d47351ebb483a91566580b1e08567fc9156b25c2ea8261aac), which preserves
+the389130-byte canonical prefix and every earlier append. It is prepared outside
+the repositories; no source-identical Git checkpoint is added to the frozen
+R239 publication. The prior authority-failure and suspension records stay
+historically accurate.
+
+**Actual later repair and independent acceptance.** B435's first tests-only
+RED2f1773105858361700fe41d3ad48cd04c3fad299 produced3 failures/4 unchanged
+positives on actual merged Python91. First GREENfcf01c8 fixed those fixtures,
+but the independent reviewer found an omitted-head residual and did not
+clear it. Genuine second REDb7227330b0ae2bcedc316ed2498c572a8aebde6a gave1 failure/
+4 unchanged positives; GREEN88fa5fb fixed that residual. The later concrete
+frameset control then found that its broad ordinary-tag inference had changed
+the preserved genuine-no-body fallback. Saved unchanged native xml2 has zero
+body elements and emits its title;88fa skipped it. The earlier clearance is
+superseded rather than misrepresented as covering this case.
+
+Genuine third tests-only REDc38203930cec25b9f47bf1239170b35a1d22d615 gave1 failure/
+4 unchanged positives and preserved all production bytes. Final
+GREEN0395870354c56c98cc0931ace22e9f606f5af3b3 adds only frameset/frame to the
+existing implicit-body exclusions; reversing them recovers the complete88fa
+module AST. Runtime53cb57790215cf0c0b6c2fa0547b3b2e89094828 and context test
+3c3680c7e9a527cbcd8dc2cf9e32c7321191156d bind the independently accepted final
+repair. All six RED/GREEN checkpoints and original B386 combined/integration/
+terminal remain. Final author acceptance is31 context tests plus2 consumers,
+zero fail/skip, retaining inherited LibreSSL warnings. Installed native parity
+was deliberately left to hosted parity; no old/native/full/provider corpus was
+replayed locally.
+
+The separate implementation reviewer passed30 fresh fallback controls in
+0.007142208s and768 immutable/AST bindings in0.403610834s. Saved native frameset
+proof and prior44 Python/9 native boundary controls were rebound, not rerun.
+All459 unowned paths,40 other modules,145 outside-class AST nodes, signatures,
+original tests and full10155-byte prior workpad prefix are retained. This is
+bounded optional-body/no-body acceptance, not arbitrary HTML-parser equality.
+Full receipt: /tmp/b435-independent-review/third-final/final-review-receipt.json.
+The reader's permanent parser/library/text/repair differences stay unchanged.
+
+**Actual reinstatement and subsequent publication.** Brett directly said
+“reinstate the existing delegation and continue”. Primary HUB.md records that
+under writes.reinstated_2026_10_06, after the root disclosed the ignored failed
+merge assertion, false premerge zero-thread statement and nine known ensuing
+unauthorized writes (four pushes including a claim; five PR mutations), plus
+the direct-main new-item/card shape violation. Reinstatement restores the
+existing grant; it does not rewrite those writes as permitted or replace
+current-head CI, substantive findings, ownership or consequential boundaries.
+The root's already-authorized material Alan-parent coordination report counted
+as one useful task report, outside the HUB repository/claim write register;
+it was neither a protocol write nor reinstatement.
+
+The claim diagnostic initially observed B435fc975 with its expired lease and
+reported it. Root then established normal same-owner beat90c76752, lease
+2026-10-06T07:42:20Z, and terminal62e1657bf4550cbbd5d29004c0908ad9cb5b4c76.
+Unchanged0395870 was published as Python PR105, drafted at2026-10-06T03:43:25Z
+then readied/attached; publication body13901bytes/SHA
+6264fa8e7239d9287d30dbe8e99338d69bec91fedf781d6d5f9ff6424328fc9e.
+R23996e2a96 was published at03:40:24Z. These are source-bound publication
+receipts, not merge/retirement receipts. Actual hosted CI and new review
+findings are being handled by their existing owners; this preparation does
+not duplicate that polling or claim a completed gate. The heartbeat received
+one purpose-built current-purpose update after reinstatement, separate from
+the earlier idle updates below.
+
+**Useful next use of the closure/intake adjustment.** Preparation now reads
+literal repository-scoped clauses once and reuses immutable proof, rather
+than interpreting a fresh-claim ready list as all progressable work. R239's
+separate composition review at96e2a96 is clear:115 parse-only assertions in
+0.089s and2334 immutable checks in8.182571833s, no product/native/full/site
+repeat. Its retained replay/Q23/oracle and actual-ingester source supports the
+R half; its explicitly blocked B332 Python factual companion remains an
+existing after-land route. B80/B226 are deleted-path supersessions, not
+fictional live captures, HTTP401 diagnosis or builder fixes. Likewise B435
+can complete B386's source behavior after actual merge while existing B434
+owns the later hub row62 factual update. Neither companion becomes a circular
+before-parent prerequisite, a new replay implementation, a deliberate parity
+choice or a duplicate item.
+
+One configured remote batch read seven relevant claim tips in0.497497458s.
+A single external bare-repository fetch supplied two new contents (B386/B435)
+in1.026382625s; unchanged B328 content was reused. B80/B226/B332/B434 had no tip
+in that snapshot. Root's later verified B435 terminal is recorded as a changed
+root receipt, not passed off as that older batch observation. Complete
+proposed queue files, exact row45/row62 text, registration/port prose and
+validation commands are external at /tmp/b239-closeout-prep/. No queue or
+source was edited, no claim was duplicated, and no new helper, product test,
+site generation or publication was performed by the preparation agent. Actual
+future merge receipts must fill the conditional closeout tokens; current
+preparation is not a claimed retirement.
+
+**Idle-check next-use measurements carried from the heartbeat.** On
+2026-10-05T14:02:56Z the compact check used6 remote+1 clock reads;15:03:49Z and
+16:05:14Z each2 remote+1 clock. At lease expiry17:06:03Z it used4 remote+3 local+
+1 clock+1 automation view+1 prompt update; one missing-V8-store orchestration
+error occurred before mutation. The18:03:26Z grace check used3 remote+1 local
+configuration+1 clock+1 prompt update.19:04:05Z, the delayed20:02 heartbeat
+checked at2026-10-06T00:32:16Z,01:36:16Z,02:36:46Z and03:34:15Z each used2 remote+
+1 clock. The00:32:33Z duplicate reused the17-second-old result with zero tools.
+Arithmetic across those supplied receipts is27 remote+4 local+10 clock+
+1 automation-view reads, plus2 prompt updates and the disclosed pre-mutation
+orchestration error. All those idle checks together spawned zero polling-only
+helpers and ran zero source reviews, product tests, builds, Git checkpoints
+or protocol writes. The later useful source/companion work is counted above,
+not disguised as another idle check. Full individual counters are external in
+idle-and-next-use-measurements.json.
+
+**Phase separation and limitations.** Coordination includes the claim-tip/
+content reads, complete local proposed words, one authorized Alan report and
+publication/reinstatement receipt binding. Implementation here is proposed
+external queue/register/card text only; product repair remains the separately
+attributed B435 author work. Verification reuses the actual author and separate
+peer proof and statically proves unowned register bytes preserved. Environment
+repair is none. Requested audit is this bounded literal-retirement/companion
+preparation; no new bot request or helper is spawned. Passive waiting for
+hosted gates or human authority has no invented aggregate duration. Receipt
+clock time/process time/pytest time retain their own labels; no CPU/phase total
+is inferred.
+
+Instrumentation misses remain coordination cost: the frozen R239 author's
+final merge-status output was too broad/truncated, and a receipt-summary loop
+mistook a list for a dictionary before a corrected compact read. This new
+preparation initially combined overly broad discovery/config/receipt reads
+whose output truncated and guessed a nested Python source path although this
+checkout is flat; immutable git-tree resolution supplied the actual path.
+None was a product failure, hidden repeat, public write or new checkpoint.
+Sources and the complete frozen400683-byte R239 log stayed unchanged. This
+next use supports the narrower companion/immutable-reuse intake; future actual
+merge comparisons remain required and broaden only for a concrete mismatch.
+
+### 2026-10-06 — reinstated checked merges, R239 canonical closeout, and the fourth B435 review repair
+
+This section updates the preceding preserved preparation with actual later
+receipts. The complete canonical 400683-byte history is an exact prefix of the
+external full candidate (SHA256
+469297157c18d86d47351ebb483a91566580b1e08567fc9156b25c2ea8261aac).
+The earlier 8812-byte proposed append is retained byte-for-byte, including its
+historical conditional language. Its former final 0395870 acceptance is not
+described as acceptance of the later PR105 finding or its new repair. No
+repository, policy, claim or public surface is changed by this preparation.
+
+**Authority and the checked merge experiment.** Brett's actual instruction was
+“reinstate the existing delegation and continue”. The approved local primary
+HUB.md entry `writes.reinstated_2026_10_06` records it and retains the disclosed
+unresolved Python91 finding, ignored failed assertion, false zero-thread claim,
+nine follow-on protocol writes and direct-main new-item/card shape violation.
+Reinstatement restores the existing delegation; it does not retroactively make
+those failures authorized. Current-head CI, substantive findings, ownership,
+person-contact and consequential-decision boundaries still apply.
+
+The controller's first actual R239 invocation stopped after 6.9 seconds and
+before every public mutation. The GitHub CLI's genuine no-required-checks
+formatter named the current head branch, disproving the earlier base-only
+inference. The narrow correction accepts only the exact current head or base
+branch formatter, return code 1 and empty stdout for that absence case. It
+does not waive required or applicable policy checks. Forty-six external
+failure controls passed in 2.755 seconds after the correction; no GitHub call,
+product test, build or claim mutation occurred in those controls. Earlier
+optimized critical controls remain their own historical three-control receipt,
+not a current-formatter rerun. The controller's final source SHA256 is
+34328fe1a70373aceb6d8f70726d7baa3fa176d407ddf8c5e6af1c5304a2a5f0.
+
+Root's pre-invocation inspection also corrected an assembly error that reversed
+R239's implementer and independent reviewer. The actual implementer is
+`/root/sssom_port_peer`; the independent composition reviewer is
+`/root/remaining_work_explanation`. The original assembly receipt is preserved.
+The role-label correction changed no implementation, source evidence,
+controller logic or tested source, and caused no product replay.
+
+The subsequent same-process controller validated two identical live snapshots,
+two actual review artifacts and zero threads, exact source/body/authority/
+ownership bindings, current checks and their executed job steps. It then wrote
+the final complete body and ordinarily merged the matched head in that same
+process. This removes the earlier practice of ignoring a separately failed
+premerge assertion; it does not make the independent snapshot an atomic server
+transaction. Receipt:
+`/tmp/metasalmon-reinstated-final-gate/PR239-ordinary-merge-receipt.json`.
+
+**Actual R239/B328 outcome.** R239 merged at 2026-10-06T04:03:24Z as
+6ceac85ab0cbc9d38daa017cc2035f76785ea095 from exact
+96e2a96c6c809bee5bcd651bd5e4f2587d5a342e. The landed tree equals the frozen
+candidate tree; the five owned source/test/schema blobs and full history are
+exact. The bounded Q67 replay-preserving retirement has separate implementation
+acceptance: 115 parse-only assertions in 0.089 seconds and 2334 composition,
+immutable and raw-record controls in 8.182572 seconds. No product/native/full/
+site proof was replayed for the merge or post-merge comparison.
+
+Seven applicable hosted contexts were green. RCI run 37410072113, job
+112096298010, completed the provider-isolated full suite in 4m15s with 52
+fixture warnings; these are disclosed separately from strict R4.6.1's Status OK
+and zero errors, warnings or notes. Strict reported duration was 5m7.5s; its
+hosted step interval was 5m33s. Theme A's actual run 37410072139 passed all six
+cases and thirteen required checks with zero forbidden hits, plus focused
+replay/packet conformance. Those final log files were each downloaded once.
+
+Ready-triggered Claude run 37410085538 completed both the model and execution
+verifier, with 33 turns and zero denied tools. Its actual comment 6008912796 had
+zero Important findings and four source-verified nits. Completed Codex code
+and security results are in actual summary 6008856329. The fully paginated
+final comments/reviews/inline-thread scan had two bot comments, zero submitted
+reviews, zero inline comments and zero threads. The original Claude run lacked
+a verifiable posted verdict; the publication job was cancelled. Neither is
+counted as the later completed review. No independent substitution, review
+reroll or server-check override was needed for this actual merge.
+
+Checked mechanical closeout c6dc6fa8fc17b559498d762582aecff59c3ebf60 changed
+only `queue/items/B-328.yaml`, setting done and unclaimable. B80/B226 were
+already done in the landed scope as deleted-path supersessions; no fictional
+capture, HTTP401 diagnosis or builder repair is asserted. B332 stays byte-exact
+ready, with its explicit after-B328 Python row45 factual obligation. Closing
+the repository-scoped R half does not claim the Python register correction is
+complete or create a circular Python-before-R prerequisite.
+
+The primary checkout fast-forward preserved the approved dirty AGENTS.md and
+HUB.md bytes exactly, including reinstatement. Fresh external backups, explicit
+path staging and normal non-optimized Python protected that round trip. Queue
+lint (331 items, zero retirement debt), generated check, parity64, OKF capture
+(zero diagnostics) and scoped diff passed. The checked closeout pipeline
+inspected 79 subprocess results with zero failures in 10.257352 seconds. That
+elapsed time includes reads, comparison, rendering, light gates, the ordinary
+main push and cleanup; it is not called active coordination or CPU time.
+
+Only the original completed B328 worktree was removed after clean, zero-unique,
+no-unpushed, no-untracked and zero-ignored verification. Local and remote
+branches, all checkpoints and terminal archival claim 94f58579 remain. The
+eight other auxiliary R checkouts, including dirty original B384 workpad,
+release/ontology/S16 branches and retained original partial checkout, were
+byte/status/inventory-exact. The canonical history remains all 400683 bytes;
+there was no fresh status-only overhead commit or post-merge PR write. Receipt:
+`/tmp/b328-postmerge-closeout/final-closeout-receipt.json`.
+
+**Actual fourth B435 finding, separate repair and new acceptance.** PR105's
+actual Codex P2 comment 4191335929 / thread PRRT_kwDORKhraM6pT71b was caught
+before merge. Head-resident noscript/link, object/param, template and
+frameset/noframes could still suppress the genuine no-body title fallback.
+Source-bound comparison used the unchanged native reader, actual merged c842
+baseline and published 0395870. The reported cases have no native body and
+retain title fallback in that baseline; 0395870 incorrectly skipped them.
+The measured custom-empty head case exposed the same new inference defect.
+Earlier 0395870 clearance is historical and superseded for this boundary.
+
+The separate repair implementer, sssom_port_peer, preserved genuine initial
+tests-only RED 8bb0c85095323d692db7b2231629d2be248d4ce2: ten failures and
+fourteen passes, 32 deselected, pytest 0.14 seconds / process 1.245373 seconds.
+Extended tests-only RED 14e7e240a2697b244fe7a0e9253c68b4d4b870ee retained
+production bytes and gave eleven failures / fifteen passes, 32 deselected,
+pytest 0.14 seconds / process 0.870105 seconds. GREEN
+0980402fe36308af9e7a1d025268215ad1768206 passed 37 affected HTML cases,
+21 unrelated cases deselected, zero failures/skips, pytest 0.06 seconds /
+process 0.562940 seconds. Tested uncommitted source atop extended RED binds
+exactly to that later immutable GREEN; no misleading HEAD-only label is used.
+
+The minimal repair records head-container context before inferring a body.
+The same elements outside head still infer ordinary empty/visible bodies;
+closed-container omitted-head/body boundaries, true head-only fallback,
+frameset/no-body behavior, title/hidden text, raw bytes, chunking/scoring,
+public signatures and permanent row62 differences remain scoped controls.
+Runtime 22fe9a76070474924682b9e62777f9ea8da86552 and test
+75f94d7052e788f6472c2ae16e14c8753d3a41ba are frozen. Forty other production
+modules, 145 outside-extractor AST nodes and every original test byte remain.
+The complete 12495-byte workpad prefix is preserved within 17732 bytes.
+
+Separate reviewer ontology_fetch_peer cleared immutable 0980402 with zero
+substantive findings: 108 public controls across 36 purposeful fixtures in
+0.042193 seconds and 624 immutable/AST/prefix bindings in 7.794735 seconds.
+Saved native/prior boundary observations were rebound, not replayed. Core
+source binding confirms optional YAML/HTTPX/lxml/spreadsheet/PDF dependencies
+absent; inherited LibreSSL/urllib3 startup warnings remain distinct from
+per-case intentional empty-context warnings. No old full/native/provider
+corpus, site generation, dependency change or deliberate parity decision was
+made. Evidence:
+`/tmp/b435-fourth-review-repair/final-frozen-source-receipt.json` and
+`/tmp/b435-independent-review/fourth-final/final-review-receipt.json`.
+
+**PR105 final outcome deliberately pending in this external draft.** Root owns
+the exact published-head CI, new actual comments/threads, final controller and
+ordinary merge. This section records local repair and independent acceptance,
+not a final hosted gate, merge, B435/B386 retirement or B434 factual completion.
+Insert root's actual PR105 publication/gate/merge/closeout receipt here once
+available; do not infer it from the older 0395870 publication or this GREEN.
+
+**Phase accounting and next use.** Coordination is authentication, live PR/
+ownership/claim-tip reads, receipt/plan assembly, normal publication and the
+authority/branch/backup checks. Implementation is the separate B435 scoped
+repair and preserved tests-only checkpoints, and the mechanical B328 state
+edit/render. Verification is the appropriate focused author tests, separate
+implementation reviews, immutable source/prefix bindings, necessary light
+queue/parity/OKF/diff gates and exact-head hosted outcomes. Environment repair
+is none: a wrong pytest interpreter lacked pytest; the existing genuine-core
+environment supplied it without installation. Requested audit is this useful
+bounded log/route preparation plus the actual source/finding diagnostics,
+separate from passive waits. Hosted waits and human-authority waits have no
+invented aggregate duration. No polling-only agents, new claims, old corpus
+replays or status-only checkpoints were added by this appendix preparation.
+
+Honest instrumentation costs remain. The new peer probe initially failed
+compilation from an invalid boolean comparison, then used R's `chunk_text`
+column instead of Python's `text`; corrected before the completed 108-control
+run, with raw failures retained. This append preparation accidentally printed
+full binding arrays and truncated output, then switched to selected scalar
+keys; an unmatched shell glob stopped a bounded discovery command after its
+read-only queue output. Neither was a product regression or hidden successful
+gate. Earlier controller controls initially failed from an external tempfile
+outside the intentionally allowed proof route; the later 46 passing controls
+remain separate from that failed run. No failed assertion is ignored to permit
+a dependent public mutation.
+
+The measured next use supports the existing source-freeze/after-land companion
+approach: R239's source proof carried through actual merge/closeout with zero
+runtime/build repeats, while a genuinely new PR105 finding caused new RED,
+repair and independent acceptance. Administrative quota/availability handling
+does not replace substantive-finding repair. The smallest existing delegated
+R documentation route is registered B434's after-B386 row62 factual companion,
+after actual PR105/B386 completion and current ownership checks, through a
+normal claim/worktree/PR. B332 is a Python-only factual route and cannot carry
+the canonical R history. The still-open R248 decision-routing draft has its
+own uncompleted consequential term/question prerequisites and different owned
+scope; it is not used merely to transport this log. R239 stays merged. No new
+tracker, direct-main substantive intake or unrelated PR expansion is proposed.
+
+
+### 2026-10-06 — another actual PR105 P2 stops merge despite green checks
+
+Actual second published PR105 Codex review comment 4191462046, thread
+PRRT_kwDORKhraM6pUPXl, identified a new P2 at frozen
+0980402fe36308af9e7a1d025268215ad1768206: head-only article, input and basefont
+markup still reach the catch-all implicit-body inference. Root stopped the
+merge. All six applicable current-head CI checks being green does not settle
+this substantive finding. The earlier 0395870 and 0980402 scoped clearances
+remain historical, and are superseded for this newly reported boundary.
+
+Root assigned ontology_fetch_peer the fresh read-only source/native diagnosis
+and sssom_port_peer the sole author's next genuine RED/GREEN repair. This
+append preparation runs no probe, repeats no source review, adds no helper,
+and makes no repo/public/claim write. It claims no diagnosis outcome, final
+repair revision or merge. Actual future source and independent acceptance
+must replace the conditional closeout bindings before execution; the existing
+0980402 pipeline is retained as historical preparation and is not executable
+for a later head. B434's factual two-span proposal remains a possible after-land
+route, but its retirement tokens await the actual final Python source.
+
+The preceding complete 422132-byte external full-candidate version and its
+21449-byte append are archived byte-for-byte under
+`/tmp/metasalmon-next-substantive-overhead-20261006/20261006-second-PR105-review-4191462046/`.
+The new external full candidate still preserves the complete canonical
+400683-byte prefix and the exact 8812-byte original proposed append. This is
+useful actual-findings accounting, not a source-identical Git checkpoint or a
+bot reroll. No final PR105 gate, merge, B435/B386 completion or B434 factual
+retirement is asserted.
+
+### 2026-10-06 — measured head-scope rule, fifth genuine repair and exact publication
+
+The preceding actual second PR105 P2 record remains accurate: merge stopped
+despite green checks. The root's fresh diagnostic confirmed three new
+head-only fallback regressions and five body-positive controls across eight
+cases. Initial Python-only markup accidentally included forbidden closing
+tags for void elements; that variant is preserved and was corrected before
+the single eight-case native execution. Its conclusions concern actual body
+selection, not a claim of HTML schema validity or arbitrary malformed-parser
+equivalence. This is new finding diagnosis, not a repeated old native corpus.
+
+**Underlying rule rather than another exception patch.** The author and
+separate reviewer bound the repaired head-scope rule to the unchanged native
+R reader, actual libxml2 2.14.4 observations and its archived primary source.
+The named-token universe is 135. A bounded characterization executed 132
+fresh native cases, reused four exact earlier named observations, and later
+measured the one previously missing `listing` case. The original receipt had
+incorrectly classified unmeasured listing as no-body; it is preserved and its
+actual body1/empty result now replaces that classification. All 56 runtime
+body-establishing names match the source's head-autoclose set except the
+measured genuine-no-body frameset case. Ten nonbody void names match native
+element-table Empty flags. Expectations come from actual saved public/native
+observations, not a copy of the production set.
+
+The repair replaces the head catch-all: measured nonbody head containers keep
+their children in head, while closing those containers allows subsequent body
+markup. The same ordinary elements outside head still infer a body. A separate
+loose-title marker changes tag scope without changing existing text collection.
+It is not a new global HTML algorithm, dependency, public contract, ontology
+decision or deliberate parity difference. The libxml source receipt is
+`/tmp/b435-fifth-review-repair/body-and-void-rule-source-binding.json`;
+its archived HTMLparser.c SHA256 is
+f3801059a8af206e0c4398c9ee0bfcacc67b4fa5175dd7aa1cf3842654c6ca65.
+
+**Genuine REDs, corrected fixture and final GREEN.** All earlier B386/B435
+checkpoints and complete workpad prefixes remain. The new tests-only history
+records actual outcomes rather than relabeling an instrumentation failure:
+
+| Checkpoint | Actual measured result |
+| --- | --- |
+| 902faea798f06abcf13487f6b08b631414486235 | Genuine initial RED: 3 failures / 5 passes / 58 deselected, pytest 0.09s / process 0.995035s; published098 source/workpad exact |
+| 1ad63cd02305535376241d8928b6a3114cc5f456 | Genuine expanded RED: 68 failures / 81 passes / 58 deselected, pytest 0.46s / process 1.041886s |
+| Retained uncommitted draft, not passing GREEN | 1 failure / 185 passes / 21 deselected, pytest 0.31s / process 0.887992s; one fixture had demanded native literal plaintext-closing text from the unchanged Python parser |
+| 9ca727124d971e7de7595b220f05ccc5dbd5a7e9 | Genuine corrected tests-only RED: 68 failures / 81 passes / 58 deselected, pytest 0.45s / process 0.990988s; source/workpad restored to published098 before execution |
+| aa81ad1704d7f13d93882affbf774a6d6aecd125 | Frozen GREEN: 186 affected HTML cases passed / 21 unrelated deselected / zero failures or skips, pytest 0.19s / process 0.732229s |
+
+Every fresh pytest leg retained the inherited LibreSSL/urllib3 startup warning.
+The final source was tested uncommitted atop corrected RED, then bound exactly
+to immutable aa81; its test and fixture blobs remain corrected-RED exact.
+Core source binding used the existing Python 3.9.6 environment with optional
+YAML/HTTPX/lxml/spreadsheet/PDF dependencies absent, without installation.
+The source is runtime 2aa429373156e32e8979f2f1f4a17be494fd6594,
+test 53bd20c41c7082ccaf5c5293b57409fff5ae0337 and
+fixture 6fe7b725d73e7effe1ade71ff6610bbd9c6c02e4. Forty other production
+modules, 145 outside-class AST nodes, five signatures, parts/handle_data and
+all original test bytes are exact. The 17732-byte prior workpad prefix remains
+within 24846 bytes. The full 464-path author manifest preserves 460 unowned
+paths; it is an author binding, not self-declared independent acceptance.
+
+**Precise pre-existing text boundary.** Native plaintext has no body and
+includes literal closing markup; actual merged c842 Python returns only
+Fallback. The author measured the actual baseline public output before
+correcting the fixture rather than changing runtime to erase that inherited
+library difference. The reviewer needed one distinct new native composite:
+loose-title/article/paragraph returns Fallback plus Inside natively, while
+both actual c842 and final aa81 return Inside through unchanged outside-head
+text collection. This is inherited text behavior, not the newly introduced
+no-body fallback regression. Body classification and text expectation remain
+separate. No universal malformed-HTML parity is asserted.
+
+**Separate immutable-head acceptance.** Reviewer ontology_fetch_peer cleared
+implementer sssom_port_peer's aa81 repair with zero substantive findings in
+this bounded scope. Its 149 actual public tag/context cases passed 680
+assertions in 0.098186417s; 42 fresh visible/container comparisons against
+actual merged c842 passed 201 assertions in 0.035110292s. That is 191 cases /
+881 public assertions. Another 1246 immutable source/test/native bindings
+passed in 0.174387834s, with nine direct baseline-public-route AST bindings
+and twelve preserved checkpoint ancestry checks. Prior exact native rows
+were reused. No old native/full/provider corpus, site generation or source-
+identical product test was repeated by this log/closeout preparation.
+Review: `/tmp/b435-independent-review/fifth-final/final-review-receipt.json`.
+
+The fresh diagnostic and audit instrumentation errors remain recorded:
+an overbroad index regex was replaced with its bounded actual source read;
+the first characterization omitted listing and the later single observation
+corrected it; an orchestration count guess asserted 59 failures / 90 passes
+after a saved expanded RED that actually reported 68 / 81; no rerun changed
+that result. The peer initially treated a universe-count integer as iterable,
+then a runner incorrectly required the old warning count for an intentionally
+corrected empty body. Both stopped and were repaired outside the product.
+The one new native composite first failed numeric_version JSON serialization;
+version formatting was corrected and the same single distinct case executed
+again. None is counted as a product GREEN, hidden corpus replay or environment
+repair.
+
+**Actual publication, still pending final merge.** Root ordinarily published
+aa81, preserving the complete 30053-byte PR105 body (SHA256
+399e27e2c151e7707d54e86d91622f70945bd6fb7483a01f0318441206144f5b).
+The actual second P2 was answered as fixed in reply 4191611496 and its thread
+resolved. Root's final configured Codex Code Review request 6009510562 was
+posted at 2026-10-06T04:45:06.784181Z: third total request, second manual
+request, and the final allowed configured review. This is substantive repair
+review, not an unavailable-bot administrative retry. No Python Claude workflow
+or separate Security Review completion is fabricated from a controller family
+label. Final current-head hosted CI and the actual final requested review are
+pending; publication and local independent acceptance do not imply merge.
+Receipt: `/tmp/b435-fifth-publication/publication-receipt.json`.
+
+The external B435/B386 closeout is rebound to exact aa81 source/test/fixture
+and separate peer evidence, with R canonical parent c6dc6fa8 and the complete
+unchanged 400683-byte log. It remains explicitly disabled before every tool
+and mutation until root supplies successful checked-controller actual merge
+and execution authorization. Its predecessor 098 plan is preserved as dated
+history. The normal after-land B434 factual route remains conditional and
+unclaimed in this preparation; no register retirement token is filled.
+
+**Phase accounting.** Coordination includes this external receipt binding,
+the one purpose-built automation update reflecting actual reinstatement,
+R239 closure and the PR105 second-finding hold, and one authorized substantive
+Alan-parent report of those changed facts/checkpoints. The full prior
+automation configuration is preserved separately; neither action was an idle
+poll, new chat, person-contact request or Git status checkpoint. Implementation
+is the separate author's head-scope repair, genuine RED commits, fixture-
+expectation correction and workpad append. Verification comprises purposeful
+new native characterization, relevant author tests, separate immutable/public
+review, source/prefix bindings and later actual hosted gates. Requested audit
+includes root's single final configured Code Review request and the bounded
+source/finding diagnosis; this preparation requests no reviewer or helper.
+Environment repair is none; existing environments were used. Passive waits
+for remote CI/review have no invented aggregate time. Distinct case counts,
+pytest timing, process timing and source/audit timing retain their own units.
+
+The next-use conclusion remains limited but observed: a new substantive
+finding caused new genuine RED and independent acceptance, while exact old
+proof/history/checkpoints carried forward without unnecessary full/native/
+site replays. Actual PR105 final CI/review/merge/tree/retirement receipts must
+still be appended when known. No repo, policy, claim or public write, product
+test, build, extra helper or new tracker was performed by this appendix task.
+
+### 2026-10-06 — four actual CI failures, platform-bound test correction and final review evidence
+
+Published aa81's hosted run 37415181375 actually failed the core job 112112116632,
+extras 112112116774, bare pytest 112112116766 and parity 112112116558. Docs and
+changelog succeeded; that did not clear merge. All four saved failed logs have
+the sole plaintext fifth-review fixture assertion in common. Local CPython 3.9
+had emitted Fallback; hosted CPython 3.11.16 emitted Fallback followed by literal
+closing plaintext/head/html markup. The failed run remains evidence, not a
+green check, transient rerun or completed repair.
+
+**Source-bound diagnosis, not a local 3.11 binary claim.** Root's diagnostic
+binds the actual merged c842 reader, aa81 reader and a neutral stdlib data
+recorder to each parser source. Within each source profile the three agree:
+3.9 returns Fallback; exact official CPython v3.11.16 HTMLParser and
+_markupbase preserve literal closing markup. The official source ran under
+the existing 3.9 interpreter. No local 3.11 binary, full suite, new native
+corpus or dependency installation was used. This is an inherited stdlib text
+difference exposed by the new fixture, rather than a runtime regression.
+Evidence is under
+`/tmp/b435-fifth-publication-gates-20261006/20261006T044713Z/CI-plaintext-version-diagnostic/`.
+Actual final-head hosted execution is still required.
+
+**Tests-only a41 correction.** Frozen
+a41ca34415fe5c8f8f83a7516de87b8595658026, parent aa81, changes only the one
+plaintext fixture's baseline-spelling metadata, the added test's precise
+platform expectation and the honest workpad receipt. Native body_count=0 and
+native text remain verbatim; all 140 other fixture rows/metadata are exact.
+For this row the test obtains the active stdlib parser's data result for the
+exact markup, requires a nonempty one of the two actually measured spellings,
+then requires the real public reader to equal that specific result. Wrong
+title-only truncation or an empty result fails on the 3.11 source profile;
+the test does not accept either public spelling indiscriminately. No skip,
+parser replacement, dependency/workflow change, new body-policy or deliberate
+parity difference is introduced.
+
+The existing genuine-core run passed 141 affected cases / 66 deselected / zero
+failures or skips, pytest 0.17s / process 0.780655666s. Sixteen bounded
+official-source public/strict-negative controls passed in 0.040431708s: old
+assertion fails, corrected expectation passes, merged/current/neutral outputs
+agree, source labels and raw bytes remain, and wrong title-only/empty output
+fails. Each leg retained its inherited LibreSSL startup warning. These are
+author controls, not independent acceptance or a 3.11 binary execution.
+The actual committed failing aa81 is the RED evidence; no new historical
+tests-only RED is fabricated for this test correction.
+
+Runtime 2aa429373156e32e8979f2f1f4a17be494fd6594 is unchanged, as are all 41
+production modules. Test ce6b1f5dc6aa68396b51fa1ce59152a92840b219 and
+fixture ba1480ea6587595d57e9acec286b0603a2008822 are the revised bindings.
+Complete author proof covers 464 paths, 461 unchanged unowned paths, all 140
+other fixture rows, 45 other test AST nodes, original test history and every
+prior checkpoint. The exact 24846-byte workpad prefix is retained within
+29329 bytes. Separate test-only acceptance is pending at this author handoff;
+the disabled closeout will rebind after that receipt, then continue waiting
+for current-head hosted CI and the root's actual checked merge.
+
+**Actual final requested review.** The third total/final configured CodeReview
+completed on aa81 at 2026-10-06T04:51:29.567014Z and posted clear comment 6009575229.
+Root's fully paginated live scan found only the two historical resolved
+threads. That actual unchanged-runtime review can be bound to a41; it is not
+described as a bot review of the newly corrected test bytes. No fourth review
+request, reroll, absent Claude verdict or invented Security Review is needed
+or counted. New test bytes require separate independent acceptance, and final
+head CI remains mandatory even when unchanged-runtime review is reusable.
+
+**Phase accounting.** Coordination is the actual four failed log/step reads,
+root's source-version binding, scoped author/peer handoff and external evidence
+rebinding. Implementation is the tests-only expectation/fixture/workpad
+correction. Verification is 141 affected author cases and 16 source-bound
+strict-negative controls, followed by the pending separate test-only review
+and actual final-head hosted gates. Requested audit is the already completed
+final CodeReview and useful failed-job diagnosis; no extra bot or helper is
+requested here. Environment repair is none. Passive waits have no inferred
+duration. Neither this appendix agent nor the conditional closeout performs
+product/native/full/site replays or repo/public/claim writes.
+
+This remains an external, unfinished substantive appendix. Record the later
+independent test acceptance, new-head hosted outcomes, actual checked merge,
+source-tree comparison and literal B435/B386 closeout when they occur. Keep
+the complete canonical 400683 prefix and every previous external proposal.
+The proper factual B434 PR route remains dependent; no retirement is claimed
+from a local author pass, reused runtime review or an earlier failing head.
+
+### 2026-10-06 — separate strict test acceptance and ordinary a41 publication
+
+The pending test-only review has now completed independently on immutable
+a41ca34415fe5c8f8f83a7516de87b8595658026. Reviewer ontology_fetch_peer found
+zero substantive findings in sssom_port_peer's correction. It passed 657
+immutable/source/test/fixture bindings in 0.127491375s and 18 strict public
+controls in 0.014572417s. Runtime 2aa42937 and all 41 production modules are
+aa81-exact; 461 unowned paths, 45 other test AST nodes, 140 other fixture rows,
+all original assertions and complete 24846-byte workpad prefix remain. The
+prior 191 runtime cases / 1246 bindings were reused, not replayed.
+
+The independent controls require exact public equality to the neutral parser
+baseline for both actual installed 3.9 and official 3.11.16 source profiles.
+They refuse the other measured spelling on the wrong source profile,
+title-only truncation, empty output, arbitrary extra text, provenance changes,
+raw input mutation, unexpected warnings and applying this profile to another
+fixture. This is neither an accept-either relaxation nor an actual 3.11 binary
+run. No skip, CI relaxation or runtime change is introduced. The one inherited
+LibreSSL warning and the external runner's initial two-element/three-element
+unpack failure are recorded; the runner stopped before public controls and
+only its own instrumentation was corrected. Peer receipt SHA256 is
+70dbafb88ff6cbe335e645e844a422a77840878c9daaf90da68b78897842c6e5 at
+`/tmp/b435-independent-review/plaintext-platform-final/final-review-receipt.json`.
+
+Root ordinarily published a41 at 2026-10-06T04:59:55.473754Z, preserving the full
+37971-byte body SHA256
+bd74468c150e7386afccc493a032d1a9191021e0a617533d6454c7f965ffb7ed. The actual
+completed final configured Code Review 6009575229 remains evidence for unchanged
+runtime only; separate review covers the new test/fixture/workpad bytes.
+Zero new bot requests or job reruns were made. Actual final-head hosted CI
+remains pending in this publication receipt; all four aa81 failed jobs remain
+historically failed. Publication:
+`/tmp/b435-plaintext-platform-publication/publication-receipt.json`.
+
+Root's pre-invocation alias/artifact plan mismatch was corrected before any
+controller invocation or publication action; it is an assembly error, not a
+failed product gate. An overlarge full peer JSON read truncated and was
+replaced with selected scalar keys plus the complete peer prose; no product,
+probe or build was repeated. These are coordination costs, separate from
+657 source bindings / 18 strict independent verification controls and the
+author's earlier 141 affected / 16 source-profile controls. Environment repair
+is none; review/CI waiting has no invented aggregate duration.
+
+The disabled conditional closeout now names a41 and all four exact peer
+source_blob_paths: runtime 2aa42937, test ce6b1f5, fixture ba1480e and workpad 91ff4e.
+It reuses the unchanged-runtime peer and actual final bot review without
+pretending that bot reviewed a41's test bytes. It retains original branches,
+terminals and all thirteen prior checkpoints. Exact new-head applicable CI,
+every actual finding disposition, successful root checked-controller ordinary
+matched-head merge and actual MERGED tree/receipt are still required before
+root authorizes execution. No closeout or B434 factual retirement has occurred.
+The complete canonical 400683 prefix and every external earlier proposal are
+preserved; this appendix is unfinished and unpublished until actual outcomes
+can fill its remaining tokens. This helper performed no product/native/full/
+site replay or repository/public/claim write.
+
+
+### 2026-10-06 — actual final a41 merge, literal B435/B386 closeout and verified cleanup
+
+**Outcome now completed.** Root's checked controller succeeded before the
+ordinary matched-head merge. It verified the exact source and independent
+receipts, current delegated authority, original ownership, final applicable
+CI and actual job steps, fully paginated review artifacts and resolved threads.
+Two live snapshots were identical: 12 artifacts and two historical resolved
+threads. The final reviewed body was 40068 bytes, SHA256
+71c96e79dc866441ad7666bff595e12396919db1fdaca82894045e37793f0bc7. The controller
+then updated that body and ordinarily merged the same a41 head in the same
+checked process. Fresh GitHub metadata confirmed Python PR105 MERGED at
+2026-10-06T05:04:21Z as 3a3eb1fdd48627cfc00958e22a5252c67c66f0ab from
+a41ca34415fe5c8f8f83a7516de87b8595658026. Successful merge receipt:
+`/tmp/metasalmon-reinstated-final-gate/PR105-ordinary-merge-receipt.json`, SHA256
+cad0f241a2cc9250d4c9c6fb07476bc7806efc04d26a702396524e63cc1d2daf.
+
+**The two actual PR105 P2 findings were real blockers.** The first exposed
+head-only fallback regressions in the early inferred-body approach; the
+second exposed the catch-all inference for head-only article/input/basefont.
+Root caught both before merging, rather than treating green CI or a sampled
+Completed summary as clearance. Their genuine regression checkpoints and
+repairs remain, including fourth RED 8bb0c850 / expanded RED 14e7e240 / GREEN
+0980402f and fifth RED 902faea7 / expanded RED 1ad63cd0 / corrected RED 9ca72712 /
+GREEN aa81ad17. Earlier clearances are retained as historical, superseded
+claims. The final runtime rule follows the measured native head-closure set,
+not another three-name exception or a universal malformed-HTML algorithm.
+Native characterization establishes 56 body-start names within the 135-token
+inventory; 132 fresh observations and four exact saved observations were used,
+with one targeted listing correction. The first array/listing and fixture
+control mistakes remain recorded in the preceding sections. No old native
+corpus was replayed to achieve this result.
+
+**Actual failed CI stays failed.** Four aa81 hosted jobs genuinely failed the
+plaintext fixture on CPython 3.11.16: core, extras, bare pytest and parity.
+Documentation/changelog successes did not clear merge. The runtime matched
+merged c842 and the neutral standard-library parser under each actual source
+profile. The narrow a41 correction changes the test/fixture/workpad only:
+compare exact source-profile output, preserving the library-dependent spelling
+instead of accepting either spelling, dropping assertions or adding a skip.
+Official 3.11.16 parser source ran under the existing 3.9 interpreter for the
+local compatibility proof; this is not described as a 3.11 binary run.
+Author verification was 141 affected cases and 16 strict source-profile
+controls. Separate independent acceptance was 657 immutable bindings and
+18 strict public controls; all 41 runtime modules were unchanged. Inherited
+LibreSSL startup warnings remain distinct from product failures. The author
+and peer's external harness assertion/unpack corrections remain disclosed.
+
+**Final evidence reused within its actual scope.** Configured Code Review
+6009575229 completed on aa81 at 2026-10-06T04:51:29.567014Z and was clear. It was
+reused only for the byte-identical runtime, while the independent a41 receipt
+reviewed the changed tests/fixture/workpad. Unchanged runtime retains the
+191 purposeful cases / 881 public assertions and 1246 immutable bindings;
+there was no repeated runtime, old native, full or site run locally. The
+separate a41 test receipt SHA is
+70dbafb88ff6cbe335e645e844a422a77840878c9daaf90da68b78897842c6e5; reused runtime
+receipt SHA is a71623feed38412b5b01520c6d265132aaef33b253f2a21c3f164d38f96e832b.
+All six applicable final a41 hosted contexts succeeded and the five executed
+job/step proofs were checked. Inapplicable deployment was skipped, not an
+executed review or a check override. No fresh bot request or job rerun was
+made for the test-only publication; no absent Python Claude or separate
+Security Review is invented. This appendix does not guess full-suite pass
+counts from a green rollup. The decisive final step receipt is
+`/tmp/b435-plaintext-publication-gates-20261006/20261006T050236Z/final-job-step-receipt.json`.
+
+**Mechanical closeout followed actual landing.** Root reviewed the prepared
+script, then explicitly authorized enabling only the a41 version after the
+successful actual merge. This helper removed its external unconditional STOP
+and added exact merge SHA/time, receipt path/hash and body/artifact bindings;
+all normal live/source/ownership/policy/queue/cleanup gates were retained.
+Disabled predecessors were archived. The helper compiled syntax only and
+made no repository, public or claim write. Root invoked the normal-Python
+fail-fast pipeline, which completed 150 checked subprocesses, zero failures,
+in 12.84608354093507s. It verified the actual entire merged tree against a41,
+the four owned blobs and all thirteen prior checkpoint ancestors once, then
+clean-fast-forwarded Python primary to 3a3eb1fdd48627cfc00958e22a5252c67c66f0ab.
+No claim handoff was released or impersonated.
+
+The mechanical R-main closeout 2e6a763b3fc775c42a7f706d642cb1f027cddec6 changes
+only `queue/items/B-386.yaml` and `queue/items/B-435.yaml`: their existing state
+and claimable fields become done/false after literal source retirement
+verification. Rendered outside-marker bytes stayed exact; lint found 331
+items with zero retirement debt, generated-state check passed, parity agreed
+on all 64 rows, OKF capture reported zero errors/warnings/info, and scoped /
+staged diff gates passed. Only the exact queue files were staged. B434 remains
+byte-identical and ready, with its B386 prerequisite now satisfied; it has
+not been implemented or retired by this mechanical closeout. No new item,
+registry paragraph, bot request or post-merge PR write was added here.
+
+**Cleanup and preservation are actual.** Approved dirty primary AGENTS.md and
+HUB.md round-tripped byte-for-byte and remained unstaged, including Brett's
+actual reinstatement. The complete canonical overhead history remains 400683
+bytes, SHA256 469297157c18d86d47351ebb483a91566580b1e08567fc9156b25c2ea8261aac;
+this closeout made no status-only log append. Own completed B435 checkout was
+clean with no unique, unpushed or untracked work before removal/prune. All
+seven ignored files were archived and hash-verified under
+`/Users/brettjohnson/code/hub-worktrees/.completed-build-artifacts/metasalmonpy-B-435-2026-10-06`.
+The original B386 checkout and its 4329 ignored files were retained. Every
+local/remote branch, terminal claim and unrelated worktree was preserved.
+The actual final closeout receipt is
+`/tmp/b435-postmerge-closeout/final-closeout-receipt.json`, SHA256
+7f63c0b09f3e107bf78ed8ccf7a471e0404468cdca21f930a68f225aeb5673d5.
+
+**Phase accounting and one next-use adjustment.** Coordination includes the
+checked-plan assembly, actual gate/artifact reads, root's source-bound final
+invocation, enabling handoff and mechanical state/cleanup orchestration.
+Two additional read-tool costs are honest: this helper's initial full prep
+JSON read printed/truncated the large ignored inventory before switching to
+selected keys; root's full-register character SequenceMatcher with
+`autojunk=False` became CPU-expensive. Root identified its own Python-stdin
+PID 3997 and interrupted that read-only process (exit 130) after roughly two
+minutes; no repository/public write occurred. Narrow row62-only delta review
+then passed with the actual two span edits. This is coordination/instrument
+repair, not a failed product test or source-validation finding. For B434's
+next use, reuse the existing owned row/span positions and compare those raw
+spans, rather than an unbounded character comparison of the full register.
+
+Implementation is the genuine successive B435 fixes and the final strict
+test-only a41 correction, followed by the two existing queue state updates.
+Verification is the focused/purposeful author and independent controls,
+immutable source/fixture bindings, actual final hosted jobs, checked merged
+source-tree proof and preservation/cleanup checks. Requested audit is the
+actual configured reviews and useful independent/native diagnostics, not
+polling agents; final runtime review was reused only within its frozen scope.
+Environment repair is none. Passive CI/review waits retain no invented total
+duration. The successful closeout itself performed zero claim writes, manual
+bot requests, post-merge PR writes, product/native/full/site repeats and
+status-only log checkpoints. This external appendix preparation likewise
+performed none of those actions.
+
+The substantive appendix is now ready for the existing separately registered
+B434 factual PR route. Its final owned factual source spans and actual new
+PR/base/head still require ordinary source binding and separate review in
+that route. It must preserve this entire canonical prefix and every preceding
+proposal/version; it does not reopen merged R239, make new substantive intake
+on main, or decide permanent HTML parser/library parity. Actual final a41
+body/no-body source determines the factual row62 correction, while permanent
+parser/library differences and all other rows remain.
