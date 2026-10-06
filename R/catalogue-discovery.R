@@ -215,6 +215,53 @@ capture_catalogue_query <- function(query, out, catalogue = "knb",
   docs <- list()
   seen <- character()
   total <- NULL
+  # Cleanup is best-effort: a second filesystem condition or warn=2 must
+  # not replace the condition that made this capture incomplete. Interrupts
+  # use the same evidence path and are then propagated unchanged.
+  handle_failure <- function(error) {
+    warn_cleanup <- function(message) {
+      tryCatch(
+        warning(message, call. = FALSE),
+        error = function(e) invisible(NULL),
+        interrupt = function(e) invisible(NULL)
+      )
+    }
+    tryCatch({
+      failure <- list(
+        status = "incomplete", query = query, catalogue = catalogue,
+        pages = pages, semantic_approval = "pending"
+      )
+      # Never substitute success or an empty result for a failed capture. Failure
+      # evidence is best-effort if the filesystem itself has become unwritable.
+      tryCatch(
+        .ms_catalogue_write_receipt(failure, file.path(out, "failure.json")),
+        error = function(e) warn_cleanup("Could not write failure receipt; inspect the reserved output directory")
+      )
+      # Atomic reservation avoids replacing an empty directory created after a
+      # preflight check. If another capture owns the sibling, retain our original.
+      if (.ms_catalogue_reserve_directory(incomplete)) {
+        artifacts <- sort(list.files(out, all.files = TRUE, no.. = TRUE), method = "radix")
+        moved <- vapply(artifacts, function(artifact) {
+          .ms_catalogue_move_artifact(file.path(out, artifact), file.path(incomplete, artifact))
+        }, logical(1))
+        if (all(moved)) {
+          # C remove() removes only an empty directory on POSIX. A late-created
+          # residual must be preserved, not deleted by a recursive cleanup. On a
+          # platform unable to remove directories this way, retain the output.
+          if (!suppressWarnings(file.remove(out))) {
+            warn_cleanup("Incomplete output directory retained; inspect residual files before cleanup")
+          }
+        } else {
+          warn_cleanup("Incomplete capture remains across the reserved output directories")
+        }
+      }
+    }, error = function(e) {
+      warn_cleanup("Incomplete capture cleanup failed; inspect the reserved output directories")
+    }, interrupt = function(e) {
+      warn_cleanup("Incomplete capture cleanup interrupted; inspect the reserved output directories")
+    })
+    stop(error)
+  }
   tryCatch({
     config <- .ms_knb_config("production")
     endpoint <- if (identical(catalogue, "knb")) {
@@ -281,35 +328,5 @@ capture_catalogue_query <- function(query, out, catalogue = "knb",
     )
     .ms_catalogue_write_receipt(receipt, file.path(out, "capture.json"))
     receipt
-  }, error = function(error) {
-    failure <- list(
-      status = "incomplete", query = query, catalogue = catalogue,
-      pages = pages, semantic_approval = "pending"
-    )
-    # Never substitute success or an empty result for a failed capture. Failure
-    # evidence is best-effort if the filesystem itself has become unwritable.
-    tryCatch(
-      .ms_catalogue_write_receipt(failure, file.path(out, "failure.json")),
-      error = function(e) warning("Could not write failure receipt; inspect the reserved output directory", call. = FALSE)
-    )
-    # Atomic reservation avoids replacing an empty directory created after a
-    # preflight check. If another capture owns the sibling, retain our original.
-    if (.ms_catalogue_reserve_directory(incomplete)) {
-      artifacts <- sort(list.files(out, all.files = TRUE, no.. = TRUE), method = "radix")
-      moved <- vapply(artifacts, function(artifact) {
-        .ms_catalogue_move_artifact(file.path(out, artifact), file.path(incomplete, artifact))
-      }, logical(1))
-      if (all(moved)) {
-        # C remove() removes only an empty directory on POSIX. A late-created
-        # residual must be preserved, not deleted by a recursive cleanup. On a
-        # platform unable to remove directories this way, retain the output.
-        if (!suppressWarnings(file.remove(out))) {
-          warning("Incomplete output directory retained; inspect residual files before cleanup", call. = FALSE)
-        }
-      } else {
-        warning("Incomplete capture remains across the reserved output directories", call. = FALSE)
-      }
-    }
-    stop(error)
-  })
+  }, error = handle_failure, interrupt = handle_failure)
 }
