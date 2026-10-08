@@ -26,9 +26,8 @@ the function falls back to reconstructing metadata from \code{datapackage.json}
 for backwards compatibility with older \code{metasalmon} outputs.
 }
 \examples{
-\dontrun{
-# Read a package
-pkg <- read_salmon_datapackage("path/to/package")
-pkg$resources$main_table
-}
+# Read the bundled example package without a network call.
+example_path <- system.file("extdata", package = "metasalmon")
+pkg <- read_salmon_datapackage(example_path)
+names(pkg$resources)
 }

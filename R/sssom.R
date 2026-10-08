@@ -17,12 +17,18 @@
   "subject_source",
   "subject_source_version",
   "object_source",
-  "object_source_version",
-  "curie_map"
+  "object_source_version"
 )
 
+# The order of the MappingSet class's slots in the SSSOM schema, which is the
+# order of the "Slots" table the canonical SSSOM/TSV format writes them in, so
+# `curie_map` is second. Source: `classes: mapping set: slots:` in
+# https://github.com/mapping-commons/sssom/blob/667d3c579d92ad2e1a480503625eeef1e6af8e6d/src/sssom_schema/schema/sssom_schema.yaml
+# (`mappings` and `extension_definitions` are left out: the first is the TSV
+# table, and this profile supports no extension slots). Hub B-350.
 .ms_sssom_metadata_order <- c(
   "sssom_version",
+  "curie_map",
   "mapping_set_id",
   "mapping_set_version",
   "mapping_set_source",
@@ -56,9 +62,31 @@
   "see_also",
   "issue_tracker",
   "other",
-  "comment",
-  "curie_map"
+  "comment"
 )
+
+# The MappingSet slots the same schema marks `multivalued`. In memory each holds
+# one string with its values joined by `|`, the encoding the reader gives a
+# YAML sequence; the canonical writer turns it back into a block sequence.
+.ms_sssom_multivalued_metadata <- c(
+  "mapping_set_source",
+  "creator_id",
+  "creator_label",
+  "cardinality_scope",
+  "subject_match_field",
+  "object_match_field",
+  "subject_preprocessing",
+  "object_preprocessing",
+  "curation_rule",
+  "curation_rule_text",
+  "see_also"
+)
+
+# The Mapping slots whose schema range is `double`. The canonical format writes
+# a floating point value "with up to three digits as needed after the decimal
+# point, rounding the last digit to the nearest neighbour (rounding up if both
+# neighbours are equidistant)".
+.ms_sssom_double_columns <- c("confidence", "reviewer_agreement", "similarity_score")
 
 # These are the mapping slots in the SSSOM 1.1 model. Rejecting unknown table
 # columns is intentional: an extension field called, for example,
@@ -243,6 +271,11 @@
   if (!isTRUE(base::validUTF8(text))) {
     .ms_sssom_abort("{label} at {.file {path}} is not valid UTF-8.")
   }
+  # `rawToChar()` marks the text as native. Under LC_CTYPE=C that makes every
+  # regex below match it byte by byte, so a multibyte character can neither be
+  # matched as one nor kept apart from a bracket range of other bytes (hub
+  # B-432). The bytes were just checked to be UTF-8, so say so.
+  Encoding(text) <- "UTF-8"
   list(bytes = bytes, text = text)
 }
 
@@ -259,9 +292,103 @@
   parts
 }
 
+.ms_sssom_metadata_has_yaml_tag <- function(yaml_text) {
+  # Retires when the YAML parser offers a native reject-explicit-tags mode
+  # covering local, standard and verbatim tags while the public controls below
+  # keep passing without this probe.
+  if (!grepl("!", yaml_text, fixed = TRUE)) {
+    return(FALSE)
+  }
+
+  # Give every possible tag token a private name in a disposable copy, then
+  # let libyaml decide which names are actual node properties. Changing only
+  # suffix characters or handle bangs leaves quotes and flow delimiters in
+  # place; ordinary exclamation text cannot shift the parse boundaries.
+  # Registering handlers for the private names also avoids built-in handlers
+  # such as `str`, which run on implicit values that have no explicit tag.
+  probe_lines <- strsplit(yaml_text, "\n", fixed = TRUE)[[1]]
+  # A directive can rebind the primary `!` handle, so omit it only from the
+  # disposable parse. The normal read below still sees the original bytes.
+  probe_lines[grepl("^%TAG[[:space:]]", probe_lines)] <- ""
+  probe <- paste(probe_lines, collapse = "\n")
+  tag_token <- "!<[^>]*>|!+[^[:space:]\\[\\]{},\"\\\\]+|!"
+  token_at_bang <- paste0("(?=(", tag_token, "))")
+  locations <- gregexpr(token_at_bang, probe, perl = TRUE)[[1]]
+  if (identical(locations[[1]], -1L)) {
+    return(FALSE)
+  }
+  token_starts <- attr(locations, "capture.start")[, 1L]
+  token_lengths <- attr(locations, "capture.length")[, 1L]
+  chars <- strsplit(probe, "", fixed = TRUE)[[1]]
+  for (candidate_id in seq_along(locations)) {
+    position <- locations[[candidate_id]]
+    if (chars[[position]] != "!") {
+      next
+    }
+    token <- substr(
+      probe,
+      token_starts[[candidate_id]],
+      token_starts[[candidate_id]] + token_lengths[[candidate_id]] - 1L
+    )
+    if (startsWith(token, "!<") && endsWith(token, ">") && nchar(token) > 3L) {
+      chars[[position + 2L]] <- "x"
+    } else if (grepl("!", substring(token, 2L), fixed = TRUE)) {
+      # Convert a standard or custom handle to a local tag. Internal `!`
+      # bytes in a literal are harmless and will never call the handler.
+      bangs <- which(strsplit(token, "", fixed = TRUE)[[1]] == "!")[-1L]
+      chars[position + bangs - 1L] <- "x"
+    } else if (nchar(token) > 1L &&
+               grepl("^[A-Za-z0-9]", substring(token, 2L))) {
+      chars[[position + 1L]] <- "x"
+    } else if (nchar(token) == 1L) {
+      # A bare `!` is itself an explicit non-specific tag at node position.
+      chars[[position]] <- "!x"
+    }
+  }
+  probe <- paste(chars, collapse = "")
+  private_locations <- gregexpr(token_at_bang, probe, perl = TRUE)[[1]]
+  private_starts <- attr(private_locations, "capture.start")[, 1L]
+  private_lengths <- attr(private_locations, "capture.length")[, 1L]
+  private_names <- vapply(seq_along(private_locations), function(candidate_id) {
+    token <- substr(
+      probe,
+      private_starts[[candidate_id]],
+      private_starts[[candidate_id]] + private_lengths[[candidate_id]] - 1L
+    )
+    if (startsWith(token, "!<") && endsWith(token, ">")) {
+      substring(token, 3L, nchar(token) - 1L)
+    } else {
+      substring(token, 2L)
+    }
+  }, character(1), USE.NAMES = FALSE)
+  # libyaml percent-decodes tag suffixes before handing their names to R.
+  # The handler keys must use those decoded names, including a verbatim URI.
+  private_names <- utils::URLdecode(private_names)
+
+  found <- FALSE
+  handler <- function(value) {
+    found <<- TRUE
+    value
+  }
+  handlers <- stats::setNames(
+    rep(list(handler), length(unique(private_names))),
+    unique(private_names)
+  )
+  suppressWarnings(tryCatch(
+    yaml::yaml.load(probe, handlers = handlers, eval.expr = FALSE),
+    error = function(e) NULL
+  ))
+  found
+}
+
 .ms_sssom_parse_metadata <- function(comment_lines, path) {
   yaml_lines <- sub("^# ?", "", comment_lines)
   yaml_text <- paste(yaml_lines, collapse = "\n")
+  if (.ms_sssom_metadata_has_yaml_tag(yaml_text)) {
+    .ms_sssom_abort(
+      "Embedded SSSOM metadata in {.file {path}} is not valid YAML: explicit YAML tags are not supported."
+    )
+  }
   metadata <- tryCatch(
     # Never evaluate `!expr`: this block is collaborator-authored and reached
     # by routine validation, and yaml's default follows `getOption("yaml.eval.expr")`
@@ -303,6 +430,13 @@
     metadata[[name]] <- .ms_sssom_scalar(value, name)
   }
 
+  # A canonical writer leaves out every built-in and every unused prefix, so a
+  # set that uses only built-in prefixes is written with no curie_map at all.
+  # The slot is optional in the SSSOM model; an absent one is an empty map.
+  if (is.null(metadata$curie_map)) {
+    metadata["curie_map"] <- list(stats::setNames(list(), character()))
+    return(metadata)
+  }
   curie_map <- metadata$curie_map
   if (!is.list(curie_map) && !is.atomic(curie_map)) {
     .ms_sssom_abort("SSSOM metadata {.field curie_map} must be a prefix mapping.")
@@ -330,6 +464,24 @@
   }
   metadata$curie_map <- as.list(curie_map[order(names(curie_map), method = "radix")])
   metadata
+}
+
+# The SSSOM/TSV Quoting section: "SSSOM/TSV parsers MUST strip any enclosing
+# double quotes and escaping double quotes". A cell is decoded only when it is
+# a well-formed quoted value, opening and closing with `"` and with every inner
+# `"` doubled. Anything else is kept byte for byte, so a cell an earlier writer
+# of this package emitted with a bare `"` inside it reads as it always did.
+# Quoted tabs and line breaks are not supported: the table is split on them
+# first, and validation refuses them in a cell. Hub B-350.
+.ms_sssom_unquote_cell <- function(value) {
+  quoted <- !is.na(value) & nchar(value) >= 2L &
+    startsWith(value, "\"") & endsWith(value, "\"")
+  inner <- substr(value[quoted], 2L, nchar(value[quoted]) - 1L)
+  well_formed <- !grepl("\"", gsub("\"\"", "", inner, fixed = TRUE), fixed = TRUE)
+  decoded <- value[quoted]
+  decoded[well_formed] <- gsub("\"\"", "\"", inner[well_formed], fixed = TRUE)
+  value[quoted] <- decoded
+  value
 }
 
 .ms_sssom_parse_table <- function(lines, header_index, path) {
@@ -388,7 +540,7 @@
     )
   }
   matrix <- matrix(
-    unlist(rows, use.names = FALSE),
+    .ms_sssom_unquote_cell(unlist(rows, use.names = FALSE)),
     nrow = length(rows),
     byrow = TRUE,
     dimnames = list(NULL, header)
@@ -409,13 +561,15 @@
   # Treat network URLs and these common non-hierarchical URI schemes as URIs;
   # all other `prefix:reference` values must use a prefix curie_map declares or
   # an SSSOM built-in one.
-  grepl("^[A-Za-z][A-Za-z0-9+.-]*://[^[:space:]]+$", value) ||
-    grepl("^(urn|mailto|doi|tag|data):[^[:space:]]+$", value)
+  grepl(paste0("^[A-Za-z][A-Za-z0-9+.-]*://[^", .ms_iri_space_class, "]+$"), value) ||
+    grepl(paste0("^(urn|mailto|doi|tag|data):[^", .ms_iri_space_class, "]+$"), value)
 }
 
 .ms_sssom_validate_reference <- function(value, curie_map, field, row = NULL) {
   where <- if (is.null(row)) "" else paste0(" in row ", row)
-  if (!nzchar(value) || grepl("[[:space:]]", value)) {
+  # The class comes from `R/iri-predicates.R`, so this rejects the same
+  # non-ASCII whitespace as the shared predicate in a C or a UTF-8 locale.
+  if (!nzchar(value) || grepl(paste0("[", .ms_iri_space_class, "]"), value)) {
     .ms_sssom_abort(
       "SSSOM {.field {field}}{where} must be an absolute URI or compact CURIE."
     )
@@ -423,7 +577,7 @@
   if (.ms_sssom_is_unambiguous_uri(value)) {
     return(invisible(TRUE))
   }
-  if (!grepl("^[A-Za-z_][A-Za-z0-9._-]*:[^[:space:]]+$", value)) {
+  if (!grepl(paste0("^[A-Za-z_][A-Za-z0-9._-]*:[^", .ms_iri_space_class, "]+$"), value)) {
     .ms_sssom_abort(
       "SSSOM {.field {field}}{where} must be an absolute URI or compact CURIE."
     )
@@ -492,16 +646,39 @@
       )
     }
   }
+  if (!is.null(metadata$predicate_type)) {
+    .ms_sssom_validate_predicate_type(metadata$predicate_type)
+  }
+  invisible(TRUE)
+}
+
+# SSSOM 1.1's entity_type_enum, excluding the two values whose descriptions
+# explicitly forbid use in predicate_type: rdfs literal and composed entity
+# expression. Source snapshot, checked 2026-10-01:
+# https://github.com/mapping-commons/sssom/blob/667d3c579d92ad2e1a480503625eeef1e6af8e6d/src/sssom_schema/schema/sssom_schema.yaml
+# Update this set when this profile adopts a schema with a changed enum.
+.ms_sssom_predicate_types <- c(
+  "owl class", "owl object property", "owl data property",
+  "owl annotation property", "owl named individual", "skos concept",
+  "rdfs resource", "rdfs class", "rdfs datatype", "rdf property"
+)
+
+.ms_sssom_validate_predicate_type <- function(value, row = NULL) {
+  # Optional empty slots remain empty; a supplied value must name the enum.
+  if (!is.na(value) && nzchar(value) && !value %in% .ms_sssom_predicate_types) {
+    where <- if (is.null(row)) "" else paste0(" in row ", row)
+    .ms_sssom_abort(
+      "SSSOM predicate_type{where} must be an allowed SSSOM entity_type_enum value."
+    )
+  }
   invisible(TRUE)
 }
 
 .ms_sssom_reference_columns <- c(
   "record_id",
   "subject_id",
-  "subject_category",
   "predicate_id",
   "object_id",
-  "object_category",
   "mapping_justification",
   "author_id",
   "reviewer_id",
@@ -509,14 +686,12 @@
   "license",
   "subject_source",
   "object_source",
-  "predicate_type",
   "mapping_provider",
   "mapping_source",
   "mapping_tool_id",
   "curation_rule",
   "subject_match_field",
   "object_match_field",
-  "similarity_measure",
   "see_also",
   "issue_tracker_item"
 )
@@ -538,6 +713,12 @@
       .ms_sssom_abort(
         "SSSOM {.field {field}} cannot declare raw literal assignments in this SDP profile."
       )
+    }
+  }
+
+  if ("predicate_type" %in% names(mappings)) {
+    for (row in seq_len(nrow(mappings))) {
+      .ms_sssom_validate_predicate_type(mappings$predicate_type[[row]], row)
     }
   }
 
@@ -711,13 +892,18 @@
 #' assignments are refused because they belong in separate SDP semantic
 #' artifacts.
 #'
-#' Every CURIE prefix must be declared in `curie_map` except the SSSOM
+#' CURIE prefixes in identifier/reference fields must be declared in `curie_map`
+#' except the SSSOM
 #' built-in prefixes (`owl`, `rdf`, `rdfs`, `semapv`, `skos`, `sssom`, `xsd`
 #' and `linkml`), which the SSSOM specification lets a file omit, so a canonical
 #' SSSOM/TSV file that leaves them out is read. A `curie_map` that does declare
 #' a built-in prefix must give it the expansion the specification fixes for it
 #' (for example `http://www.w3.org/2004/02/skos/core#` for `skos`); any other
 #' expansion is refused.
+#'
+#' `predicate_type` uses SSSOM's entity-type enum, excluding the values the
+#' specification forbids for predicates. `subject_category`, `object_category`
+#' and `similarity_measure` are text, so their values need no CURIE declaration.
 #'
 #' @param path Path to one `.sssom.tsv` file.
 #' @param validate Logical; validate metadata, CURIEs, mappings, and no-match
@@ -726,6 +912,30 @@
 #'
 #' @return A `metasalmon_sssom_mapping_set` list containing `metadata`, a
 #'   `mappings` tibble, and the normalized source `path`.
+#' @examples
+#' # Illustrative mapping only; curate real assertions before publication.
+#' mapping_file <- tempfile(fileext = ".sssom.tsv")
+#' writeLines(c(
+#'   '#sssom_version: "1.1"',
+#'   "#curie_map:",
+#'   "#  exa: https://example.org/ontology-a/",
+#'   "#  exb: https://example.org/ontology-b/",
+#'   "#mapping_set_id: https://example.org/mappings/demo",
+#'   "#mapping_set_version: 1",
+#'   "#license: https://creativecommons.org/licenses/by/4.0/",
+#'   "#subject_source: https://example.org/ontology-a/",
+#'   "#subject_source_version: 1",
+#'   "#object_source: https://example.org/ontology-b/",
+#'   "#object_source_version: 1",
+#'   paste("subject_id", "subject_label", "predicate_id", "object_id",
+#'         "object_label", "mapping_justification", sep = "\t"),
+#'   paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+#'         "exb:spawner-count", "Spawner count",
+#'         "semapv:ManualMappingCuration", sep = "\t")
+#' ), mapping_file, useBytes = TRUE)
+#' mapping_set <- read_sssom_mapping_set(mapping_file)
+#' mapping_set$metadata$mapping_set_id
+#' unlink(mapping_file)
 #' @export
 read_sssom_mapping_set <- function(path, validate = TRUE) {
   if (length(path) != 1L || is.na(path) || !nzchar(path)) {
@@ -813,6 +1023,79 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
   )
 }
 
+# Canonical SSSOM/TSV writing (hub B-350) ---------------------------------------
+#
+# The specification's "Canonical SSSOM/TSV format" section says writers SHOULD
+# write it; Brett ruled on 2026-09-25 that both packages do, together, at a
+# minor version. Source: `src/docs/spec-formats-tsv.md` in mapping-commons/sssom
+# at 667d3c579d92ad2e1a480503625eeef1e6af8e6d. One rule is not applied:
+# "MUST condense the slots whenever possible". Condensation is defined in the
+# model as the inverse of propagation, the model says the two "MUST NOT be
+# dissociated", and this profile supports neither, so there is nothing it can
+# condense without also changing what its reader reports a row contains. The
+# extension-slot rules do not apply because the profile refuses extension slots.
+# metasalmonpy's half is hub B-351, and its writer must produce these bytes.
+
+# A plain scalar is written when, and only when, every YAML reader gives back
+# the same string. The metadata block is YAML 1.2, but this package reads it
+# with the `yaml` package, a YAML 1.1 reader, and metasalmonpy with PyYAML,
+# another, so a value is quoted if EITHER version's implicit types would read
+# it as something other than a string. The patterns are spelled out, not
+# delegated to a parser, so the Python half can match them byte for byte:
+# YAML 1.2 core schema null, bool, int and float; YAML 1.1 null, bool, int
+# (binary, octal, decimal with `_` and `,`, hex, sexagesimal), float (PyYAML's
+# reading, so `0.0.8` stays a string and `1.1` does not) and merge key. A YAML
+# 1.1 timestamp such as `2026-07-31` stays plain: neither the `yaml` package
+# nor YAML 1.2 types it, and it is the form the SSSOM examples write.
+.ms_sssom_yaml_nonstring_patterns <- c(
+  "^(~|null|Null|NULL)$",
+  "^(y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF)$",
+  "^[-+]?[0-9]+$",
+  "^0o[0-7]+$",
+  "^0x[0-9a-fA-F]+$",
+  "^[-+]?(\\.[0-9]+|[0-9]+(\\.[0-9]*)?)([eE][-+]?[0-9]+)?$",
+  "^[-+]?\\.(inf|Inf|INF)$",
+  "^\\.(nan|NaN|NAN)$",
+  "^[-+]?0b[01_]+$",
+  "^[-+]?[0-9][0-9_,]*$",
+  "^[-+]?0x[0-9a-fA-F_]+$",
+  "^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+(\\.[0-9_]*)?$",
+  "^[-+]?([0-9][0-9_]*)?\\.[0-9_]*([eE][-+][0-9]+)?$",
+  "^<<$"
+)
+
+# Whether `value`, one string, can be written as a YAML plain scalar in block
+# context with no change to what a reader gets back. Deliberately conservative
+# about syntax: a value starting with any YAML indicator character is quoted,
+# although YAML would allow some of them (`-x`) plain.
+.ms_sssom_yaml_plain_ok <- function(value) {
+  if (!nzchar(value)) {
+    return(FALSE)
+  }
+  # Leading or trailing whitespace would be trimmed; a first character that is
+  # a YAML indicator would start another construct.
+  if (grepl("^[ \t]|[ \t]$", value) ||
+      grepl("^[][{}#&*!|>'\"%@`=?:,-]", value)) {
+    return(FALSE)
+  }
+  # `: ` starts a mapping value, ` #` a comment, and a trailing `:` a key.
+  if (grepl(": ", value, fixed = TRUE) || grepl(" #", value, fixed = TRUE) ||
+      grepl(":$", value)) {
+    return(FALSE)
+  }
+  # Only characters YAML may carry unescaped in a plain scalar: no control
+  # characters (tab included), no DEL, no C1 controls, no byte-order mark and
+  # no Unicode line or paragraph separator.
+  if (grepl("[\u0001-\u001f\u007f-\u009f\ufeff\u2028\u2029]", value)) {
+    return(FALSE)
+  }
+  !any(vapply(
+    .ms_sssom_yaml_nonstring_patterns,
+    function(pattern) grepl(pattern, value),
+    logical(1)
+  ))
+}
+
 .ms_sssom_json_scalar <- function(value) {
   as.character(jsonlite::toJSON(
     as.character(value),
@@ -822,32 +1105,125 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
   ))
 }
 
+# One scalar in "plain style whenever possible, otherwise in double-quoted
+# style". The double-quoted form is the JSON string, which is valid YAML.
+.ms_sssom_yaml_scalar <- function(value) {
+  value <- as.character(value)
+  if (.ms_sssom_yaml_plain_ok(value)) value else .ms_sssom_json_scalar(value)
+}
+
+# The prefixes a set uses: those that begin some value, metadata or cell, once
+# each multivalued value is split on `|`.
+.ms_sssom_used_prefixes <- function(mapping_set) {
+  metadata <- mapping_set$metadata
+  values <- unlist(
+    metadata[setdiff(names(metadata), "curie_map")],
+    use.names = FALSE
+  )
+  values <- c(
+    as.character(values),
+    unlist(lapply(mapping_set$mappings, as.character), use.names = FALSE)
+  )
+  values <- values[!is.na(values) & nzchar(values)]
+  values <- unlist(strsplit(values, "|", fixed = TRUE), use.names = FALSE)
+  matched <- regmatches(values, regexpr("^[A-Za-z_][A-Za-z0-9._-]*(?=:)", values, perl = TRUE))
+  unique(matched)
+}
+
+# "with up to three digits as needed after the decimal point, rounding the last
+# digit to the nearest neighbour (rounding up if both neighbours are
+# equidistant)". Done on the decimal digits rather than on a double, so 0.0005
+# rounds up as written and not by its binary value. A cell that is not a plain
+# decimal number is left as it is: this profile does not type these columns.
+.ms_sssom_canonical_double <- function(value) {
+  out <- value
+  decimal <- !is.na(value) & grepl("^[0-9]+(\\.[0-9]+)?$", value)
+  for (index in which(decimal)) {
+    parts <- strsplit(value[[index]], ".", fixed = TRUE)[[1]]
+    whole <- parts[[1]]
+    fraction <- if (length(parts) == 2L) parts[[2]] else ""
+    if (nchar(fraction) > 3L) {
+      round_up <- substr(fraction, 4L, 4L) >= "5"
+      fraction <- substr(fraction, 1L, 3L)
+      if (round_up) {
+        digits <- as.integer(strsplit(paste0(whole, fraction), "")[[1]])
+        position <- length(digits)
+        repeat {
+          if (position == 0L) {
+            digits <- c(1L, digits)
+            break
+          }
+          if (digits[[position]] < 9L) {
+            digits[[position]] <- digits[[position]] + 1L
+            break
+          }
+          digits[[position]] <- 0L
+          position <- position - 1L
+        }
+        joined <- paste(digits, collapse = "")
+        whole <- substr(joined, 1L, nchar(joined) - 3L)
+        fraction <- substr(joined, nchar(joined) - 2L, nchar(joined))
+      }
+    }
+    fraction <- sub("0+$", "", fraction)
+    whole <- sub("^0+(?=[0-9])", "", whole, perl = TRUE)
+    out[[index]] <- if (nzchar(fraction)) paste0(whole, ".", fraction) else whole
+  }
+  out
+}
+
+# RFC 4180 quoting as the SSSOM/TSV Quoting section adapts it: quote only a
+# value that must be quoted. Tabs and line breaks never reach here, because
+# validation refuses them in a cell, so the one trigger is a double quote.
+.ms_sssom_quote_cell <- function(value) {
+  needs <- grepl("\"", value, fixed = TRUE)
+  value[needs] <- paste0("\"", gsub("\"", "\"\"", value[needs], fixed = TRUE), "\"")
+  value
+}
+
 .ms_sssom_canonical_bytes <- function(mapping_set) {
   metadata <- mapping_set$metadata
-  metadata$curie_map <- metadata$curie_map[order(names(metadata$curie_map), method = "radix")]
+  # No built-in prefix and no unused prefix, sorted by name.
+  curie_map <- metadata$curie_map
+  keep <- !names(curie_map) %in% names(.ms_sssom_builtin_prefixes) &
+    names(curie_map) %in% .ms_sssom_used_prefixes(mapping_set)
+  curie_map <- curie_map[keep]
+  curie_map <- curie_map[order(names(curie_map), method = "radix")]
 
   metadata_lines <- character()
   for (field in .ms_sssom_metadata_order) {
-    if (!field %in% names(metadata)) {
-      next
-    }
     if (identical(field, "curie_map")) {
-      metadata_lines <- c(metadata_lines, "# curie_map:")
-      for (prefix in names(metadata$curie_map)) {
+      if (length(curie_map) == 0L) {
+        next
+      }
+      metadata_lines <- c(metadata_lines, "#curie_map:")
+      for (prefix in names(curie_map)) {
         metadata_lines <- c(
           metadata_lines,
           paste0(
-            "#   ",
-            prefix,
+            "#  ",
+            .ms_sssom_yaml_scalar(prefix),
             ": ",
-            .ms_sssom_json_scalar(metadata$curie_map[[prefix]])
+            .ms_sssom_yaml_scalar(curie_map[[prefix]])
           )
         )
       }
+      next
+    }
+    if (!field %in% names(metadata)) {
+      next
+    }
+    if (field %in% .ms_sssom_multivalued_metadata) {
+      items <- strsplit(as.character(metadata[[field]]), "|", fixed = TRUE)[[1]]
+      metadata_lines <- c(
+        metadata_lines,
+        paste0("#", field, ":"),
+        paste0("#  - ", vapply(items, .ms_sssom_yaml_scalar, character(1), USE.NAMES = FALSE))
+      )
     } else {
       metadata_lines <- c(
         metadata_lines,
-        paste0("# ", field, ": ", .ms_sssom_json_scalar(metadata[[field]]))
+        paste0("#", field, ": ", .ms_sssom_yaml_scalar(metadata[[field]]))
       )
     }
   }
@@ -880,17 +1256,28 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
   # `.ms_sssom_required_columns` makes it unreachable through validation, and
   # neither output is meaningful, so this records the change rather than
   # reproducing it.
+  #
+  # Canonical SSSOM/TSV (hub B-350) sorts "in lexicographical order on all their
+  # slots, in the order the slots appear in the Slots table", which is the
+  # column order here. The key is the value as written before quoting, with a
+  # missing value as the empty string it is written as, so a row with no value
+  # sorts before one with a value (this used to sort it last). A `double` slot
+  # is rounded before it is sorted, so the key is still the written value.
   cells <- lapply(mappings, .ms_canonical_character)
+  for (column in intersect(names(cells), .ms_sssom_double_columns)) {
+    cells[[column]] <- .ms_sssom_canonical_double(cells[[column]])
+  }
+  cells <- lapply(cells, function(column) ifelse(is.na(column), "", column))
   if (nrow(mappings) > 0L) {
     ordering <- do.call(
       order,
-      c(unname(cells), list(na.last = TRUE, method = "radix"))
+      c(unname(cells), list(method = "radix"))
     )
     cells <- lapply(cells, function(column) column[ordering])
   }
   table_lines <- paste(columns, collapse = "\t")
   if (nrow(mappings) > 0L && length(columns) > 0L) {
-    fields <- lapply(cells, function(column) ifelse(is.na(column), "", column))
+    fields <- lapply(cells, .ms_sssom_quote_cell)
     row_lines <- do.call(paste, c(unname(fields), list(sep = "\t")))
     table_lines <- c(table_lines, row_lines)
   }
@@ -977,7 +1364,8 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
 #' `metadata/semantic/` and records their paths, hashes, row counts, source
 #' versions, licenses, and writer provenance in
 #' `metadata/semantic/mapping-sets.json`. Bytes and manifest ordering are
-#' deterministic. This function does not turn semantic suggestions or variable
+#' deterministic, and each mapping set is written in the canonical SSSOM/TSV
+#' format, except that slots are not condensed. This function does not turn semantic suggestions or variable
 #' decompositions into mappings; `mapping_sets = NULL` is therefore a no-op.
 #'
 #' @param path Existing Salmon Data Package directory.
@@ -987,6 +1375,32 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
 #'
 #' @return The manifest path, invisibly, or `NULL` when `mapping_sets` is
 #'   `NULL`.
+#' @examples
+#' # Supply a reviewed SSSOM file. This temporary set illustrates the format.
+#' mapping_file <- tempfile(fileext = ".sssom.tsv")
+#' writeLines(c(
+#'   '#sssom_version: "1.1"',
+#'   "#curie_map:",
+#'   "#  exa: https://example.org/ontology-a/",
+#'   "#  exb: https://example.org/ontology-b/",
+#'   "#mapping_set_id: https://example.org/mappings/demo",
+#'   "#mapping_set_version: 1",
+#'   "#license: https://creativecommons.org/licenses/by/4.0/",
+#'   "#subject_source: https://example.org/ontology-a/",
+#'   "#subject_source_version: 1",
+#'   "#object_source: https://example.org/ontology-b/",
+#'   "#object_source_version: 1",
+#'   paste("subject_id", "subject_label", "predicate_id", "object_id",
+#'         "object_label", "mapping_justification", sep = "\t"),
+#'   paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+#'         "exb:spawner-count", "Spawner count",
+#'         "semapv:ManualMappingCuration", sep = "\t")
+#' ), mapping_file, useBytes = TRUE)
+#' sdp_path <- tempfile("sdp-")
+#' dir.create(sdp_path)
+#' write_sdp_sssom(sdp_path, mapping_file)
+#' validate_sdp_sssom(sdp_path)
+#' unlink(c(mapping_file, sdp_path), recursive = TRUE)
 #' @export
 write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
   if (is.null(mapping_sets)) {
@@ -1204,6 +1618,29 @@ write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
 #' @param path Path to an SDP directory or one `.sssom.tsv` mapping set.
 #'
 #' @return `TRUE`, invisibly, when validation succeeds; otherwise an error.
+#' @examples
+#' # Validate a self-contained mapping set before placing it in an SDP.
+#' mapping_file <- tempfile(fileext = ".sssom.tsv")
+#' writeLines(c(
+#'   '#sssom_version: "1.1"',
+#'   "#curie_map:",
+#'   "#  exa: https://example.org/ontology-a/",
+#'   "#  exb: https://example.org/ontology-b/",
+#'   "#mapping_set_id: https://example.org/mappings/demo",
+#'   "#mapping_set_version: 1",
+#'   "#license: https://creativecommons.org/licenses/by/4.0/",
+#'   "#subject_source: https://example.org/ontology-a/",
+#'   "#subject_source_version: 1",
+#'   "#object_source: https://example.org/ontology-b/",
+#'   "#object_source_version: 1",
+#'   paste("subject_id", "subject_label", "predicate_id", "object_id",
+#'         "object_label", "mapping_justification", sep = "\t"),
+#'   paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+#'         "exb:spawner-count", "Spawner count",
+#'         "semapv:ManualMappingCuration", sep = "\t")
+#' ), mapping_file, useBytes = TRUE)
+#' validate_sdp_sssom(mapping_file)
+#' unlink(mapping_file)
 #' @export
 validate_sdp_sssom <- function(path) {
   if (length(path) != 1L || is.na(path) || !nzchar(path)) {

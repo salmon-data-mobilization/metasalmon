@@ -1,8 +1,8 @@
 id: B-132
 kind: defect
 title: The live upstream SDP bundle test errors instead of skipping when the fetch is slow or offline
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 severity: P3

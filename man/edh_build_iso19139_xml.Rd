@@ -47,3 +47,12 @@ Invisible list with elements \code{xml} (string) and \code{path}.
 \description{
 Deprecated alias for \code{\link[=edh_build_hnap_xml]{edh_build_hnap_xml()}}
 }
+\examples{
+dataset <- readr::read_csv(
+  system.file("extdata", "dataset.csv", package = "metasalmon"),
+  show_col_types = FALSE
+)
+# The suppression retires with this deprecated alias; use
+# edh_build_hnap_xml() for new code.
+suppressWarnings(edh_build_iso19139_xml(dataset))
+}

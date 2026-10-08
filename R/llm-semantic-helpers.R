@@ -551,7 +551,10 @@
 }
 
 .ms_context_text_from_rmarkdown <- function(path) {
-  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  # Decode before trimws() or the fence checks inspect the lines: readLines()
+  # only marks Windows-1252 bytes as UTF-8, while the shared text reader
+  # validates and falls back to Windows-1252, then Latin-1.
+  lines <- strsplit(.ms_read_text_utf8(path), "\n", fixed = TRUE)[[1]]
   if (length(lines) == 0L) {
     return("")
   }

@@ -73,6 +73,67 @@ procedure bindings, and descriptor inventory when <code>TRUE</code>.</p></dd>
     <p>A list with <code>structures</code> and <code>components</code> tibbles.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">sdp_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_sdp.html">create_sdp</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>stock_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, total_spawners <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"sdp-"</span><span class="op">)</span>, seed_semantics <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  seed_verbose <span class="op">=</span> <span class="cn">FALSE</span>, check_updates <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Some measurement semantic IRI fields are still blank in this review-ready</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> package.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> That does not block review-ready creation, but those gaps must be filled</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   before final validation or publication.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   term_iri: total_spawners (rows 2) property_iri: total_spawners (rows 2)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   entity_iri: total_spawners (rows 2) unit_iri: total_spawners (rows 2)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Review <span style="color: #0000BB;">metadata/column_dictionary.csv</span> first (and <span style="color: #0000BB;">metadata/tables.csv</span> if</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   present), then fill the remaining gaps there.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If you want candidate IRIs later, run `suggest_semantics()` or recreate the</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   package with `seed_semantics = TRUE` before final validation.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Dictionary validation passed</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Created Salmon Data Package at <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-110117d43fb1d</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Created review-ready one-shot package with `create_sdp()`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Prefilled semantic values were written directly into the metadata CSVs only</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   where target fields were blank. Compatible table observation-unit drafts can</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   be auto-applied using observation-unit/description first and otherwise table</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   label/id fallback. Any <span style="color: #0000BB;">"REVIEW:"</span> entries already live in the metadata CSVs</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   and must be confirmed or edited there.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No shortlist was seeded, so set any IRI you already know with</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `set_sdp_column()`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Then run `review_metadata(pkg_path)` for the free-text fields and any</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   required IRI nothing was suggested for; it prints the `set_sdp_dataset()` /</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `set_sdp_table()` / `set_sdp_column()` call that fills each one.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Finish with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   rebuilding the EDH XML first if you need it. <span style="color: #0000BB;">README-review.txt</span> has the same</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   checklist.</span>
+<span class="r-in"><span><span class="va">structures</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"dataset-1"</span>, table_id <span class="op">=</span> <span class="st">"table_1"</span>,</span></span>
+<span class="r-in"><span>  observation_structure_id <span class="op">=</span> <span class="st">"spawners_by_stock"</span>,</span></span>
+<span class="r-in"><span>  structure_label <span class="op">=</span> <span class="st">"Spawners by stock"</span>,</span></span>
+<span class="r-in"><span>  structure_description <span class="op">=</span> <span class="st">"One count per stock"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">components</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"dataset-1"</span>, table_id <span class="op">=</span> <span class="st">"table_1"</span>,</span></span>
+<span class="r-in"><span>  observation_structure_id <span class="op">=</span> <span class="st">"spawners_by_stock"</span>,</span></span>
+<span class="r-in"><span>  component_order <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  column_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stock_id"</span>, <span class="st">"total_spawners"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  component_role <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dimension"</span>, <span class="st">"measure"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  component_relation_iri <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  required_when_observed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="write_sdp_observation_structures.html">write_sdp_observation_structures</a></span><span class="op">(</span><span class="va">sdp_path</span>, <span class="va">structures</span>, <span class="va">components</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Loaded Salmon Data Package from <span style="color: #0000BB;">/private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-110117d43fb1d</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Loaded Salmon Data Package from <span style="color: #0000BB;">/private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-110117d43fb1d</span></span>
+<span class="r-in"><span><span class="fu">read_sdp_observation_structures</span><span class="op">(</span><span class="va">sdp_path</span><span class="op">)</span><span class="op">$</span><span class="va">structures</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Loaded Salmon Data Package from <span style="color: #0000BB;">/private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-110117d43fb1d</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   dataset_id table_id observation_structure_id structure_label  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> dataset-1  table_1  spawners_by_stock        Spawners by stock</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 1 more variable: structure_description &lt;chr&gt;</span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">sdp_path</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

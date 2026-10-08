@@ -1,0 +1,13 @@
+id: B-426
+kind: defect
+title: Surface crosswalk-filled code slots in the Python review queue
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P2
+blocked_by: [B-120, B-327]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmonpy, a code slot filled by the NuSEDS crosswalk acquires ranked alternatives and appears in review_semantics() by default until a decision or manual IRI change; its package-owned prefill provenance survives packet assessment ingestion. Explicit caller IRIs remain final and code scope none performs no code discovery. Regression twins of B-120 cover creation, packet export, review assessment ingestion, manual editing and applying a decision. B-120 is the metasalmon half; this is an owed port, not a deliberate deviation.'

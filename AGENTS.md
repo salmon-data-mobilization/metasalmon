@@ -21,6 +21,17 @@ at the repository root, one file per work item, and the claim protocol is in
 card is the one that is wrong. Read `queue/README.md` before editing anything
 under `queue/`.
 
+**Repository-local coherent-batch default (requested 2026-10-01; operative only
+after this policy merges):** This repository adopts `HUB.md` § *Coherent
+batches*: one PR may contain several separately claimed IDs in one coherent
+capability or substantial related-defect family, and that is the default where
+related eligible work exists. A substantial capability with one ID is ordinary;
+a narrow standalone or urgent fix remains valid with one brief scope reason in
+the lead workpad. One owner uses one lead implementation worktree and branch,
+with an exact per-ID handoff ref and short linked record; different owners stay
+isolated. Another member repository needs its own explicit `AGENTS.md` adoption.
+The mirror, semantic, guard, security, and release contracts below remain.
+
 ## Non-negotiable contracts (do not break without a logged decision)
 
 - **metasalmonpy mirrors this package — always.** (Brett, 2026-08-13.) Any
@@ -144,9 +155,14 @@ under `queue/`.
   through `search_fn`, and `tests/testthat/test-semantic-review-packet.R`
   walks the call graph to prove it. The schema, the instructions and the
   conformance fixtures (`inst/extdata/semantic-review/`,
-  `tests/testthat/fixtures/semantic-review/v1/`) are one contract vendored
-  byte-identically in metasalmonpy; a change to any of them is a change to
-  the contract and needs the same change there.
+  `tests/testthat/fixtures/semantic-review/v1/`) are one contract, which
+  metasalmonpy vendors byte-identically once hub item B-327 lands; from then
+  on, a change to any of them is a change to the contract and needs the same
+  change there. Until then metasalmonpy holds no copy, so a change here owes it
+  nothing but order: the packets B-327 builds must match whatever these
+  fixtures pin when it lands. *(Corrected 2026-09-27: this said the contract
+  was already vendored there, which it is not, and a Codex review of pull
+  request 148 took it at its word.)*
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
   a tibble/XML/data frame to `llm_context_files` must error early.
 - **Preserve public signatures and return-value attributes.** Exported:
@@ -367,6 +383,7 @@ Rscript -e 'devtools::test()'                             # full suite (must sta
 testthat::test_file("tests/testthat/test-<area>.R", reporter = "summary")
 devtools::document()                                     # after roxygen changes
 Rscript scripts/build-pkgdown.R                          # after doc changes
+Rscript scripts/build-pkgdown.R --news-only              # when only NEWS changed
 ```
 
 ```sh

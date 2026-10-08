@@ -38,6 +38,7 @@ reference:
     desc: "One-shot package creation from raw tables"
     contents:
       - metasalmon
+      - metasalmon_configuration
       - create_sdp
       - infer_salmon_datapackage_artifacts
       - read_salmon_datapackage
@@ -88,6 +89,7 @@ reference:
     contents:
       - fetch_salmon_ontology
       - validate_semantics
+      - verify_sdp_semantic_iris
       - suggest_facet_schemes
 
   - title: "Term Request Workflow"
@@ -139,6 +141,11 @@ reference:
       - write_sdp_reproducibility_manifest
       - validate_sdp_reproducibility_manifest
 
+  - title: "Public Catalogue Metadata"
+    desc: "Bounded public query captures with provenance receipts; no source-object fetch, submission or semantic approval"
+    contents:
+      - capture_catalogue_query
+
   - title: "EML and KNB"
     desc: "Reviewed EML 2.2.0 export and verified DataONE/KNB publication, starting from the semantic closure both require"
     contents:
@@ -181,6 +188,7 @@ articles:
     desc: "Step-by-step guides for common workflows"
     contents:
       - tidy-data-for-sdp
+      - semantic-review
       - post-review-package-publication
       - data-dictionary-publication
       - reusing-standards-salmon-data-terms
