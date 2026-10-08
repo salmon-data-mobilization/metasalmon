@@ -27,16 +27,22 @@
 # on purpose, matched character-for-character on the Python side. Do not fold it
 # in here without re-deciding both sides together.
 
+# The members of the whitespace class, for use inside a TRE bracket expression
+# (`"[" ... "]"` or `"[^" ... "]"`). TRE's POSIX class alone admits the
+# non-ASCII members when LC_CTYPE=C, so they are spelled out, matching
+# metasalmonpy's R_SPACE_CLASS. Every whitespace test on an IRI or a CURIE
+# builds its class from this, so the locale cannot change one verdict and not
+# another (hub B-432: the direct SSSOM reference parser had its own copy).
+.ms_iri_space_class <- paste0(
+  "[:space:]",
+  "\u1680", "\u2000-\u2006", "\u2008-\u200a",
+  "\u2028\u2029\u205f\u3000"
+)
+
 # Vectorized over `value`; returns one logical per element, `NA` in, `NA` out.
 .ms_absolute_iri_shape <- function(value) {
-  # TRE's POSIX class alone admits these characters when LC_CTYPE=C. Spell out
-  # its non-ASCII UTF-8-locale members, matching metasalmonpy's R_SPACE_CLASS.
-  unicode_spaces <- paste0(
-    "\u1680", "\u2000-\u2006", "\u2008-\u200a",
-    "\u2028\u2029\u205f\u3000"
-  )
   grepl(
-    paste0("^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]", unicode_spaces, "]+$"),
+    paste0("^[A-Za-z][A-Za-z0-9+.-]*:[^", .ms_iri_space_class, "]+$"),
     value
   )
 }

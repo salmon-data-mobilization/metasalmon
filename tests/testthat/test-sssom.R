@@ -1178,3 +1178,92 @@ test_that("SSSOM predicate_type has the same schema range in metadata and mappin
   sssom_test_write_raw(path, sssom_test_text(extra_metadata = "# predicate_type: not an entity type"))
   expect_error(read_sssom_mapping_set(path), "predicate_type.*entity_type_enum")
 })
+
+# Hub B-432. The direct reference parser (`.ms_sssom_validate_reference()` and
+# `.ms_sssom_is_unambiguous_uri()`) used its own `[[:space:]]`, which TRE
+# resolves as ASCII-only under LC_CTYPE=C, so a reference containing U+3000
+# IDEOGRAPHIC SPACE was refused in a UTF-8 locale and accepted under C. It now
+# builds its class from `R/iri-predicates.R`, as the shared predicate does.
+# Characters are built with `intToUtf8()` so nothing invisible sits in this file.
+sssom_test_reference_cases <- function() {
+  ideographic <- intToUtf8(0x3000L)
+  nbsp <- intToUtf8(0x00A0L)
+  list(
+    metadata_uri = list(
+      text = sub(
+        "# subject_source: https://w3id.org/psc/vocab/",
+        paste0("# subject_source: https://w3id.org/psc/vo", ideographic, "cab/"),
+        sssom_test_text(),
+        fixed = TRUE
+      ),
+      field = "subject_source"
+    ),
+    mapping_curie = list(
+      text = sub(
+        "gcdfo:FixedSiteCensusManual",
+        paste0("gcdfo:FixedSite", ideographic, "CensusManual"),
+        sssom_test_text(),
+        fixed = TRUE
+      ),
+      field = "object_id"
+    ),
+    mapping_urn = list(
+      text = sub(
+        "gcdfo:FixedSiteCensusManual",
+        paste0("urn:example:fixed", ideographic, "site"),
+        sssom_test_text(),
+        fixed = TRUE
+      ),
+      field = "object_id"
+    ),
+    # Controls for the existing contract: ASCII space is refused and U+00A0,
+    # which is not in the class, is accepted, in either locale.
+    ascii_space = list(
+      text = sub(
+        "gcdfo:FixedSiteCensusManual",
+        "gcdfo:FixedSite CensusManual",
+        sssom_test_text(),
+        fixed = TRUE
+      ),
+      field = "object_id"
+    ),
+    nbsp = list(
+      text = sub(
+        "gcdfo:FixedSiteCensusManual",
+        paste0("gcdfo:FixedSite", nbsp, "CensusManual"),
+        sssom_test_text(),
+        fixed = TRUE
+      ),
+      field = NULL
+    )
+  )
+}
+
+sssom_test_reference_verdicts <- function() {
+  root <- withr::local_tempdir()
+  cases <- sssom_test_reference_cases()
+  for (case in names(cases)) {
+    path <- file.path(root, paste0(case, ".sssom.tsv"))
+    sssom_test_write_raw(path, cases[[case]]$text)
+    field <- cases[[case]]$field
+    if (is.null(field)) {
+      expect_no_error(read_sssom_mapping_set(path), message = case)
+    } else {
+      expect_error(
+        read_sssom_mapping_set(path),
+        paste0(field, ".*absolute URI or compact CURIE"),
+        info = case
+      )
+    }
+  }
+}
+
+test_that("SSSOM references refuse Unicode whitespace in a UTF-8 locale", {
+  skip_if_not(l10n_info()[["UTF-8"]], "needs a UTF-8 session")
+  sssom_test_reference_verdicts()
+})
+
+test_that("SSSOM references refuse Unicode whitespace in the C locale", {
+  withr::local_locale(c(LC_CTYPE = "C"))
+  sssom_test_reference_verdicts()
+})

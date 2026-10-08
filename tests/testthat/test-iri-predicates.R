@@ -124,10 +124,19 @@ test_that("the shared IRI predicate is not compiled under PCRE", {
   # but a different engine still needs a full membership and Python parity
   # check. Retire this guard only if the predicate stops resolving a POSIX
   # class and both language implementations are checked.
-  body_text <- paste(
-    deparse(body(get(".ms_absolute_iri_shape", envir = asNamespace("metasalmon")))),
-    collapse = " "
-  )
-  expect_true(grepl("[:space:]", body_text, fixed = TRUE))
-  expect_false(grepl("perl", body_text, fixed = TRUE))
+  ns <- asNamespace("metasalmon")
+  expect_true(grepl("[:space:]", ns$.ms_iri_space_class, fixed = TRUE))
+  # Hub B-432: the direct SSSOM reference parser read its own `[[:space:]]`
+  # and so resolved it against the locale. Every whitespace test on an IRI or a
+  # CURIE builds its class from `.ms_iri_space_class`; list a new one here.
+  for (fn in c(
+    ".ms_absolute_iri_shape",
+    ".ms_sssom_is_unambiguous_uri",
+    ".ms_sssom_validate_reference"
+  )) {
+    body_text <- paste(deparse(body(get(fn, envir = ns))), collapse = " ")
+    expect_true(grepl(".ms_iri_space_class", body_text, fixed = TRUE), info = fn)
+    expect_false(grepl("[[:space:]]", body_text, fixed = TRUE), info = fn)
+    expect_false(grepl("perl", body_text, fixed = TRUE), info = fn)
+  }
 })

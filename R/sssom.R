@@ -243,6 +243,11 @@
   if (!isTRUE(base::validUTF8(text))) {
     .ms_sssom_abort("{label} at {.file {path}} is not valid UTF-8.")
   }
+  # `rawToChar()` marks the text as native. Under LC_CTYPE=C that makes every
+  # regex below match it byte by byte, so a multibyte character can neither be
+  # matched as one nor kept apart from a bracket range of other bytes (hub
+  # B-432). The bytes were just checked to be UTF-8, so say so.
+  Encoding(text) <- "UTF-8"
   list(bytes = bytes, text = text)
 }
 
@@ -503,13 +508,15 @@
   # Treat network URLs and these common non-hierarchical URI schemes as URIs;
   # all other `prefix:reference` values must use a prefix curie_map declares or
   # an SSSOM built-in one.
-  grepl("^[A-Za-z][A-Za-z0-9+.-]*://[^[:space:]]+$", value) ||
-    grepl("^(urn|mailto|doi|tag|data):[^[:space:]]+$", value)
+  grepl(paste0("^[A-Za-z][A-Za-z0-9+.-]*://[^", .ms_iri_space_class, "]+$"), value) ||
+    grepl(paste0("^(urn|mailto|doi|tag|data):[^", .ms_iri_space_class, "]+$"), value)
 }
 
 .ms_sssom_validate_reference <- function(value, curie_map, field, row = NULL) {
   where <- if (is.null(row)) "" else paste0(" in row ", row)
-  if (!nzchar(value) || grepl("[[:space:]]", value)) {
+  # The class comes from `R/iri-predicates.R`, so this rejects the same
+  # non-ASCII whitespace as the shared predicate in a C or a UTF-8 locale.
+  if (!nzchar(value) || grepl(paste0("[", .ms_iri_space_class, "]"), value)) {
     .ms_sssom_abort(
       "SSSOM {.field {field}}{where} must be an absolute URI or compact CURIE."
     )
@@ -517,7 +524,7 @@
   if (.ms_sssom_is_unambiguous_uri(value)) {
     return(invisible(TRUE))
   }
-  if (!grepl("^[A-Za-z_][A-Za-z0-9._-]*:[^[:space:]]+$", value)) {
+  if (!grepl(paste0("^[A-Za-z_][A-Za-z0-9._-]*:[^", .ms_iri_space_class, "]+$"), value)) {
     .ms_sssom_abort(
       "SSSOM {.field {field}}{where} must be an absolute URI or compact CURIE."
     )
