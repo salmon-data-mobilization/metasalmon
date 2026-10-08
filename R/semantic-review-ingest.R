@@ -406,6 +406,22 @@
 # Row-level validation
 # -----------------------------------------------------------------------------
 
+# A harness's decision as the validator reads it: trimmed, lowercased and with
+# the alias resolved, so `propose_new_term` is the `request_new_term` it names.
+# Row validation and the downgrade count both read the decision through this,
+# so the two cannot disagree about what the harness wrote. `[[` drops the
+# alias vector's name; the count used `[`, which keeps it, and a named string
+# is never `identical()` to the decision it holds, so every alias used to be
+# counted as a downgrade (hub item B-424).
+.ms_semantic_review_read_decision <- function(value) {
+  decision <- tolower(.ms_llm_non_empty_string(value %||% NA_character_))
+  aliases <- .ms_semantic_review_decision_aliases()
+  if (!is.na(decision) && decision %in% names(aliases)) {
+    decision <- aliases[[decision]]
+  }
+  decision
+}
+
 .ms_semantic_review_note <- function(row, note) {
   row$llm_rationale <- .ms_llm_append_note(
     .ms_llm_non_empty_string(row$llm_rationale[[1]] %||% NA_character_),
@@ -439,11 +455,7 @@
   }
 
   # 2. The decision, lowercased and trimmed, with the alias read.
-  decision <- tolower(text("llm_decision"))
-  aliases <- .ms_semantic_review_decision_aliases()
-  if (!is.na(decision) && decision %in% names(aliases)) {
-    decision <- aliases[[decision]]
-  }
+  decision <- .ms_semantic_review_read_decision(row$llm_decision[[1]])
   echo <- text("llm_selected_iri")
   candidate_iris <- trimws(as.character(candidates$iri))
   candidate_iris[is.na(candidate_iris)] <- ""
@@ -784,7 +796,11 @@
 # Rewrite `semantic_suggestions.csv` for the targets whose slots are still
 # undecided: their rows are replaced by the packet's shortlist carrying the
 # merged assessment columns. A slot with a recorded decision keeps its rows,
-# as does a hand-picked row; a slot the packet does not hold is untouched.
+# as does a hand-picked row; a target the packet does not hold is untouched.
+# Rows are replaced target by target, never slot by slot: a code value of a
+# measurement column has three targets in one slot, and a pass that finalizes
+# one of them must not drop the rows of another, whether it is still awaiting
+# its second pass or was finalized a pass earlier (hub item B-424).
 .ms_semantic_review_rewrite_suggestions <- function(path, merged, targets) {
   suggestions_path <- file.path(path, "semantic_suggestions.csv")
   merged <- tibble::as_tibble(merged)
@@ -810,20 +826,24 @@
     c("target_sdp_file", "target_row_key", "target_sdp_field", "decision", "decision_reason")
   )
   existing_slots <- .ms_review_slot_id(existing)
+  existing_targets <- .ms_semantic_review_target_address(existing)
   decided_slots <- unique(existing_slots[!is.na(existing$decision) & nzchar(trimws(existing$decision))])
   merged <- .ms_semantic_review_character_frame(merged)
-  merged_slots <- if (nrow(merged) > 0L) .ms_review_slot_id(merged) else character()
-  replace_slots <- setdiff(unique(as.character(targets$slot_id)), decided_slots)
+  merged_targets <- if (nrow(merged) > 0L) .ms_semantic_review_target_address(merged) else character()
+  targets <- tibble::as_tibble(targets)
+  undecided <- !as.character(targets$slot_id) %in% decided_slots
+  replace_targets <- unique(.ms_semantic_review_target_address(targets)[undecided])
 
   pieces <- list()
   seen <- character()
-  for (slot in unique(existing_slots)) {
-    if (slot %in% replace_slots) {
-      replacement <- merged[merged_slots == slot, , drop = FALSE]
+  for (target in unique(existing_targets)) {
+    if (target %in% replace_targets) {
+      replacement <- merged[merged_targets == target, , drop = FALSE]
       # Prefill provenance belongs to the package, not to the harness or its
-      # retrieved shortlist. Keep the slot's original stamp when an assessment
-      # refreshes candidates, so an undecided crosswalk IRI stays reviewable.
-      original <- existing[existing_slots == slot, , drop = FALSE]
+      # retrieved shortlist. Keep the target's original stamp when an
+      # assessment refreshes candidates, so an undecided crosswalk IRI stays
+      # reviewable.
+      original <- existing[existing_targets == target, , drop = FALSE]
       for (col in intersect(c("prefill_origin", "prefill_iri"), names(original))) {
         values <- unique(original[[col]][!is.na(original[[col]]) & nzchar(original[[col]])])
         if (length(values) == 1L) {
@@ -831,13 +851,13 @@
         }
       }
       pieces[[length(pieces) + 1L]] <- replacement
-      seen <- c(seen, slot)
+      seen <- c(seen, target)
     } else {
-      pieces[[length(pieces) + 1L]] <- existing[existing_slots == slot, , drop = FALSE]
+      pieces[[length(pieces) + 1L]] <- existing[existing_targets == target, , drop = FALSE]
     }
   }
-  for (slot in setdiff(replace_slots, seen)) {
-    pieces[[length(pieces) + 1L]] <- merged[merged_slots == slot, , drop = FALSE]
+  for (target in setdiff(replace_targets, seen)) {
+    pieces[[length(pieces) + 1L]] <- merged[merged_targets == target, , drop = FALSE]
   }
   out <- dplyr::bind_rows(pieces)
   # Existing columns keep their order; the assessment columns follow. A column
@@ -1097,9 +1117,10 @@ ingest_semantic_assessments <- function(x,
         kept_pass_1 <- kept_pass_1 + 1L
       }
     } else {
-      harness_decision <- tolower(.ms_llm_non_empty_string(row$llm_decision[[1]]))
-      if (!identical(validated$llm_decision[[1]], harness_decision) &&
-          !identical(.ms_semantic_review_decision_aliases()[harness_decision] %||% NA_character_, validated$llm_decision[[1]])) {
+      # A downgrade is a recorded decision other than the one the harness
+      # wrote, read with the alias resolved: `propose_new_term` recorded as
+      # `request_new_term` is the harness's own decision, not a downgrade.
+      if (!identical(validated$llm_decision[[1]], .ms_semantic_review_read_decision(row$llm_decision[[1]]))) {
         downgrades <- downgrades + 1L
       }
       if (pass == 2L) {

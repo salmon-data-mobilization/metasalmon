@@ -298,7 +298,103 @@ metasalmon (development version)
   producer pins its digests, which removes the script's last hand-computed file
   digest as well.
 
+### Deprecated
+
+* **`llm_assess = TRUE`, the eleven `llm_*` arguments and `chat_decomposition()`
+  are deprecated, and are removed in metasalmon 0.7.0** (hub item B-326, S16
+  execplan section 6; ruled by Brett on 2026-09-25, hub Q67). Model judgement
+  now runs in the caller's own harness against a review packet, through
+  `write_semantic_review_packet()` and `ingest_semantic_assessments()` (see
+  *Added*). `suggest_semantics()`, `infer_dictionary()`,
+  `infer_salmon_datapackage_artifacts()` and `create_sdp()` warn once per
+  top-level call whenever `llm_assess = TRUE` or any `llm_*` argument is
+  supplied. Each entry point detects that with `missing()`, so an argument
+  passed explicitly at its default warns too, and the calls the four make to
+  one another do not warn again: a nested chain warns once, naming the
+  outermost entry point, even when `seed_semantics = FALSE` leaves the options
+  unused. `chat_decomposition()` warns on every call, on entry, before its
+  interactive session starts. The warning is a classed `cli_warn()`
+  (`metasalmon_llm_deprecated`, `deprecatedWarning`), so it can be caught or
+  silenced by class, and it comes after the existing opt-in warnings;
+  `options(metasalmon.llm_deprecation_quiet = TRUE)` silences it until the
+  removal, as the test suite's setup file does. The opt-in contract is
+  untouched: context supplied without `llm_assess` still warns that it is
+  ignored and makes no model call, and the default path warns nothing. Pinned
+  in `tests/testthat/test-llm-deprecation.R`. metasalmonpy deprecates the same
+  surface with `LLMDeprecationWarning`, a `FutureWarning` subclass (hub item
+  B-327).
+
 ### Fixed
+
+* **Defects in the review-packet contract are fixed before it ships** (hub item
+  B-424; metasalmonpy's half is B-425). metasalmonpy found each while porting
+  the contract (B-327) and reproduced it there on purpose, so that the shared
+  conformance fixtures would agree; Brett ruled on 2026-09-26 that they be
+  fixed now, in both packages. The fixtures under
+  `tests/testthat/fixtures/semantic-review/v1/` moved with them, and each fix is
+  pinned by a test that failed before it
+  (`tests/testthat/test-semantic-review-packet.R`).
+
+  1. **The `propose_new_term` alias no longer counts as a downgrade.** The
+     ingest summary counts a downgrade when the recorded decision differs from
+     the one the harness wrote, and it exempted the alias with
+     `identical(aliases[harness_decision] %||% NA, decision)`, which never
+     holds: `[` keeps the alias vector's name, and a named string is never
+     `identical()` to the decision it holds. A harness that wrote
+     `propose_new_term` was recorded as `request_new_term`, correctly, and
+     counted as downgraded. Row validation and the count now read the decision
+     through one helper, and the `row_errors` case records four downgrades
+     where it recorded five.
+  2. **Every role of a code value of a measurement column reaches the packet
+     as its own target.** Discovery gives such a code a constraint, an entity
+     and a method target, and all three write into the code's one `codes.csv`
+     `term_iri`, so they share one slot id. A target unit was keyed by its slot
+     alone, so the three collided: an in-memory `write_semantic_review_packet()`
+     aborted with *"units must have unique keys"*, and a package path kept only
+     the first role's shortlist, because it took one queued target per slot. A
+     target unit's key is now its slot and its role,
+     `target:<slot_id>|<dictionary_role>`, so every packet holding a target
+     unit has new bytes and a new `packet_id`; bundle keys are unchanged.
+     `packet_version` stays `semantic-review-packet/1.0`: the contract has not
+     been released, and nothing reads a target unit's key back, so a packet
+     written before the change still ingests to the same record. On a package
+     path the queue now gives one target per slot and role, and blank-slot
+     recovery asks whether each target, not each slot, has a suggestion row,
+     so a role that found nothing at creation is recovered even when another
+     role of its slot has rows; a slot with a recorded decision still recovers
+     nothing. The ingester's rewrite of `semantic_suggestions.csv` replaces
+     rows target by target, so finalizing one role no longer drops another
+     role's rows, whether that role is still awaiting its second pass or was
+     accepted a pass earlier. A new conformance case, `code_roles`, pins the
+     in-memory build in both packages, and the schema's `unit_key` description
+     says what a target key holds.
+  3. **`prune = TRUE` warns before it deletes a review record in a package with
+     no shortlist file.** The warning returned early when there was no
+     `semantic_suggestions.csv`, before it asked whether `review/` held an
+     ingested record. A packet that holds only blank slots with no candidates
+     leaves exactly that package: ingesting `review` or `request_new_term`
+     answers for it writes `review/semantic-llm-assessments.csv` and no
+     shortlist file, so a later rewrite with `prune = TRUE` deleted the whole
+     record without a word. The record is now looked for first, whatever the
+     shortlist file's state.
+
+* **A retry query written as a CURIE is recognised as an identifier whatever
+  letters it holds** (hub item B-380; metasalmonpy's half is B-381).
+  `.ms_llm_query_looks_like_identifier()` ended its CURIE pattern in
+  `[^\\s]+`, and R's default regular-expression engine reads a backslash inside
+  a bracket expression literally, so the class meant "neither a backslash nor
+  the letter s" rather than "not whitespace". `smn:species` and `smn:MeshSize`
+  were therefore searched as lexical queries, and `abc:d e` was treated as an
+  identifier. The class is now `[^[:space:]]`, the one the query normalizer
+  collapses, so a URL, a URN, a DOI or a CURIE with no whitespace is an
+  identifier and nothing else is. Both callers of the classifier change: the
+  assessment ingester records such a query as `identifier_like_query` and does
+  not issue it (the `retry_dead_ends` fixture's `smn:MeshSize` now gets the
+  reason its README promised, and the case makes one search call where it
+  made two), and the deprecated in-package retry asks the model for a
+  plain-language replacement query, as it always has for an identifier-like
+  one, instead of searching the CURIE. Pinned over the backlog's cases in
+  `tests/testthat/test-llm-semantic-helpers.R`.
 
 * `verify_sdp_semantic_iris()` preserves legal semicolons in sixteen scalar
   IRI fields declared by canonical metadata schemas, current extension

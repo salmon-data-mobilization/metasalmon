@@ -155,6 +155,43 @@
   list(kind = "memory", dict = tibble::as_tibble(dict), object = x, review_dir = review_dir)
 }
 
+# A target's address: its slot and its role. A code value of a measurement
+# column gets a constraint, an entity and a method target, and all three write
+# into the code's one `codes.csv` `term_iri`, so the slot alone does not name a
+# target (hub item B-424): three target units shared one key, which aborted an
+# in-memory build, and a package path kept only the first role's shortlist.
+# The slot and the role do name it. `paste()` renders a missing role `NA`, as
+# `.ms_review_slot_id()` renders a missing slot component; the target unit key
+# is this address, so the packet's bytes read this one rendering.
+.ms_semantic_review_target_address <- function(rows) {
+  rows <- tibble::as_tibble(rows)
+  address_cols <- c("target_sdp_file", "target_row_key", "target_sdp_field")
+  # The slot is read from its three address fields whenever a row carries
+  # them, and from a precomputed `slot_id` only when it does not (the review
+  # queue's rows).
+  slot <- if (!all(address_cols %in% names(rows)) && "slot_id" %in% names(rows)) {
+    as.character(rows$slot_id)
+  } else {
+    .ms_review_slot_id(.ms_semantic_add_missing_cols(rows, address_cols))
+  }
+  role <- if ("dictionary_role" %in% names(rows)) as.character(rows$dictionary_role) else rep(NA_character_, nrow(rows))
+  paste(slot, role, sep = "|")
+}
+
+# The slots of a suggestion frame that carry a recorded decision, read the way
+# the review console reads one (`.ms_review_seed_recorded_decisions()`): the
+# console takes such a slot out of the queue, so no target of it is recovered
+# either, whichever role recorded the decision.
+.ms_semantic_review_decided_slots <- function(suggestions) {
+  suggestions <- tibble::as_tibble(suggestions)
+  if (nrow(suggestions) == 0L || !"decision" %in% names(suggestions)) {
+    return(character())
+  }
+  recorded <- trimws(as.character(suggestions$decision)) %in% names(.ms_review_recorded_decisions())
+  slots <- .ms_review_slot_id(.ms_semantic_add_missing_cols(suggestions, c("target_sdp_file", "target_row_key", "target_sdp_field")))
+  unique(slots[recorded])
+}
+
 # The current value of each target's slot, read the way the review console
 # reads it: the metadata frame the target writes into, matched on its keys.
 .ms_semantic_review_current_values <- function(targets, frames) {
@@ -248,8 +285,10 @@
 # slot `create_sdp()` left blank because retrieval found nothing is invisible
 # to the queue. A blank slot is exactly what discovery sees, so the same
 # discovery `create_sdp()` ran is run again over the package's own frames and
-# restricted to the writable IRI slots that are blank (not `REVIEW:`-marked),
-# have no suggestion row and no recorded decision. The one thing that cannot
+# restricted to the targets of writable IRI slots that are blank (not
+# `REVIEW:`-marked) and carry no recorded decision, and that have no
+# suggestion row of their own: a slot another role of which has rows can still
+# hold a role that found nothing (hub item B-424). The one thing that cannot
 # be recovered is the code scope the caller chose at creation, because nothing
 # records it: the packet records the scope it used, and a code-level slot
 # outside it is reported as not covered rather than silently dropped.
@@ -275,13 +314,14 @@
   }
   resources <- .ms_semantic_review_package_resources(path, table_meta, dict)
   dataset_id <- .ms_semantic_trim_string(dataset_meta$dataset_id) %||% .ms_semantic_trim_string(dict$dataset_id)
-  known_slots <- if (!is.null(suggestions) && nrow(suggestions) > 0L) {
-    unique(.ms_review_slot_id(.ms_semantic_add_missing_cols(
-      suggestions, c("target_sdp_file", "target_row_key", "target_sdp_field")
-    )))
-  } else {
-    character()
-  }
+  # Known and decided are asked of the target, not the slot. A code value of a
+  # measurement column has three targets in one slot, and a role that found
+  # nothing at creation has no row even when another role of the slot does;
+  # asked of the slot, that role was never recovered (hub item B-424). A slot
+  # with a recorded decision is decided for every role.
+  has_suggestions <- !is.null(suggestions) && nrow(suggestions) > 0L
+  known_targets <- if (has_suggestions) unique(.ms_semantic_review_target_address(suggestions)) else character()
+  decided_slots <- if (has_suggestions) .ms_semantic_review_decided_slots(suggestions) else character()
 
   discover <- function(scope) {
     scoped_codes <- if (nrow(tibble::as_tibble(codes)) == 0L) {
@@ -313,7 +353,8 @@
     writable <- as.character(targets$target_sdp_file) %in% .ms_review_writable_files()
     iri_field <- grepl("_iri$", as.character(targets$target_sdp_field))
     blank <- !is.na(targets$current_value) & !nzchar(trimws(targets$current_value))
-    no_row <- !targets$slot_id %in% known_slots
+    no_row <- !.ms_semantic_review_target_address(targets) %in% known_targets &
+      !targets$slot_id %in% decided_slots
     targets[writable & iri_field & blank & no_row, , drop = FALSE]
   }
 
@@ -348,7 +389,12 @@
   targets <- tibble::tibble()
   if (nrow(review) > 0L) {
     rows <- queue$suggestions[queue$source_row, , drop = FALSE]
-    first <- !duplicated(review$slot_id)
+    # One target per slot and role, never one per slot: the console lists a
+    # code's constraint, entity and method candidates in one slot, and each
+    # role is its own target with its own shortlist (hub item B-424).
+    first <- !duplicated(.ms_semantic_review_target_address(
+      tibble::tibble(slot_id = review$slot_id, dictionary_role = review$role)
+    ))
     targets <- rows[first, , drop = FALSE]
     targets <- .ms_semantic_add_missing_cols(targets, .ms_semantic_target_cols())
     targets <- targets[, .ms_semantic_target_cols(), drop = FALSE]
@@ -360,8 +406,9 @@
   }
   blank <- .ms_semantic_review_blank_slots(path, frames, queue$suggestions, code_scope)
   if (nrow(blank$targets) > 0L) {
-    known <- if (nrow(targets) > 0L) targets$slot_id else character()
-    targets <- dplyr::bind_rows(targets, blank$targets[!blank$targets$slot_id %in% known, , drop = FALSE])
+    known <- if (nrow(targets) > 0L) .ms_semantic_review_target_address(targets) else character()
+    recovered <- !.ms_semantic_review_target_address(blank$targets) %in% known
+    targets <- dplyr::bind_rows(targets, blank$targets[recovered, , drop = FALSE])
   }
   if (nrow(targets) == 0L) {
     return(list(targets = targets, candidates = tibble::tibble(), failed_sources = character(), not_covered = blank$not_covered))
@@ -710,7 +757,9 @@
     }
     units[[length(units) + 1L]] <- list(
       unit_kind = "target",
-      unit_key = paste0("target:", .ms_semantic_review_text_scalar(target$slot_id) %||% target_keys[[i]]),
+      # The slot and the role: a code value of a measurement column has three
+      # targets in one slot, each its own unit (hub item B-424).
+      unit_key = paste0("target:", .ms_semantic_review_target_address(target)),
       dictionary = .ms_semantic_review_dictionary_object(dict_row),
       current_slots = .ms_json_object(),
       slots = list(.ms_semantic_review_slot_object(target, candidate_groups[[target_keys[[i]]]])),
