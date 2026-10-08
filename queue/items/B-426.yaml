@@ -1,7 +1,7 @@
 id: B-426
 kind: defect
 title: Surface crosswalk-filled code slots in the Python review queue
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
