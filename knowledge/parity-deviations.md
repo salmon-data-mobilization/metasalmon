@@ -1267,8 +1267,9 @@ such a procedure as a slot (`:456-457`), where `review_console.py` lists
 `codes.csv` among `WRITABLE_FILES`, so a reviewer can decide a code value's
 `term_iri`. It is owed as a documentation port, not a register row. It did not
 land in the same stream because a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is **B-261**; the guide port was under
-review in pull request 79 on 2026-09-30 and landed as `9304851` on 2026-10-01.
+repository. Its metasalmonpy queue item is **B-261** (B-261 **landed 2026-10-01
+as metasalmonpy #79**, merged as `9304851`); the guide port was under review in
+that pull request from 2026-09-30.
 Read by B-262 on 2026-09-30 at
 Python `main` `e81cacd`: `semantic_closure.py` repeats the same reviewer gloss
 in its header and target-context comments (lines 18 and 599). Those matching
