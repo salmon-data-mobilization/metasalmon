@@ -351,6 +351,16 @@ metasalmon (development version)
   membership metasalmonpy already applies; previously a C-locale run admitted
   an ideographic space that a UTF-8-locale run rejected.
 
+* SSSOM references now reject the same Unicode whitespace under C and UTF-8
+  locales (B-432). `read_sssom_mapping_set()` and `validate_sdp_sssom()` checked
+  `subject_source`, `object_source` and every mapping-cell CURIE or URI with
+  their own whitespace class, which a C-locale run resolved as ASCII-only, so
+  an ideographic space inside a reference was accepted there and refused under
+  UTF-8. They now use the class the shared IRI predicate uses, and the reader
+  marks the file's text as UTF-8 once it has checked the bytes, so a regex
+  matches characters rather than bytes in either locale. The bytes the writer
+  emits do not change. metasalmonpy's `sssom` module already used this class.
+
 
 * The SSSOM reader validates `predicate_type` as its entity-type enum and
   accepts text in `subject_category`, `object_category` and `similarity_measure`,
