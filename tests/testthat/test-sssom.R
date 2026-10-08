@@ -734,13 +734,14 @@ test_that("validate_salmon_datapackage never evaluates an !expr tag in SSSOM met
 
   sentinel <- file.path(withr::local_tempdir(), "evaluated")
   expression_title <- sprintf("file.create(\"%s\")", sentinel)
-  # The writer renders scalars double-quoted; the patch replaces that line.
+  # The canonical writer renders this scalar plain, with no space after `#`
+  # (B-350); the patch replaces that line.
   text <- rawToChar(readBin(installed, "raw", file.info(installed)$size))
-  benign_line <- "# mapping_set_title: \"Approved mappings\""
+  benign_line <- "#mapping_set_title: Approved mappings"
   expect_match(text, benign_line, fixed = TRUE)
   text <- sub(
     benign_line,
-    paste0("# mapping_set_title: !expr ", expression_title),
+    paste0("#mapping_set_title: !expr ", expression_title),
     text,
     fixed = TRUE
   )
@@ -1266,4 +1267,238 @@ test_that("SSSOM references refuse Unicode whitespace in a UTF-8 locale", {
 test_that("SSSOM references refuse Unicode whitespace in the C locale", {
   withr::local_locale(c(LC_CTYPE = "C"))
   sssom_test_reference_verdicts()
+})
+
+# Hub B-350. Canonical SSSOM/TSV, one test per rule of the specification's
+# "Canonical SSSOM/TSV format" section that applies to what write_sdp_sssom()
+# writes (src/docs/spec-formats-tsv.md in mapping-commons/sssom at
+# 667d3c579d92ad2e1a480503625eeef1e6af8e6d). Condensation and the
+# extension-slot rules are not applied; R/sssom.R says why.
+sssom_test_written_text <- function(text = sssom_test_text(), ...) {
+  source <- file.path(withr::local_tempdir(.local_envir = parent.frame()), "set.sssom.tsv")
+  sssom_test_write_raw(source, text)
+  sdp <- withr::local_tempdir(.local_envir = parent.frame())
+  write_sdp_sssom(sdp, mapping_sets = source, ...)
+  written <- list.files(
+    file.path(sdp, "metadata", "semantic"),
+    pattern = "\\.sssom\\.tsv$",
+    full.names = TRUE
+  )
+  list(
+    sdp = sdp,
+    path = written,
+    text = rawToChar(readBin(written, what = "raw", n = file.info(written)$size))
+  )
+}
+
+sssom_test_metadata_lines <- function(text) {
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  lines[startsWith(lines, "#")]
+}
+
+test_that("canonical SSSOM/TSV round-trips the canonical example byte for byte", {
+  written <- sssom_test_written_text(sssom_test_canonical_text())
+  expect_identical(written$text, sssom_test_canonical_text())
+  # And the legacy form of the same set is rewritten into exactly those bytes.
+  expect_identical(sssom_test_written_text()$text, sssom_test_canonical_text())
+  # In either locale: the YAML style decisions and the sort are not locale's.
+  withr::local_locale(c(LC_CTYPE = "C", LC_COLLATE = "C"))
+  expect_identical(sssom_test_written_text()$text, sssom_test_canonical_text())
+})
+
+test_that("canonical SSSOM/TSV puts no space between # and the YAML", {
+  lines <- sssom_test_metadata_lines(sssom_test_written_text()$text)
+  expect_true(length(lines) > 0L)
+  # A top-level slot starts right after `#`; only YAML's own two-space
+  # indentation of a nested line may follow it.
+  expect_false(any(grepl("^# [^ ]", lines)))
+  expect_true(all(grepl("^#([^ ]|  [^ ])", lines)))
+})
+
+test_that("canonical SSSOM/TSV writes curie_map in its MappingSet slot position", {
+  lines <- sssom_test_metadata_lines(sssom_test_written_text()$text)
+  keys <- sub(":.*$", "", lines[!startsWith(lines, "#  ")])
+  expect_identical(
+    keys,
+    c(
+      "#sssom_version", "#curie_map", "#mapping_set_id", "#mapping_set_version",
+      "#license", "#subject_source", "#subject_source_version",
+      "#object_source", "#object_source_version"
+    )
+  )
+})
+
+test_that("canonical SSSOM/TSV keeps no built-in and no unused prefix in curie_map", {
+  text <- sssom_test_text(extra_prefixes = c(
+    "#   unused: https://example.org/unused/",
+    "#   owl: http://www.w3.org/2002/07/owl#"
+  ))
+  written <- sssom_test_written_text(text)
+  lines <- sssom_test_metadata_lines(written$text)
+  prefixes <- sub("^#  ([^:]+):.*$", "\\1", lines[startsWith(lines, "#  ")])
+  expect_identical(prefixes, c("gcdfo", "psc"))
+  expect_true(isTRUE(validate_sdp_sssom(written$sdp)))
+})
+
+test_that("canonical SSSOM/TSV leaves out curie_map when a set uses only built-in prefixes", {
+  text <- sssom_test_text(rows = paste(
+    "owl:Thing", "Thing", "skos:exactMatch", "rdfs:Resource", "Resource",
+    "semapv:ManualMappingCuration",
+    sep = "\t"
+  ))
+  written <- sssom_test_written_text(text)
+  expect_false(any(startsWith(sssom_test_metadata_lines(written$text), "#curie_map")))
+  reread <- read_sssom_mapping_set(written$path)
+  expect_length(reread$metadata$curie_map, 0L)
+  expect_true(isTRUE(validate_sdp_sssom(written$sdp)))
+})
+
+test_that("canonical SSSOM/TSV writes scalars plain when YAML would read them back unchanged", {
+  text <- sssom_test_text(extra_metadata = c(
+    "# mapping_set_title: \"Gear: census methods\"",
+    "# mapping_set_description: \"yes\"",
+    "# comment: \"Plain text, no indicators\""
+  ))
+  written <- sssom_test_written_text(text)
+  lines <- sssom_test_metadata_lines(written$text)
+  expect_true("#sssom_version: \"1.1\"" %in% lines)
+  expect_true("#mapping_set_version: 2026-07-31" %in% lines)
+  expect_true("#object_source_version: 0.0.8" %in% lines)
+  expect_true("#mapping_set_title: \"Gear: census methods\"" %in% lines)
+  expect_true("#mapping_set_description: \"yes\"" %in% lines)
+  expect_true("#comment: Plain text, no indicators" %in% lines)
+  reread <- read_sssom_mapping_set(written$path)
+  expect_identical(reread$metadata$mapping_set_title, "Gear: census methods")
+  expect_identical(reread$metadata$mapping_set_description, "yes")
+})
+
+test_that("every value the canonical writer writes plain reads back as the same string", {
+  values <- c(
+    "2026-07-31", "0.0.8", "v0.2.0", "1.1", "1", "-1", "+1", "1_000", "1,2",
+    "0x1F", "0o17", "017", "0b101", "1:20", ".inf", "-.5", "1e3", "1.0e+3",
+    "yes", "No", "on", "OFF", "y", "~", "null", "<<", "=", "true",
+    "https://w3id.org/gcdfo/salmon#", "a #b", "a: b", "a:", "-x", "?x",
+    "[x]", "x, y", "caf\u00e9", "tab\there"
+  )
+  for (value in values) {
+    rendered <- .ms_sssom_yaml_scalar(value)
+    reread <- yaml::yaml.load(paste0("k: ", rendered), eval.expr = FALSE)$k
+    expect_identical(reread, value, info = value)
+  }
+  expect_identical(.ms_sssom_yaml_scalar("0.0.8"), "0.0.8")
+  expect_identical(.ms_sssom_yaml_scalar("1.1"), "\"1.1\"")
+})
+
+test_that("canonical SSSOM/TSV writes a multivalued metadata slot as a block sequence", {
+  text <- sssom_test_text(extra_metadata = c(
+    "# creator_id:",
+    "#   - psc:PSC-CV-000001",
+    "# see_also: https://example.org/one"
+  ))
+  written <- sssom_test_written_text(text)
+  lines <- strsplit(written$text, "\n", fixed = TRUE)[[1]]
+  at <- match("#creator_id:", lines)
+  expect_false(is.na(at))
+  expect_identical(lines[[at + 1L]], "#  - psc:PSC-CV-000001")
+  at <- match("#see_also:", lines)
+  expect_false(is.na(at))
+  expect_identical(lines[[at + 1L]], "#  - https://example.org/one")
+  reread <- read_sssom_mapping_set(written$path)
+  expect_identical(reread$metadata$creator_id, "psc:PSC-CV-000001")
+  expect_identical(reread$metadata$see_also, "https://example.org/one")
+})
+
+test_that("canonical SSSOM/TSV quotes a mapping cell only when it must", {
+  row <- paste(
+    "psc:PSC-CV-000001", "Net \"gill\"", "skos:exactMatch",
+    "gcdfo:FixedSiteCensusManual", "Fixed Site Census (Manual)",
+    "semapv:ManualMappingCuration",
+    sep = "\t"
+  )
+  written <- sssom_test_written_text(sssom_test_text(rows = row))
+  lines <- strsplit(written$text, "\n", fixed = TRUE)[[1]]
+  data_line <- lines[[length(lines)]]
+  expect_identical(
+    strsplit(data_line, "\t", fixed = TRUE)[[1]][[2]],
+    "\"Net \"\"gill\"\"\""
+  )
+  # Every other cell is written bare.
+  expect_identical(strsplit(data_line, "\t", fixed = TRUE)[[1]][[1]], "psc:PSC-CV-000001")
+  reread <- read_sssom_mapping_set(written$path)
+  expect_identical(reread$mappings$subject_label, "Net \"gill\"")
+  # A legacy cell with a bare inner quote still reads byte for byte.
+  expect_identical(.ms_sssom_unquote_cell("Net \"gill\""), "Net \"gill\"")
+  expect_identical(.ms_sssom_unquote_cell("\"a\"b\""), "\"a\"b\"")
+})
+
+test_that("canonical SSSOM/TSV rounds a double slot to at most three decimals", {
+  expect_identical(
+    .ms_sssom_canonical_double(c(
+      "0.95000", "1.0", "0.0005", "0.0004", "0.9995", "0.12345", "1", "high", NA
+    )),
+    c("0.95", "1", "0.001", "0", "1", "0.123", "1", "high", NA)
+  )
+  header <- paste(
+    "subject_id", "subject_label", "predicate_id", "object_id",
+    "object_label", "mapping_justification", "confidence",
+    sep = "\t"
+  )
+  row <- paste(
+    "psc:PSC-CV-000001", "Net", "skos:exactMatch",
+    "gcdfo:FixedSiteCensusManual", "Fixed Site Census (Manual)",
+    "semapv:ManualMappingCuration", "0.95000",
+    sep = "\t"
+  )
+  text <- sub(
+    paste(
+      "subject_id", "subject_label", "predicate_id", "object_id",
+      "object_label", "mapping_justification",
+      sep = "\t"
+    ),
+    header,
+    sssom_test_text(rows = row),
+    fixed = TRUE
+  )
+  written <- sssom_test_written_text(text)
+  lines <- strsplit(written$text, "\n", fixed = TRUE)[[1]]
+  expect_true(endsWith(lines[[length(lines)]], "\t0.95"))
+})
+
+test_that("canonical SSSOM/TSV sorts mappings with a missing value first", {
+  mapping_set <- read_sssom_mapping_set({
+    path <- file.path(withr::local_tempdir(), "set.sssom.tsv")
+    sssom_test_write_raw(path, sssom_test_text(rows = c(
+      paste(
+        "psc:PSC-CV-000001", "Net", "skos:exactMatch",
+        "gcdfo:FixedSiteCensusManual", "Fixed Site Census (Manual)",
+        "semapv:ManualMappingCuration",
+        sep = "\t"
+      ),
+      paste(
+        "psc:PSC-CV-000001", "", "skos:exactMatch",
+        "gcdfo:FixedSiteCensusAutomated", "Fixed Site Census (Automated)",
+        "semapv:ManualMappingCuration",
+        sep = "\t"
+      )
+    )))
+    path
+  })
+  mapping_set$mappings$subject_label[mapping_set$mappings$subject_label == ""] <- NA
+  lines <- strsplit(rawToChar(.ms_sssom_canonical_bytes(mapping_set)), "\n", fixed = TRUE)[[1]]
+  data <- lines[!startsWith(lines, "#")][-1]
+  expect_identical(
+    vapply(strsplit(data, "\t", fixed = TRUE), `[[`, character(1), 2L),
+    c("", "Net")
+  )
+})
+
+test_that("validate_sdp_sssom still accepts a package in the pre-canonical byte form", {
+  written <- sssom_test_written_text()
+  legacy <- charToRaw(enc2utf8(sssom_test_text()))
+  writeBin(legacy, written$path)
+  manifest_path <- file.path(written$sdp, "metadata", "semantic", "mapping-sets.json")
+  manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+  manifest$mapping_sets[[1]]$sha256 <- digest::digest(legacy, algo = "sha256", serialize = FALSE)
+  jsonlite::write_json(manifest, manifest_path, auto_unbox = TRUE, pretty = TRUE)
+  expect_true(isTRUE(validate_sdp_sssom(written$sdp)))
 })
