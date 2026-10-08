@@ -1,0 +1,13 @@
+id: B-436
+kind: defect
+title: 'metasalmonpy gives a procedure-named column''s codes the entity role where metasalmon gives method, and writes every code shortlist where metasalmon''s create_sdp() drops one lacking review context: two unregistered differences found by B-426'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'Each of the two differences is ruled per divergence and then either converged or registered, in the same change for both registers. (1) In metasalmon, the codes of a non-measurement column whose name, label or description matches the procedure pattern of parent_names_procedure in R/semantic-suggestions.R (method, protocol, procedure, gear, estimat*, enumerat*, technique, survey type) take the method role for discovery and retrieval, and entity otherwise; metasalmonpy''s semantics.py gives every non-measurement column''s codes entity, so ENUMERATION_METHODS codes are method targets in R and entity targets in Python. (2) metasalmon''s create_sdp() writes semantic_suggestions.csv through .ms_prepare_review_suggestions(), which drops a code-scope row whose code has no description and whose label is empty or equals its value case folded, except a row B-120 stamped with crosswalk provenance; metasalmonpy''s create_sdp() writes every row. Converging means the behaviour lands on the side ruled wrong with twins of the tests that pin it, and B-120 is evidence that the filter hides work, so R moving is a live answer for (2); registering means a numbered row in PARITY.md and knowledge/parity-deviations.md. Until one of those, neither register names either difference, which is the state the mirror contract forbids. Measured 2026-10-08 on metasalmon main at 4686d93 and metasalmonpy at de7eca8 with B-426; the workpad .hub/workpads/B-426.md in metasalmonpy records the probe.'

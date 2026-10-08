@@ -255,6 +255,40 @@ manual edits or applied decisions close the default slot. B-426 follows B-327
 (B-327 **landed 2026-10-08 as metasalmonpy #72**, merged as `de7eca8`)
 because its active packet branches edit the same Python paths. The release
 index links this debt; it is an owed port, not a deliberate register difference.
+**B-426 is under review as metasalmonpy pull request #110 from 2026-10-08**
+(handoff ref `agent/B-426/a-11395cdb8864b5ec`): the port, with twins of
+B-120's two regressions, RED on Python `main` `de7eca8` before it. One R line
+has no Python counterpart on purpose: B-120's exemption inside
+`.ms_prepare_review_suggestions()` attaches to a create-time filter
+metasalmonpy never had, which is the second of the two findings below.
+
+**Two differences the B-426 port found that neither register names
+(2026-10-08).** Measured on metasalmon `main` at `4686d93` against metasalmonpy
+at `de7eca8` plus B-426; both are in R no later than 2026-09-25 (the oldest
+commits `git log -S` returns for either name are that day's merges `ef46094`
+and `a18148e`), and neither this register nor `PARITY.md` mentions either.
+**(1) The method role for a procedure-named column's codes.** R's code-target
+discovery (`parent_names_procedure` in `R/semantic-suggestions.R`) gives the
+codes of a non-measurement column the `method` role when the column's name,
+label or description matches
+`\b(method|protocol|procedure|gear|estimat\w*|enumerat\w*|technique|survey type)\b`,
+and `entity` otherwise; metasalmonpy's `semantics.py` gives every
+non-measurement column's codes `entity`. For `ENUMERATION_METHODS` that is
+`method` in R and `entity` in Python (probed on the B-426 tree: the Fence rows'
+`dictionary_role` is `entity`, the column's `column_role` `categorical`), so
+the two sides search different sources with different role hints and print
+different `accept_suggestion()` calls for the same code; the B-426 twin reads
+the role back from the suggestions rather than spelling it. **(2) The
+create-time review-context filter.** R's `create_sdp()` writes
+`semantic_suggestions.csv` through `.ms_prepare_review_suggestions()`, which
+drops a code-scope row whose code has no description and whose label is empty
+or equals its value, case folded (`.ms_code_target_has_review_context()`);
+metasalmonpy's `create_sdp()` writes every row. B-120 is evidence that this
+filter hides work, so for (2) R moving is a live answer and not assumed away.
+Filed as metasalmonpy queue item **B-436**, which retires when each is ruled
+per divergence and then converged or registered; it is not a numbered row
+here, because filing absence as design is the one thing this register must
+not do, and it is not a port either until the ruling says which side moves.
 
 **Development-version Q62 undefined-handle port landed, 2026-10-04.**
 `B-429` landed as metasalmonpy pull request **#99**, merged as

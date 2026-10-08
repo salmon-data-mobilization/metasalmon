@@ -597,7 +597,11 @@ competing edits to its active branches. It owes candidate discovery for only
 package-filled code IRIs, default console visibility until a decision, and
 preserved prefill provenance through assessment ingestion. The specification
 and regression are in backlog #120 and `test-review-console.R`; this is port
-debt, not a new parity-register row. Versions remain unchanged.
+debt, not a new parity-register row. Versions remain unchanged. **B-426 is
+under review as metasalmonpy #110 from 2026-10-08**; two unregistered
+differences it found on the way are metasalmonpy item **B-436** (the
+procedure-named column's `method` role, and the create-time review-context
+filter), recorded in the parity port section the same day.
 
 **B-256 restores R's existing GitHub error remedies (2026-09-30).** No Python
 port is owed: on metasalmonpy `main` at `e81cacd`,
