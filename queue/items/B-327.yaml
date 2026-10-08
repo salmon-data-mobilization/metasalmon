@@ -1,7 +1,7 @@
 id: B-327
 kind: defect
 title: 'metasalmonpy exports the semantic review packet and ingests a harness''s assessments, the mirror half of B-326'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

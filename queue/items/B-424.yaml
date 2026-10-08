@@ -1,7 +1,7 @@
 id: B-424
 kind: defect
 title: 'Fix the review-packet defects the B-327 port found on the metasalmon side, before the 0.6.0 tag'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
