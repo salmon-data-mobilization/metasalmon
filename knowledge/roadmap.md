@@ -676,6 +676,14 @@ same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
 2026-09-25 as metasalmonpy #46**, `2405df2`.
 
+**Canonical SSSOM/TSV owes a mirror port:** metasalmon's half, **B-350**, makes
+`write_sdp_sssom()` write the canonical form and changes every mapping set's
+bytes and manifest sha256. metasalmonpy's half is **B-351** (needs **B-234**),
+which keeps the earlier bytes until it lands; Brett ruled on 2026-09-25 that both
+ship in the same minor version, which is why the version does not move in
+either half. Specified in the port passage of
+[`parity-deviations.md`](parity-deviations.md).
+
 **The recorded-accept marker also owes a separate mirror port:** a caller's
 retrieval candidate with `source = "user"` must remain ontology-gap evidence;
 only an accept actually recorded by `apply_sdp_semantics()` is hand-picked.

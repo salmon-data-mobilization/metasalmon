@@ -23,7 +23,8 @@ Writes explicitly supplied SSSOM 1.1 mapping sets under
 \verb{metadata/semantic/} and records their paths, hashes, row counts, source
 versions, licenses, and writer provenance in
 \code{metadata/semantic/mapping-sets.json}. Bytes and manifest ordering are
-deterministic. This function does not turn semantic suggestions or variable
+deterministic, and each mapping set is written in the canonical SSSOM/TSV
+format, except that slots are not condensed. This function does not turn semantic suggestions or variable
 decompositions into mappings; \code{mapping_sets = NULL} is therefore a no-op.
 }
 \examples{

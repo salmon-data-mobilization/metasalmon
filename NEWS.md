@@ -1416,6 +1416,27 @@ metasalmon (development version)
 
 ### Changed
 
+* **`write_sdp_sssom()` writes canonical SSSOM/TSV, so every mapping set's
+  bytes change, and with them every `mapping-sets.json` sha256** (hub B-350;
+  ruled by Brett 2026-09-25 for the next minor version, both packages
+  together). The metadata block now has no space after `#`, writes a scalar
+  plain unless a YAML reader would read it back as something other than the
+  same string (so `sssom_version: "1.1"` stays quoted), puts `curie_map`
+  second as the MappingSet slot table does, writes a multivalued slot as a
+  block sequence, and leaves built-in and unused prefixes out of `curie_map`,
+  leaving the slot out entirely when nothing is left. In the table, a cell is
+  quoted only when it contains a double quote, `confidence`,
+  `reviewer_agreement` and `similarity_score` are rounded to at most three
+  decimals, and a missing value sorts before a present one. Slots are not
+  condensed, because condensation is the inverse of propagation, which this
+  profile does not do. `read_sssom_mapping_set()` reads every file it writes:
+  it now accepts a set with no `curie_map` and strips RFC 4180 quoting from a
+  well-formed quoted cell, while a cell an earlier version wrote with a bare
+  `"` inside it still reads byte for byte, and `validate_sdp_sssom()` still
+  accepts a package in the earlier form. metasalmonpy's writer keeps the
+  earlier bytes until its half, B-351, lands, so for now the two packages do
+  not write byte-identical mapping sets.
+
 - The publication guide distinguishes strict SDP validation and folder sharing
   from the reviewed closure and EML facts required for EML/KNB export or deposit.
   Closure comments describe the ledger's field coverage accurately (hub B-262).
