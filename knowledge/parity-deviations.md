@@ -1408,7 +1408,10 @@ has no entry that names it. The counterpart of R's `SystemRequirements` line is
 an extra that does. Both are owed as a port, not a register row: once they land
 the two implementations behave alike again. They did not land in the same
 stream because a hub claim covers one branch in one repository. Their
-metasalmonpy queue item is **B-302**.
+metasalmonpy queue item is **B-302**, under review as metasalmonpy pull request
+#80 (opened 2026-10-01 by `a-8b23709cce768317`, handed off that day; refreshed
+against Python `main` `de7eca8` on 2026-10-08 at `19f06d6` on Brett's word,
+with merge commits only, since the hub never reclaims a handoff).
 
 **Two of B-57's fixes owe metasalmonpy nothing, and both answers were measured
 on `f1f7230`.** `find_terms()` there searches its sources one after another in
