@@ -251,6 +251,7 @@ frozen target/assessment contracts and crosswalk term choices are unchanged.
 metasalmonpy owes the same behaviour and the R regression's twins: explicit
 caller IRIs remain final, code scope `none` performs no code discovery, and
 manual edits or applied decisions close the default slot. B-426 follows B-327
+(B-327 **landed 2026-10-08 as metasalmonpy #72**, merged as `de7eca8`)
 because its active packet branches edit the same Python paths. The release
 index links this debt; it is an owed port, not a deliberate register difference.
 

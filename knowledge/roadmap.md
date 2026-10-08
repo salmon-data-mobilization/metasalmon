@@ -591,7 +591,8 @@ rather than only the instance: **a new mirror debt is recorded in both places in
 the same change.**
 
 **B-120 adds crosswalk review to the development version (2026-09-30).**
-The Python port is **B-426**, following B-327's packet implementation to avoid
+The Python port is **B-426**, following B-327's packet implementation
+(B-327 **landed 2026-10-08 as metasalmonpy #72**, merged as `de7eca8`) to avoid
 competing edits to its active branches. It owes candidate discovery for only
 package-filled code IRIs, default console visibility until a decision, and
 preserved prefill provenance through assessment ingestion. The specification
