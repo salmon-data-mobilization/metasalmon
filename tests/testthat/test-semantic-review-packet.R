@@ -1164,3 +1164,258 @@ test_that("a symlinked review directory or record is refused, not followed", {
   unlink(file.path(other, "review"), recursive = TRUE)
   expect_null(semantic_llm_assessments(other))
 })
+
+# -----------------------------------------------------------------------------
+# Follow-ups found while porting the contract to metasalmonpy (hub items B-424
+# here and B-425 there, B-380 for the retry-query classifier). Each test failed
+# before the change it pins.
+# -----------------------------------------------------------------------------
+
+test_that("the propose_new_term alias is the decision it names, not a downgrade (B-424)", {
+  case <- build_case("target_units")
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(case$built$path))
+  harness <- dplyr::bind_rows(lapply(seq_along(slots), function(i) {
+    target <- slots[[i]]$target
+    if (i == 1L) {
+      # The alias in mixed case: read as request_new_term, the harness's own decision.
+      semantic_review_harness_row(target, llm_decision = "Propose_New_Term", llm_confidence = 0.6,
+        llm_rationale = "The ontology lacks it.", llm_new_term_label = "A new term")
+    } else if (i == 2L) {
+      # A real downgrade, still counted: an accept that selects nothing becomes review.
+      semantic_review_harness_row(target, llm_decision = "accept", llm_confidence = 0.8, llm_rationale = "No index.")
+    } else {
+      semantic_review_harness_row(target, llm_decision = "review", llm_confidence = 0.4, llm_rationale = "Later.")
+    }
+  }))
+  result <- ingest_semantic_assessments(
+    case$dict, assessments = harness, packet_id = case$built$packet_id,
+    review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
+  )
+  expect_identical(result$summary$decisions[["request_new_term"]], 1L)
+  expect_identical(result$summary$errors, 0L)
+  expect_identical(result$summary$downgrades, 1L)
+})
+
+test_that("a code value of a measurement column gets one target unit per role in memory (B-424)", {
+  # The code_roles case: constraint, entity and method targets that share the
+  # code's one term_iri slot. They used to share one unit key, and the build
+  # aborted with "units must have unique keys".
+  case <- build_case("code_roles")
+  packet <- semantic_review_read_json(case$built$path)
+  slot_id <- "codes.csv|fixture-1/catch/CATCH_COUNT/EST|term_iri"
+  keys <- vapply(packet$units, `[[`, character(1), "unit_key")
+  expect_identical(keys, paste0("target:", slot_id, "|", c("constraint", "entity", "method")))
+  slots <- metasalmon:::.ms_semantic_review_slots(packet)
+  expect_identical(vapply(slots, `[[`, character(1), "role"), c("constraint", "entity", "method"))
+  expect_true(all(vapply(slots, function(s) identical(s$target$slot_id[[1]], slot_id), logical(1))))
+  # Each role keeps its own shortlist.
+  iris <- lapply(slots, function(s) s$candidates$iri)
+  expect_identical(iris[[3]], c("https://example.org/code-roles/method/visual-estimation", "https://example.org/code-roles/method/expansion"))
+  expect_length(unique(unlist(iris)), 6L)
+})
+
+# A package whose one column is a coded measurement: `count_flag` is written
+# as a factor, so `codes.csv` holds its code `EST`, and the dictionary is then
+# edited to call the column a measurement, so discovery gives that code a
+# constraint, an entity and a method target in one slot. `suggestion_roles`
+# are the roles `semantic_suggestions.csv` holds rows for.
+code_roles_package <- function(path, suggestion_roles = c("constraint", "entity"), decision = NA_character_) {
+  suppressMessages(create_sdp(
+    list(catch = data.frame(count_flag = factor(c("EST", "EST", "EST")))),
+    path = path, dataset_id = "demo-1", table_id = "catch",
+    seed_semantics = FALSE, seed_verbose = FALSE, check_updates = FALSE, overwrite = TRUE
+  ))
+  dict_path <- file.path(path, "metadata", "column_dictionary.csv")
+  dict <- readr::read_csv(dict_path, col_types = readr::cols(.default = readr::col_character()), na = "")
+  dict$column_role[dict$column_name == "count_flag"] <- "measurement"
+  readr::write_csv(dict, dict_path, na = "")
+  rows <- dplyr::bind_rows(lapply(suggestion_roles, function(role) {
+    tibble::tibble(
+      dataset_id = "demo-1", table_id = "catch", column_name = "count_flag", code_value = "EST",
+      dictionary_role = role, search_role = role, target_scope = "code", target_sdp_file = "codes.csv",
+      target_sdp_field = "term_iri", target_row_key = "demo-1/catch/count_flag/EST", target_label = "EST",
+      search_query = "estimated count", code_label = "EST",
+      label = paste("Seeded", role, 1:2), iri = paste0("https://example.org/seeded/", role, "/", 1:2),
+      source = "smn", ontology = "smn", role = role, match_type = "label_exact",
+      definition = "A seeded term.", score = c(4.5, 3.5), decision = decision
+    )
+  }))
+  readr::write_csv(rows, file.path(path, "semantic_suggestions.csv"), na = "")
+  path
+}
+
+# Answers every retrieval but the method role's, so the method target of the
+# code has no candidates and reaches the packet only through recovery.
+code_role_hits <- function(query, role, sources) {
+  if (identical(role, "method")) {
+    return(tibble::tibble())
+  }
+  hits <- tibble::tibble(
+    label = paste(role, "term", 1:2), iri = paste0("https://example.org/code-roles/", role, "/", 1:2),
+    source = "smn", ontology = "smn", role = role, match_type = "label_exact",
+    definition = paste("A", role, "term."), score = c(4.5, 3.5)
+  )
+  if (identical(role, "constraint") && identical(query, "estimation flag")) {
+    hits <- tibble::tibble(
+      label = "Estimation flag", iri = "https://example.org/code-roles/constraint/flag",
+      source = "smn", ontology = "smn", role = role, match_type = "label_exact",
+      definition = "A flag saying a value was estimated.", score = 4.9
+    )
+  }
+  hits
+}
+
+code_slots <- function(packet) {
+  Filter(function(s) identical(s$target$target_sdp_file[[1]], "codes.csv"), metasalmon:::.ms_semantic_review_slots(packet))
+}
+
+test_that("a package path gives every role of a shared code slot its own target, a role with no row included (B-424)", {
+  path <- code_roles_package(file.path(withr::local_tempdir(), "code-roles"))
+  built <- write_semantic_review_packet(path, search_fn = code_role_hits, code_scope = "all", quiet = TRUE)
+  packet <- semantic_review_read_json(built$path)
+  slots <- code_slots(packet)
+  # The queue shows the constraint and entity rows in one slot; each role is
+  # its own target, re-retrieved with its own shortlist, and the method role,
+  # which has no row, is recovered by discovery. Before: one target, the first
+  # role's.
+  expect_setequal(vapply(slots, `[[`, character(1), "role"), c("constraint", "entity", "method"))
+  expect_identical(unique(vapply(slots, function(s) s$target$slot_id[[1]], character(1))), "codes.csv|demo-1/catch/count_flag/EST|term_iri")
+  expect_identical(anyDuplicated(vapply(slots, `[[`, character(1), "unit_key")), 0L)
+  by_role <- stats::setNames(slots, vapply(slots, `[[`, character(1), "role"))
+  expect_identical(by_role$constraint$candidates$iri, paste0("https://example.org/code-roles/constraint/", 1:2))
+  expect_identical(by_role$entity$candidates$iri, paste0("https://example.org/code-roles/entity/", 1:2))
+  expect_identical(nrow(by_role$method$candidates), 0L)
+})
+
+test_that("a slot with a recorded decision recovers no role, whichever role recorded it (B-424)", {
+  path <- code_roles_package(file.path(withr::local_tempdir(), "code-roles-decided"), suggestion_roles = "constraint", decision = "rejected")
+  built <- write_semantic_review_packet(path, search_fn = code_role_hits, code_scope = "all", quiet = TRUE)
+  expect_length(code_slots(semantic_review_read_json(built$path)), 0L)
+})
+
+test_that("finalizing one role of a shared slot keeps the other roles' rows in semantic_suggestions.csv (B-424)", {
+  path <- code_roles_package(file.path(withr::local_tempdir(), "code-roles-split"))
+  built <- write_semantic_review_packet(path, search_fn = code_role_hits, code_scope = "all", quiet = TRUE)
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(built$path))
+  harness_1 <- dplyr::bind_rows(lapply(slots, function(slot) {
+    target <- slot$target
+    if (!identical(target$target_sdp_file[[1]], "codes.csv")) {
+      return(semantic_review_harness_row(target, llm_decision = "review", llm_confidence = 0.2, llm_rationale = "Later."))
+    }
+    switch(
+      target$dictionary_role[[1]],
+      constraint = semantic_review_harness_row(target, llm_decision = "retry_search", llm_confidence = 0.3,
+        llm_rationale = "Search for the flag.", llm_retry_query = "estimation flag"),
+      entity = semantic_review_harness_row(target, llm_decision = "accept", llm_confidence = 0.9,
+        llm_selected_candidate_index = 1L, llm_selected_iri = slot$candidates$iri[[1]], llm_rationale = "The first."),
+      method = semantic_review_harness_row(target, llm_decision = "request_new_term", llm_confidence = 0.6,
+        llm_rationale = "Nothing was offered.", llm_new_term_label = "Estimation method")
+    )
+  }))
+  first <- ingest_semantic_assessments(path, assessments = harness_1, packet_id = built$packet_id,
+    search_fn = code_role_hits, quiet = TRUE)
+  expect_identical(first$status, "awaiting_pass_2")
+  # At pass 1 the entity's merged rows are written and the constraint's rows,
+  # which await their second pass, are left as they were.
+  after_1 <- semantic_suggestions(path)
+  after_1 <- after_1[after_1$target_sdp_file %in% "codes.csv", ]
+  expect_setequal(after_1$iri[after_1$dictionary_role == "constraint"], paste0("https://example.org/seeded/constraint/", 1:2))
+  expect_true(any(after_1$llm_selected[after_1$dictionary_role == "entity"] %in% TRUE))
+
+  pass_2 <- semantic_review_read_json(first$next_packet)
+  constraint <- Filter(function(s) isTRUE(s$reassess), metasalmon:::.ms_semantic_review_slots(pass_2))[[1]]
+  expect_identical(constraint$role, "constraint")
+  flag <- match("https://example.org/code-roles/constraint/flag", constraint$candidates$iri)
+  harness_2 <- semantic_review_harness_row(constraint$target, llm_decision = "accept", llm_confidence = 0.9,
+    llm_selected_candidate_index = flag, llm_selected_iri = "https://example.org/code-roles/constraint/flag",
+    llm_rationale = "The flag.")
+  second <- ingest_semantic_assessments(path, assessments = harness_2, packet_id = pass_2$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_identical(second$status, "complete")
+  # Both accepted roles' rows survive the pass-2 rewrite; slot by slot, the
+  # constraint's rewrite dropped the entity's accepted rows.
+  after_2 <- semantic_suggestions(path)
+  after_2 <- after_2[after_2$target_sdp_file %in% "codes.csv", ]
+  selected <- after_2[after_2$llm_selected %in% TRUE, ]
+  expect_setequal(selected$dictionary_role, c("constraint", "entity"))
+  expect_true("https://example.org/code-roles/constraint/flag" %in% selected$iri)
+  review <- suppressMessages(review_semantics(path))
+  expect_setequal(unique(review$role[review$target_file %in% "codes.csv"]), c("constraint", "entity"))
+})
+
+test_that("prune warns about a review record even when the package has no shortlist file (B-424)", {
+  # A packet holding only blank slots with no candidates: ingesting review and
+  # request_new_term answers writes the record and no semantic_suggestions.csv,
+  # and the prune warning used to return early for a missing shortlist file
+  # before it asked about review/, so the rewrite deleted the record silently.
+  nothing <- function(query, role = NA_character_, sources = NULL, ...) tibble::tibble()
+  path <- file.path(withr::local_tempdir(), "prune-no-shortlist")
+  create <- function(...) {
+    suppressMessages(with_mocked_bindings(
+      find_terms = nothing,
+      create_sdp(
+        list(catch = data.frame(catch_weight = c(12.5, 8.1, 20.4))),
+        path = path, dataset_id = "demo-1", table_id = "catch",
+        semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+        check_updates = FALSE, overwrite = TRUE, ...
+      )
+    ))
+  }
+  create()
+  built <- write_semantic_review_packet(path, search_fn = nothing, quiet = TRUE)
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(built$path))
+  harness <- dplyr::bind_rows(lapply(seq_along(slots), function(i) {
+    if (i == 1L) {
+      semantic_review_harness_row(slots[[i]]$target, llm_decision = "request_new_term", llm_confidence = 0.6,
+        llm_rationale = "Nothing was offered.", llm_new_term_label = "Catch weight")
+    } else {
+      semantic_review_harness_row(slots[[i]]$target, llm_decision = "review", llm_confidence = 0.3, llm_rationale = "Later.")
+    }
+  }))
+  ingest_semantic_assessments(path, assessments = harness, packet_id = built$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_true(file.exists(file.path(path, "review", "semantic-llm-assessments.csv")))
+  expect_false(file.exists(file.path(path, "semantic_suggestions.csv")))
+  expect_warning(create(prune = TRUE), "holds an ingested semantic review record")
+  # The warning does not stop the prune.
+  expect_false(dir.exists(file.path(path, "review")))
+})
+
+test_that("prune warns about a review record in a package that also has a shortlist file (B-424)", {
+  # The ordinary case, which no test here pinned: the record under review/
+  # beside a semantic_suggestions.csv that records no decision. This one
+  # passed before the fix too, because create_sdp() writes the shortlist file
+  # after the package write rather than in the prune's write set; the test
+  # keeps the review/ half of the warning from depending on either file.
+  hits <- function(query, role = NA_character_, sources = NULL, ...) {
+    tibble::tibble(
+      label = paste("Term", 1:2, "for", role),
+      iri = paste0("https://example.org/candidates/", role, "Term", 1:2),
+      source = "smn", ontology = "smn", role = role,
+      match_type = "label_exact", definition = "A term.", score = c(4.5, 3.5)
+    )
+  }
+  path <- file.path(withr::local_tempdir(), "prune-fresh-shortlist")
+  create <- function(...) {
+    suppressMessages(with_mocked_bindings(
+      find_terms = hits,
+      create_sdp(
+        list(spawners = data.frame(stream_name = c("Bear Creek", "Elk River"), spawner_count = c(120L, 340L))),
+        path = path, dataset_id = "demo-1", table_id = "spawners",
+        semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+        check_updates = FALSE, overwrite = TRUE, ...
+      )
+    ))
+  }
+  create()
+  built <- write_semantic_review_packet(path, search_fn = hits, quiet = TRUE)
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(built$path))
+  harness <- dplyr::bind_rows(lapply(slots, function(slot) {
+    semantic_review_harness_row(slot$target, llm_decision = "review", llm_confidence = 0.3, llm_rationale = "Later.")
+  }))
+  ingest_semantic_assessments(path, assessments = harness, packet_id = built$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_true(file.exists(file.path(path, "review", "semantic-llm-assessments.csv")))
+  expect_warning(create(prune = TRUE), "holds an ingested semantic review record")
+  expect_false(dir.exists(file.path(path, "review")))
+})

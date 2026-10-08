@@ -1288,6 +1288,15 @@
   chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", x)
 }
 
+# A retry query is an identifier when it is a URL, a URN, a DOI, or a CURIE
+# with no whitespace, whatever letters the CURIE holds. The CURIE's local part
+# is `[^[:space:]]+`, the class the normalizer's `\\s` collapses, so after
+# normalization the only whitespace it can meet is a single space. It was
+# `[^\\s]+`, and R's default TRE engine reads a backslash inside a bracket
+# expression literally, so that class meant "neither a backslash nor the
+# letter s": `smn:species` was a lexical query and `abc:d e` an identifier
+# (hub item B-380; metasalmonpy reproduced the quirk on purpose under B-362
+# and retires it under B-381).
 .ms_llm_query_looks_like_identifier <- function(x) {
   text <- .ms_llm_normalize_query_text(x)
   if (is.na(text)) {
@@ -1295,7 +1304,7 @@
   }
 
   grepl("^(https?://|urn:|doi:)", text, ignore.case = TRUE) ||
-    grepl("^[A-Za-z][A-Za-z0-9._+-]*:[^\\s]+$", text)
+    grepl("^[A-Za-z][A-Za-z0-9._+-]*:[^[:space:]]+$", text)
 }
 
 .ms_llm_classify_retry_query <- function(retry_query, original_query) {
