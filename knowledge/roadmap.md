@@ -1038,7 +1038,8 @@ and Brett ruled it on 2026-09-25: refuse on every path, recorded in
 [`questions.md`](questions.md). R's refusal on the EML and KNB paths is
 **queue item `B-223`, separate from B-142**, which neither introduced the
 difference nor changes it, and the closure path's refusal is `B-340` in this
-package and `B-341` in metasalmonpy.
+package and `B-341` in metasalmonpy (`B-341` **landed 2026-10-01 as
+metasalmonpy #93**, merged as `3aea9c1`).
 
 **Q62 closure port landed, 2026-10-04.** `B-429` landed as metasalmonpy
 pull request **#99**, merged as `91fc4207883430ef9856275d2008e426584cf6a7`.
