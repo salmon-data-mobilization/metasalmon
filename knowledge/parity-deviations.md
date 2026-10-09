@@ -1307,8 +1307,9 @@ that pull request from 2026-09-30.
 Read by B-262 on 2026-09-30 at
 Python `main` `e81cacd`: `semantic_closure.py` repeats the same reviewer gloss
 in its header and target-context comments (lines 18 and 599). Those matching
-comment corrections remain owed after pull request 79's guide-only landing;
-no behaviour differs. Its handed-off claim is not extended here.
+comment corrections, owed after pull request 79's guide-only landing, are
+**under review as metasalmonpy pull request #111 from 2026-10-09**; no
+behaviour differs. Its handed-off claim is not extended here.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
