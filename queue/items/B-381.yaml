@@ -1,8 +1,8 @@
 id: B-381
 kind: defect
 title: 'metasalmonpy follows metasalmon''s fix to the retry-query identifier check, the mirror half of B-380'
-state: icebox
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S16

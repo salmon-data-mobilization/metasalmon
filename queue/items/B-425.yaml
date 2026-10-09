@@ -1,8 +1,8 @@
 id: B-425
 kind: defect
 title: 'Mirror B-424 in metasalmonpy, re-vendor the fixtures, and let two review records be concatenated'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S16
