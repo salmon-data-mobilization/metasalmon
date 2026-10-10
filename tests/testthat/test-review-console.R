@@ -167,6 +167,64 @@ test_that("review_semantics() surfaces LLM review it did not generate", {
   expect_true(any(grepl("The definition matches the column description.", lines, fixed = TRUE)))
 })
 
+# Two candidates for one slot, carrying one model verdict the way an
+# assessment merge leaves it: the decision on every row, the choice only in
+# `llm_selected` (left out when `selected` is NULL).
+verdict_dict <- function(decision, selected, confidence = 0.9, rationale = "The second candidate fits.") {
+  suggestions <- dplyr::bind_rows(
+    fixture_suggestions(),
+    fixture_suggestions(label = "Escapement", iri = "https://w3id.org/smn/Escapement", score = 3.2)
+  )
+  suggestions$llm_decision <- decision
+  suggestions$llm_confidence <- confidence
+  suggestions$llm_rationale <- rationale
+  if (!is.null(selected)) {
+    suggestions$llm_selected <- selected
+  }
+  with_suggestions(fixture_dict(), suggestions)
+}
+
+candidate_line <- function(lines, rank) {
+  which(startsWith(substring(lines, 4L), paste0("[", rank, "] ")))[[1]]
+}
+
+test_that("a model's accept is shown under the candidate it chose and no other", {
+  # An assessment is one row per target, and its merge into the suggestions
+  # copies the decision onto every candidate; the console printed
+  # "llm: accept" under both, so nobody could tell which one was chosen.
+  review <- review_semantics(verdict_dict("accept", c(FALSE, TRUE)))
+  expect_equal(review$llm_decision, c(NA, "accept"))
+  lines <- .ms_review_render_lines(review)
+  verdicts <- grep("llm: accept", lines, fixed = TRUE)
+  expect_length(verdicts, 1L)
+  expect_gt(verdicts, candidate_line(lines, 2L))
+  expect_equal(sum(grepl("The second candidate fits.", lines, fixed = TRUE)), 1L)
+})
+
+test_that("a model's decision other than accept is shown once for the slot", {
+  review <- review_semantics(verdict_dict("review", c(FALSE, FALSE), confidence = 0.4, rationale = "Neither fits well."))
+  lines <- .ms_review_render_lines(review)
+  expect_equal(grep("llm:", lines, fixed = TRUE, value = TRUE), "   llm:     review (confidence 0.4)")
+  expect_lt(match("   llm:     review (confidence 0.4)", lines), candidate_line(lines, 1L))
+  expect_equal(sum(grepl("Neither fits well.", lines, fixed = TRUE)), 1L)
+})
+
+test_that("the candidate a model accepted stays in view past max_candidates", {
+  review <- review_semantics(verdict_dict("accept", c(FALSE, TRUE)), max_candidates = 1L)
+  expect_equal(review$rank, c(1L, 2L))
+  expect_true(any(grepl("llm: accept", .ms_review_render_lines(review), fixed = TRUE)))
+})
+
+test_that("suggestions with no selection flag keep the verdict on every candidate", {
+  review <- review_semantics(verdict_dict("accept", NULL))
+  expect_equal(review$llm_decision, c("accept", "accept"))
+})
+
+test_that("max_candidates still bounds a slot whose accept names no selected candidate", {
+  review <- review_semantics(verdict_dict("accept", NULL), max_candidates = 1L)
+  expect_equal(review$rank, 1L)
+})
+
 test_that("review_semantics() refuses targets with no write-back address", {
   # `dataset.csv` targets a comma-joined `keywords` list, not a single IRI, so
   # it has no "accept this candidate" semantics. Showing a row nobody can
@@ -832,6 +890,92 @@ test_that("a crosswalk prefill keeps its rows when the packet's retrieval finds 
   expect_equal(after$iri, before$iri)
   expect_true(all(after$prefill_origin == "nuseds_crosswalk"))
   expect_equal(sum(suppressMessages(review_semantics(path))$slot_id == slot), 2L)
+})
+
+test_that("rows an empty shortlist keeps carry the current assessment, not a superseded accept", {
+  # Codex review of pull request 275. The kept rows still carried an earlier
+  # harness's accept, and review_semantics() reads the verdict from those rows,
+  # so it showed the superseded accept instead of the harness's current answer.
+  resources <- list(escapement = tibble::tibble(
+    ENUMERATION_METHODS = "Fence", count = 10L
+  ))
+  codes <- tibble::tibble(
+    dataset_id = "demo-1", table_id = "escapement",
+    column_name = "ENUMERATION_METHODS", code_value = "Fence",
+    code_label = "Fence", code_description = NA_character_,
+    term_iri = NA_character_
+  )
+  hits <- function(query, role = NA_character_, ...) {
+    if (!identical(role, "method")) return(tibble::tibble())
+    tibble::tibble(
+      label = c("Alternative one", "Alternative two"),
+      iri = c("https://example.org/method/one", "https://example.org/method/two"),
+      source = "gcdfo", ontology = "gcdfo", role = "method",
+      match_type = "label_exact", definition = "A counting method.",
+      score = c(4.5, 3.5)
+    )
+  }
+  nothing <- function(...) tibble::tibble()
+  path <- file.path(withr::local_tempdir(), "crosswalk-superseded-accept")
+  suppressMessages(with_mocked_bindings(
+    find_terms = hits,
+    create_sdp(
+      resources, path = path, dataset_id = "demo-1", seed_codes = codes,
+      semantic_code_scope = "all", semantic_max_per_role = 2L,
+      seed_semantics = TRUE, seed_verbose = FALSE, check_updates = FALSE,
+      overwrite = TRUE
+    )
+  ))
+  slot <- "codes.csv|demo-1/escapement/ENUMERATION_METHODS/Fence|term_iri"
+  review_dir <- file.path(path, "review")
+  assessment_path <- file.path(review_dir, "semantic-assessments-pass-1.csv")
+  judge <- function(search_fn, answer) {
+    built <- write_semantic_review_packet(
+      path, search_fn = search_fn, code_scope = "all", review_dir = review_dir,
+      top_n = 2L, overwrite = TRUE, quiet = TRUE
+    )
+    packet <- semantic_review_read_json(built$path)
+    slots <- metasalmon:::.ms_semantic_review_slots(packet)
+    packet_slot <- Filter(function(x) identical(x$target$slot_id[[1]], slot), slots)[[1]]
+    semantic_review_write_harness(answer(packet_slot), assessment_path, packet$packet_id)
+    ingest_semantic_assessments(path, assessments = assessment_path, search_fn = search_fn, quiet = TRUE)
+    packet_slot
+  }
+
+  first <- judge(hits, function(packet_slot) {
+    semantic_review_harness_row(
+      packet_slot$target, llm_decision = "accept", llm_confidence = 0.9,
+      llm_selected_candidate_index = 2L, llm_selected_iri = packet_slot$candidates$iri[[2]],
+      llm_rationale = "The second fits."
+    )
+  })
+  expect_equal(NROW(first$candidates), 2L)
+  accepted <- semantic_suggestions(path)
+  accepted <- accepted[accepted$code_value %in% "Fence", , drop = FALSE]
+  expect_true("accept" %in% accepted$llm_decision)
+  # Read back from semantic_suggestions.csv, where the selection flag is text,
+  # the accept shows under the candidate the harness chose and no other.
+  queue <- suppressMessages(review_semantics(path))
+  expect_equal(queue$llm_decision[queue$slot_id == slot], c(NA, "accept"))
+
+  second <- judge(nothing, function(packet_slot) {
+    semantic_review_harness_row(
+      packet_slot$target, llm_decision = "review", llm_confidence = 0.4,
+      llm_rationale = "Nothing fits now."
+    )
+  })
+  expect_equal(NROW(second$candidates), 0L)
+  after <- semantic_suggestions(path)
+  after <- after[after$code_value %in% "Fence", , drop = FALSE]
+  expect_equal(after$iri, accepted$iri)
+  expect_true(all(after$prefill_origin == "nuseds_crosswalk"))
+  expect_equal(after$llm_decision, c("review", "review"))
+  expect_equal(after$llm_rationale, c("Nothing fits now.", "Nothing fits now."))
+  expect_false(any(toupper(as.character(after$llm_selected)) %in% "TRUE"))
+
+  queue <- suppressMessages(review_semantics(path))
+  expect_equal(sum(queue$slot_id == slot), 2L)
+  expect_false("accept" %in% queue$llm_decision[queue$slot_id == slot])
 })
 
 test_that("semantic code scope none leaves crosswalk prefills out of discovery", {

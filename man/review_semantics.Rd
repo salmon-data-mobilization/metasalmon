@@ -20,7 +20,8 @@ review_semantics(
 a final (non-\verb{REVIEW:}) IRI. NuSEDS crosswalk-prefilled code slots with a
 saved shortlist are shown by default until decided. Defaults to \code{FALSE}.}
 
-\item{max_candidates}{Maximum candidates shown per slot. \code{Inf} shows all.}
+\item{max_candidates}{Maximum candidates shown per slot. \code{Inf} shows all. A
+candidate a model accepted is shown whatever its rank.}
 
 \item{columns}{Optional character vector restricting the queue to these
 column names.}
@@ -42,8 +43,10 @@ which the spreadsheet workflow this replaces never was.
 \strong{This never contacts a network or an LLM.} It reads the
 \code{semantic_suggestions} attribute (or \code{semantic_suggestions.csv}) that
 \code{suggest_semantics()} / \code{create_sdp()} already produced. When those
-suggestions carry LLM review -- only possible if they were generated with
-\code{llm_assess = TRUE} -- this surfaces it; it never generates it.
+suggestions carry a model's assessment -- ingested from your own harness by
+\code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}, or made by the deprecated
+\code{llm_assess = TRUE} -- this shows it, an accept under the candidate it chose
+and any other decision once for the slot; it never generates one.
 }
 \examples{
 dict <- tibble::tibble(
