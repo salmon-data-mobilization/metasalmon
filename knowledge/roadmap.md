@@ -332,19 +332,16 @@ than a courtesy record. The ninth section was added 2026-09-09 in the same
 change as the domain-card row, on Brett's Q19 ruling of 2026-09-05, so the index
 never carried "nine sections for eight members" either.
 
-### metasalmon (R) — current **0.5.0**
+### metasalmon (R) — current **0.6.0**
 
-*Unreleased on `main` (S16 step 1, hub item B-326, merged into the development
-heading of `NEWS.md`): `write_semantic_review_packet()` and
-`ingest_semantic_assessments()`, the review-packet contract shared with
-metasalmonpy, and the deprecation of the in-package model call. Ruled
-2026-09-25 (decision 3 of the S16 execplan) to ship as **0.6.0 in both packages,
-tagged together** once B-327 lands the metasalmonpy half; the removal is 0.7.0
-after at least one tagged 0.6.x. Until the tag, that number is a plan, not a
-release, and this index does not carry it as one.*
+*0.6.0 was ruled on 2026-09-25 (decision 3 of the S16 execplan) to ship in both
+packages together, so both bumps landed with no window. The removal is 0.7.0,
+after at least one tagged 0.6.x. `v0.6.0` is tagged by Brett on the bump merge;
+until it exists, cite a commit.*
 
 | Version | Date | One line |
 |---|---|---|
+| 0.6.0 | 2026-10-15 (bump merge) | S16 step 1: model judgement leaves the package. `write_semantic_review_packet()` / `ingest_semantic_assessments()` and a review-packet contract shared byte for byte with metasalmonpy; the in-package model call is deprecated and leaves in 0.7.0. `find_terms()` and `fetch_salmon_ontology()` can read a pinned smn or gcdfo release (tern M-12). Breaking: Theme A keeps only offline `replay`/`compare`; no implicit smn fallback for a custom ontology URL; `find_terms()` with a role and no sources searches `sources_for_role(role)`; the shared `.sdp-package` sentinel |
 | 0.5.0 | 2026-08-25 | S5 R-native review and editing — `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` / `review_metadata()` and the four `set_sdp_*()` setters, plus the `semantic_suggestions()` / `semantic_llm_assessments()` accessors. A package reaches `validate_salmon_datapackage(require_iris = TRUE)` **without a spreadsheet**; closes #74, #118 and #60's accessor clause |
 | 0.4.0 | 2026-08-24 | KNB environments (S3) — a deposit can be rehearsed against the test node; plus the post-0.3.0 fix stream: transactional package writer, platform-independent calendar text, both shipped examples validate, `smn` ranked above `gcdfo`, dual-provenance manifest validation |
 | 0.3.0 | 2026-08-15 | **Breaking:** sdp-0.3.0 implemented — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()` stop-and-report migration, semantic pipeline reviews the statistical-modifier slot, remote schema source pinned to spec tags |
@@ -375,7 +372,7 @@ then metasalmonpy's bump claims that number — and both steps happened on
 from 2026-08-25, and metasalmonpy claimed the number on 2026-09-16 once the S5
 port had landed there and been documented (B-126, then B-153).
 
-### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tagged `v0.5.0` 2026-09-24)
+### metasalmonpy (Python mirror) — current **0.6.0** (= metasalmon 0.6.0 parity; released together)
 
 **Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
 pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
@@ -465,6 +462,7 @@ recorded in the same form as later port landings.
 
 | Version | Date | One line |
 |---|---|---|
+| 0.6.0 | 2026-10-15 (bump merge; `v0.6.0` through the Release workflow on Brett's word) | Released together with metasalmon 0.6.0 (S16 step 1): B-327's packet writer and ingester on metasalmon's vendored contract, then the 0.6.0 ports (#75's ontology-fetch family, #80, #108 to #113) and the pinned smn/gcdfo release reads (#114, tern M-12). No window opened, so no row in either register records one |
 | 0.5.0 | 2026-09-16 (tagged `v0.5.0` at `67fb486` on 2026-09-24, GitHub Release published) | Closes the `0.4.0→0.5.0` window in two halves: **B-126** / #28 ported metasalmon 0.5.0's S5 review-and-edit surface — the nine functions, the two accessors, `decision_reason` with decision replay on queue rebuild, the first `constraints.required` consumer, the #118 auto-apply exemption — and **B-153** wrote the documentation half and moved the number. `guides/semantic-review.qmd` is now built around `create_sdp()` → `review_semantics()` → `accept_suggestion()` / `reject_suggestion()` → `apply_sdp_semantics()` → `review_metadata()` → `set_sdp_*()` → strict validation, with the spreadsheet named as the fallback. **the version turned out to live in six places, not the four `AGENTS.md` enumerated** — `_quarto.yml`'s `quartodoc.version` was still reading 0.4.0 while the other four moved, and a Codex review caught `guides/parity.qmd` as a sixth that the same paragraph claimed was already listed — so four new tests pin `uv.lock`, `_quarto.yml`, `guides/parity.qmd` and the guide's coverage of the review surface against `__version__`, and the checklist now pairs each entry with a guard. Two prose copies claiming metasalmon **0.1.6** parity (`index.qmd`, `README.md`) were deleted rather than updated. Both dependency legs green (951 extras / 810 core, 1 and 142 skipped), and CI's docs job rendered the site with Quarto |
 | 0.4.0 | 2026-08-24 (tagged `v0.4.0` at `3b587e6`, GitHub Release published) | The terminal S10 bump: chunks A–H released as one number, plus the two gaps an entry-by-entry audit of metasalmon 0.4.0's NEWS found genuinely absent and ported for it — `knb_environment` on `publish_sdp_to_knb()`/`write_eml_from_sdp()` (the S3 mirror, whose R original landed after every chunk was written) and the `statistical_modifier` `role_boost`. Five further differences were **registered rather than ported**, each with its retirement condition (register rows 54–58). Verified against a pristine `git archive` of metasalmon `v0.4.0` (`4e2bbb6`), never a working checkout; both dependency legs green (795 extras / 682 core, 116 skipped), production KNB identifiers pinned against metasalmon's own fixture |
 | 0.2.1 | 2026-08-18 (tagged `v0.2.1`, GitHub Release published) | Every descriptor URI comes from one loader: 0.2.1's per-resource schema URLs, derived from the remote loader 0.2.0 introduced |

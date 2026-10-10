@@ -1,6 +1,22 @@
 metasalmon (development version)
 --------------------------------
 
+metasalmon 0.6.0
+----------------
+
+Roadmap S16 step 1, released together with metasalmonpy 0.6.0. **Model
+judgement now runs outside the package.** `write_semantic_review_packet()`
+writes the shortlists a harness judges, and `ingest_semantic_assessments()`
+reads its answers back through the same validators, so a semantic review needs
+no API key and no model call from R. The packet's schema, instructions and
+conformance fixtures are one contract, shared byte for byte with metasalmonpy.
+The in-package model call (`llm_assess = TRUE`, the eleven `llm_*` arguments
+and `chat_decomposition()`) is deprecated and is removed in 0.7.0. A term
+search can also be pinned to one smn or gcdfo release, and its result records
+the release it read (tern ECOSYSTEM M-12). Four breaking changes come first.
+Where an entry below says a Python port is owed, it describes the state when the
+entry was written; `knowledge/parity-deviations.md` records what is still open.
+
 ### Breaking changes
 
 * **The Theme A benchmark now has offline `replay` and replay-to-replay
@@ -22,8 +38,8 @@ metasalmon (development version)
   unless its caller explicitly supplies fallback URLs or it has an eligible
   matching cache. It previously could return smn's body for another ontology.
   Named fallbacks are tried as before; explicit `NULL` and `character()` name
-  none. The package's own callers already name their fallbacks. The Python
-  mirror remains owed in B-334 and the existing unmerged PR75.
+  none. The package's own callers already name their fallbacks. metasalmonpy
+  0.6.0 makes the same change (B-334, its pull request 75).
 
 * **`find_terms()` searches the sources a role calls for when you name a role
   and no sources** (hub item B-420; ruled by Brett on 2026-09-26,
@@ -553,8 +569,8 @@ metasalmon (development version)
 
 * **`fetch_salmon_ontology()` no longer answers a request for one ontology with
   another's body, or one representation's request with another's** (hub items
-  B-333 and B-335; the Python mirror remains owed in B-334/B-336 and the
-  existing unmerged PR75). Each is pinned by
+  B-333 and B-335; metasalmonpy 0.6.0 makes the same changes, B-334 and B-336
+  in its pull request 75). Each is pinned by
   `tests/testthat/test-ontology-fetch.R`, which stubs `httr::GET()` and failed
   before the change.
 
@@ -585,12 +601,9 @@ metasalmon (development version)
      characters `NA`. The copy is now the raw body, still written to a
      temporary file in `cache_dir` and renamed into place, and a validator file
      is the header's bytes and a newline, written in binary so that it is the
-     same file on every platform. The matching Python storage remains owed in
-     the existing unmerged PR75; its default branch still decodes a text type
-     sent with no charset as ISO-8859-1 and rewrites it. `timeout_seconds` is
-     unchanged in R: it bounds both connection and whole transfer. Python's
-     default branch uses a fixed 15 s per request, and PR75's proposed
-     configurable connect/read timeout does not bound the whole transfer.
+     same file on every platform, as metasalmonpy 0.6.0 now stores it too.
+     `timeout_seconds` is unchanged in R: it bounds both connection and whole
+     transfer, and metasalmonpy's new `timeout_seconds` bounds the same two.
 
 * **Source lists are normalised consistently across R's readers** (B-421).
   Unicode lower-casing uses an explicit locale, so the session's `LC_CTYPE`
@@ -620,7 +633,7 @@ metasalmon (development version)
   its own, `trimws()` and `unique()` with no lower-casing, so `" SMN"` and
   `"smn"` were two sources there and a no-break space survived; metasalmonpy's
   closure has a third rule of its own. All three R readers now read a list one
-  way; the corresponding Python reader port remains owed in PR75. A list with
+  way, and metasalmonpy 0.6.0 ports the reader (its pull request 75). A list with
   no name left is still refused. Pinned by `tests/testthat/test-semantic-closure.R`,
   which failed before the change.
 * The bundled NuSEDS dictionaries now describe `AREA` as a DFO sub-district

@@ -47,7 +47,10 @@ The mirror, semantic, guard, security, and release contracts below remain.
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
   when the mirrored behaviour actually lands. Current state, measured
-  2026-09-16: **both packages are at 0.5.0, so no catch-up window is open.**
+  2026-10-15: **both packages read 0.6.0 on `main`, so no catch-up window is
+  open.** 0.6.0 (S16 step 1) was ruled a joint release, so both numbers moved
+  together and no window opened; the `v0.6.0` tags are Brett's to make on the
+  two bump merges.
   The `0.4.0→0.5.0` window that metasalmon's `v0.5.0` opened on 2026-08-25
   (roadmap stream S5 — nine new exported functions: `review_semantics()`,
   `accept_suggestion()`, `reject_suggestion()`, `apply_sdp_semantics()`,
@@ -64,8 +67,8 @@ The mirror, semantic, guard, security, and release contracts below remain.
   ordinary "R shipped first" lag rather than a set of deliberate differences, so
   it was owed as a **port** — tracked in `knowledge/parity-deviations.md` and the
   roadmap's release index, and deliberately **not** as new register rows.
-  metasalmonpy's tree reads 0.5.0, and measured 2026-09-24 its newest tag is
-  `v0.5.0`, made that day on the bump merge `67fb486` with a GitHub Release.
+  metasalmonpy's tree then read 0.5.0, and measured 2026-09-24 its newest tag
+  was `v0.5.0`, made that day on the bump merge `67fb486` with a GitHub Release.
   **Parity is the state that decays fastest**, and the version of this
   paragraph that recorded 0.4.0/0.4.0 said exactly that while recording it: it
   decayed one release later, which is the argument for reading any parity
@@ -156,13 +159,10 @@ The mirror, semantic, guard, security, and release contracts below remain.
   walks the call graph to prove it. The schema, the instructions and the
   conformance fixtures (`inst/extdata/semantic-review/`,
   `tests/testthat/fixtures/semantic-review/v1/`) are one contract, which
-  metasalmonpy vendors byte-identically once hub item B-327 lands; from then
-  on, a change to any of them is a change to the contract and needs the same
-  change there. Until then metasalmonpy holds no copy, so a change here owes it
-  nothing but order: the packets B-327 builds must match whatever these
-  fixtures pin when it lands. *(Corrected 2026-09-27: this said the contract
-  was already vendored there, which it is not, and a Codex review of pull
-  request 148 took it at its word.)*
+  metasalmonpy has vendored byte-identically since hub item B-327 landed there
+  (its pull request 72), and its `tests/test_semantic_review_parity.py`
+  compares the two trees. A change to any of them is a change to the contract
+  and needs the same change there.
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
   a tibble/XML/data frame to `llm_context_files` must error early.
 - **Preserve public signatures and return-value attributes.** Exported:
