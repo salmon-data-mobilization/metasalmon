@@ -211,6 +211,24 @@
 #'   (Phase 4) to generate additional query variants based on the role context.
 #'   For example, unit queries get abbreviation expansions, method queries get
 #'   "method" suffix added. Set to `FALSE` to search only the exact query.
+#' @param release Optional release versions of smn and gcdfo to search instead
+#'   of the latest ontology, named by ontology: `c(smn = "0.0.3")`, or
+#'   `c(smn = "0.0.3", gcdfo = "0.0.9")`. Each is read from its release
+#'   snapshot, downloaded from its version IRI (`https://w3id.org/smn/0.0.3`)
+#'   once per session, and checked against the snapshot's `MANIFEST.sha256`
+#'   when it carries one. A pin never falls back to the latest ontology: a
+#'   release that cannot be read or does not match its manifest is an error.
+#'   Only smn and gcdfo can be pinned; other sources are searched as they are.
+#' @param snapshot_dir Optional local release snapshots, named by ontology the
+#'   same way, such as a checkout's `docs/releases/0.0.3/`. Each is read from
+#'   disk, with no download. When `release` names the same ontology too, a
+#'   snapshot that declares an `owl:versionIRI` must declare that version.
+#'
+#'   A pinned smn release is read from its RDF/XML (`smn.owl`), which holds
+#'   the same terms as the latest ontology's modules, and its terms get the
+#'   role hints the module reader gives them, with one difference: a release
+#'   records no module, so a term whose entity hint comes only from belonging
+#'   to the `01-entity-systematics` module has no entity hint in a release.
 #'
 #' @return Tibble with columns: `label`, `iri`, `source`, `ontology`, `role`,
 #'   `match_type`, `definition`, `score`, `alignment_only`, `agreement_sources`,
@@ -225,6 +243,14 @@
 #'   containing per-source/query diagnostic information: source, query, status
 #'   (success/error), count, elapsed_secs, and error message if applicable. This
 #'   helps explain empty results or slow queries.
+#'
+#'   When `release` or `snapshot_dir` pins an ontology the call searched, the
+#'   result also has an `"ontology_release"` attribute: a tibble with one row
+#'   per pinned ontology recording which release was searched -- `ontology`,
+#'   `version`, `version_iri` (as the snapshot declares it, or `NA`), `file`,
+#'   `sha256` (of the bytes read), `manifest_verified` (`TRUE` when the
+#'   snapshot's `MANIFEST.sha256` vouched for them, `FALSE` when it carries
+#'   none) and `source` (the version IRI or the snapshot directory).
 #'
 #' @seealso [suggest_semantics()] for automated suggestions based on your dictionary.
 #' @seealso [sources_for_role()] for role-optimized source selection.
@@ -253,11 +279,26 @@
 #'
 #' # Search multiple sources
 #' all_results <- find_terms("escapement", sources = c("smn", "gcdfo", "ols", "nvs"))
+#'
+#' # Search smn release 0.0.3 rather than the latest ontology, and record it
+#' pinned <- find_terms("escapement", sources = "smn", release = c(smn = "0.0.3"))
+#' attr(pinned, "ontology_release")
+#'
+#' # Pin the searches suggest_semantics() makes
+#' # suggest_semantics(dict, search_fn = function(query, role, sources) {
+#' #   find_terms(query, role = role, sources = sources, release = c(smn = "0.0.3"))
+#' # })
 #' }
 find_terms <- function(query,
                        role = NA_character_,
                        sources = NULL,
-                       expand_query = TRUE) {
+                       expand_query = TRUE,
+                       release = NULL,
+                       snapshot_dir = NULL) {
+  # Checked before anything else, so a mistyped pin fails even on a call that
+  # would search nothing.
+  release_pins <- .ms_find_terms_release_pins(release, snapshot_dir)
+
   # An omitted source list is the role's, as it is in metasalmonpy's
   # `find_terms()` and as `suggest_semantics()` already resolved it here (hub
   # B-420; Q70, ruled by Brett on 2026-09-26: R moves). With no role that is the
@@ -273,6 +314,11 @@ find_terms <- function(query,
     return(.empty_terms(role))
   }
 
+  # A pinned ontology is read from its release snapshot before any search runs,
+  # so a snapshot that cannot be read or verified stops the call instead of
+  # becoming a source that quietly answered nothing.
+  pinned <- .ms_find_terms_pinned_indexes(release_pins, sources)
+
   # Apply role-aware query expansion (Phase 4)
   queries <- if (expand_query) .expand_query(query, role) else query
 
@@ -287,6 +333,7 @@ find_terms <- function(query,
     role,
     paste(sort(sources, method = "radix"), collapse = ","),
     .ms_ranking_identity(),
+    pinned$identity,
     sep = "::"
   )
   if (.metasalmon_cache_enabled() && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
@@ -309,8 +356,14 @@ find_terms <- function(query,
       result <- withCallingHandlers(
         tryCatch(
         {
-          res <- if (src == "smn") {
+          # An unpinned search calls the two searches exactly as it always
+          # has, so nothing that stands in for them needs to know about pins.
+          res <- if (src == "smn" && !is.null(pinned$indexes$smn)) {
+            .search_smn(q, role, index = pinned$indexes$smn)
+          } else if (src == "smn") {
             .search_smn(q, role)
+          } else if (src == "gcdfo" && !is.null(pinned$indexes$gcdfo)) {
+            .search_gcdfo(q, role, index = pinned$indexes$gcdfo)
           } else if (src == "gcdfo") {
             .search_gcdfo(q, role)
           } else if (src == "ols") {
@@ -473,6 +526,9 @@ find_terms <- function(query,
   # Attach diagnostics as attribute (Phase 4)
   diag_df <- dplyr::bind_rows(lapply(diagnostics, tibble::as_tibble))
   attr(ranked, "diagnostics") <- diag_df
+  if (!is.null(pinned$record)) {
+    attr(ranked, "ontology_release") <- pinned$record
+  }
 
   failed_sources <- .ms_search_failed_sources(diag_df)
   if (length(failed_sources) > 0) {
@@ -1732,8 +1788,23 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   vals[nzchar(vals)]
 }
 
+# The namespaces the RDF/XML readers name, bound by URI. A document's own
+# prefixes are the serializer's choice: the smn 0.0.3 release binds the OBO
+# namespace to `ns1`, so reading through `xml2::xml_ns(doc)` left `obo:` unbound
+# and lost every IAO definition in it, with one warning per term.
+.ms_rdfxml_ns <- function() {
+  c(
+    rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    rdfs = "http://www.w3.org/2000/01/rdf-schema#",
+    owl = "http://www.w3.org/2002/07/owl#",
+    skos = "http://www.w3.org/2004/02/skos/core#",
+    obo = "http://purl.obolibrary.org/obo/",
+    dcterms = "http://purl.org/dc/terms/"
+  )
+}
+
 .parse_salmon_rdfxml <- function(doc, iri_pattern = "^https?://w3id\\.org/smn(#|/|$)") {
-  ns <- xml2::xml_ns(doc)
+  ns <- .ms_rdfxml_ns()
   nodes <- xml2::xml_find_all(doc, "/*/*[@rdf:about][not(self::owl:Ontology)]", ns = ns)
   if (length(nodes) == 0) {
     return(tibble::tibble())
@@ -1987,8 +2058,8 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   index[order(-index$backend_score, index$label, index$iri, method = "radix"), , drop = FALSE]
 }
 
-.search_smn <- function(query, role) {
-  index <- .smn_term_index()
+.search_smn <- function(query, role, index = NULL) {
+  index <- index %||% .smn_term_index()
   index <- .gcdfo_filter_for_role(index, role)
   index <- .gcdfo_match_terms(index, query)
   if (nrow(index) == 0) {
@@ -2011,8 +2082,8 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
     dplyr::distinct(iri, .keep_all = TRUE)
 }
 
-.search_gcdfo <- function(query, role) {
-  index <- .gcdfo_term_index()
+.search_gcdfo <- function(query, role, index = NULL) {
+  index <- index %||% .gcdfo_term_index()
   index <- .gcdfo_filter_for_role(index, role)
   index <- .gcdfo_match_terms(index, query)
   if (nrow(index) == 0) {
