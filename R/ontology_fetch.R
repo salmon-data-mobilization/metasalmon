@@ -13,8 +13,16 @@
 #' representations into one `cache_dir` therefore never overwrite each other,
 #' a conditional request carries only the validators that the URL it is sent
 #' to returned under the same `accept`, and a `304` answer returns that URL's
-#' own copy. The matching metasalmonpy cache layout is still owed in its
-#' ontology-fetch stream (B-334/B-336 and PR75).
+#' own copy. metasalmonpy names its cache files the same way.
+#'
+#' With `release` or `snapshot_dir`, it reads a pinned release of smn or gcdfo
+#' instead: one file of that release's snapshot, the directory each ontology
+#' publishes as `docs/releases/<version>/`, and nothing newer. The file is the
+#' representation `accept` prefers among the three a snapshot carries
+#' (`text/turtle` for `.ttl`, `application/rdf+xml` for `.owl`,
+#' `application/ld+json` for `.jsonld`). When the snapshot carries a
+#' `MANIFEST.sha256`, the file must be listed in it with the SHA-256 of its
+#' bytes, or the call errors.
 #'
 #' @param url Ontology URL. Default is the canonical SMN namespace root.
 #' @param accept Accept header; defaults to turtle with RDF/XML fallback.
@@ -26,6 +34,21 @@
 #'   explicitly tries none.
 #' @param timeout_seconds Numeric timeout in seconds for each HTTP request. It
 #'   bounds both the connection and the whole transfer.
+#' @param release A release version of the ontology `url` names, such as
+#'   `"0.0.3"`; `url` must then be the smn or gcdfo ontology IRI. The release is
+#'   downloaded from its version IRI (`https://w3id.org/smn/0.0.3`), or from the
+#'   snapshot directory on GitHub Pages when that fails, into
+#'   `cache_dir/releases/<ontology>/<version>/` together with its
+#'   `MANIFEST.sha256`, once: a release does not change, so later calls read
+#'   that copy. A release that served no manifest when it was downloaded stays
+#'   unverified in that cache; delete its directory to download it again.
+#'   `fallback_urls` is not used.
+#' @param snapshot_dir A local directory holding a release snapshot of the
+#'   ontology `url` names, such as a checkout's `docs/releases/0.0.3/`. The file
+#'   is read from it and nothing is downloaded. Give `release` or
+#'   `snapshot_dir`, not both: this call does not parse the file, so it could
+#'   not check that the directory holds that release. [find_terms()] takes both
+#'   and checks the snapshot's `owl:versionIRI`.
 #' @return Path to the cached copy that the answering URL returned (character
 #'   string), which holds exactly the bytes that URL sent: it is not decoded,
 #'   re-encoded or given a final newline. If every URL fails to refresh, a
@@ -36,13 +59,29 @@
 #'   storing its replacement fails. The old body stays on disk for inspection
 #'   with a `.invalid` marker until a successful replacement makes it reusable.
 #'   Without an eligible matching copy the call errors with the last failure.
+#'
+#'   With `release` or `snapshot_dir`, the path to the release file read. It
+#'   never falls back to the latest ontology: a release that cannot be read or
+#'   does not match its manifest is an error. Compute the file's SHA-256 to
+#'   record exactly what was read; [find_terms()] records it for you.
 #' @export
 fetch_salmon_ontology <- function(
     url = "https://w3id.org/smn/",
     accept = "text/turtle, application/rdf+xml;q=0.8",
     cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
     timeout_seconds = 30,
-    fallback_urls = c("https://w3id.org/smn")) {
+    fallback_urls = c("https://w3id.org/smn"),
+    release = NULL,
+    snapshot_dir = NULL) {
+
+  if (!is.null(release) || !is.null(snapshot_dir)) {
+    if (!missing(fallback_urls)) {
+      cli::cli_warn(
+        "{.arg fallback_urls} is not used: a pinned release is read only from its own snapshot."
+      )
+    }
+    return(.ms_fetch_release_file(url, accept, cache_dir, timeout_seconds, release, snapshot_dir))
+  }
 
   # Keep the canonical public formals and explicit caller choices (B333).
   # The implicit mirror serves SMN and cannot answer for another ontology.
@@ -136,8 +175,8 @@ fetch_salmon_ontology <- function(
 # Windows' 260-character limit and makes a collision among the handful of URLs
 # one directory holds negligible -- of the SHA-256 of the UTF-8 bytes of the
 # URL, a newline and the accept. The four golden inputs in
-# `tests/testthat/test-ontology-fetch.R` define the layout that the pending
-# metasalmonpy B-336 port must also implement.
+# `tests/testthat/test-ontology-fetch.R` define the layout, which metasalmonpy
+# implements too.
 #
 # The bytes are taken from each part on its own, never through `paste0()` or
 # `enc2utf8()` on a string of unknown encoding: under a non-UTF-8 locale both
@@ -176,7 +215,6 @@ fetch_salmon_ontology <- function(
 # aborted call leaves the previous copy whole. It used to be decoded as UTF-8
 # and written back with `writeLines()`, which added a final newline to every
 # copy and stored a body that was not valid UTF-8 as the text "NA".
-# Exact-byte storage remains owed in the metasalmonpy ontology-fetch stream.
 .ms_ontology_cache_store <- function(entry, res) {
   # Receiving a full replacement makes the nominated old body unsuitable.
   # Persist that fact before decoding or writing so an interrupted refresh
@@ -223,8 +261,8 @@ fetch_salmon_ontology <- function(
 }
 
 # A validator file is the header value's bytes and a newline, written in
-# binary so that it is the same file on every platform. The metasalmonpy port
-# must preserve these bytes too; that port is still pending.
+# binary so that it is the same file on every platform, as metasalmonpy writes
+# it.
 .ms_ontology_store_validator <- function(value, path) {
   if (!is.null(value) && nzchar(value)) {
     writeBin(c(charToRaw(value), charToRaw("\n")), path)

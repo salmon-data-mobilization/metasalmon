@@ -78,6 +78,22 @@ metasalmon (development version)
 
 ### Added
 
+* **`find_terms()` and `fetch_salmon_ontology()` read a pinned release of smn
+  or gcdfo** (tern ECOSYSTEM M-12). `find_terms(release = c(smn = "0.0.3"))`
+  searches that release instead of the latest ontology. The release is
+  downloaded once per session from its version IRI and checked against its
+  `MANIFEST.sha256` when it has one; `snapshot_dir = c(smn = "<dir>")` reads a
+  local copy of the release directory instead. The result's
+  `"ontology_release"` attribute records what was searched: the version, the
+  declared `owl:versionIRI`, the file, its SHA-256 and whether a manifest
+  verified it. `fetch_salmon_ontology(release = "0.0.3")` returns the release
+  file `accept` prefers, cached under `cache_dir/releases/`. A pin never falls
+  back to the latest ontology: a release that cannot be read, or does not match
+  its manifest, is an error. A pinned smn release is read from its RDF/XML, and
+  its terms get the role hints the module reader gives them, except an entity
+  hint that comes only from membership of the `01-entity-systematics` module.
+  metasalmonpy does the same.
+
 * `capture_catalogue_query()` captures bounded public KNB/DataONE metadata
   pages and a checksum-bearing query receipt, with explicit record/page/byte
   limits, stable-count and duplicate-PID checks, and preserved incomplete
@@ -325,6 +341,12 @@ metasalmon (development version)
   B-327).
 
 ### Fixed
+
+* The RDF/XML ontology reader names its namespaces by URI, not by the prefixes
+  the file happens to use. It looked them up in the file, so a file that bound
+  the OBO namespace to another prefix, as the smn 0.0.3 release binds it to
+  `ns1`, lost every IAO definition, with one warning per term. metasalmonpy's
+  reader already matched by namespace.
 
 * **Defects in the review-packet contract are fixed before it ships** (hub item
   B-424; metasalmonpy's half is B-425). metasalmonpy found each while porting
