@@ -1,0 +1,13 @@
+id: B-436
+kind: defect
+title: 'metasalmonpy gives a procedure-named column''s codes the entity role where metasalmon gives method, and writes every code shortlist where metasalmon''s create_sdp() drops one lacking review context: the Python half of two unregistered differences found by B-426'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'IN METASALMONPY, each of the two differences is ruled per divergence, and metasalmonpy then either carries the side the ruling chose, pinned by twins of the tests that pin it in metasalmon (nothing changes here when the ruling keeps Python''s side), or registers the difference in a numbered PARITY.md row that matches the row B-437 adds to knowledge/parity-deviations.md. (1) metasalmonpy''s semantics.py gives every non-measurement column''s codes the entity role; metasalmon gives the codes of a column whose name, label or description matches the procedure pattern of parent_names_procedure in R/semantic-suggestions.R (method, protocol, procedure, gear, estimat*, enumerat*, technique, survey type) the method role, so ENUMERATION_METHODS codes are entity targets here and method targets there. (2) metasalmonpy''s create_sdp() writes every code-scope row to semantic_suggestions.csv; metasalmon''s .ms_prepare_review_suggestions() drops a row whose code has no description and whose label is empty or equals its value case folded, except a row B-120 stamped with crosswalk provenance. B-437 is the metasalmon half, and each names the other. Measured 2026-10-08 on metasalmon main at 4686d93 and metasalmonpy at de7eca8 with B-426; the workpad .hub/workpads/B-426.md in metasalmonpy records the probe.'

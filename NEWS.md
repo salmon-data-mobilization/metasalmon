@@ -752,9 +752,11 @@ metasalmon (development version)
   description now lists what the function checks, which is the claim the item
   title said was wrong. The declared-primary-key clause of #49 closed in 0.2.6
   under #77 and is untouched. **Mirror:** metasalmonpy's
-  `validate_salmon_datapackage()` (`package_io.py`) has none of the three
-  checks; the port is owed under the S10 parity stream (queue item B-124; see
-  the parity register), not registered as a deviation.
+  `validate_salmon_datapackage()` (`package_io.py`) had none of the three
+  checks when this landed; the port was owed under the S10 parity stream
+  (queue item B-124; see the parity register), not registered as a deviation.
+  [corrected 2026-10-08: B-124 landed the port as metasalmonpy pull request
+  29, `1e9245c`, on 2026-09-16, so both validators now make the three checks.]
 
 * **`infer_column_role()` now types an enumerable string column
   `categorical`, so `create_sdp()` stops writing `codes.csv` rows for columns

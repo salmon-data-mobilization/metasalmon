@@ -1,8 +1,8 @@
 id: B-334
 kind: defect
 title: 'metasalmonpy fetch_salmon_ontology() tries its default gcdfo fallback whatever url it is given, so a call for smn whose url fails returns gcdfo''s body with no warning, the mirror half of B-333'
-state: icebox
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S2

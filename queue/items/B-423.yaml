@@ -1,8 +1,8 @@
 id: B-423
 kind: defect
 title: 'metasalmonpy''s fetch_salmon_ontology() defaults to smn and warns on eligible matching-cache fallback, as Brett ruled on Q-71'
-state: icebox
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S2

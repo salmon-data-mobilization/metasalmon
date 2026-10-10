@@ -591,12 +591,17 @@ rather than only the instance: **a new mirror debt is recorded in both places in
 the same change.**
 
 **B-120 adds crosswalk review to the development version (2026-09-30).**
-The Python port is **B-426**, following B-327's packet implementation to avoid
+The Python port is **B-426**, following B-327's packet implementation
+(B-327 **landed 2026-10-08 as metasalmonpy #72**, merged as `de7eca8`) to avoid
 competing edits to its active branches. It owes candidate discovery for only
 package-filled code IRIs, default console visibility until a decision, and
 preserved prefill provenance through assessment ingestion. The specification
 and regression are in backlog #120 and `test-review-console.R`; this is port
-debt, not a new parity-register row. Versions remain unchanged.
+debt, not a new parity-register row. Versions remain unchanged. **B-426
+landed 2026-10-10 as metasalmonpy #110**, merged as `24057c2`; two unregistered
+differences it found on the way are the pair **B-436** and **B-437** (the
+procedure-named column's `method` role, and the create-time review-context
+filter), recorded in the parity port section the same day.
 
 **B-256 restores R's existing GitHub error remedies (2026-09-30).** No Python
 port is owed: on metasalmonpy `main` at `e81cacd`,
@@ -678,9 +683,9 @@ queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
 
 **Canonical SSSOM/TSV owes a mirror port:** metasalmon's half, **B-350**, makes
 `write_sdp_sssom()` write the canonical form and changes every mapping set's
-bytes and manifest sha256. metasalmonpy's half is **B-351** (needs **B-234**),
-which keeps the earlier bytes until it lands; Brett ruled on 2026-09-25 that both
-ship in the same minor version, which is why the version does not move in
+bytes and manifest sha256. metasalmonpy's half, which needed **B-234**, is
+**B-351**, **landed 2026-10-10 as metasalmonpy #109** (`52611c7`); Brett ruled
+on 2026-09-25 that both ship in the same minor version, which is why the version does not move in
 either half. Specified in the port passage of
 [`parity-deviations.md`](parity-deviations.md).
 
@@ -864,9 +869,9 @@ and that no reviewer ever selected a code-resolved procedure. It is owed there
 as a documentation port, not a register row, and is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its
-metasalmonpy queue item is `B-261`, whose guide port was under review in
-metasalmonpy pull request 79 on 2026-09-30 and landed as `9304851` on
-2026-10-01. B-262's check on 2026-09-30 of Python `main`
+metasalmonpy queue item is `B-261` (B-261 **landed 2026-10-01 as metasalmonpy
+#79**, merged as `9304851`), whose guide port was under review in that pull
+request from 2026-09-30. B-262's check on 2026-09-30 of Python `main`
 `e81cacd` also found the same reviewer gloss in `semantic_closure.py`'s header
 and target-context comments. Those two comment corrections remain owed:
 pull request 79 changed the guide only, and its handed-off claim is not
@@ -930,7 +935,8 @@ metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. B-57's other two
 fixes owe metasalmonpy nothing, which was measured: its `find_terms()` has no
 parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is `B-302`.
+repository. Its metasalmonpy queue item is `B-302`, **landed 2026-10-10 as
+metasalmonpy #80** (`27e37de`).
 
 **The development version after 0.5.0 changes what the mirror owes on row 51
 (2026-09-25): one shared ownership sentinel, `.sdp-package` holding
@@ -1037,7 +1043,8 @@ and Brett ruled it on 2026-09-25: refuse on every path, recorded in
 [`questions.md`](questions.md). R's refusal on the EML and KNB paths is
 **queue item `B-223`, separate from B-142**, which neither introduced the
 difference nor changes it, and the closure path's refusal is `B-340` in this
-package and `B-341` in metasalmonpy.
+package and `B-341` in metasalmonpy (`B-341` **landed 2026-10-01 as
+metasalmonpy #93**, merged as `3aea9c1`).
 
 **Q62 closure port landed, 2026-10-04.** `B-429` landed as metasalmonpy
 pull request **#99**, merged as `91fc4207883430ef9856275d2008e426584cf6a7`.
