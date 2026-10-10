@@ -1,8 +1,8 @@
 id: B-336
 kind: defect
 title: 'metasalmonpy fetch_salmon_ontology() caches every url and representation as dfo-salmon.ttl with one set of validators, the mirror half of B-335'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S2

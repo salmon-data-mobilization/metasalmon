@@ -1,8 +1,8 @@
 id: B-421
 kind: defect
 title: 'R''s find_terms() normalises the source list it is given, as metasalmonpy does, so a source named in capitals is searched in both'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S2

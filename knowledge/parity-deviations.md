@@ -134,6 +134,8 @@ regenerates its R-written fixtures from this writer and matches it byte for
 byte; its reader also needs **B-234** to read an undeclared built-in prefix.
 Brett's 2026-09-25 ruling puts both halves in the same minor version, so this
 is an owed port, not a register row; row 11 records the byte-identity window.
+**This one is closed.** `B-351` landed as metasalmonpy pull request **#109**,
+merged 2026-10-10 as `52611c7`.
 
 **B-130 transport fixes verified in paired drafts (2026-10-01).** The paired
 [metasalmon PR244](https://github.com/salmon-data-mobilization/metasalmon/pull/244)
@@ -255,7 +257,7 @@ manual edits or applied decisions close the default slot. B-426 follows B-327
 (B-327 **landed 2026-10-08 as metasalmonpy #72**, merged as `de7eca8`)
 because its active packet branches edit the same Python paths. The release
 index links this debt; it is an owed port, not a deliberate register difference.
-**B-426 is under review as metasalmonpy pull request #110 from 2026-10-08**
+**B-426 landed 2026-10-10 as metasalmonpy #110**, merged as `24057c2`
 (handoff ref `agent/B-426/a-11395cdb8864b5ec`): the port, with twins of
 B-120's two regressions, RED on Python `main` `de7eca8` before it. One R line
 has no Python counterpart on purpose: B-120's exemption inside
@@ -1409,10 +1411,9 @@ has no entry that names it. The counterpart of R's `SystemRequirements` line is
 an extra that does. Both are owed as a port, not a register row: once they land
 the two implementations behave alike again. They did not land in the same
 stream because a hub claim covers one branch in one repository. Their
-metasalmonpy queue item is **B-302**, under review as metasalmonpy pull request
-#80 (opened 2026-10-01 by `a-8b23709cce768317`, handed off that day; refreshed
-against Python `main` `de7eca8` on 2026-10-08 at `19f06d6` on Brett's word,
-with merge commits only, since the hub never reclaims a handoff).
+metasalmonpy queue item is **B-302**, **landed 2026-10-10 as metasalmonpy #80**
+(opened 2026-10-01 by `a-8b23709cce768317`, handed off that day; merged as
+`27e37de`).
 
 **Two of B-57's fixes owe metasalmonpy nothing, and both answers were measured
 on `f1f7230`.** `find_terms()` there searches its sources one after another in

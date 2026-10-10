@@ -597,8 +597,8 @@ competing edits to its active branches. It owes candidate discovery for only
 package-filled code IRIs, default console visibility until a decision, and
 preserved prefill provenance through assessment ingestion. The specification
 and regression are in backlog #120 and `test-review-console.R`; this is port
-debt, not a new parity-register row. Versions remain unchanged. **B-426 is
-under review as metasalmonpy #110 from 2026-10-08**; two unregistered
+debt, not a new parity-register row. Versions remain unchanged. **B-426
+landed 2026-10-10 as metasalmonpy #110**, merged as `24057c2`; two unregistered
 differences it found on the way are metasalmonpy item **B-436** (the
 procedure-named column's `method` role, and the create-time review-context
 filter), recorded in the parity port section the same day.
@@ -683,9 +683,9 @@ queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
 
 **Canonical SSSOM/TSV owes a mirror port:** metasalmon's half, **B-350**, makes
 `write_sdp_sssom()` write the canonical form and changes every mapping set's
-bytes and manifest sha256. metasalmonpy's half is **B-351** (needs **B-234**),
-which keeps the earlier bytes until it lands; Brett ruled on 2026-09-25 that both
-ship in the same minor version, which is why the version does not move in
+bytes and manifest sha256. metasalmonpy's half, which needed **B-234**, is
+**B-351**, **landed 2026-10-10 as metasalmonpy #109** (`52611c7`); Brett ruled
+on 2026-09-25 that both ship in the same minor version, which is why the version does not move in
 either half. Specified in the port passage of
 [`parity-deviations.md`](parity-deviations.md).
 
@@ -935,7 +935,8 @@ metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. B-57's other two
 fixes owe metasalmonpy nothing, which was measured: its `find_terms()` has no
 parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is `B-302`.
+repository. Its metasalmonpy queue item is `B-302`, **landed 2026-10-10 as
+metasalmonpy #80** (`27e37de`).
 
 **The development version after 0.5.0 changes what the mirror owes on row 51
 (2026-09-25): one shared ownership sentinel, `.sdp-package` holding
