@@ -796,7 +796,8 @@
 # Rewrite `semantic_suggestions.csv` for the targets whose slots are still
 # undecided: their rows are replaced by the packet's shortlist carrying the
 # merged assessment columns. A slot with a recorded decision keeps its rows,
-# as does a hand-picked row; a target the packet does not hold is untouched.
+# as does a hand-picked row; a target the packet does not hold is untouched,
+# and so is one whose packet shortlist came back empty.
 # Rows are replaced target by target, never slot by slot: a code value of a
 # measurement column has three targets in one slot, and a pass that finalizes
 # one of them must not drop the rows of another, whether it is still awaiting
@@ -837,8 +838,11 @@
   pieces <- list()
   seen <- character()
   for (target in unique(existing_targets)) {
-    if (target %in% replace_targets) {
-      replacement <- merged[merged_targets == target, , drop = FALSE]
+    replacement <- merged[merged_targets == target, , drop = FALSE]
+    # An empty shortlist replaces nothing. Dropping the target's rows would
+    # leave a crosswalk-filled slot, whose IRI is not blank, where neither
+    # review_semantics() nor blank-slot discovery can find it again.
+    if (target %in% replace_targets && nrow(replacement) > 0L) {
       # Prefill provenance belongs to the package, not to the harness or its
       # retrieved shortlist. Keep the target's original stamp when an
       # assessment refreshes candidates, so an undecided crosswalk IRI stays

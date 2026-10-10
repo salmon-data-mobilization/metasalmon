@@ -768,6 +768,72 @@ test_that("NuSEDS crosswalk prefills stay in the review queue with ranked altern
   expect_false(slot %in% suppressMessages(review_semantics(path))$slot_id)
 })
 
+test_that("a crosswalk prefill keeps its rows when the packet's retrieval finds nothing", {
+  # Codex review of metasalmonpy pull request 110. A target whose packet
+  # shortlist came back empty lost every row when its assessment was ingested,
+  # and a crosswalk-filled slot, whose IRI is not blank, then left the review
+  # queue for good: neither review_semantics() nor a later packet's blank-slot
+  # discovery could find it again.
+  resources <- list(escapement = tibble::tibble(
+    ENUMERATION_METHODS = "Fence", count = 10L
+  ))
+  codes <- tibble::tibble(
+    dataset_id = "demo-1", table_id = "escapement",
+    column_name = "ENUMERATION_METHODS", code_value = "Fence",
+    code_label = "Fence", code_description = NA_character_,
+    term_iri = NA_character_
+  )
+  hits <- function(query, role = NA_character_, ...) {
+    if (!identical(role, "method")) return(tibble::tibble())
+    tibble::tibble(
+      label = c("Alternative one", "Alternative two"),
+      iri = c("https://example.org/method/one", "https://example.org/method/two"),
+      source = "gcdfo", ontology = "gcdfo", role = "method",
+      match_type = "label_exact", definition = "A counting method.",
+      score = c(4.5, 3.5)
+    )
+  }
+  nothing <- function(...) tibble::tibble()
+  path <- file.path(withr::local_tempdir(), "crosswalk-empty-shortlist")
+  suppressMessages(with_mocked_bindings(
+    find_terms = hits,
+    create_sdp(
+      resources, path = path, dataset_id = "demo-1", seed_codes = codes,
+      semantic_code_scope = "all", semantic_max_per_role = 2L,
+      seed_semantics = TRUE, seed_verbose = FALSE, check_updates = FALSE,
+      overwrite = TRUE
+    )
+  ))
+  slot <- "codes.csv|demo-1/escapement/ENUMERATION_METHODS/Fence|term_iri"
+  before <- semantic_suggestions(path)
+  before <- before[before$code_value %in% "Fence", , drop = FALSE]
+  expect_equal(nrow(before), 2L)
+
+  built <- write_semantic_review_packet(
+    path, search_fn = nothing, code_scope = "all",
+    review_dir = file.path(path, "review"), top_n = 2L, quiet = TRUE
+  )
+  packet <- semantic_review_read_json(built$path)
+  slots <- metasalmon:::.ms_semantic_review_slots(packet)
+  packet_slot <- Filter(function(x) identical(x$target$slot_id[[1]], slot), slots)
+  expect_length(packet_slot, 1L)
+  expect_equal(NROW(packet_slot[[1]]$candidates), 0L)
+
+  assessment <- semantic_review_harness_row(
+    packet_slot[[1]]$target, llm_decision = "review", llm_confidence = 0.5,
+    llm_rationale = "Needs local review."
+  )
+  assessment_path <- file.path(path, "review", "semantic-assessments-pass-1.csv")
+  semantic_review_write_harness(assessment, assessment_path, packet$packet_id)
+  ingest_semantic_assessments(path, assessments = assessment_path, search_fn = nothing, quiet = TRUE)
+
+  after <- semantic_suggestions(path)
+  after <- after[after$code_value %in% "Fence", , drop = FALSE]
+  expect_equal(after$iri, before$iri)
+  expect_true(all(after$prefill_origin == "nuseds_crosswalk"))
+  expect_equal(sum(suppressMessages(review_semantics(path))$slot_id == slot), 2L)
+})
+
 test_that("semantic code scope none leaves crosswalk prefills out of discovery", {
   codes <- tibble::tibble(
     dataset_id = "demo-1", table_id = "escapement",

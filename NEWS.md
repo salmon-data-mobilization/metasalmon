@@ -643,7 +643,10 @@ metasalmon (development version)
   ranked alternatives when semantic seeding retrieves candidates (B-120).
   The existing prefill remains in `codes.csv` until a reviewer changes it;
   explicit caller IRIs and `semantic_code_scope = "none"` retain their
-  behaviour. Importing a harness assessment preserves the prefill's provenance.
+  behaviour. Importing a harness assessment preserves the prefill's provenance,
+  and when the packet's retrieval found nothing for a slot, importing its
+  assessment leaves the slot's earlier rows in place, so the slot stays in the
+  queue instead of vanishing with its IRI still filled.
 
 * **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by
