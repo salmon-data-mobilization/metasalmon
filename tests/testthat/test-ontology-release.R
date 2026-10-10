@@ -283,6 +283,22 @@ test_that("a snapshot that cannot be read stops the call instead of answering no
     "holds none of the files",
     class = "metasalmon_ontology_release_error"
   )
+  # A directory where the release file or its manifest should be fails to open
+  # as an unreadable or vanished file does, and is the same release error.
+  file_is_dir <- withr::local_tempdir()
+  dir.create(file.path(file_is_dir, "smn.owl"))
+  expect_error(
+    find_terms("escapement", sources = "smn", snapshot_dir = c(smn = file_is_dir)),
+    "Could not read",
+    class = "metasalmon_ontology_release_error"
+  )
+  manifest_is_dir <- or_snapshot("smn-0.0.3", manifest = FALSE)
+  dir.create(file.path(manifest_is_dir, "MANIFEST.sha256"))
+  expect_error(
+    find_terms("escapement", sources = "smn", snapshot_dir = c(smn = manifest_is_dir)),
+    "Could not read",
+    class = "metasalmon_ontology_release_error"
+  )
 })
 
 test_that("release and snapshot_dir are checked before anything is searched", {
@@ -316,6 +332,27 @@ test_that("pinned and latest results do not share a cache entry", {
   expect_gt(nrow(pinned), 0L)
   expect_identical(nrow(latest), 0L)
   expect_null(attr(latest, "ontology_release"))
+})
+
+test_that("a cached result records the copy of the release this call read", {
+  # The cache identity is the release's bytes, so two copies of one release
+  # share an entry, and the record still names the copy each call read.
+  or_no_network()
+  or_fresh_indexes()
+  withr::local_envvar(METASALMON_CACHE = "1")
+  rm(list = ls(.metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+  withr::defer(rm(list = ls(.metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache))
+  verified <- or_snapshot("smn-0.0.3")
+  unverified <- or_snapshot("smn-0.0.3", manifest = FALSE)
+
+  first <- find_terms("escapement", sources = "smn", snapshot_dir = c(smn = verified))
+  second <- find_terms("escapement", sources = "smn", snapshot_dir = c(smn = unverified))
+
+  expect_length(ls(.metasalmon_cache, all.names = TRUE), 1L)
+  expect_identical(attr(first, "ontology_release")$source, verified)
+  expect_true(attr(first, "ontology_release")$manifest_verified)
+  expect_identical(attr(second, "ontology_release")$source, unverified)
+  expect_false(attr(second, "ontology_release")$manifest_verified)
 })
 
 # ---------------------------------------------------------------------------

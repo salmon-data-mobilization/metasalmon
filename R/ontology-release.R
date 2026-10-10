@@ -150,12 +150,29 @@
   stats::setNames(pins, ontologies)
 }
 
+# Reads one file of a release with `read`. A file that cannot be opened (one
+# without permission, a directory in its place, or one removed since it was
+# found) is a release error naming the path, like every other way a pinned read
+# fails. R says why in a warning before its error, so either one stops the read.
+# The condition is returned rather than handled in place, because an error
+# raised inside a `tryCatch()` warning handler is caught by its error handler.
+.ms_read_release_path <- function(path, read) {
+  read_or_why <- tryCatch(read(path), warning = identity, error = identity)
+  if (inherits(read_or_why, "condition")) {
+    cli::cli_abort(c(
+      "Could not read {.path {path}}.",
+      .ms_cli_bullets(conditionMessage(read_or_why), "x")
+    ), class = "metasalmon_ontology_release_error", call = NULL)
+  }
+  read_or_why
+}
+
 # Reads `MANIFEST.sha256`: one `<64 hex digits> <space or *><path>` line per
 # file, as `sha256sum` writes them. Returns the digests, lower-cased, named by
 # path. A line in any other shape, or a path listed twice with two digests, is
 # an error: a manifest that cannot be read cannot verify anything.
 .ms_read_sha256_manifest <- function(path) {
-  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  lines <- .ms_read_release_path(path, function(p) readLines(p, warn = FALSE, encoding = "UTF-8"))
   lines <- sub("\r$", "", lines)
   lines <- lines[nzchar(trimws(lines))]
   hits <- regmatches(lines, regexec("^([0-9A-Fa-f]{64}) [ *](.+)$", lines, perl = TRUE))
@@ -322,7 +339,7 @@
   }
 
   path <- file.path(dir, file)
-  bytes <- readBin(path, "raw", file.size(path))
+  bytes <- .ms_read_release_path(path, function(p) readBin(p, "raw", file.size(p)))
   sha256 <- digest::digest(bytes, algo = "sha256", serialize = FALSE)
   manifest <- file.path(dir, "MANIFEST.sha256")
   verified <- FALSE
@@ -477,6 +494,22 @@
     record = record,
     identity = paste0(record$ontology, "=", record$version, "@", record$sha256, collapse = ";")
   )
+}
+
+# Attaches to a `find_terms()` result the record of the pinned releases it was
+# searched in. A pinned ontology the search never asked, because smn matched
+# the query by label before gcdfo's turn, did not produce the result and is left
+# out. A result from the cache gets the record of the call that asked for it:
+# the cache identity is the release's bytes, which two copies of one release
+# share while differing in where they came from and whether a manifest verified
+# them.
+.ms_with_release_record <- function(ranked, record) {
+  if (is.null(record)) {
+    return(ranked)
+  }
+  asked <- record$ontology %in% attr(ranked, "diagnostics")$source
+  attr(ranked, "ontology_release") <- record[asked, , drop = FALSE]
+  ranked
 }
 
 # `fetch_salmon_ontology()` with `release` or `snapshot_dir`: the path to the

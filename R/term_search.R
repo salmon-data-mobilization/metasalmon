@@ -340,7 +340,7 @@ find_terms <- function(query,
     sep = "::"
   )
   if (.metasalmon_cache_enabled() && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
-    return(get(cache_key, envir = .metasalmon_cache))
+    return(.ms_with_release_record(get(cache_key, envir = .metasalmon_cache), pinned$record))
   }
 
   # Run searches for all expanded queries with diagnostic tracking (Phase 4)
@@ -529,12 +529,7 @@ find_terms <- function(query,
   # Attach diagnostics as attribute (Phase 4)
   diag_df <- dplyr::bind_rows(lapply(diagnostics, tibble::as_tibble))
   attr(ranked, "diagnostics") <- diag_df
-  if (!is.null(pinned$record)) {
-    # A pinned ontology the search never asked, because smn matched the query
-    # by label before gcdfo's turn, did not produce this result.
-    asked <- pinned$record$ontology %in% diag_df$source
-    attr(ranked, "ontology_release") <- pinned$record[asked, , drop = FALSE]
-  }
+  ranked <- .ms_with_release_record(ranked, pinned$record)
 
   failed_sources <- .ms_search_failed_sources(diag_df)
   if (length(failed_sources) > 0) {
