@@ -326,6 +326,36 @@ metasalmon (development version)
 
 ### Fixed
 
+* **`review_semantics()` shows a model's accept under the candidate it chose,
+  and any other decision once per slot and role.** An assessment is one row per
+  target, and merging it into the suggestions copies its decision, confidence
+  and rationale onto every candidate, with only `llm_selected` saying which
+  candidate an accept chose. The console printed `llm: accept` under every
+  candidate in the slot, so whoever confirmed a harness's accept of candidate 2
+  could not tell which candidate it meant. The accept now stays on the chosen
+  candidate, which stays in view past `max_candidates`, and any other decision
+  prints once, under `current:`, because it judges the whole shortlist. A
+  measurement column's code holds its constraint, entity and method targets in
+  one slot, and each target's verdict prints on its own line, naming its role.
+  `max_candidates` now caps each of those targets rather than the slot, where
+  five candidates for the first target hid every row of the others, and their
+  verdicts with them; ranks stay the slot's, as `accept_suggestion()` reads
+  them. Suggestions without an `llm_selected` column print as before. Pinned in
+  `tests/testthat/test-review-console.R`, which failed before the change; the
+  same change lands in metasalmonpy. *Semantic Review in R* gains a section on
+  having your own harness judge the shortlists, and *LLM Review With Context
+  Files* now says that the call it describes is deprecated.
+
+* **`apply_semantic_suggestions(strategy = "llm")` reads a selection flag held
+  as text.** A package's `semantic_suggestions.csv`, and the suggestions an
+  ingest of a package path returns, hold `llm_selected` as the text `TRUE` or
+  `FALSE`, which the strategy refused with "operations are possible only for
+  numeric, logical or complex types". It now reads that text as the flag it
+  is, as `review_semantics()` does. Pinned in
+  `tests/testthat/test-semantic-review-packet.R`; metasalmonpy, which read
+  `"FALSE"` as true and so applied the first candidate whichever one the
+  harness chose, makes the same fix.
+
 * **Defects in the review-packet contract are fixed before it ships** (hub item
   B-424; metasalmonpy's half is B-425). metasalmonpy found each while porting
   the contract (B-327) and reproduced it there on purpose, so that the shared
@@ -643,7 +673,11 @@ metasalmon (development version)
   ranked alternatives when semantic seeding retrieves candidates (B-120).
   The existing prefill remains in `codes.csv` until a reviewer changes it;
   explicit caller IRIs and `semantic_code_scope = "none"` retain their
-  behaviour. Importing a harness assessment preserves the prefill's provenance.
+  behaviour. Importing a harness assessment preserves the prefill's provenance,
+  and when the packet's retrieval found nothing for a slot, importing its
+  assessment leaves the slot's earlier rows in place, carrying that assessment
+  rather than any earlier one, so the slot stays in the queue instead of
+  vanishing with its IRI still filled.
 
 * **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by

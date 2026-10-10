@@ -797,11 +797,13 @@
 # undecided: their rows are replaced by the packet's shortlist carrying the
 # merged assessment columns. A slot with a recorded decision keeps its rows,
 # as does a hand-picked row; a target the packet does not hold is untouched.
+# A target whose packet shortlist came back empty keeps its rows, which take
+# the assessment just made (`assessments`, aligned with `targets`).
 # Rows are replaced target by target, never slot by slot: a code value of a
 # measurement column has three targets in one slot, and a pass that finalizes
 # one of them must not drop the rows of another, whether it is still awaiting
 # its second pass or was finalized a pass earlier (hub item B-424).
-.ms_semantic_review_rewrite_suggestions <- function(path, merged, targets) {
+.ms_semantic_review_rewrite_suggestions <- function(path, merged, targets, assessments = NULL) {
   suggestions_path <- file.path(path, "semantic_suggestions.csv")
   merged <- tibble::as_tibble(merged)
   existing <- if (file.exists(suggestions_path) && !dir.exists(suggestions_path)) {
@@ -831,14 +833,18 @@
   merged <- .ms_semantic_review_character_frame(merged)
   merged_targets <- if (nrow(merged) > 0L) .ms_semantic_review_target_address(merged) else character()
   targets <- tibble::as_tibble(targets)
+  target_addresses <- .ms_semantic_review_target_address(targets)
   undecided <- !as.character(targets$slot_id) %in% decided_slots
-  replace_targets <- unique(.ms_semantic_review_target_address(targets)[undecided])
+  replace_targets <- unique(target_addresses[undecided])
 
   pieces <- list()
   seen <- character()
   for (target in unique(existing_targets)) {
-    if (target %in% replace_targets) {
-      replacement <- merged[merged_targets == target, , drop = FALSE]
+    replacement <- merged[merged_targets == target, , drop = FALSE]
+    # An empty shortlist replaces nothing. Dropping the target's rows would
+    # leave a crosswalk-filled slot, whose IRI is not blank, where neither
+    # review_semantics() nor blank-slot discovery can find it again.
+    if (target %in% replace_targets && nrow(replacement) > 0L) {
       # Prefill provenance belongs to the package, not to the harness or its
       # retrieved shortlist. Keep the target's original stamp when an
       # assessment refreshes candidates, so an undecided crosswalk IRI stays
@@ -852,6 +858,10 @@
       }
       pieces[[length(pieces) + 1L]] <- replacement
       seen <- c(seen, target)
+    } else if (target %in% replace_targets && !is.null(assessments)) {
+      kept <- existing[existing_targets == target, , drop = FALSE]
+      verdict <- assessments[match(target, target_addresses), , drop = FALSE]
+      pieces[[length(pieces) + 1L]] <- .ms_semantic_review_restamp_assessment(kept, verdict)
     } else {
       pieces[[length(pieces) + 1L]] <- existing[existing_targets == target, , drop = FALSE]
     }
@@ -865,6 +875,21 @@
   out <- .ms_semantic_add_missing_cols(out, names(existing))
   out <- out[, c(names(existing), setdiff(names(out), names(existing))), drop = FALSE]
   list(path = suggestions_path, rows = out, bytes = .ms_sdp_extension_csv_bytes(out, na = ""))
+}
+
+# The rows an empty shortlist left in place, carrying the assessment just made
+# instead of whichever one they last carried: `review_semantics()` reads the
+# verdict from these rows, so a superseded verdict, a stale accept above all,
+# would otherwise outlive the harness's current one. The packet offered nothing
+# to select, so no row is selected and none holds a shortlist rank.
+.ms_semantic_review_restamp_assessment <- function(rows, verdict) {
+  verdict <- .ms_semantic_review_character_frame(verdict)
+  for (col in setdiff(.ms_llm_assessment_cols(), .ms_semantic_assessment_join_cols())) {
+    rows[[col]] <- rep(verdict[[col]][[1]], nrow(rows))
+  }
+  rows$llm_candidate_rank <- rep(NA_character_, nrow(rows))
+  rows$llm_selected <- rep("FALSE", nrow(rows))
+  rows
 }
 
 # -----------------------------------------------------------------------------
@@ -1289,7 +1314,10 @@ ingest_semantic_assessments <- function(x,
   }
   suggestions_out <- NULL
   if (identical(input$kind, "package") && nrow(final_targets) > 0L) {
-    rewrite <- .ms_semantic_review_rewrite_suggestions(input$path, merged, final_targets)
+    rewrite <- .ms_semantic_review_rewrite_suggestions(
+      input$path, merged, final_targets,
+      assessments = final_rows[merge_slots, , drop = FALSE]
+    )
     if (!is.null(rewrite)) {
       writes[[rewrite$path]] <- rewrite$bytes
       suggestions_out <- rewrite$rows

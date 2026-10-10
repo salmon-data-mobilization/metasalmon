@@ -38,9 +38,13 @@ Ranking is a retrieval aid; it does not decide whether a term is appropriate.
 
 `review_semantics()` reads existing suggestions from the package, a dictionary
 with a `semantic_suggestions` attribute, or inferred artifacts. It makes no
-network or model call. To revisit filled slots, use `include_filled = TRUE`;
+network or model call. Where those suggestions carry a model's assessment,
+ingested from [your own harness](#have-your-own-harness-judge-the-shortlists),
+it shows it: an accept under the candidate it chose, any other decision once
+per slot and role. To revisit filled slots, use `include_filled = TRUE`;
 use `columns = "NATURAL_ADULT_SPAWNERS"` to focus on one column. The default
-shows five candidates per slot; `max_candidates = Inf` shows all of them.
+shows five candidates for each target, which is one slot or, for a code value,
+one of its roles; `max_candidates = Inf` shows all of them.
 
 An empty queue does not establish that the package is finished. A required slot
 with no retrieved candidates can still appear in `review_metadata()` below.
@@ -167,6 +171,109 @@ and reviewed EML facts. Continue with the
 gaps, closure evidence and those export and deposit steps. A rejected shortlist
 or unresolved ontology gap needs a decision before that path can finish.
 
+## Have your own harness judge the shortlists
+
+Model judgement runs outside metasalmon. The package writes a review packet,
+your own harness reads it and writes its answers to a CSV, and the package
+reads them back. **Neither step calls a model**; the only network either one
+reaches is vocabulary search, through `search_fn`. metasalmonpy writes the same
+packet, byte for byte apart from its `producer` member, so one harness serves
+both packages.
+
+```{r, purl = FALSE}
+packet <- write_semantic_review_packet(pkg_path, context_files = "methods-note.md")
+packet$path      # <package>/review/semantic-review-packet.json
+packet$packet_id # the SHA-256 the ingester checks
+```
+
+The packet holds exactly the slots `review_semantics()` would queue, each with
+its shortlist retrieved again (`top_n = 5` by default) and the evidence the
+package's own validators read: label, IRI, source, native type, role hints,
+definition and scores. It also holds the measurement bundles with their current
+slots, scored excerpts from your context files, the review instructions, and
+the 30-column answer schema, which names an owner for every column. It is
+written under `review/`, which no publication path reads.
+
+The harness answers every slot with one of five decisions: `accept` (giving the
+candidate's index and echoing its IRI), `review`, `retry_search` (with a short
+query), `reject_shortlist` or `request_new_term`. It writes them, with a CSV
+library, to `review/semantic-assessments-pass-1.csv`, and writes the packet's
+`packet_id` to the one-line sidecar `semantic-assessments-pass-1.csv.packet-id`
+beside it. The packet's `instructions` member is the full brief. The shape of a
+harness, written here in R with the judgement left to yours:
+
+```{r, purl = FALSE}
+review_packet <- jsonlite::read_json(packet$path)
+columns <- vapply(review_packet$output$columns, `[[`, character(1), "name")
+answer <- file.path(pkg_path, review_packet$output$file)
+
+rows <- list()
+for (unit in review_packet$units) {
+  for (slot in unit$slots) {
+    row <- stats::setNames(as.list(rep("", length(columns))), columns)
+    identity <- lapply(slot$identity, function(value) if (is.null(value)) "" else value)
+    row[names(identity)] <- identity
+    row$llm_provider <- "my-harness"
+    row$llm_model <- "my-model"
+    # judge() is yours. It returns a named list with llm_decision and
+    # llm_confidence, and for an accept llm_selected_candidate_index and
+    # llm_selected_iri.
+    verdict <- judge(unit, slot)
+    row[names(verdict)] <- verdict
+    rows[[length(rows) + 1L]] <- tibble::as_tibble(row)
+  }
+}
+readr::write_csv(dplyr::bind_rows(rows), answer, na = "")
+writeLines(review_packet$packet_id, paste0(answer, ".packet-id"))
+```
+
+Then read the answers back:
+
+```{r, purl = FALSE}
+result <- ingest_semantic_assessments(pkg_path)
+result$status # "complete", or "awaiting_pass_2"
+assessments <- semantic_llm_assessments(pkg_path)
+```
+
+The ingester checks the file against the packet it names, then each row. An IRI
+the packet did not offer is recorded as an error and never applied, a candidate
+index that is not a whole number is refused, and a final `reject_shortlist` is
+escalated to `request_new_term`, so the ontology gap is filed rather than lost.
+The record is kept in `review/semantic-llm-assessments.csv`. A `retry_search`
+whose search finds new candidates writes a second packet,
+`review/semantic-review-packet-pass-2.json`: answer it in
+`semantic-assessments-pass-2.csv` the same way and call
+`ingest_semantic_assessments()` again. Nothing from that slot is merged until
+then, and there is no third pass.
+
+**Nothing the harness writes reaches the metadata.** The ingester never touches
+the metadata CSVs; you confirm each answer in the review queue, where the
+harness's verdict now sits under the candidate it chose:
+
+```
+── spawners · spawner_count · variable ───────────────────────────────────────
+   field:   column_dictionary.csv · term_iri
+   current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+
+   [1] Spawner Abundance   smn   score 4.9
+       Mature salmon returning to spawn.
+       https://w3id.org/smn/SpawnerAbundance
+       llm: accept (confidence 0.9)
+            Matches the column's definition.
+       review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+```
+
+A decision other than `accept` is printed once, under `current:`, because it
+judges the whole shortlist. Accept or reject as in section 2, then write your
+decisions as in section 3.
+
+For a dictionary you have not written yet, pass it in place of the path, with
+a `review_dir` for the session's files:
+`write_semantic_review_packet(dict, review_dir = "review")`, then
+`ingest_semantic_assessments(dict, review_dir = "review")`. Its
+`result$dictionary` carries the assessments, so `review_semantics()` and
+`apply_semantic_suggestions(..., strategy = "llm")` read them from there.
+
 ## Optional decomposition dialogue
 
 In 0.5.0, `chat_decomposition()` provides a console dialogue for one
@@ -196,11 +303,11 @@ over retrieved candidates. Retrieving candidates can contact vocabulary
 services. Supplying `chat_provider`, `chat_model` and the corresponding
 credentials opts into the optional model adapter.
 
-**Development builds deprecate this dialogue and the in-package model call;
-they warn on use and remove them in 0.7.0.** On those builds, use
-`write_semantic_review_packet()` and `ingest_semantic_assessments()` for a
-review conducted in your own harness. The ordinary review queue and setters
-above remain the path for writing your decisions.
+**From 0.6.0 this dialogue and the in-package model call are deprecated:**
+they warn on use, and 0.7.0 removes them. Have
+[your own harness](#have-your-own-harness-judge-the-shortlists) judge the
+shortlists instead. The review queue and setters above remain the path for
+writing your decisions.
 
 ## Spreadsheet fallback
 

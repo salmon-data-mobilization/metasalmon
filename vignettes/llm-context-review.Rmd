@@ -17,6 +17,13 @@ knitr::opts_chunk$set(
 
 Use this guide when you want `create_sdp()` or `suggest_semantics()` to review semantic candidates with an LLM **and** you have supporting files such as README notes, data dictionaries, or technical reports.
 
+**From 0.6.0 the in-package model call this guide describes is deprecated:**
+`llm_assess = TRUE` and the `llm_*` arguments warn on use, and 0.7.0 removes
+them. For new work, have your own harness judge the shortlists, as
+[Semantic Review in R](semantic-review.html#have-your-own-harness-judge-the-shortlists)
+describes. `write_semantic_review_packet()` reads the same context files,
+passed as `context_files`, and makes no model call.
+
 ## What Context Files Are Supported
 
 `llm_context_files` accepts local files that can add domain context to the LLM review step:

@@ -726,6 +726,16 @@ suggest_semantics <- function(df,
   NA_character_
 }
 
+# `llm_selected` as a logical, whether it comes as one or as the text TRUE or
+# FALSE a package's `semantic_suggestions.csv` holds (and the suggestions an
+# ingest of a package path returns), where `x & TRUE` refused the text.
+.ms_llm_selected_flag <- function(x) {
+  if (is.logical(x)) {
+    return(!is.na(x) & x)
+  }
+  toupper(trimws(as.character(x))) %in% c("TRUE", "T", "1")
+}
+
 #' Apply semantic suggestions into a dictionary
 #'
 #' Copies selected IRIs from a `semantic_suggestions` tibble into the matching
@@ -907,7 +917,7 @@ apply_semantic_suggestions <- function(dict,
         )
       )
     }
-    selected <- !is.na(suggestions$llm_selected) & suggestions$llm_selected
+    selected <- .ms_llm_selected_flag(suggestions$llm_selected)
     # An applied row must also carry an accepting decision when the frame
     # records one (parity row 31, converged in hub item B-326). The column is
     # not yet required here -- that lands with the removal release, decision
