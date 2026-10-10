@@ -20,8 +20,10 @@ review_semantics(
 a final (non-\verb{REVIEW:}) IRI. NuSEDS crosswalk-prefilled code slots with a
 saved shortlist are shown by default until decided. Defaults to \code{FALSE}.}
 
-\item{max_candidates}{Maximum candidates shown per slot. \code{Inf} shows all. A
-candidate a model accepted is shown whatever its rank.}
+\item{max_candidates}{Maximum candidates shown per target: per slot, and per
+role where a code value's slot holds its constraint, entity and method
+targets. \code{Inf} shows all. A candidate a model accepted is shown whatever
+its rank.}
 
 \item{columns}{Optional character vector restricting the queue to these
 column names.}

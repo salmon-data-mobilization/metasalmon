@@ -243,8 +243,10 @@
 #' @param include_filled Logical; if `TRUE`, also queue slots that already hold
 #'   a final (non-`REVIEW:`) IRI. NuSEDS crosswalk-prefilled code slots with a
 #'   saved shortlist are shown by default until decided. Defaults to `FALSE`.
-#' @param max_candidates Maximum candidates shown per slot. `Inf` shows all. A
-#'   candidate a model accepted is shown whatever its rank.
+#' @param max_candidates Maximum candidates shown per target: per slot, and per
+#'   role where a code value's slot holds its constraint, entity and method
+#'   targets. `Inf` shows all. A candidate a model accepted is shown whatever
+#'   its rank.
 #' @param columns Optional character vector restricting the queue to these
 #'   column names.
 #'
@@ -289,10 +291,16 @@ review_semantics <- function(x,
   placed <- .ms_review_place_llm_verdicts(queue)
   review <- placed$review
 
-  if (is.finite(max_candidates)) {
-    # The candidate a model accepted stays in view whatever its rank: it is the
-    # choice a person is asked to confirm.
-    review <- review[review$rank <= as.integer(max_candidates) | placed$chosen, , drop = FALSE]
+  if (is.finite(max_candidates) && nrow(review) > 0L) {
+    # The cap is per target, a slot and role. A code value's slot holds its
+    # constraint, entity and method targets, and capped by the slot's rank,
+    # five candidates for its first target hid the others' rows and their
+    # verdicts with them. `rank` stays the slot's, which is what
+    # accept_suggestion() reads. The candidate a model accepted stays in view
+    # whatever its rank: it is the choice a person is asked to confirm.
+    target <- paste(review$slot_id, review$role, sep = "|")
+    position <- stats::ave(seq_along(target), target, FUN = seq_along)
+    review <- review[position <= as.integer(max_candidates) | placed$chosen, , drop = FALSE]
   }
 
   attr(review, "review_path") <- queue$review_path

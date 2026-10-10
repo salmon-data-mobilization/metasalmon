@@ -231,23 +231,27 @@ test_that("max_candidates still bounds a slot whose accept names no selected can
 # alone, so a `review` for the constraint hid a `request_new_term` for the
 # entity. metasalmonpy's twin is the test of the same name in
 # tests/test_review_console.py.
-code_verdict_dict <- function(verdicts, selected = c(FALSE, FALSE, FALSE)) {
+code_verdict_dict <- function(verdicts, selected = c(FALSE, FALSE, FALSE), per_role = 1L) {
+  # `per_role` gives each target that many candidates; `selected` flags a
+  # target's first.
   roles <- c("constraint", "entity", "method")
   suggestions <- dplyr::bind_rows(lapply(seq_along(roles), function(i) {
-    fixture_suggestions(
-      code_value = "-9",
-      dictionary_role = roles[[i]],
-      target_scope = "code",
-      target_sdp_file = "codes.csv",
-      target_sdp_field = "term_iri",
-      target_row_key = "demo-1/spawners/spawner_count/-9",
-      label = paste(roles[[i]], "term"),
-      iri = paste0("https://example.org/", roles[[i]], "/-9"),
-      llm_decision = verdicts[[i]],
-      llm_confidence = 0.5,
-      llm_rationale = paste("Why", roles[[i]], "got", verdicts[[i]], "."),
-      llm_selected = selected[[i]]
-    )
+    dplyr::bind_rows(lapply(seq_len(per_role), function(n) {
+      fixture_suggestions(
+        code_value = "-9",
+        dictionary_role = roles[[i]],
+        target_scope = "code",
+        target_sdp_file = "codes.csv",
+        target_sdp_field = "term_iri",
+        target_row_key = "demo-1/spawners/spawner_count/-9",
+        label = if (n == 1L) paste(roles[[i]], "term") else paste(roles[[i]], "term", n),
+        iri = paste0("https://example.org/", roles[[i]], "/-9", if (n == 1L) "" else paste0("/", n)),
+        llm_decision = verdicts[[i]],
+        llm_confidence = 0.5,
+        llm_rationale = paste("Why", roles[[i]], "got", verdicts[[i]], "."),
+        llm_selected = selected[[i]] && n == 1L
+      )
+    }))
   }))
   with_suggestions(fixture_dict(), suggestions)
 }
@@ -289,6 +293,35 @@ test_that("an accept is placed per target, not per slot", {
     code_verdict_dict(c("accept", "accept", "review"), selected = c(TRUE, FALSE, FALSE))
   )
   expect_equal(review$llm_decision, c("accept", "accept", "review"))
+})
+
+test_that("max_candidates caps each target in a shared code slot", {
+  # Codex review of metasalmonpy pull request 113: the cap counted the slot's
+  # rank, so a first target with five candidates left the code's other targets
+  # no row, and their verdicts nowhere to print. Ranks stay the slot's, as
+  # accept_suggestion() reads them.
+  review <- review_semantics(
+    code_verdict_dict(c("review", "request_new_term", "retry_search"), per_role = 6L),
+    max_candidates = 5L
+  )
+  expect_equal(split(review$rank, factor(review$role, unique(review$role))), list(
+    constraint = 1:5,
+    entity = 7:11,
+    method = 13:17
+  ))
+  expect_equal(grep("llm:", .ms_review_render_lines(review), fixed = TRUE, value = TRUE), c(
+    "   llm:     constraint: review (confidence 0.5)",
+    "   llm:     entity: request_new_term (confidence 0.5)",
+    "   llm:     method: retry_search (confidence 0.5)"
+  ))
+})
+
+test_that("a target's accepted candidate stays in view past its cap", {
+  review <- review_semantics(
+    code_verdict_dict(c("review", "accept", "review"), selected = c(FALSE, TRUE, FALSE), per_role = 3L),
+    max_candidates = 1L
+  )
+  expect_equal(paste(review$role, review$rank), c("constraint 1", "entity 4", "method 7"))
 })
 
 test_that("review_semantics() refuses targets with no write-back address", {
