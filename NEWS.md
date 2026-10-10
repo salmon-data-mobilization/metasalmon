@@ -341,6 +341,16 @@ metasalmon (development version)
   having your own harness judge the shortlists, and *LLM Review With Context
   Files* now says that the call it describes is deprecated.
 
+* **`apply_semantic_suggestions(strategy = "llm")` reads a selection flag held
+  as text.** A package's `semantic_suggestions.csv`, and the suggestions an
+  ingest of a package path returns, hold `llm_selected` as the text `TRUE` or
+  `FALSE`, which the strategy refused with "operations are possible only for
+  numeric, logical or complex types". It now reads that text as the flag it
+  is, as `review_semantics()` does. Pinned in
+  `tests/testthat/test-semantic-review-packet.R`; metasalmonpy, which read
+  `"FALSE"` as true and so applied the first candidate whichever one the
+  harness chose, makes the same fix.
+
 * **Defects in the review-packet contract are fixed before it ships** (hub item
   B-424; metasalmonpy's half is B-425). metasalmonpy found each while porting
   the contract (B-327) and reproduced it there on purpose, so that the shared

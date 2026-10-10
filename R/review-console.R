@@ -318,9 +318,7 @@ review_semantics <- function(x,
   if (nrow(review) == 0L || !"llm_selected" %in% names(suggestions)) {
     return(list(review = review, chosen = rep(FALSE, nrow(review))))
   }
-  # A package's semantic_suggestions.csv may read the flag back as text.
-  selected <- toupper(trimws(as.character(suggestions$llm_selected[queue$source_row]))) %in%
-    c("TRUE", "T", "1")
+  selected <- .ms_llm_selected_flag(suggestions$llm_selected[queue$source_row])
   accepted <- !is.na(review$llm_decision) & review$llm_decision == "accept"
   chosen <- accepted & selected
   clear <- accepted & !selected & review$slot_id %in% review$slot_id[chosen]
