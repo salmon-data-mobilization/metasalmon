@@ -248,6 +248,17 @@ test_that("smn and gcdfo can be pinned together, and a pin is read only when sea
   expect_identical(record$version, c("0.0.3", "0.0.9"))
   expect_true("https://w3id.org/gcdfo/salmon#ConservationUnit" %in% result$iri)
 
+  # smn matches "escapement" by label, so gcdfo is never asked, and its release
+  # is not recorded as searched.
+  smn_answers <- find_terms(
+    "escapement",
+    sources = c("smn", "gcdfo"),
+    expand_query = FALSE,
+    snapshot_dir = list(smn = smn, gcdfo = gcdfo)
+  )
+  expect_identical(unique(attr(smn_answers, "diagnostics")$source), "smn")
+  expect_identical(attr(smn_answers, "ontology_release")$ontology, "smn")
+
   # gcdfo is pinned to a directory that does not exist, but not searched.
   only_smn <- find_terms(
     "escapement",

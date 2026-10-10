@@ -246,7 +246,10 @@
 #'
 #'   When `release` or `snapshot_dir` pins an ontology the call searched, the
 #'   result also has an `"ontology_release"` attribute: a tibble with one row
-#'   per pinned ontology recording which release was searched -- `ontology`,
+#'   per pinned ontology the search asked, recording which release was
+#'   searched. smn is asked first, and when it matches a query by label, gcdfo
+#'   is not asked for that query, so a gcdfo pin that was never asked is not
+#'   recorded. The columns are `ontology`,
 #'   `version`, `version_iri` (as the snapshot declares it, or `NA`), `file`,
 #'   `sha256` (of the bytes read), `manifest_verified` (`TRUE` when the
 #'   snapshot's `MANIFEST.sha256` vouched for them, `FALSE` when it carries
@@ -527,7 +530,10 @@ find_terms <- function(query,
   diag_df <- dplyr::bind_rows(lapply(diagnostics, tibble::as_tibble))
   attr(ranked, "diagnostics") <- diag_df
   if (!is.null(pinned$record)) {
-    attr(ranked, "ontology_release") <- pinned$record
+    # A pinned ontology the search never asked, because smn matched the query
+    # by label before gcdfo's turn, did not produce this result.
+    asked <- pinned$record$ontology %in% diag_df$source
+    attr(ranked, "ontology_release") <- pinned$record[asked, , drop = FALSE]
   }
 
   failed_sources <- .ms_search_failed_sources(diag_df)

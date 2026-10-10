@@ -77,7 +77,10 @@ helps explain empty results or slow queries.
 
 When \code{release} or \code{snapshot_dir} pins an ontology the call searched, the
 result also has an \code{"ontology_release"} attribute: a tibble with one row
-per pinned ontology recording which release was searched -- \code{ontology},
+per pinned ontology the search asked, recording which release was
+searched. smn is asked first, and when it matches a query by label, gcdfo
+is not asked for that query, so a gcdfo pin that was never asked is not
+recorded. The columns are \code{ontology},
 \code{version}, \code{version_iri} (as the snapshot declares it, or \code{NA}), \code{file},
 \code{sha256} (of the bytes read), \code{manifest_verified} (\code{TRUE} when the
 snapshot's \code{MANIFEST.sha256} vouched for them, \code{FALSE} when it carries
