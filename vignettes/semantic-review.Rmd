@@ -41,7 +41,7 @@ with a `semantic_suggestions` attribute, or inferred artifacts. It makes no
 network or model call. Where those suggestions carry a model's assessment,
 ingested from [your own harness](#have-your-own-harness-judge-the-shortlists),
 it shows it: an accept under the candidate it chose, any other decision once
-for the slot. To revisit filled slots, use `include_filled = TRUE`;
+per slot and role. To revisit filled slots, use `include_filled = TRUE`;
 use `columns = "NATURAL_ADULT_SPAWNERS"` to focus on one column. The default
 shows five candidates per slot; `max_candidates = Inf` shows all of them.
 

@@ -225,6 +225,72 @@ test_that("max_candidates still bounds a slot whose accept names no selected can
   expect_equal(review$rank, 1L)
 })
 
+# Codex review of pull request 275. A measurement column's code carries its
+# constraint, entity and method targets in one codes.csv slot, and a harness
+# judges each target on its own. The console printed the slot's first verdict
+# alone, so a `review` for the constraint hid a `request_new_term` for the
+# entity. metasalmonpy's twin is the test of the same name in
+# tests/test_review_console.py.
+code_verdict_dict <- function(verdicts, selected = c(FALSE, FALSE, FALSE)) {
+  roles <- c("constraint", "entity", "method")
+  suggestions <- dplyr::bind_rows(lapply(seq_along(roles), function(i) {
+    fixture_suggestions(
+      code_value = "-9",
+      dictionary_role = roles[[i]],
+      target_scope = "code",
+      target_sdp_file = "codes.csv",
+      target_sdp_field = "term_iri",
+      target_row_key = "demo-1/spawners/spawner_count/-9",
+      label = paste(roles[[i]], "term"),
+      iri = paste0("https://example.org/", roles[[i]], "/-9"),
+      llm_decision = verdicts[[i]],
+      llm_confidence = 0.5,
+      llm_rationale = paste("Why", roles[[i]], "got", verdicts[[i]], "."),
+      llm_selected = selected[[i]]
+    )
+  }))
+  with_suggestions(fixture_dict(), suggestions)
+}
+
+test_that("each target in a shared code slot shows its own verdict", {
+  lines <- .ms_review_render_lines(review_semantics(
+    code_verdict_dict(c("review", "request_new_term", "retry_search"))
+  ))
+  expect_equal(grep("llm:", lines, fixed = TRUE, value = TRUE), c(
+    "   llm:     constraint: review (confidence 0.5)",
+    "   llm:     entity: request_new_term (confidence 0.5)",
+    "   llm:     method: retry_search (confidence 0.5)"
+  ))
+  expect_lt(match("   llm:     method: retry_search (confidence 0.5)", lines), candidate_line(lines, 1L))
+  for (role in c("constraint", "entity", "method")) {
+    expect_equal(sum(grepl(paste("Why", role, "got"), lines, fixed = TRUE)), 1L, info = role)
+  }
+})
+
+test_that("an accept in a shared code slot leaves its siblings' verdicts shown once", {
+  review <- review_semantics(
+    code_verdict_dict(c("review", "accept", "request_new_term"), selected = c(FALSE, TRUE, FALSE))
+  )
+  lines <- .ms_review_render_lines(review)
+  expect_equal(grep("llm:", lines, fixed = TRUE, value = TRUE), c(
+    "   llm:     constraint: review (confidence 0.5)",
+    "   llm:     method: request_new_term (confidence 0.5)",
+    "       llm: accept (confidence 0.5)"
+  ))
+  entity <- which(startsWith(lines, "  ") & grepl("entity term", lines, fixed = TRUE))
+  expect_gt(match("       llm: accept (confidence 0.5)", lines), entity)
+})
+
+test_that("an accept is placed per target, not per slot", {
+  # Two targets in one slot both accepted, one with its candidate flagged and
+  # one with none: the second is left as it came, not cleared because its
+  # sibling's choice is known.
+  review <- review_semantics(
+    code_verdict_dict(c("accept", "accept", "review"), selected = c(TRUE, FALSE, FALSE))
+  )
+  expect_equal(review$llm_decision, c("accept", "accept", "review"))
+})
+
 test_that("review_semantics() refuses targets with no write-back address", {
   # `dataset.csv` targets a comma-joined `keywords` list, not a single IRI, so
   # it has no "accept this candidate" semantics. Showing a row nobody can

@@ -235,7 +235,7 @@
 #' suggestions carry a model's assessment -- ingested from your own harness by
 #' [ingest_semantic_assessments()], or made by the deprecated
 #' `llm_assess = TRUE` -- this shows it, an accept under the candidate it chose
-#' and any other decision once for the slot; it never generates one.
+#' and any other decision once per slot and role; it never generates one.
 #'
 #' @param x A written package path, a dictionary carrying the
 #'   `semantic_suggestions` attribute, or the artifact list returned by
@@ -308,10 +308,13 @@ review_semantics <- function(x,
 # in the slot, and the person confirming it could not tell which one it meant.
 # So an accept stays on the selected candidate's row and is cleared from the
 # others. Any other decision judges the whole shortlist, stays on every row, and
-# is printed once for the slot. Suggestions with no `llm_selected` column, and
-# an accept none of whose candidates is selected, are left as they came.
+# is printed once for its target. Suggestions with no `llm_selected` column, and
+# an accept none of whose candidates is selected, are left as they came. A
+# verdict belongs to a target, a slot and role, not to the slot: a measurement
+# column's code carries its constraint, entity and method targets in one
+# codes.csv slot, each judged on its own.
 # Returns the rows and, aligned with them, which row is an accepted candidate:
-# the one row per slot that stays shown past `max_candidates`.
+# the one row per target that stays shown past `max_candidates`.
 .ms_review_place_llm_verdicts <- function(queue) {
   review <- queue$review
   suggestions <- queue$suggestions
@@ -320,8 +323,9 @@ review_semantics <- function(x,
   }
   selected <- .ms_llm_selected_flag(suggestions$llm_selected[queue$source_row])
   accepted <- !is.na(review$llm_decision) & review$llm_decision == "accept"
+  target <- paste(review$slot_id, review$role, sep = "|")
   chosen <- accepted & selected
-  clear <- accepted & !selected & review$slot_id %in% review$slot_id[chosen]
+  clear <- accepted & !selected & target %in% target[chosen]
   review$llm_decision[clear] <- NA_character_
   review$llm_confidence[clear] <- NA_real_
   review$llm_rationale[clear] <- NA_character_
@@ -887,13 +891,22 @@ review_semantics <- function(x,
         )
       })
     }
-    # A model's decision other than accept judges the whole shortlist, so it is
-    # printed once, here, rather than under every candidate; an accept is
-    # printed under the one candidate it chose.
-    verdicts <- rows[!is.na(rows$llm_decision) & nzchar(rows$llm_decision), , drop = FALSE]
-    slot_verdict <- nrow(verdicts) > 0L && !any(verdicts$llm_decision == "accept")
-    if (slot_verdict) {
-      lines <- c(lines, .ms_review_llm_lines(verdicts[1, , drop = FALSE], "   llm:     "))
+    # A model's decision other than accept judges its target's whole
+    # shortlist, so it is printed once, here, rather than under every
+    # candidate; an accept is printed under the one candidate it chose. A slot
+    # can hold several targets, one per role (a measurement column's code has
+    # constraint, entity and method), each with its own verdict, so each is
+    # printed and, when the slot has more than one role, names its role.
+    row_roles <- ifelse(is.na(rows$role), "", rows$role)
+    has_verdict <- !is.na(rows$llm_decision) & nzchar(rows$llm_decision)
+    shortlist_roles <- Filter(function(role) {
+      !any(rows$llm_decision[has_verdict & row_roles == role] == "accept")
+    }, unique(row_roles[has_verdict]))
+    several_roles <- length(unique(row_roles)) > 1L
+    for (role in shortlist_roles) {
+      verdict <- rows[has_verdict & row_roles == role, , drop = FALSE][1, , drop = FALSE]
+      lead <- paste0("   llm:     ", if (several_roles) paste0(role, ": ") else "")
+      lines <- c(lines, .ms_review_llm_lines(verdict, lead))
     }
     lines <- c(lines, "")
 
@@ -912,7 +925,7 @@ review_semantics <- function(x,
       lines <- c(lines, paste0("       ", .ms_review_iri_display(
         candidate$iri[[1]], candidate$source[[1]], candidate$ontology[[1]]
       )))
-      if (!slot_verdict && nzchar(.ms_scalar_text(candidate$llm_decision))) {
+      if (!row_roles[[i]] %in% shortlist_roles && nzchar(.ms_scalar_text(candidate$llm_decision))) {
         lines <- c(lines, .ms_review_llm_lines(candidate, "       llm: "))
       }
       # A call is printed only where it runs. A candidate whose IRI names no

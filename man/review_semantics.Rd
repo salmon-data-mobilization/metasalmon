@@ -46,7 +46,7 @@ which the spreadsheet workflow this replaces never was.
 suggestions carry a model's assessment -- ingested from your own harness by
 \code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}, or made by the deprecated
 \code{llm_assess = TRUE} -- this shows it, an accept under the candidate it chose
-and any other decision once for the slot; it never generates one.
+and any other decision once per slot and role; it never generates one.
 }
 \examples{
 dict <- tibble::tibble(
