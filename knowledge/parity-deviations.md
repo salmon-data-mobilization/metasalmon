@@ -287,8 +287,9 @@ drops a code-scope row whose code has no description and whose label is empty
 or equals its value, case folded (`.ms_code_target_has_review_context()`);
 metasalmonpy's `create_sdp()` writes every row. B-120 is evidence that this
 filter hides work, so for (2) R moving is a live answer and not assumed away.
-Filed as metasalmonpy queue item **B-436**, which retires when each is ruled
-per divergence and then converged or registered; it is not a numbered row
+Filed as the pair **B-436** (metasalmonpy) and **B-437** (metasalmon), which
+retire when each is ruled per divergence and then converged or registered on
+both sides; it is not a numbered row
 here, because filing absence as design is the one thing this register must
 not do, and it is not a port either until the ruling says which side moves.
 

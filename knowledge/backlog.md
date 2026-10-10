@@ -1380,9 +1380,9 @@ behaviour is owed there, including preserving provenance when packet ingestion
 refreshes an undecided shortlist. Its implementation follows the S16 packet
 port (B-327), whose active Python branches already edit these paths. This is
 ordinary port debt, recorded in the release index and parity port section;
-no deliberate deviation is introduced. *Under review as metasalmonpy pull
-request #110 from 2026-10-08*, with twins of both regressions; the two
-unregistered differences that port found are **B-436**.
+no deliberate deviation is introduced. B-426 landed as metasalmonpy pull
+request #110 (`24057c2`, 2026-10-10), with twins of both regressions; the two
+unregistered differences that port found are **B-436** and **B-437**.
 
 *Retires when:* a crosswalk-filled code slot appears in `review_semantics()`
 with its alternatives, or the decision is recorded that crosswalk prefills are

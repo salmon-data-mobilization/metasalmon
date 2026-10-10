@@ -599,7 +599,7 @@ preserved prefill provenance through assessment ingestion. The specification
 and regression are in backlog #120 and `test-review-console.R`; this is port
 debt, not a new parity-register row. Versions remain unchanged. **B-426
 landed 2026-10-10 as metasalmonpy #110**, merged as `24057c2`; two unregistered
-differences it found on the way are metasalmonpy item **B-436** (the
+differences it found on the way are the pair **B-436** and **B-437** (the
 procedure-named column's `method` role, and the create-time review-context
 filter), recorded in the parity port section the same day.
 
