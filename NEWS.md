@@ -1568,6 +1568,17 @@ metasalmon (development version)
   with no warning, measured by the second 2026-09-25 queue sweep on its `main`
   at `056fccc`. The warning is owed there as a port, hub item B-378.
 
+* **`verify_sdp_semantic_iris()` reports a malformed IRI as malformed again
+  under Ubuntu's patched libcurl.** Ubuntu's libcurl security update
+  8.5.0-2ubuntu10.16 (2026-10-12) cannot read the effective URL of a request
+  whose URL it rejected, and says "Out of memory". The default requester read
+  that before the transfer's own failure, so it tried a malformed IRI three
+  times and recorded "Out of memory" as a transient error. It now records the
+  transfer's reason after one attempt, as on every other libcurl. The existing
+  malformed-URL test in `tests/testthat/test-semantic-iri-verification.R`
+  failed under the update and passes with the change. metasalmonpy's requester
+  uses HTTPX, not libcurl, and needs no change.
+
 ### Changed
 
 * **`write_sdp_sssom()` writes canonical SSSOM/TSV, so every mapping set's
