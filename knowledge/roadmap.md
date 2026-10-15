@@ -60,8 +60,10 @@ Rules that keep this from decaying:
   against the repos' own version sources and fixes drift.
 - **Mirror rule:** metasalmonpy mirrors metasalmon — same functionality, same
   version numbers, bumped only when parity actually lands. Stated firmly in
-  both repos' `AGENTS.md`. **Both packages are at 0.5.0 as of 2026-09-16, so no
-  window is open.** The `0.4.0→0.5.0` window metasalmon's `v0.5.0` opened on
+  both repos' `AGENTS.md`. **Both packages read 0.6.0 on `main` as of
+  2026-10-15, so no window is open**: 0.6.0 was ruled a joint release, so both
+  bumps landed together, and the `v0.6.0` tags are Brett's. The `0.4.0→0.5.0`
+  window metasalmon's `v0.5.0` opened on
   2026-08-25 closed in two halves: **B-126** ported the S5 behaviour
   (metasalmonpy pull request #28) and **B-153** wrote the documentation half and
   moved the number. The catch-up stream
@@ -69,9 +71,9 @@ Rules that keep this from decaying:
   not its tail. It was the first window opened by *new* work under the rule
   rather than by an old backlog, exactly the state the 2026-08-24 entry predicted
   when it said parity decays with the next change, and it was owed as an S5 port
-  rather than an S10 rung. metasalmonpy's tree reads 0.5.0, and measured
-  2026-09-24 its newest tag is `v0.5.0`, made that day on the bump merge
-  `67fb486` with a GitHub Release.
+  rather than an S10 rung. metasalmonpy's tree read 0.5.0 from 2026-09-16, and
+  measured 2026-09-24 its newest tag was `v0.5.0`, made that day on the bump
+  merge `67fb486` with a GitHub Release.
   **Amended 2026-08-17 (Brett):
   the mirror is not automatically the follower** — *"don't just make things
   match metasalmon; if the Python implementation got it right, then update
@@ -361,16 +363,19 @@ historical gap remains an S6 governance note, not a task.
 current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
-**The gap is closed**: `v0.5.0` (2026-08-25) is the newest tag. `v0.4.0`
-(2026-08-24) closed the 153-commit post-0.3.0 gap per Q7, and `v0.5.0` released
-S5's 35 commits one day later — so `main` and the newest tag are the same
-package again, and have been at every point since 0.4.0. Details under
-*metasalmon current state* below. **Q7's other half fell due and was
+**Tag state, measured 2026-10-15**: `v0.5.0` (2026-08-25) is the newest tag.
+`v0.4.0` (2026-08-24) closed the 153-commit post-0.3.0 gap per Q7, and `v0.5.0`
+released S5's 35 commits one day later. `main` has carried unreleased S16 work
+since then and reads 0.6.0 from its bump merge, so it stays ahead of the newest
+tag until Brett tags `v0.6.0` on that merge. Details under *metasalmon current
+state* below. **Q7's other half fell due and was
 discharged** at 0.4.0: its ruling is a two-step — metasalmon releases first,
 then metasalmonpy's bump claims that number — and both steps happened on
 2026-08-24. **The same two-step has now run for 0.5.0**: the R release existed
 from 2026-08-25, and metasalmonpy claimed the number on 2026-09-16 once the S5
-port had landed there and been documented (B-126, then B-153).
+port had landed there and been documented (B-126, then B-153). 0.6.0 skips the
+two-step: it was ruled a joint release (decision 3 of the S16 execplan), so both
+packages bumped together.
 
 ### metasalmonpy (Python mirror) — current **0.6.0** (= metasalmon 0.6.0 parity; released together)
 
@@ -1527,7 +1532,8 @@ S4's only remaining hard blocker. Ruling A holds the arrow as drawn.
 ## metasalmon current state
 
 **Shipped: 0.5.0** (tagged `v0.5.0`, GitHub Release published 2026-08-25).
-The release sequence, all reviewed and CI-green:
+**Bumped: 0.6.0** (`main` reads 0.6.0 from 2026-10-15; `v0.6.0` is Brett's to
+tag on the bump merge). The release sequence, all reviewed and CI-green:
 
 | Release | What |
 |---|---|
@@ -1541,6 +1547,7 @@ The release sequence, all reviewed and CI-green:
 | 0.3.0 | #76 sdp-0.3.0 method placement model — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()`, placement validation, spec-tag schema pin |
 | 0.4.0 | S3 KNB environments (a deposit can be rehearsed) and the post-0.3.0 fix stream — #93 item 2, #94, #96–#102, #85, #88 — plus two S11 vignettes |
 | 0.5.0 | S5 R-native review and editing — #74, #118, #60's accessor clause; nine new exports and the two accessors, and the spreadsheet leaves the documented path |
+| 0.6.0 | S16 step 1 — model judgement leaves the package: the review-packet writer and ingester on a contract shared with metasalmonpy, the in-package model call deprecated; plus tern M-12's pinned smn and gcdfo release reads. Bumped 2026-10-15; tag pending |
 
 S8's 0.3.0 merged 2026-08-15 (PR #39, merge `5a37b11`, five review rounds)
 and is tagged and released per the 0.3.0-forward tagging policy.
