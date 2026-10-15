@@ -60,8 +60,10 @@ Rules that keep this from decaying:
   against the repos' own version sources and fixes drift.
 - **Mirror rule:** metasalmonpy mirrors metasalmon — same functionality, same
   version numbers, bumped only when parity actually lands. Stated firmly in
-  both repos' `AGENTS.md`. **Both packages are at 0.5.0 as of 2026-09-16, so no
-  window is open.** The `0.4.0→0.5.0` window metasalmon's `v0.5.0` opened on
+  both repos' `AGENTS.md`. **Both packages read 0.6.0 on `main` as of
+  2026-10-15, so no window is open**: 0.6.0 was ruled a joint release, so both
+  bumps landed together, and the `v0.6.0` tags are Brett's. The `0.4.0→0.5.0`
+  window metasalmon's `v0.5.0` opened on
   2026-08-25 closed in two halves: **B-126** ported the S5 behaviour
   (metasalmonpy pull request #28) and **B-153** wrote the documentation half and
   moved the number. The catch-up stream
@@ -69,9 +71,9 @@ Rules that keep this from decaying:
   not its tail. It was the first window opened by *new* work under the rule
   rather than by an old backlog, exactly the state the 2026-08-24 entry predicted
   when it said parity decays with the next change, and it was owed as an S5 port
-  rather than an S10 rung. metasalmonpy's tree reads 0.5.0, and measured
-  2026-09-24 its newest tag is `v0.5.0`, made that day on the bump merge
-  `67fb486` with a GitHub Release.
+  rather than an S10 rung. metasalmonpy's tree read 0.5.0 from 2026-09-16, and
+  measured 2026-09-24 its newest tag was `v0.5.0`, made that day on the bump
+  merge `67fb486` with a GitHub Release.
   **Amended 2026-08-17 (Brett):
   the mirror is not automatically the follower** — *"don't just make things
   match metasalmon; if the Python implementation got it right, then update
@@ -332,19 +334,16 @@ than a courtesy record. The ninth section was added 2026-09-09 in the same
 change as the domain-card row, on Brett's Q19 ruling of 2026-09-05, so the index
 never carried "nine sections for eight members" either.
 
-### metasalmon (R) — current **0.5.0**
+### metasalmon (R) — current **0.6.0**
 
-*Unreleased on `main` (S16 step 1, hub item B-326, merged into the development
-heading of `NEWS.md`): `write_semantic_review_packet()` and
-`ingest_semantic_assessments()`, the review-packet contract shared with
-metasalmonpy, and the deprecation of the in-package model call. Ruled
-2026-09-25 (decision 3 of the S16 execplan) to ship as **0.6.0 in both packages,
-tagged together** once B-327 lands the metasalmonpy half; the removal is 0.7.0
-after at least one tagged 0.6.x. Until the tag, that number is a plan, not a
-release, and this index does not carry it as one.*
+*0.6.0 was ruled on 2026-09-25 (decision 3 of the S16 execplan) to ship in both
+packages together, so both bumps landed with no window. The removal is 0.7.0,
+after at least one tagged 0.6.x. `v0.6.0` is tagged by Brett on the bump merge;
+until it exists, cite a commit.*
 
 | Version | Date | One line |
 |---|---|---|
+| 0.6.0 | 2026-10-15 (bump merge) | S16 step 1: model judgement leaves the package. `write_semantic_review_packet()` / `ingest_semantic_assessments()` and a review-packet contract shared byte for byte with metasalmonpy; the in-package model call is deprecated and leaves in 0.7.0. `find_terms()` and `fetch_salmon_ontology()` can read a pinned smn or gcdfo release (tern M-12). Breaking: Theme A keeps only offline `replay`/`compare`; no implicit smn fallback for a custom ontology URL; `find_terms()` with a role and no sources searches `sources_for_role(role)`; the shared `.sdp-package` sentinel |
 | 0.5.0 | 2026-08-25 | S5 R-native review and editing — `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` / `review_metadata()` and the four `set_sdp_*()` setters, plus the `semantic_suggestions()` / `semantic_llm_assessments()` accessors. A package reaches `validate_salmon_datapackage(require_iris = TRUE)` **without a spreadsheet**; closes #74, #118 and #60's accessor clause |
 | 0.4.0 | 2026-08-24 | KNB environments (S3) — a deposit can be rehearsed against the test node; plus the post-0.3.0 fix stream: transactional package writer, platform-independent calendar text, both shipped examples validate, `smn` ranked above `gcdfo`, dual-provenance manifest validation |
 | 0.3.0 | 2026-08-15 | **Breaking:** sdp-0.3.0 implemented — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()` stop-and-report migration, semantic pipeline reviews the statistical-modifier slot, remote schema source pinned to spec tags |
@@ -364,18 +363,21 @@ historical gap remains an S6 governance note, not a task.
 current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
-**The gap is closed**: `v0.5.0` (2026-08-25) is the newest tag. `v0.4.0`
-(2026-08-24) closed the 153-commit post-0.3.0 gap per Q7, and `v0.5.0` released
-S5's 35 commits one day later — so `main` and the newest tag are the same
-package again, and have been at every point since 0.4.0. Details under
-*metasalmon current state* below. **Q7's other half fell due and was
+**Tag state, measured 2026-10-15**: `v0.5.0` (2026-08-25) is the newest tag.
+`v0.4.0` (2026-08-24) closed the 153-commit post-0.3.0 gap per Q7, and `v0.5.0`
+released S5's 35 commits one day later. `main` has carried unreleased S16 work
+since then and reads 0.6.0 from its bump merge, so it stays ahead of the newest
+tag until Brett tags `v0.6.0` on that merge. Details under *metasalmon current
+state* below. **Q7's other half fell due and was
 discharged** at 0.4.0: its ruling is a two-step — metasalmon releases first,
 then metasalmonpy's bump claims that number — and both steps happened on
 2026-08-24. **The same two-step has now run for 0.5.0**: the R release existed
 from 2026-08-25, and metasalmonpy claimed the number on 2026-09-16 once the S5
-port had landed there and been documented (B-126, then B-153).
+port had landed there and been documented (B-126, then B-153). 0.6.0 skips the
+two-step: it was ruled a joint release (decision 3 of the S16 execplan), so both
+packages bumped together.
 
-### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tagged `v0.5.0` 2026-09-24)
+### metasalmonpy (Python mirror) — current **0.6.0** (= metasalmon 0.6.0 parity; released together)
 
 **Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
 pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
@@ -465,6 +467,7 @@ recorded in the same form as later port landings.
 
 | Version | Date | One line |
 |---|---|---|
+| 0.6.0 | 2026-10-15 (bump merge; `v0.6.0` through the Release workflow on Brett's word) | Released together with metasalmon 0.6.0 (S16 step 1): B-327's packet writer and ingester on metasalmon's vendored contract, then the 0.6.0 ports (#75's ontology-fetch family, #80, #108 to #113) and the pinned smn/gcdfo release reads (#114, tern M-12). No window opened, so no row in either register records one |
 | 0.5.0 | 2026-09-16 (tagged `v0.5.0` at `67fb486` on 2026-09-24, GitHub Release published) | Closes the `0.4.0→0.5.0` window in two halves: **B-126** / #28 ported metasalmon 0.5.0's S5 review-and-edit surface — the nine functions, the two accessors, `decision_reason` with decision replay on queue rebuild, the first `constraints.required` consumer, the #118 auto-apply exemption — and **B-153** wrote the documentation half and moved the number. `guides/semantic-review.qmd` is now built around `create_sdp()` → `review_semantics()` → `accept_suggestion()` / `reject_suggestion()` → `apply_sdp_semantics()` → `review_metadata()` → `set_sdp_*()` → strict validation, with the spreadsheet named as the fallback. **the version turned out to live in six places, not the four `AGENTS.md` enumerated** — `_quarto.yml`'s `quartodoc.version` was still reading 0.4.0 while the other four moved, and a Codex review caught `guides/parity.qmd` as a sixth that the same paragraph claimed was already listed — so four new tests pin `uv.lock`, `_quarto.yml`, `guides/parity.qmd` and the guide's coverage of the review surface against `__version__`, and the checklist now pairs each entry with a guard. Two prose copies claiming metasalmon **0.1.6** parity (`index.qmd`, `README.md`) were deleted rather than updated. Both dependency legs green (951 extras / 810 core, 1 and 142 skipped), and CI's docs job rendered the site with Quarto |
 | 0.4.0 | 2026-08-24 (tagged `v0.4.0` at `3b587e6`, GitHub Release published) | The terminal S10 bump: chunks A–H released as one number, plus the two gaps an entry-by-entry audit of metasalmon 0.4.0's NEWS found genuinely absent and ported for it — `knb_environment` on `publish_sdp_to_knb()`/`write_eml_from_sdp()` (the S3 mirror, whose R original landed after every chunk was written) and the `statistical_modifier` `role_boost`. Five further differences were **registered rather than ported**, each with its retirement condition (register rows 54–58). Verified against a pristine `git archive` of metasalmon `v0.4.0` (`4e2bbb6`), never a working checkout; both dependency legs green (795 extras / 682 core, 116 skipped), production KNB identifiers pinned against metasalmon's own fixture |
 | 0.2.1 | 2026-08-18 (tagged `v0.2.1`, GitHub Release published) | Every descriptor URI comes from one loader: 0.2.1's per-resource schema URLs, derived from the remote loader 0.2.0 introduced |
@@ -1529,7 +1532,8 @@ S4's only remaining hard blocker. Ruling A holds the arrow as drawn.
 ## metasalmon current state
 
 **Shipped: 0.5.0** (tagged `v0.5.0`, GitHub Release published 2026-08-25).
-The release sequence, all reviewed and CI-green:
+**Bumped: 0.6.0** (`main` reads 0.6.0 from 2026-10-15; `v0.6.0` is Brett's to
+tag on the bump merge). The release sequence, all reviewed and CI-green:
 
 | Release | What |
 |---|---|
@@ -1543,6 +1547,7 @@ The release sequence, all reviewed and CI-green:
 | 0.3.0 | #76 sdp-0.3.0 method placement model — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()`, placement validation, spec-tag schema pin |
 | 0.4.0 | S3 KNB environments (a deposit can be rehearsed) and the post-0.3.0 fix stream — #93 item 2, #94, #96–#102, #85, #88 — plus two S11 vignettes |
 | 0.5.0 | S5 R-native review and editing — #74, #118, #60's accessor clause; nine new exports and the two accessors, and the spreadsheet leaves the documented path |
+| 0.6.0 | S16 step 1 — model judgement leaves the package: the review-packet writer and ingester on a contract shared with metasalmonpy, the in-package model call deprecated; plus tern M-12's pinned smn and gcdfo release reads. Bumped 2026-10-15; tag pending |
 
 S8's 0.3.0 merged 2026-08-15 (PR #39, merge `5a37b11`, five review rounds)
 and is tagged and released per the 0.3.0-forward tagging policy.
