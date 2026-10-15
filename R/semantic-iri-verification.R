@@ -218,8 +218,13 @@
     # calls waited for a body/timeout on some local responses in curl 7.1.0.
     # Retires when a shared header transport keeps this bound and failure proof.
     curl::multi_run(timeout = 0, pool = pool)
-    response <- curl::handle_data(handle)
-    if (.ms_semantic_iri_final_headers(response)) {
+    # Ubuntu's libcurl 8.5.0-2ubuntu10.16 (its CVE-2026-94266 patch) cannot
+    # read the effective URL of a handle whose URL it rejected, and reports
+    # "Out of memory", which would hide a malformed URL behind a retry. When
+    # the transfer has failed, its own reason is the evidence. Retires when
+    # reading a rejected handle's data no longer errors on supported libcurl.
+    response <- tryCatch(curl::handle_data(handle), error = identity)
+    if (!inherits(response, "error") && .ms_semantic_iri_final_headers(response)) {
       return(list(status = as.integer(response$status_code), final_url = response$url))
     }
     if (!is.null(failure)) {
@@ -231,6 +236,9 @@
         classes <- c("metasalmon_semantic_iri_permanent_error", classes)
       }
       stop(errorCondition(as.character(failure), class = unique(c(classes, "curl_error"))))
+    }
+    if (inherits(response, "error")) {
+      stop(response)
     }
     if (completed) {
       stop(errorCondition("Request completed without final HTTP headers.", class = "curl_error"))
