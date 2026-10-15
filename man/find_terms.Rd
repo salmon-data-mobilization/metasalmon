@@ -4,7 +4,14 @@
 \alias{find_terms}
 \title{Find candidate terms across external vocabularies}
 \usage{
-find_terms(query, role = NA_character_, sources = NULL, expand_query = TRUE)
+find_terms(
+  query,
+  role = NA_character_,
+  sources = NULL,
+  expand_query = TRUE,
+  release = NULL,
+  snapshot_dir = NULL
+)
 }
 \arguments{
 \item{query}{Character search string (e.g., \code{"spawner count"}, \code{"temperature"}).}
@@ -32,6 +39,26 @@ tibble.}
 (Phase 4) to generate additional query variants based on the role context.
 For example, unit queries get abbreviation expansions, method queries get
 "method" suffix added. Set to \code{FALSE} to search only the exact query.}
+
+\item{release}{Optional release versions of smn and gcdfo to search instead
+of the latest ontology, named by ontology: \code{c(smn = "0.0.3")}, or
+\code{c(smn = "0.0.3", gcdfo = "0.0.9")}. Each is read from its release
+snapshot, downloaded from its version IRI (\verb{https://w3id.org/smn/0.0.3})
+once per session, and checked against the snapshot's \code{MANIFEST.sha256}
+when it carries one. A pin never falls back to the latest ontology: a
+release that cannot be read or does not match its manifest is an error.
+Only smn and gcdfo can be pinned; other sources are searched as they are.}
+
+\item{snapshot_dir}{Optional local release snapshots, named by ontology the
+same way, such as a checkout's \verb{docs/releases/0.0.3/}. Each is read from
+disk, with no download. When \code{release} names the same ontology too, a
+snapshot that declares an \code{owl:versionIRI} must declare that version.
+
+A pinned smn release is read from its RDF/XML (\code{smn.owl}), which holds
+the same terms as the latest ontology's modules, and its terms get the
+role hints the module reader gives them, with one difference: a release
+records no module, so a term whose entity hint comes only from belonging
+to the \code{01-entity-systematics} module has no entity hint in a release.}
 }
 \value{
 Tibble with columns: \code{label}, \code{iri}, \code{source}, \code{ontology}, \code{role},
@@ -47,6 +74,17 @@ The result has a \code{"diagnostics"} attribute (access via \code{attr(result, "
 containing per-source/query diagnostic information: source, query, status
 (success/error), count, elapsed_secs, and error message if applicable. This
 helps explain empty results or slow queries.
+
+When \code{release} or \code{snapshot_dir} pins an ontology the call searched, the
+result also has an \code{"ontology_release"} attribute: a tibble with one row
+per pinned ontology the search asked, recording which release was
+searched. smn is asked first, and when it matches a query by label, gcdfo
+is not asked for that query, so a gcdfo pin that was never asked is not
+recorded. The columns are \code{ontology},
+\code{version}, \code{version_iri} (as the snapshot declares it, or \code{NA}), \code{file},
+\code{sha256} (of the bytes read), \code{manifest_verified} (\code{TRUE} when the
+snapshot's \code{MANIFEST.sha256} vouched for them, \code{FALSE} when it carries
+none) and \code{source} (the version IRI or the snapshot directory).
 }
 \description{
 Lightweight meta-search helper for IRIs. Uses public APIs when available.
@@ -103,6 +141,15 @@ ols_results <- find_terms("salmon", sources = "ols")
 
 # Search multiple sources
 all_results <- find_terms("escapement", sources = c("smn", "gcdfo", "ols", "nvs"))
+
+# Search smn release 0.0.3 rather than the latest ontology, and record it
+pinned <- find_terms("escapement", sources = "smn", release = c(smn = "0.0.3"))
+attr(pinned, "ontology_release")
+
+# Pin the searches suggest_semantics() makes
+# suggest_semantics(dict, search_fn = function(query, role, sources) {
+#   find_terms(query, role = role, sources = sources, release = c(smn = "0.0.3"))
+# })
 }
 }
 \seealso{

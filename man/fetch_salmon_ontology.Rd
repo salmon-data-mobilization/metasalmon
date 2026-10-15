@@ -9,7 +9,9 @@ fetch_salmon_ontology(
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
   timeout_seconds = 30,
-  fallback_urls = c("https://w3id.org/smn")
+  fallback_urls = c("https://w3id.org/smn"),
+  release = NULL,
+  snapshot_dir = NULL
 )
 }
 \arguments{
@@ -27,6 +29,23 @@ bounds both the connection and the whole transfer.}
 fallback is used only when \code{url} is the default; callers naming another
 ontology must explicitly supply its fallback URLs. \code{NULL} or \code{character()}
 explicitly tries none.}
+
+\item{release}{A release version of the ontology \code{url} names, such as
+\code{"0.0.3"}; \code{url} must then be the smn or gcdfo ontology IRI. The release is
+downloaded from its version IRI (\verb{https://w3id.org/smn/0.0.3}), or from the
+snapshot directory on GitHub Pages when that fails, into
+\verb{cache_dir/releases/<ontology>/<version>/} together with its
+\code{MANIFEST.sha256}, once: a release does not change, so later calls read
+that copy. A release that served no manifest when it was downloaded stays
+unverified in that cache; delete its directory to download it again.
+\code{fallback_urls} is not used.}
+
+\item{snapshot_dir}{A local directory holding a release snapshot of the
+ontology \code{url} names, such as a checkout's \verb{docs/releases/0.0.3/}. The file
+is read from it and nothing is downloaded. Give \code{release} or
+\code{snapshot_dir}, not both: this call does not parse the file, so it could
+not check that the directory holds that release. \code{\link[=find_terms]{find_terms()}} takes both
+and checks the snapshot's \code{owl:versionIRI}.}
 }
 \value{
 Path to the cached copy that the answering URL returned (character
@@ -39,6 +58,11 @@ or contradictory ETag invalidates the previous representation, even when
 storing its replacement fails. The old body stays on disk for inspection
 with a \code{.invalid} marker until a successful replacement makes it reusable.
 Without an eligible matching copy the call errors with the last failure.
+
+With \code{release} or \code{snapshot_dir}, the path to the release file read. It
+never falls back to the latest ontology: a release that cannot be read or
+does not match its manifest is an error. Compute the file's SHA-256 to
+record exactly what was read; \code{\link[=find_terms]{find_terms()}} records it for you.
 }
 \description{
 Downloads an ontology, by default the Salmon Domain Ontology (smn), using
@@ -55,6 +79,14 @@ the extensions \code{.etag} and \code{.last_modified}. Fetches of different URLs
 representations into one \code{cache_dir} therefore never overwrite each other,
 a conditional request carries only the validators that the URL it is sent
 to returned under the same \code{accept}, and a \code{304} answer returns that URL's
-own copy. The matching metasalmonpy cache layout is still owed in its
-ontology-fetch stream (B-334/B-336 and PR75).
+own copy. metasalmonpy names its cache files the same way.
+
+With \code{release} or \code{snapshot_dir}, it reads a pinned release of smn or gcdfo
+instead: one file of that release's snapshot, the directory each ontology
+publishes as \verb{docs/releases/<version>/}, and nothing newer. The file is the
+representation \code{accept} prefers among the three a snapshot carries
+(\code{text/turtle} for \code{.ttl}, \code{application/rdf+xml} for \code{.owl},
+\code{application/ld+json} for \code{.jsonld}). When the snapshot carries a
+\code{MANIFEST.sha256}, the file must be listed in it with the SHA-256 of its
+bytes, or the call errors.
 }

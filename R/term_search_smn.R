@@ -312,82 +312,215 @@
         unlist(lapply(.smn_predicate_chunks(rest, "rdfs:subPropertyOf"), .smn_term_values, prefixes = prefixes), use.names = FALSE)
       ))
 
-      label <- if (length(labels)) labels[[1]] else .smn_subject_local_name(iri)
-      definition_text <- if (length(definition)) paste(definition, collapse = " | ") else ""
-      resource_kind <- .smn_resource_kind(type_iris)
-      role_flags <- .smn_role_flags(
-        label = label,
-        definition = definition_text,
-        resource_kind = resource_kind,
-        module_name = module_name,
-        in_scheme = paste(in_scheme, collapse = " | "),
-        parent_iris = paste(parents, collapse = " | "),
-        type_iris = paste(type_iris, collapse = " | "),
-        iri = iri
-      )
-      search_text <- tolower(paste(
-        label,
-        paste(alt_labels, collapse = " "),
-        definition_text,
-        paste(in_scheme, collapse = " "),
-        paste(parents, collapse = " "),
-        .smn_subject_local_name(iri),
-        module_name,
-        collapse = " "
-      ))
-      role_hints <- paste(
-        c(
-          if (isTRUE(role_flags$is_variable)) "variable",
-          if (isTRUE(role_flags$is_property)) "property",
-          if (isTRUE(role_flags$is_entity)) "entity",
-          if (isTRUE(role_flags$is_constraint)) "constraint",
-          if (isTRUE(role_flags$is_method)) "method",
-          if (isTRUE(role_flags$is_statistical_modifier)) "statistical_modifier"
-        ),
-        collapse = "|"
-      )
-
       idx <- idx + 1L
-      rows[[idx]] <- tibble::tibble(
+      rows[[idx]] <- .smn_index_row(
         iri = iri,
-        label = label,
-        alt_labels = paste(alt_labels, collapse = " | "),
-        definition = definition_text,
-        resource_kind = resource_kind %||% "Resource",
-        in_scheme = paste(in_scheme, collapse = " | "),
-        parent_iris = paste(parents, collapse = " | "),
-        type_iris = paste(type_iris, collapse = " | "),
-        search_text = search_text,
-        is_variable = isTRUE(role_flags$is_variable),
-        is_property = isTRUE(role_flags$is_property),
-        is_entity = isTRUE(role_flags$is_entity),
-        is_constraint = isTRUE(role_flags$is_constraint),
-        is_method = isTRUE(role_flags$is_method),
-        role_hints = role_hints
+        type_iris = type_iris,
+        labels = labels,
+        alt_labels = alt_labels,
+        definition = definition,
+        in_scheme = in_scheme,
+        parents = parents,
+        module_name = module_name,
+        search_module = module_name
       )
     }
   }
 
   if (length(rows) == 0) {
-    return(tibble::tibble(
-      iri = character(),
-      label = character(),
-      alt_labels = character(),
-      definition = character(),
-      resource_kind = character(),
-      in_scheme = character(),
-      parent_iris = character(),
-      type_iris = character(),
-      search_text = character(),
-      is_variable = logical(),
-      is_property = logical(),
-      is_entity = logical(),
-      is_constraint = logical(),
-      is_method = logical(),
-      role_hints = character()
-    ))
+    return(.smn_index_empty())
   }
 
   dplyr::bind_rows(rows) %>%
     dplyr::distinct(.data$iri, .keep_all = TRUE)
+}
+
+# One row of the smn term index, and the one place its role hints are emitted.
+# Both smn readers build their rows here -- the module reader above and the
+# release reader below -- so a term reaches ranking and the role-type validator
+# with the same hints whichever way smn was read. `module_name` is the evidence
+# `.smn_role_flags()` reads; `search_module` is the module name the module
+# reader also folds into `search_text` (the release reader has none to fold).
+.smn_index_row <- function(iri, type_iris, labels, alt_labels, definition,
+                           in_scheme, parents, module_name,
+                           search_module = character()) {
+  label <- if (length(labels)) labels[[1]] else .smn_subject_local_name(iri)
+  definition_text <- if (length(definition)) paste(definition, collapse = " | ") else ""
+  resource_kind <- .smn_resource_kind(type_iris)
+  role_flags <- .smn_role_flags(
+    label = label,
+    definition = definition_text,
+    resource_kind = resource_kind,
+    module_name = module_name,
+    in_scheme = paste(in_scheme, collapse = " | "),
+    parent_iris = paste(parents, collapse = " | "),
+    type_iris = paste(type_iris, collapse = " | "),
+    iri = iri
+  )
+  search_text <- tolower(paste(
+    c(
+      label,
+      paste(alt_labels, collapse = " "),
+      definition_text,
+      paste(in_scheme, collapse = " "),
+      paste(parents, collapse = " "),
+      .smn_subject_local_name(iri),
+      search_module
+    ),
+    collapse = " "
+  ))
+  role_hints <- paste(
+    c(
+      if (isTRUE(role_flags$is_variable)) "variable",
+      if (isTRUE(role_flags$is_property)) "property",
+      if (isTRUE(role_flags$is_entity)) "entity",
+      if (isTRUE(role_flags$is_constraint)) "constraint",
+      if (isTRUE(role_flags$is_method)) "method",
+      if (isTRUE(role_flags$is_statistical_modifier)) "statistical_modifier"
+    ),
+    collapse = "|"
+  )
+
+  tibble::tibble(
+    iri = iri,
+    label = label,
+    alt_labels = paste(alt_labels, collapse = " | "),
+    definition = definition_text,
+    resource_kind = resource_kind %||% "Resource",
+    in_scheme = paste(in_scheme, collapse = " | "),
+    parent_iris = paste(parents, collapse = " | "),
+    type_iris = paste(type_iris, collapse = " | "),
+    search_text = search_text,
+    is_variable = isTRUE(role_flags$is_variable),
+    is_property = isTRUE(role_flags$is_property),
+    is_entity = isTRUE(role_flags$is_entity),
+    is_constraint = isTRUE(role_flags$is_constraint),
+    is_method = isTRUE(role_flags$is_method),
+    role_hints = role_hints
+  )
+}
+
+.smn_index_empty <- function() {
+  tibble::tibble(
+    iri = character(),
+    label = character(),
+    alt_labels = character(),
+    definition = character(),
+    resource_kind = character(),
+    in_scheme = character(),
+    parent_iris = character(),
+    type_iris = character(),
+    search_text = character(),
+    is_variable = logical(),
+    is_property = logical(),
+    is_entity = logical(),
+    is_constraint = logical(),
+    is_method = logical(),
+    role_hints = character()
+  )
+}
+
+# The smn term index of one release snapshot, read from its RDF/XML.
+#
+# A release is one merged graph, `docs/releases/<version>/smn.owl` in the
+# salmon-domain-ontology repository, so it has no modules for the reader above
+# to read, and its Turtle is a serializer's output, which that reader's
+# line-based parse does not read (it found no terms in the 0.0.3 release). The
+# RDF/XML is read with an XML parser and every row is built by
+# `.smn_index_row()`, so the terms carry the hints the module reader gives
+# them. Two things differ between a release and the modules, and each is read
+# so that the hints still agree:
+#
+# * The serializer declares every individual `owl:NamedIndividual`, which no
+#   smn module asserts. The declaration is left out of the type evidence: kept,
+#   its word "individual" gave every SKOS concept an entity hint.
+# * A release says nothing about which module a term came from. smn keeps its
+#   shared SKOS schemes and concepts, and only those, in
+#   `07-controlled-vocabularies` (its `ontology/modules/README.md`, and Layer B
+#   of its CONVENTIONS.md), so a term typed `skos:Concept` or
+#   `skos:ConceptScheme` is read as that module's. The only other module the
+#   hints read is `01-entity-systematics`, whose entity hint rests on the
+#   module alone, so a release cannot reproduce it.
+#
+# Measured on the smn main branch at 0e42037 (its modules against its own
+# merged build): 126 of 129 shared terms carry the same hints. The other three
+# are GeographicFeature, which loses the hint `01-entity-systematics` gave it,
+# and YearBasis and AgeNotation, whose label and definition sit in a module
+# the module reader drops as a duplicate block, so only this reader sees them.
+.smn_release_index <- function(doc) {
+  ns <- .ms_rdfxml_ns()
+  serializer_types <- "http://www.w3.org/2002/07/owl#NamedIndividual"
+  fields <- list()
+
+  for (node in xml2::xml_find_all(doc, "/rdf:RDF/*[@rdf:about]", ns = ns)) {
+    iri <- xml2::xml_attr(node, "rdf:about", ns = ns)
+    if (is.na(iri) || !grepl("^https?://w3id\\.org/smn/", iri)) {
+      next
+    }
+    resource <- function(xpath) {
+      values <- xml2::xml_attr(xml2::xml_find_all(node, xpath, ns = ns), "rdf:resource", ns = ns)
+      values[!is.na(values) & nzchar(values)]
+    }
+    literal <- function(xpath) {
+      values <- xml2::xml_text(xml2::xml_find_all(node, xpath, ns = ns))
+      values <- trimws(gsub("\\s+", " ", values, perl = TRUE))
+      values[nzchar(values)]
+    }
+    element_type <- paste0(
+      xml2::xml_find_chr(node, "namespace-uri(.)"),
+      xml2::xml_find_chr(node, "local-name(.)")
+    )
+    if (identical(element_type, paste0(ns[["rdf"]], "Description"))) {
+      element_type <- character()
+    }
+
+    # One subject can be spread over several nodes; its values are gathered
+    # predicate by predicate, in the order the module reader reads them.
+    seen <- fields[[iri]] %||% list()
+    add <- function(name, values) c(seen[[name]], values)
+    fields[[iri]] <- list(
+      type = add("type", c(element_type, resource("./rdf:type"))),
+      label = add("label", literal("./rdfs:label")),
+      pref_label = add("pref_label", literal("./skos:prefLabel")),
+      alt_label = add("alt_label", literal("./skos:altLabel")),
+      iao_definition = add("iao_definition", literal("./obo:IAO_0000115")),
+      skos_definition = add("skos_definition", literal("./skos:definition")),
+      comment = add("comment", literal("./rdfs:comment")),
+      in_scheme = add("in_scheme", resource("./skos:inScheme")),
+      sub_class_of = add("sub_class_of", resource("./rdfs:subClassOf")),
+      broader = add("broader", resource("./skos:broader")),
+      equivalent_class = add("equivalent_class", resource("./owl:equivalentClass")),
+      sub_property_of = add("sub_property_of", resource("./rdfs:subPropertyOf"))
+    )
+  }
+
+  rows <- list()
+  for (iri in names(fields)) {
+    f <- fields[[iri]]
+    type_iris <- setdiff(unique(f$type), serializer_types)
+    if (paste0(ns[["owl"]], "Ontology") %in% type_iris) {
+      next
+    }
+    resource_kind <- .smn_resource_kind(type_iris)
+    module_name <- if (isTRUE(resource_kind %in% c("Concept", "ConceptScheme"))) {
+      "07-controlled-vocabularies"
+    } else {
+      ""
+    }
+    rows[[length(rows) + 1L]] <- .smn_index_row(
+      iri = iri,
+      type_iris = type_iris,
+      labels = unique(c(f$label, f$pref_label)),
+      alt_labels = unique(f$alt_label),
+      definition = unique(c(f$iao_definition, f$skos_definition, f$comment)),
+      in_scheme = unique(f$in_scheme),
+      parents = unique(c(f$sub_class_of, f$broader, f$equivalent_class, f$sub_property_of)),
+      module_name = module_name
+    )
+  }
+
+  if (length(rows) == 0) {
+    return(.smn_index_empty())
+  }
+  dplyr::bind_rows(rows)
 }

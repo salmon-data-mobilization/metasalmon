@@ -78,6 +78,22 @@ metasalmon (development version)
 
 ### Added
 
+* **`find_terms()` and `fetch_salmon_ontology()` read a pinned release of smn
+  or gcdfo** (tern ECOSYSTEM M-12). `find_terms(release = c(smn = "0.0.3"))`
+  searches that release instead of the latest ontology. The release is
+  downloaded once per session from its version IRI and checked against its
+  `MANIFEST.sha256` when it has one; `snapshot_dir = c(smn = "<dir>")` reads a
+  local copy of the release directory instead. The result's
+  `"ontology_release"` attribute records what was searched: the version, the
+  declared `owl:versionIRI`, the file, its SHA-256 and whether a manifest
+  verified it. `fetch_salmon_ontology(release = "0.0.3")` returns the release
+  file `accept` prefers, cached under `cache_dir/releases/`. A pin never falls
+  back to the latest ontology: a release that cannot be read, or does not match
+  its manifest, is an error. A pinned smn release is read from its RDF/XML, and
+  its terms get the role hints the module reader gives them, except an entity
+  hint that comes only from membership of the `01-entity-systematics` module.
+  metasalmonpy does the same.
+
 * `capture_catalogue_query()` captures bounded public KNB/DataONE metadata
   pages and a checksum-bearing query receipt, with explicit record/page/byte
   limits, stable-count and duplicate-PID checks, and preserved incomplete
@@ -325,6 +341,12 @@ metasalmon (development version)
   B-327).
 
 ### Fixed
+
+* The RDF/XML ontology reader names its namespaces by URI, not by the prefixes
+  the file happens to use. It looked them up in the file, so a file that bound
+  the OBO namespace to another prefix, as the smn 0.0.3 release binds it to
+  `ns1`, lost every IAO definition, with one warning per term. metasalmonpy's
+  reader already matched by namespace.
 
 * **`review_semantics()` shows a model's accept under the candidate it chose,
   and any other decision once per slot and role.** An assessment is one row per
@@ -1545,6 +1567,17 @@ metasalmon (development version)
   **Mirror:** metasalmonpy's helpers return an empty frame for a failed request
   with no warning, measured by the second 2026-09-25 queue sweep on its `main`
   at `056fccc`. The warning is owed there as a port, hub item B-378.
+
+* **`verify_sdp_semantic_iris()` reports a malformed IRI as malformed again
+  under Ubuntu's patched libcurl.** Ubuntu's libcurl security update
+  8.5.0-2ubuntu10.16 (2026-10-12) cannot read the effective URL of a request
+  whose URL it rejected, and says "Out of memory". The default requester read
+  that before the transfer's own failure, so it tried a malformed IRI three
+  times and recorded "Out of memory" as a transient error. It now records the
+  transfer's reason after one attempt, as on every other libcurl. The existing
+  malformed-URL test in `tests/testthat/test-semantic-iri-verification.R`
+  failed under the update and passes with the change. metasalmonpy's requester
+  uses HTTPX, not libcurl, and needs no change.
 
 ### Changed
 

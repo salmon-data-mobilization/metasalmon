@@ -3,7 +3,8 @@
 #
 #   1. the target/role maps          (semantic-suggestions.R, semantics-helpers.R)
 #   2. the bundle roles + slot fields (semantic-bundle-review.R, incl. the prompt)
-#   3. the role-hint vocabulary      (.smn_role_flags + both hint emitters)
+#   3. the role-hint vocabulary      (.smn_role_flags + both hint emitters:
+#                                     .smn_index_row and .parse_salmon_rdfxml)
 #   4. the retrieval filters         (sources_for_role, .gcdfo_filter_for_role)
 #   5. the deterministic validators  (semantic-bundle-validators.R)
 #   6. the ranking preferences       (inst/extdata/ontology-preferences.csv)
@@ -183,12 +184,22 @@ test_that("SURFACE 3: the role-hint layers emit every role they can flag", {
   )
   expect_setequal(names(flags), paste0("is_", hint_roles))
 
-  ttl_emitter <- fn_source_text(metasalmon:::.parse_smn_ttl_modules)
+  # smn has one emitter, `.smn_index_row()`, and both of its readers -- the
+  # module reader for the latest ontology and the release reader for a pinned
+  # one -- build every row through it, so neither can emit a role the other
+  # drops. (Until the release reader existed the emitter sat inline in the
+  # module reader, and this check read that function's body.)
+  smn_emitter <- fn_source_text(metasalmon:::.smn_index_row)
   rdf_emitter <- fn_source_text(metasalmon:::.parse_salmon_rdfxml)
   for (role in hint_roles) {
     quoted <- paste0("\"", role, "\"")
-    expect_match(ttl_emitter, quoted, fixed = TRUE)
+    expect_match(smn_emitter, quoted, fixed = TRUE)
     expect_match(rdf_emitter, quoted, fixed = TRUE)
+  }
+  for (reader in c(".parse_smn_ttl_modules", ".smn_release_index")) {
+    body_text <- fn_source_text(get(reader, envir = asNamespace("metasalmon")))
+    expect_match(body_text, ".smn_index_row(", fixed = TRUE, info = reader)
+    expect_no_match(body_text, "role_hints = ", fixed = TRUE, info = reader)
   }
 })
 
