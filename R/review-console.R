@@ -232,8 +232,10 @@
 #' **This never contacts a network or an LLM.** It reads the
 #' `semantic_suggestions` attribute (or `semantic_suggestions.csv`) that
 #' `suggest_semantics()` / `create_sdp()` already produced. When those
-#' suggestions carry LLM review -- only possible if they were generated with
-#' `llm_assess = TRUE` -- this surfaces it; it never generates it.
+#' suggestions carry a model's assessment -- ingested from your own harness by
+#' [ingest_semantic_assessments()], or made by the deprecated
+#' `llm_assess = TRUE` -- this shows it, an accept under the candidate it chose
+#' and any other decision once per slot and role; it never generates one.
 #'
 #' @param x A written package path, a dictionary carrying the
 #'   `semantic_suggestions` attribute, or the artifact list returned by
@@ -241,7 +243,10 @@
 #' @param include_filled Logical; if `TRUE`, also queue slots that already hold
 #'   a final (non-`REVIEW:`) IRI. NuSEDS crosswalk-prefilled code slots with a
 #'   saved shortlist are shown by default until decided. Defaults to `FALSE`.
-#' @param max_candidates Maximum candidates shown per slot. `Inf` shows all.
+#' @param max_candidates Maximum candidates shown per target: per slot, and per
+#'   role where a code value's slot holds its constraint, entity and method
+#'   targets. `Inf` shows all. A candidate a model accepted is shown whatever
+#'   its rank.
 #' @param columns Optional character vector restricting the queue to these
 #'   column names.
 #'
@@ -283,15 +288,56 @@ review_semantics <- function(x,
                              max_candidates = 5L,
                              columns = NULL) {
   queue <- .ms_review_queue(x, include_filled = include_filled, columns = columns)
-  review <- queue$review
+  placed <- .ms_review_place_llm_verdicts(queue)
+  review <- placed$review
 
-  if (is.finite(max_candidates)) {
-    review <- review[review$rank <= as.integer(max_candidates), , drop = FALSE]
+  if (is.finite(max_candidates) && nrow(review) > 0L) {
+    # The cap is per target, a slot and role. A code value's slot holds its
+    # constraint, entity and method targets, and capped by the slot's rank,
+    # five candidates for its first target hid the others' rows and their
+    # verdicts with them. `rank` stays the slot's, which is what
+    # accept_suggestion() reads. The candidate a model accepted stays in view
+    # whatever its rank: it is the choice a person is asked to confirm.
+    target <- paste(review$slot_id, review$role, sep = "|")
+    position <- stats::ave(seq_along(target), target, FUN = seq_along)
+    review <- review[position <= as.integer(max_candidates) | placed$chosen, , drop = FALSE]
   }
 
   attr(review, "review_path") <- queue$review_path
   class(review) <- c("ms_semantic_review", class(tibble::tibble()))
   review
+}
+
+# Keep a model's accept on the one candidate it chose. An assessment is one row
+# per target, and merging it into the suggestions copies its decision,
+# confidence and rationale onto every candidate of the target; only
+# `llm_selected` says which candidate an accept chose. Shown as it came, a
+# harness's accept of candidate 2 printed `llm: accept` under every candidate
+# in the slot, and the person confirming it could not tell which one it meant.
+# So an accept stays on the selected candidate's row and is cleared from the
+# others. Any other decision judges the whole shortlist, stays on every row, and
+# is printed once for its target. Suggestions with no `llm_selected` column, and
+# an accept none of whose candidates is selected, are left as they came. A
+# verdict belongs to a target, a slot and role, not to the slot: a measurement
+# column's code carries its constraint, entity and method targets in one
+# codes.csv slot, each judged on its own.
+# Returns the rows and, aligned with them, which row is an accepted candidate:
+# the one row per target that stays shown past `max_candidates`.
+.ms_review_place_llm_verdicts <- function(queue) {
+  review <- queue$review
+  suggestions <- queue$suggestions
+  if (nrow(review) == 0L || !"llm_selected" %in% names(suggestions)) {
+    return(list(review = review, chosen = rep(FALSE, nrow(review))))
+  }
+  selected <- .ms_llm_selected_flag(suggestions$llm_selected[queue$source_row])
+  accepted <- !is.na(review$llm_decision) & review$llm_decision == "accept"
+  target <- paste(review$slot_id, review$role, sep = "|")
+  chosen <- accepted & selected
+  clear <- accepted & !selected & target %in% target[chosen]
+  review$llm_decision[clear] <- NA_character_
+  review$llm_confidence[clear] <- NA_real_
+  review$llm_rationale[clear] <- NA_character_
+  list(review = review, chosen = chosen)
 }
 
 # The review queue: which slots still need a decision, with every candidate
@@ -779,6 +825,18 @@ review_semantics <- function(x,
   paste0(indent, wrapped)
 }
 
+# A model's verdict and its rationale, as the console prints them.
+.ms_review_llm_lines <- function(row, lead) {
+  confidence <- row$llm_confidence[[1]]
+  c(
+    paste0(
+      lead, .ms_scalar_text(row$llm_decision),
+      if (!is.na(confidence)) paste0(" (confidence ", format(confidence, trim = TRUE), ")") else ""
+    ),
+    .ms_review_wrap(row$llm_rationale, indent = "            ")
+  )
+}
+
 # The whole console view, as a plain character vector. `print()` only emits
 # what this returns, so tests assert against these lines rather than against
 # rendered terminal output -- hyperlink support is terminal-dependent and the
@@ -841,6 +899,23 @@ review_semantics <- function(x,
         )
       })
     }
+    # A model's decision other than accept judges its target's whole
+    # shortlist, so it is printed once, here, rather than under every
+    # candidate; an accept is printed under the one candidate it chose. A slot
+    # can hold several targets, one per role (a measurement column's code has
+    # constraint, entity and method), each with its own verdict, so each is
+    # printed and, when the slot has more than one role, names its role.
+    row_roles <- ifelse(is.na(rows$role), "", rows$role)
+    has_verdict <- !is.na(rows$llm_decision) & nzchar(rows$llm_decision)
+    shortlist_roles <- Filter(function(role) {
+      !any(rows$llm_decision[has_verdict & row_roles == role] == "accept")
+    }, unique(row_roles[has_verdict]))
+    several_roles <- length(unique(row_roles)) > 1L
+    for (role in shortlist_roles) {
+      verdict <- rows[has_verdict & row_roles == role, , drop = FALSE][1, , drop = FALSE]
+      lead <- paste0("   llm:     ", if (several_roles) paste0(role, ": ") else "")
+      lines <- c(lines, .ms_review_llm_lines(verdict, lead))
+    }
     lines <- c(lines, "")
 
     for (i in seq_len(nrow(rows))) {
@@ -858,14 +933,8 @@ review_semantics <- function(x,
       lines <- c(lines, paste0("       ", .ms_review_iri_display(
         candidate$iri[[1]], candidate$source[[1]], candidate$ontology[[1]]
       )))
-      llm_decision <- .ms_scalar_text(candidate$llm_decision)
-      if (nzchar(llm_decision)) {
-        confidence <- candidate$llm_confidence[[1]]
-        lines <- c(lines, paste0(
-          "       llm: ", llm_decision,
-          if (!is.na(confidence)) paste0(" (confidence ", format(confidence, trim = TRUE), ")") else ""
-        ))
-        lines <- c(lines, .ms_review_wrap(candidate$llm_rationale, indent = "            "))
+      if (!row_roles[[i]] %in% shortlist_roles && nzchar(.ms_scalar_text(candidate$llm_decision))) {
+        lines <- c(lines, .ms_review_llm_lines(candidate, "       llm: "))
       }
       # A call is printed only where it runs. A candidate whose IRI names no
       # term is here only to carry a recorded reject, or because the review was

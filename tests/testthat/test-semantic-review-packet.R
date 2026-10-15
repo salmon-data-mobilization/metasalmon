@@ -626,6 +626,26 @@ test_that("apply_semantic_suggestions(strategy = 'llm') applies only an accept",
   expect_true(is.na(out$term_iri[out$column_name == "b"]))
 })
 
+test_that("apply_semantic_suggestions(strategy = 'llm') reads a selection flag held as text", {
+  # A package's semantic_suggestions.csv, and the suggestions an ingest of a
+  # package path returns, hold llm_selected as the text TRUE or FALSE, and
+  # `!is.na(x) & x` refused it: "operations are possible only for numeric,
+  # logical or complex types". metasalmonpy's twin, where astype(bool) read
+  # "FALSE" as true and applied the first candidate whichever the harness
+  # chose, is the test of the same name in tests/test_semantic_review_packet.py.
+  frame <- tibble::tibble(
+    dataset_id = "d1", table_id = "t1", column_name = "a", code_value = NA_character_,
+    dictionary_role = "variable", target_scope = "column", target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "term_iri", target_row_key = "d1/t1/a", search_query = "q",
+    label = c("A one", "A two"), iri = c("https://example.org/a1", "https://example.org/a2"),
+    source = "smn", ontology = "smn", definition = "x", score = c(2, 1),
+    llm_selected = c("FALSE", "TRUE"), llm_decision = "accept", llm_confidence = 0.9
+  )
+  dict <- tibble::tibble(dataset_id = "d1", table_id = "t1", column_name = "a", column_role = "measurement", term_iri = NA_character_)
+  out <- suppressMessages(apply_semantic_suggestions(dict, suggestions = frame, strategy = "llm", verbose = FALSE))
+  expect_identical(out$term_iri[out$column_name == "a"], "https://example.org/a2")
+})
+
 # -----------------------------------------------------------------------------
 # The Theme A oracles, replayed through the ingester
 # -----------------------------------------------------------------------------
