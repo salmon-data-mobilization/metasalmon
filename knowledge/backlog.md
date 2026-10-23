@@ -9153,3 +9153,37 @@ stops before a public mutation, and completed review summaries are read with
 actual review threads. This preserves the existing HUB gate. A further
 review was already present here, so this is not evidence that the numerical
 review cap should change. Original checkpoints and terminal ownership remain.
+
+### B-438 — NuSEDS crosswalks emit one undeclared IRI and miss four values seen in released data
+
+**Source-verified, 2026-10-23.** `R/nuseds-method-crosswalk.R:68` maps
+`Based on Angling Catch` to `gcdfo:EnumerationMethod`. A subject lookup finds
+that IRI in neither the gcdfo 0.0.9 release (`docs/releases/0.0.9/gcdfo.ttl`
+in dfo-salmon-ontology) nor gcdfo `main`. Both declare `smn:EnumerationMethod`,
+typed `sosa:Procedure` and in `gcdfo:EnumerationMethodScheme`, which is the
+fix #76 already named. The same lookup finds every other `ontology_term` the
+three crosswalks emit declared in gcdfo 0.0.9.
+
+The PSF cleaned NuSEDS release (Carturan and Peacock 2026,
+[doi:10.5281/zenodo.19959144](https://doi.org/10.5281/zenodo.19959144),
+derived from the 2025-11-03 DFO NuSEDS extract) carries four values the
+crosswalks do not list. A DuckDB profile of its 315,501 rows counted
+`ESTIMATE_CLASSIFICATION` `NO SURVEY` in 50 rows, `ESTIMATE_METHOD`
+`Fence Count` in 2,553 and `Aerial Survey` in 6, and the
+`ENUMERATION_METHODS` token `Net` once.
+
+Brett ruled on 2026-10-23 to fix the row and add the four values, with
+`Fence Count` mapped to `gcdfo:FixedStationTally`, the concept `Fixed Site
+Census` already uses. The other three stay unmapped with a note each: `NO
+SURVEY` is the same absence-of-observation marker as `NO SURVEY THIS YEAR`;
+`Aerial Survey` is a field method recorded in the estimate-method column, and
+`gcdfo:AerialSurveyCount` is an enumeration method rather than an estimate
+method; and `Net` names no documented gear or procedure. The ruling does not
+decide #76's open estimate-branch question.
+
+### B-439 — Port B-438's NuSEDS crosswalk rows to metasalmonpy
+
+**Source-verified, 2026-10-23.** metasalmonpy's `nuseds.py:65` carries the
+same `gcdfo:EnumerationMethod` row, and its three crosswalks lack the same four
+values. The port is catch-up to B-438's ruling under the mirror contract, not
+a new parity row.
