@@ -1,6 +1,6 @@
 id: B-439
 kind: defect
-title: Port B-438's NuSEDS crosswalk rows to metasalmonpy
+title: Port B-438's four NuSEDS crosswalk rows to metasalmonpy
 state: ready
 claimable: true
 repo: metasalmonpy
@@ -9,4 +9,4 @@ severity: P2
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'IN METASALMONPY, nuseds.py carries the same five crosswalk rows as B-438 -- Based on Angling Catch mapped to smn:EnumerationMethod; NO SURVEY, Aerial Survey and Net unmapped with notes; Fence Count mapped to gcdfo:FixedStationTally -- with nuseds_value, family, ontology_term and notes strings identical to R, tests pinning each row, and a CHANGELOG.md entry. Catch-up to the same 2026-10-23 ruling under the mirror contract, not a new parity row. Twin of B-438 in metasalmon.'
+retires_when: 'IN METASALMONPY, nuseds.py carries the same four crosswalk rows as B-438 -- NO SURVEY, Aerial Survey and Net unmapped with notes, and Fence Count mapped to gcdfo:FixedStationTally -- with nuseds_value, family, ontology_term and notes strings identical to R, tests pinning each row, and a CHANGELOG.md entry. Catch-up to the same 2026-10-23 ruling under the mirror contract, not a new parity row. Twin of B-438 in metasalmon.'

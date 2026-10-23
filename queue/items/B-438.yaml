@@ -1,6 +1,6 @@
 id: B-438
 kind: defect
-title: NuSEDS crosswalks emit one undeclared IRI and miss four values seen in released data
+title: NuSEDS crosswalks miss four code values found in released NuSEDS data
 state: ready
 claimable: true
 repo: metasalmon
@@ -9,4 +9,4 @@ severity: P2
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'In metasalmon, nuseds_enumeration_method_crosswalk() maps Based on Angling Catch to smn:EnumerationMethod instead of the undeclared gcdfo:EnumerationMethod, and the three NuSEDS crosswalks carry the four values found in the PSF cleaned NuSEDS release (Zenodo 10.5281/zenodo.19959144): ESTIMATE_CLASSIFICATION NO SURVEY unmapped as an absence-of-observation marker, like NO SURVEY THIS YEAR; ESTIMATE_METHOD Fence Count mapped to gcdfo:FixedStationTally, like Fixed Site Census; ESTIMATE_METHOD Aerial Survey unmapped, because gcdfo:AerialSurveyCount is an enumeration method and not an estimate method; and ENUMERATION_METHODS Net unmapped as method-unknown. Tests pin each row, NEWS.md records the changed and added rows, the roxygen states the scheme-level link, and the workpad records that every ontology_term the three crosswalks emit is declared in gcdfo 0.0.9. Twin of B-439 in metasalmonpy. Rows and targets ruled by Brett 2026-10-23; B-76''s estimate-branch choice is not decided here.'
+retires_when: 'In metasalmon, the three NuSEDS crosswalks carry the four values found in the PSF cleaned NuSEDS release (Zenodo 10.5281/zenodo.19959144): ESTIMATE_CLASSIFICATION NO SURVEY unmapped as an absence-of-observation marker, like NO SURVEY THIS YEAR; ESTIMATE_METHOD Fence Count mapped to gcdfo:FixedStationTally, like Fixed Site Census; ESTIMATE_METHOD Aerial Survey unmapped, because gcdfo:AerialSurveyCount is an enumeration method and not an estimate method; and ENUMERATION_METHODS Net unmapped as method-unknown. Tests pin each row and NEWS.md records them. Twin of B-439 in metasalmonpy. Rows and targets ruled by Brett 2026-10-23. Based on Angling Catch keeps gcdfo:EnumerationMethod, which Brett''s 2026-10-23 B-76 ruling has gcdfo mint, so that row is not changed here.'
