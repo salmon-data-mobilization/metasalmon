@@ -58,7 +58,10 @@ written, and where it differs from the item file, the item file is right.
   package now reaches strict validation entirely from R; **#60 narrowed** the
   same day (its accessor clause closed, every other clause stands, so it stays
   open above); **#118** filed and fixed the same day. Open only in
-  part: **#76** (its crosswalk-retarget half), **#79** (four of its six
+  part: **#76** (ruled 2026-10-23 as [Q73](questions.md): both method
+  branches stay in gcdfo; the gcdfo change is
+  [dfo-salmon-ontology #89](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/89),
+  awaiting its collaborator's review), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
   coverage count remain), and
   **#99** (this repo's dictionary is fixed; metasalmonpy and smn-data-pkg
@@ -2294,7 +2297,13 @@ observational unit — which is why #77 was sequenced ahead of the method work i
 roadmap S8.
 
 **#76 SMN and gcdfo model methods in different styles — DECIDED 2026-08-13,
-smn side implemented.** Brett ordered methods-as-SKOS ("migrate SMN methods
+smn side implemented.** **Ruled again 2026-10-23 ([Q73](questions.md)): both method
+branches stay in gcdfo, gcdfo declares its own `gcdfo:EnumerationMethod`
+(`skos:exactMatch smn:EnumerationMethod`) and types `:EstimateMethod`
+`sosa:Procedure`; the crosswalk row "Based on Angling Catch" stays
+`gcdfo:EnumerationMethod`. The open half described below is closed by
+[dfo-salmon-ontology #89](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/89),
+not by a crosswalk retarget.** Brett ordered methods-as-SKOS ("migrate SMN methods
 from OWL classes to SKOS concepts"); smn PR #22 migrated the six method
 classes to `smn:MethodScheme` concepts (IRIs unchanged, instance-typed
 `sosa:Procedure`), resolving the cross-repo pun.
