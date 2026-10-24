@@ -2045,26 +2045,26 @@ answered *"Yes. dont worry about showing me the words though. Just merge it"*.
    ruling the row stays `gcdfo:EnumerationMethod`, in both
    `R/nuseds-method-crosswalk.R` and metasalmonpy's `nuseds.py`. It becomes
    valid as written once gcdfo declares the IRI, so neither package changes for
-   it. The four NuSEDS codes missing from both crosswalks are `B-438` and
-   `B-439`, filed by pull request #279, whose scope already follows this ruling.
+   it. The four NuSEDS codes missing from both crosswalks are a separate
+   matter, which pull request #279 files and whose scope already follows this
+   ruling.
 
 **Where it is implemented, which is the authority rather than this entry.**
 [dfo-salmon-ontology pull request #89](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/89),
-with its ADR-010. On that branch, all 45 non-missing `gcdfo:` targets of
-`R/nuseds-method-crosswalk.R` reach a `sosa:Procedure` by a zero-or-more-step
-`skos:broader` path. Before it, 22 passed, 22 failed and 1 was undeclared. smn
-`main` and the smn pin `f7205ee` give the same counts. gcdfo is not solo under
-`HUB.md`, and its collaborator reviews every merge request (Brett, 2026-09-23),
-so that pull request merges only after that review. Brett's "just merge it"
-waives his own review of the wording, not the collaborator's.
+with its ADR-010, which records the reachability measurements before and after
+the change. gcdfo is not solo under `HUB.md`, and its collaborator reviews every
+merge request (Brett, 2026-09-23), so that pull request merges only after that
+review. Brett's "just merge it" waives his own review of the wording, not the
+collaborator's.
 
-**What it closes and what it leaves.**
+**What it settles and what it leaves.**
 
-- `B-76` is done with this entry.
-- `B-148` is unblocked, and retires when the gcdfo pull request merges.
-- `B-48` still waits behind `B-148`.
+- It settles the one choice `B-76` left open.
+- It removes the dependency `B-148` had on that choice. The item's own
+  `retires_when` defines when it retires.
+- It does not change the order between `B-48` and `B-148`.
 - The PSC controlled vocabulary's nine `psc-to-smn` rows
   (`skos:broadMatch smn:EnumerationMethod`) are unaffected, because
   `smn:EnumerationMethod` is unchanged.
 
-**Owner:** queue items `B-76` (done) and `B-148`.
+**Owner:** queue items `B-76` and `B-148`.
