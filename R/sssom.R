@@ -177,6 +177,7 @@
 .ms_sssom_justifications <- paste0(
   "semapv:",
   c(
+    "AgentBasedMatching",
     "MappingReview",
     "ManualMappingCuration",
     "LogicalReasoning",
