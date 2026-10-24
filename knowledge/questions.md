@@ -2017,3 +2017,54 @@ promises no fallback. The case the other way: a user who has fetched once can
 keep working offline in R and cannot in metasalmonpy, whose own module
 docstring names offline work as a purpose of its cache.
 **Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-71`.
+
+
+### Q73 — Where do gcdfo's method branches hang, and does gcdfo keep its own enumeration top concept? — ANSWERED 2026-10-23 (Brett)
+
+**Ruling: both method branches stay in gcdfo.** *"enumeration method and
+estimation method were developed in GCDFO and should probably stay there,
+actually."* — Brett, 2026-10-23, in chat. Asked whether to draft a ruling in
+which both branches stay in gcdfo and gcdfo gets its own enumeration-method top
+concept, mapped to `smn:EnumerationMethod` rather than using it as the top, he
+answered *"Yes. dont worry about showing me the words though. Just merge it"*.
+
+**What it decides.**
+
+1. **B-76's remaining choice: the first option.** gcdfo's `:EstimateMethod` is
+   typed `sosa:Procedure`. The estimate branch is not promoted into
+   `smn:MethodScheme`.
+2. **The enumeration top concept returns to gcdfo.** This goes beyond B-76's two
+   options. `gcdfo:EnumerationMethod` is declared again, with the IRI and
+   definition of gcdfo releases 0.0.2 and 0.0.999 (it was removed on 2026-03-15).
+   It is typed `sosa:Procedure`, is the top concept of
+   `gcdfo:EnumerationMethodScheme`, and is `skos:exactMatch smn:EnumerationMethod`.
+   For enumeration methods only, this supersedes the arrangement under which
+   `smn:EnumerationMethod` was gcdfo's scheme top concept. smn is unchanged.
+3. **The crosswalk row stays as it is.** B-76's text named
+   `smn:EnumerationMethod` as the fix for "Based on Angling Catch". Under this
+   ruling the row stays `gcdfo:EnumerationMethod`, in both
+   `R/nuseds-method-crosswalk.R` and metasalmonpy's `nuseds.py`. It becomes
+   valid as written once gcdfo declares the IRI, so neither package changes for
+   it. The four NuSEDS codes missing from both crosswalks are `B-438` and
+   `B-439`, filed by pull request #279, whose scope already follows this ruling.
+
+**Where it is implemented, which is the authority rather than this entry.**
+[dfo-salmon-ontology pull request #89](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/89),
+with its ADR-010. On that branch, all 45 non-missing `gcdfo:` targets of
+`R/nuseds-method-crosswalk.R` reach a `sosa:Procedure` by a zero-or-more-step
+`skos:broader` path. Before it, 22 passed, 22 failed and 1 was undeclared. smn
+`main` and the smn pin `f7205ee` give the same counts. gcdfo is not solo under
+`HUB.md`, and its collaborator reviews every merge request (Brett, 2026-09-23),
+so that pull request merges only after that review. Brett's "just merge it"
+waives his own review of the wording, not the collaborator's.
+
+**What it closes and what it leaves.**
+
+- `B-76` is done with this entry.
+- `B-148` is unblocked, and retires when the gcdfo pull request merges.
+- `B-48` still waits behind `B-148`.
+- The PSC controlled vocabulary's nine `psc-to-smn` rows
+  (`skos:broadMatch smn:EnumerationMethod`) are unaffected, because
+  `smn:EnumerationMethod` is unchanged.
+
+**Owner:** queue items `B-76` (done) and `B-148`.
