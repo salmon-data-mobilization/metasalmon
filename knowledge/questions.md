@@ -2060,9 +2060,9 @@ collaborator's.
 **What it settles and what it leaves.**
 
 - It settles the one choice `B-76` left open.
-- `B-148` no longer depends on that choice. The item's own `retires_when`
-  defines when it retires.
-- The order between `B-48` and `B-148` is unchanged.
+- It removes the dependency `B-148` had on that choice. The item's own
+  `retires_when` defines when it retires.
+- It does not change the order between `B-48` and `B-148`.
 - The PSC controlled vocabulary's nine `psc-to-smn` rows
   (`skos:broadMatch smn:EnumerationMethod`) are unaffected, because
   `smn:EnumerationMethod` is unchanged.
