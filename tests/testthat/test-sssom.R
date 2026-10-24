@@ -1502,3 +1502,58 @@ test_that("validate_sdp_sssom still accepts a package in the pre-canonical byte 
   jsonlite::write_json(manifest, manifest_path, auto_unbox = TRUE, pretty = TRUE)
   expect_true(isTRUE(validate_sdp_sssom(written$sdp)))
 })
+
+
+test_that("AgentBasedMatching round-trips with its exact justification", {
+  root <- withr::local_tempdir()
+  source <- file.path(root, "agent.sssom.tsv")
+  text <- gsub(
+    "semapv:ManualMappingCuration", "semapv:AgentBasedMatching",
+    sssom_test_text(), fixed = TRUE
+  )
+  sssom_test_write_raw(source, text)
+  parsed <- read_sssom_mapping_set(source)
+  expect_identical(
+    parsed$mappings$mapping_justification, "semapv:AgentBasedMatching"
+  )
+
+  sdp <- file.path(root, "sdp-agent")
+  dir.create(sdp)
+  write_sdp_sssom(sdp, mapping_sets = parsed)
+  expect_true(isTRUE(validate_sdp_sssom(sdp)))
+  manifest <- sssom_test_manifest(
+    file.path(sdp, "metadata", "semantic", "mapping-sets.json")
+  )
+  written <- read_sssom_mapping_set(
+    file.path(sdp, manifest$mapping_sets[[1]]$path)
+  )
+  expect_identical(
+    written$mappings$mapping_justification, "semapv:AgentBasedMatching"
+  )
+})
+
+test_that("agent matching support still refuses unknown justifications", {
+  root <- withr::local_tempdir()
+  for (justification in c(
+    "semapv:UnknownMatchingProcess", "semapv:AgentBasedMatchingTypo"
+  )) {
+    source <- file.path(root, "unknown-agent.sssom.tsv")
+    text <- gsub(
+      "semapv:ManualMappingCuration", justification,
+      sssom_test_text(), fixed = TRUE
+    )
+    sssom_test_write_raw(source, text)
+    expect_error(read_sssom_mapping_set(source), "mapping_justification")
+
+    # In-memory writer inputs must pass the same closed validation gate.
+    valid <- file.path(root, "valid.sssom.tsv")
+    sssom_test_write_raw(valid, sssom_test_text())
+    parsed <- read_sssom_mapping_set(valid)
+    parsed$mappings$mapping_justification <- justification
+    sdp <- file.path(root, paste0("sdp-", basename(tempfile())))
+    dir.create(sdp)
+    expect_error(
+      write_sdp_sssom(sdp, mapping_sets = parsed), "mapping_justification"
+    )
+  }
+})
