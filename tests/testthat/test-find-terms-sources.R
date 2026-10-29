@@ -90,8 +90,11 @@ test_that("a missing or empty source name names no source (hub B-421)", {
   expect_identical(ft_searched(sources = "")$diagnostics, character())
 })
 
-test_that("an unknown source name is kept, searched as nothing and reported (hub B-421)", {
-  got <- ft_searched(sources = c("Unknown", "ols"))
+test_that("an unknown source name is kept and reported as unsupported", {
+  expect_warning(
+    got <- ft_searched(sources = c("Unknown", "ols")),
+    "Vocabulary lookup was incomplete"
+  )
   expect_identical(got$searched, "ols")
   expect_identical(got$diagnostics, c("unknown", "ols"))
 })

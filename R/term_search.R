@@ -205,8 +205,9 @@
 #'   independently of the session locale, a missing
 #'   or empty name is dropped, and a repeated name is dropped after its first
 #'   appearance, so `"SMN"` and `" smn "` both search smn. A name that is none
-#'   of the options searches nothing, and an empty vector returns an empty
-#'   tibble.
+#'   of the options is reported with `status = "unsupported"` and no lookup
+#'   is performed for it; supported sources in the same call still return their
+#'   results. An empty vector returns an empty tibble.
 #' @param expand_query Logical. If `TRUE` (default), applies role-aware query expansion
 #'   (Phase 4) to generate additional query variants based on the role context.
 #'   For example, unit queries get abbreviation expansions, method queries get
@@ -241,8 +242,11 @@
 #'
 #'   The result has a `"diagnostics"` attribute (access via `attr(result, "diagnostics")`)
 #'   containing per-source/query diagnostic information: source, query, status
-#'   (success/error), count, elapsed_secs, and error message if applicable. This
-#'   helps explain empty results or slow queries.
+#'   (`success`, `http_error`, `error` or `unsupported`), count, elapsed_secs,
+#'   and error message if applicable. A supported search with no matches remains
+#'   `success`. Unsupported and failed lookups warn that the result is incomplete
+#'   and are not cached. An unsupported name is still reported when a local smn
+#'   or gcdfo match short-circuits other supported lookups.
 #'
 #'   When `release` or `snapshot_dir` pins an ontology the call searched, the
 #'   result also has an `"ontology_release"` attribute: a tibble with one row
@@ -356,6 +360,7 @@ find_terms <- function(query,
       # to this call, which is what makes it correct under `mclapply()`: each
       # forked worker fills its own and returns it inside the diagnostic.
       failures <- character()
+      unsupported <- FALSE
       result <- withCallingHandlers(
         tryCatch(
         {
@@ -384,6 +389,7 @@ find_terms <- function(query,
           } else if (src == "worms") {
             .search_worms(q, role)
           } else {
+            unsupported <- TRUE
             .empty_terms(role)
           }
           list(
@@ -393,10 +399,12 @@ find_terms <- function(query,
               query = q,
               # A source that returned rows despite a failed side request is
               # still a partial answer, not a clean success.
-              status = if (length(failures) == 0L) "success" else "http_error",
+              status = if (unsupported) "unsupported" else if (length(failures) == 0L) "success" else "http_error",
               count = nrow(res),
               elapsed_secs = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 2),
-              error = if (length(failures) == 0L) NA_character_ else paste(failures, collapse = "; ")
+              error = if (unsupported) {
+                paste0("Unsupported vocabulary source '", src, "'; no lookup was performed.")
+              } else if (length(failures) == 0L) NA_character_ else paste(failures, collapse = "; ")
             )
           )
         },
@@ -442,6 +450,14 @@ find_terms <- function(query,
         append_query_output(local_res)
         local_good_hit <- .local_short_circuit_hit(q, local_res$result)
         if (local_good_hit) {
+          # A local hit skips other supported lookups, but must not conceal a
+          # source name that this dispatcher cannot search at all.
+          unsupported_sources <- setdiff(sources, c(
+            "smn", "gcdfo", "ols", "nvs", "zooma", "bioportal", "qudt", "gbif", "worms"
+          ))
+          for (unsupported_src in unsupported_sources) {
+            append_query_output(run_source(unsupported_src))
+          }
           diagnostics <<- c(diagnostics, query_diagnostics)
           return(query_results)
         }
@@ -564,7 +580,7 @@ find_terms <- function(query,
 # if `find_terms()` ever throws or returns a typed failure for a degraded source,
 # there is nothing left to distinguish and this goes with the warning below.
 .ms_search_degraded_statuses <- function() {
-  c("error", "http_error")
+  c("error", "http_error", "unsupported")
 }
 
 .ms_search_failed_sources <- function(diagnostics) {
@@ -840,7 +856,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   encoded <- utils::URLencode(query, reserved = TRUE)
   url <- paste0("https://www.ebi.ac.uk/ols4/api/search?q=", encoded, "&rows=50")
   data <- .safe_json(url)
-  if (is.null(data) || is.null(data$response$docs)) {
+  if (is.null(data) || length(data$response$docs) == 0L) {
     return(.empty_terms(role))
   }
 
