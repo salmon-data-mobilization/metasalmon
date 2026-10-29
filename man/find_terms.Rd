@@ -32,8 +32,9 @@ consistently by this package: each name is trimmed and Unicode lower-cased
 independently of the session locale, a missing
 or empty name is dropped, and a repeated name is dropped after its first
 appearance, so \code{"SMN"} and \code{" smn "} both search smn. A name that is none
-of the options searches nothing, and an empty vector returns an empty
-tibble.}
+of the options is reported with \code{status = "unsupported"} and no lookup
+is performed for it; supported sources in the same call still return their
+results. An empty vector returns an empty tibble.}
 
 \item{expand_query}{Logical. If \code{TRUE} (default), applies role-aware query expansion
 (Phase 4) to generate additional query variants based on the role context.
@@ -72,8 +73,11 @@ cross-source agreement). Returns empty tibble if no matches found.
 
 The result has a \code{"diagnostics"} attribute (access via \code{attr(result, "diagnostics")})
 containing per-source/query diagnostic information: source, query, status
-(success/error), count, elapsed_secs, and error message if applicable. This
-helps explain empty results or slow queries.
+(\code{success}, \code{http_error}, \code{error} or \code{unsupported}), count, elapsed_secs,
+and error message if applicable. A supported search with no matches remains
+\code{success}. Unsupported and failed lookups warn that the result is incomplete
+and are not cached. An unsupported name is still reported when a local smn
+or gcdfo match short-circuits other supported lookups.
 
 When \code{release} or \code{snapshot_dir} pins an ontology the call searched, the
 result also has an \code{"ontology_release"} attribute: a tibble with one row

@@ -1,6 +1,14 @@
 metasalmon (development version)
 --------------------------------
 
+* Unknown `find_terms()` source names now produce `unsupported` diagnostics
+  and an incomplete-lookup warning instead of a successful empty search,
+  including when a local match short-circuits other supported sources.
+  Supported results are retained and mixed unsupported results are not cached.
+  A successful OLS response with no matches now keeps the canonical empty
+  result instead of failing during result assembly. Mirrored diagnostic
+  behaviour with metasalmonpy.
+
 * Accept the canonical SEMAPV `AgentBasedMatching` justification in SSSOM
   readers and writers. Unknown justifications remain invalid; this does not
   accept or review a mapping. Mirrored with metasalmonpy.
