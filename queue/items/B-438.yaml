@@ -1,0 +1,12 @@
+id: B-438
+kind: defect
+title: NuSEDS crosswalks miss four code values found in released NuSEDS data
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, the three NuSEDS crosswalks carry the four values found in the PSF cleaned NuSEDS release (Zenodo 10.5281/zenodo.19959144): ESTIMATE_CLASSIFICATION NO SURVEY unmapped as an absence-of-observation marker, like NO SURVEY THIS YEAR; ESTIMATE_METHOD Fence Count mapped to gcdfo:FixedStationTally, like Fixed Site Census; ESTIMATE_METHOD Aerial Survey unmapped, because gcdfo:AerialSurveyCount is an enumeration method and not an estimate method; and ENUMERATION_METHODS Net unmapped as method-unknown. Tests pin each row and NEWS.md records them. Twin of B-439 in metasalmonpy. Rows and targets ruled by Brett 2026-10-23. Based on Angling Catch keeps gcdfo:EnumerationMethod, which Brett''s 2026-10-23 B-76 ruling has gcdfo mint, so that row is not changed here.'
