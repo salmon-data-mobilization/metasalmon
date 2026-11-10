@@ -328,43 +328,43 @@ options and recommends one. That decision is Brett's; its lifecycle state is in
    "riverine" class (Pavey et al. 2011), and the two merged into one
    river/ocean-type (Holtby & Ciruna 2007; CSAS RD 2017/074). Every grouping is
    on shared riverine habitat, never on duration, and no source read makes
-   sea-type the genus of river-type. Two of the PR's attributions fail the
-   passage check: the river-type "one to two years" figure is Gustafson et al.
-   1997 p. 23 / Gustafson & Winans 1999 / RD 2023/003 p. 5, not Beacham &
-   Withler (who write "at least one year"); and Gilbert 1913 was read as naming
-   *four* species for "sea type", not five. *(Corrected 2026-09-25: the second
-   flag was wrong. Gilbert uses "sea type" in all five species sections; four is
-   the count of one sentence on p. 8. See the commons card
-   `concepts/sea-type-terminology.md` and B-122.)* Burgner 1991 and Wood 1995 remain unread
+   sea-type the genus of river-type. The source pass flagged two PR
+   attributions. One fails the passage check: the river-type "one to two
+   years" figure is Gustafson et al. 1997 p. 23 / Gustafson & Winans 1999 /
+   RD 2023/003 p. 5, not Beacham & Withler (who write "at least one year").
+   The other flag was wrong: Gilbert 1913 uses "sea type" in all five species
+   sections; four is the count of one sentence on p. 8 (B-122; commons card
+   `concepts/sea-type-terminology.md`). Burgner 1991 and Wood 1995 remain unread
    (lending-restricted scans). Recommendation, not ruling: **(a)**, with Wood
    2008 carried as a `skos:historyNote`, and a riverine-rearing grouping
-   concept minted if DFO's `SER` code needs a target. Replacement literals are
-   in **`smn_pr27_definition_amendments.ttl`, which does not exist** (see the
-   note below); the evidence is commons card
-   `sockeye-life-history-type-definitions.md` and the citation ledger, **which
-   does not exist either**.
+   concept minted if DFO's `SER` code needs a target. Proposed literal
+   replacements were [reconstructed later from the commons cards](../../proposals/smn_pr27_definition_amendments.ttl),
+   as the note below explains. The sockeye card retains its in-card source
+   table; the separate citation-verification CSV attributed to the source pass
+   was never written.
 
 
-   **Three artifacts this card names as products of the 2026-09-02 pass were
-   never created** (measured 2026-09-10): `smn_pr27_definition_amendments.ttl`,
-   `gcdfo_quality_and_refpoint_drafts.ttl`, and the citation-verification
-   ledger. None exists anywhere on disk, and none appears in any branch of any
-   of the four repositories. The pass's *findings* are real and survive in the
-   four commons cards it wrote; what does not survive is the machine-readable
-   form of them. So a reader following this card to the TTL finds nothing, and
-   anything downstream that waits for that file waits forever.
+   **Three artifacts this card named as products of the 2026-09-02 pass had
+   not been created** when checked on 2026-09-10: the proposed smn amendment
+   TTL, `gcdfo_quality_and_refpoint_drafts.ttl`, and the standalone
+   citation-verification CSV. The pass's findings survived in four commons
+   cards. On 2026-09-30, the smn literals were
+   [reconstructed as a proposed Turtle amendment set](../../proposals/smn_pr27_definition_amendments.ttl)
+   from the current corrected cards, pinned to smn PR #27's then-current head.
+   That file is a later reconstruction, not a product of the 2026-09-02 pass;
+   the gcdfo draft and standalone CSV remain absent. The commons cards do have
+   their own in-card citation tables, which are distinct from that missing CSV.
 
    **This is a worse failure than a wrong citation.** A wrong citation is
    checkable by following it. A citation to a file that was planned, named in
    three documents, and never written reads as completed work from every angle
    except opening it, and the record gets more confident with each restatement:
    the ledger's row count was quoted here as a fact about an artifact nobody
-   had. So this card now says the three were never written and promises nothing
-   further about them. **What happens next is queue state, not card state:**
-   queue item `B-121` owns the smn amendment set and carries the retirement
-   condition, which is deliberately not restated here. Neither the gcdfo scheme
-   draft nor the ledger is claimed here as owed work; if either is wanted, it
-   becomes a queue item rather than a line in this card.
+   had. The reconstructed smn file restores a reviewable input but does not
+   retroactively make the missing 2026-09-02 artifact real, apply its literals
+   to PR #27, or settle that proposal's modelling questions. Neither the gcdfo
+   scheme draft nor the standalone ledger is claimed here as owed work; if
+   either is wanted, it becomes a queue item rather than a line in this card.
 
    The three scope notes on the PR's concepts are careful about other hazards
    (the `SEL`/`SER` code halves, the chinook `sea-type` homograph, the

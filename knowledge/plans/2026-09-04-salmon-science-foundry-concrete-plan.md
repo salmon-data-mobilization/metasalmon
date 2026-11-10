@@ -1487,11 +1487,14 @@ run, with agreement reported.
 
 - **PR #27 evidence briefing, not adjudication.** Three evidence roles
   (advocate, challenger, neutral adjudicator) run on a PR snapshot frozen
-  **after** `smn_pr27_definition_amendments.ttl` lands — **and as of
-  2026-09-10 that file has never existed**, so this gate is currently
-  unsatisfiable and the workstream is blocked on regenerating it from the
-  commons cards rather than on the briefing itself (so the two failed
-  attributions are fixed inputs, not findings). The 2026-09-02 ledger this
+  **after** the proposed literals in the
+  [smn PR #27 amendment set](../../proposals/smn_pr27_definition_amendments.ttl)
+  have been reviewed and applied to that branch. The set was reconstructed
+  from the corrected commons cards on 2026-09-30; it did not exist when this
+  gate was checked on 2026-09-10, and it is not yet a PR #27 change. The
+  remaining duration attribution error becomes a corrected input once the
+  amendments are applied, not a finding of the briefing; B-122 cleared the
+  separate Gilbert attribution flag. The 2026-09-02 ledger this
   bullet once named as its temporal holdout was never written either, so the
   briefing runs without one and produces a decision matrix **for Q6**,
   whose eight rulings are Brett's. The workshop does not adjudicate shared terms;

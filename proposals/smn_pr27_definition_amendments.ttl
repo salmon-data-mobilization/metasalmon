@@ -1,0 +1,53 @@
+# B-121: proposed literal replacements for salmon-domain-ontology PR #27.
+# Reconstructed 2026-09-30 from the current commons cards. This file was NOT
+# produced by the 2026-09-02 source pass. It is a draft input to Brett's open
+# Q-06 modelling rulings, not a published ontology or a merged PR #27 change.
+#
+# PR #27 source snapshot: 949ed9528a173f739ad0d74ad8e93bb0ae4cef55
+# Commons source snapshot: 18463e3
+# https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/18463e3/concepts/sockeye-life-history-type-definitions.md
+# https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/18463e3/concepts/pink-salmon-line-definitions.md
+# The other two 2026-09-02 cards concern gcdfo holds #84/#85 and contribute
+# no smn PR #27 literal to this artifact:
+# https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/18463e3/concepts/fishery-reference-points-and-management-levels.md
+# https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/18463e3/concepts/spsr-data-quality-frameworks.md
+#
+# Apply each triple by REPLACING the existing value of its subject and predicate
+# on PR #27. Loading this graph alongside PR #27 would leave conflicting old
+# and new literals. The pink card's species-specific broodline definitions are
+# deliberately not substituted for PR #27's generic Odd/EvenYearCycleLine:
+# that change in scope belongs to the still-open Q-06 ruling.
+
+@prefix smn: <https://w3id.org/smn/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix iao: <http://purl.obolibrary.org/obo/IAO_> .
+
+# Sockeye card, Lake-type / River-type / Sea-type sections. These are the
+# source-checked proposed definitions, including the correct age and habitat
+# boundaries. Their peerhood is not settled by this file.
+smn:SockeyeLakeTypeLifeHistory
+  skos:definition "Anadromous life-history type of sockeye salmon (Oncorhynchus nerka) in which juveniles rear in a nursery lake for at least one year — usually one to three — overwintering in fresh water before migrating to sea."@en .
+
+smn:SockeyeRiverTypeLifeHistory
+  skos:definition "Anadromous life-history type of sockeye salmon in which juveniles rear in riverine habitat — river channels, side channels, sloughs or lagoons — rather than a lake for at least one year, usually one or two, so that they overwinter in fresh water, carry at least one freshwater annulus, and migrate to sea mainly as yearlings."@en ;
+  iao:0000119 "The river-type label traces to Semko 1954, as reported by Wood, Riddell and Rutherford 1987. Wood et al. 1987 describe at least one year of river-channel rearing and primarily yearling migration. The one-to-two-year figure is supported by Gustafson et al. 1997 p. 23, Gustafson and Winans 1999, and DFO CSAS Res. Doc. 2023/003 p. 5. Beacham and Withler 2017 say at least one year, not one to two years; DFO CSAS Sci. Advis. Rep. 2022/003 does not give a river-type duration."@en .
+
+smn:SockeyeSeaTypeLifeHistory
+  skos:definition "Anadromous life-history type of sockeye salmon in which juveniles migrate to sea, or to the lower-river estuary, within their first year — shortly after emergence or after a brief, variable rearing period of weeks to months in river side channels, sloughs or estuarine waters — without overwintering in fresh water, so that the scale nucleus lacks a freshwater annulus."@en .
+
+# Sockeye card, The two axes / River-type sections. PR #27's current
+# YearlingFreshwaterResidence attribution says Beacham and Withler support
+# the one-to-two-year river-type figure; the card demonstrates they do not.
+smn:YearlingFreshwaterResidence
+  iao:0000119 "Beacham and Withler 2017 report that lake-type and river-type sockeye juveniles rear for at least one year before seaward migration. The one-to-two-year river-type range is from Gustafson et al. 1997 p. 23, Gustafson and Winans 1999, and DFO CSAS Res. Doc. 2023/003 p. 5. A freshwater annulus records overwintering after emergence; Gilbert 1913 pp. 7-9 describes the scale-nucleus distinction."@en .
+
+# Pink card, Cycle line section and alignment gap. Keep the generic year-series
+# definition and declared year basis pending Q-06. These notes correct two
+# factual claims: "cycle line" is attested outside this vocabulary, and pink
+# broodline closure is nearly complete rather than absolute. The PKO/PKE
+# example qualifies the line; it does not narrow the generic term to pink.
+smn:CycleLine
+  skos:scopeNote "Cycle line is an attested term, not this vocabulary's coinage: DFO's 1998 report on the 1997 Fraser sockeye cycle describes a sequence of return years, the Pacific Salmon Commission's report on the 2016 Fraser River Panel season describes a series of years associated with a cohort, and DFO's 2025 Fraser pink salmon reference-points document says one cycle line can be numerically dominant over the other. This concept remains a year series under a declared year basis, not necessarily a lineage. It coincides with a broodline where age at maturity is fixed or nearly fixed. Dominance is a time-scoped status of a population or system, not part of a line's identity. The deferred cyclic-dominance model is represented in DFO Conservation Unit data by Cyclic, Cyc_Dom and Cyc_Dom_Year; it is not asserted by this concept. These fields cut across the scheme: DFO records Fraser pink salmon as Cyclic = FALSE while assigning it a cycle line."@en .
+
+smn:CycleLineScheme
+  skos:scopeNote "The scheme records year series, not lineages by definition. Reproductive independence is an additional claim that holds nearly completely where age at return is fixed or nearly fixed. Pink salmon usually return at age two, making the odd- and even-year series coincide with broodlines; rare age-one and age-three fish show that closure is not absolute. Fraser sockeye also include age-three and age-five returns, so brood-year and return-year partitions need not coincide. A declared year basis selects the assertion; it does not reconcile the partitions. A juvenile sample year's parity alone does not identify a pink salmon's odd- or even-year line: use its adult spawning or return year."@en .
