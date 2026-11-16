@@ -1,7 +1,7 @@
 id: B-440
 kind: defect
 title: 'create_sdp() seeds the QUDT COUNT unit for fish_length_mm, takes temporal_end from a processing date, and writes all-positive western longitudes without a note'
-state: icebox
+state: done
 claimable: false
 repo: metasalmon
 venue: claude-code
