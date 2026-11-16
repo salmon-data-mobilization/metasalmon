@@ -389,6 +389,50 @@
 
     ""
   }
+  # A unit named by the last token of a column name or label: `fish_length_mm`,
+  # `fork_length_cm`, `weightKg`, `depth_m` (hub item B-440). Without this, a
+  # numeric column whose name mentioned fish was taken for a count and seeded
+  # the QUDT COUNT unit. Only the length and mass units the normalizer above
+  # already spells are read here; `cms`, `m2` and `km/h` stay with the whole-text
+  # patterns, which see them in context.
+  #
+  # Metres and grams are read only beside a word for the quantity they measure,
+  # because a bare `m` or `g` suffix is as often "males" or "group", and
+  # `water_meter` is a device. Millimetres, centimetres and kilograms are not
+  # ambiguous in a column name, so they need no such word.
+  #
+  # Returns the normalized unit query ("" when there is none) and the tokens
+  # before it, so the variable query can drop the unit token.
+  unit_suffix_length_words <- c(
+    "length", "len", "depth", "height", "width", "distance", "dist",
+    "elevation", "elev", "altitude", "diameter"
+  )
+  unit_suffix_mass_words <- c("weight", "wt", "mass")
+  trailing_unit_token <- function(text) {
+    tokens <- strsplit(
+      tolower(clean_query(gsub("\\([^)]*\\)", " ", as.character(text %||% "")))),
+      "[^a-z0-9]+"
+    )[[1]]
+    tokens <- tokens[nzchar(tokens)]
+    # A name that is only a unit (`mm`) names no measurement to attach it to.
+    if (length(tokens) < 2) {
+      return(list(unit = "", stem = tokens))
+    }
+
+    stem <- tokens[-length(tokens)]
+    unit <- normalize_measurement_unit_query(tokens[[length(tokens)]])
+    unit <- switch(
+      unit,
+      millimeter = ,
+      centimeter = ,
+      kilogram = unit,
+      meter = if (any(stem %in% unit_suffix_length_words)) unit else "",
+      gram = if (any(stem %in% unit_suffix_mass_words)) unit else "",
+      ""
+    )
+
+    list(unit = unit, stem = stem)
+  }
   extract_measurement_header_unit <- function(...) {
     texts <- unlist(list(...), use.names = FALSE)
     texts <- as.character(texts)
@@ -424,6 +468,11 @@
         if (nzchar(normalized)) {
           return(normalized)
         }
+      }
+
+      trailing_unit <- trailing_unit_token(text)$unit
+      if (nzchar(trailing_unit)) {
+        return(trailing_unit)
       }
     }
 
@@ -471,6 +520,13 @@
     }
     text <- tolower(clean_query(text))
     text <- gsub("\\bin\\s+(square\\s+met(?:er|re)s?|met(?:er|re)s?|centimet(?:er|re)s?|millimet(?:er|re)s?|degree\\s+celsius|celsius|kilomet(?:er|re)\\s+per\\s+hour|km/h|cms|cumecs|m3/s)\\b", " ", text, perl = TRUE)
+    # The unit suffix the unit query reads (`fish_length_mm`) is not part of
+    # what is measured, so the variable query is `fish length`, not
+    # `fish length mm` (hub item B-440).
+    trailing_unit <- trailing_unit_token(text)
+    if (nzchar(trailing_unit$unit)) {
+      text <- paste(trailing_unit$stem, collapse = " ")
+    }
     replacements <- c(
       "\\btemp\\b" = "temperature",
       "\\bspd\\b" = "speed",
@@ -500,6 +556,17 @@
     if (!nzchar(text)) return(FALSE)
 
     has_explicit_count <- grepl("\\b(count|counts|number|numbers|num|abundance)\\b", text)
+    # A column that names a physical quantity measures that quantity, whatever
+    # organism it is measured on: `fish_length_mm` is a length, not a count of
+    # fish, and searching it as a count seeded the QUDT COUNT unit and a count
+    # variable (hub item B-440). Only an explicit count word overrides it.
+    names_physical_quantity <- grepl(
+      "\\b(length|len|weight|wt|mass|depth|height|width|diameter|girth|distance|temperature|temp)\\b",
+      text
+    )
+    if (names_physical_quantity && !has_explicit_count) {
+      return(FALSE)
+    }
     has_total <- grepl("\\btotal\\b", text)
     has_organism <- grepl(
       "\\b(spawner|spawners|fish|salmon|organism|organisms|recruit|recruits|smolt|smolts|fry|juvenile|juveniles|population|populations|adult|adults)\\b",

@@ -1,0 +1,13 @@
+id: B-441
+kind: defect
+title: 'metasalmonpy seeds the QUDT COUNT unit for fish_length_mm, takes temporal_end from a processing date, and writes all-positive western longitudes without a note, the mirror half of B-440'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: [B-440]
+legacy: ''
+evidence: .hub/workpads/B-440.md
+retires_when: 'IN METASALMONPY, the three inferences B-440 lands in R behave the same way: the unit query in semantics.py reads a trailing unit token and no longer counts a physical-quantity column, infer_dataset_metadata_from_resources() in metadata.py leaves administrative date columns out of temporal coverage, and it writes the same REVIEW REQUIRED spatial_extent note in the same window. Pinned by the twins of B-440''s tests, demonstrated RED as B-440''s are. THE METASALMON HALF IS B-440, and each names the other. A PORT, NOT A REGISTER ROW: both implementations share all three gaps today.'

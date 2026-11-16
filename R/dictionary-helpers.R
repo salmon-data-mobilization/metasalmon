@@ -488,6 +488,87 @@ infer_codes_from_resources <- function(resources, dataset_id = "dataset-1") {
   .ms_normalize_codes(code_tables)
 }
 
+# Is each column name an administrative date: when a row was processed,
+# entered, created, modified, loaded or checked, rather than when the thing it
+# describes was observed? Temporal coverage reads observation dates only
+# (hub item B-440). Glued spellings count too: `DateCreated`, `processdate`,
+# `lastmodified`, `CREATED_DTT`.
+#
+# `entry` and `entered` are administrative only on their own or as "data
+# entry", because `river_entry_date` and `fw_entry_date` are when fish entered
+# fresh water, which is an observation.
+.ms_is_administrative_date_column <- function(column_names) {
+  admin_words <- c(
+    "process", "processed", "processing",
+    "create", "created", "creation",
+    "modify", "modified", "modification", "mod",
+    "update", "updated",
+    "edit", "edited",
+    "load", "loaded",
+    "import", "imported",
+    "insert", "inserted",
+    "upload", "uploaded",
+    "submit", "submitted", "submission",
+    "receive", "received", "receipt",
+    "qc", "verify", "verified", "verification",
+    "audit", "audited",
+    "export", "exported"
+  )
+  entry_words <- c("entry", "entered")
+  date_words <- c("date", "time", "timestamp", "datetime", "dt", "dtt", "on", "at", "day")
+  # Strip the date part of a glued token, so `datecreated` reads `created`.
+  strip_date_affix <- function(tokens) {
+    tokens <- sub("^last", "", tokens)
+    tokens <- sub("^(date|time|dt)", "", tokens)
+    sub("(date|timestamp|time|dtt|dt|on|at)$", "", tokens)
+  }
+
+  vapply(as.character(column_names), function(name) {
+    if (is.na(name)) {
+      return(FALSE)
+    }
+    spaced <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", name, perl = TRUE)
+    tokens <- strsplit(tolower(spaced), "[^a-z0-9]+")[[1]]
+    tokens <- tokens[nzchar(tokens)]
+    if (length(tokens) == 0) {
+      return(FALSE)
+    }
+    cores <- strip_date_affix(tokens)
+
+    if (any(tokens %in% admin_words | cores %in% admin_words)) {
+      return(TRUE)
+    }
+    is_entry <- tokens %in% entry_words | cores %in% entry_words
+    if (!any(is_entry)) {
+      return(FALSE)
+    }
+    # Any other word qualifies the entry (`river`, `fw`), so it is a date
+    # something was observed entering, not a data-entry date.
+    is_filler <- tokens %in% c(date_words, "data", "last") | cores == ""
+    all(is_entry | is_filler)
+  }, logical(1), USE.NAMES = FALSE)
+}
+
+# Longitudes that are all positive inside the mirror image of the North
+# American salmon range are the shape a dropped minus sign takes: British
+# Columbia lakes read as lon=122..137, lat=48..60 land in Asia. The same
+# numbers are right for data from Japan or the Russian Far East, so the sign is
+# never flipped; the extent gets a review note the user must resolve
+# (hub item B-440). The longitude floor of 50 keeps Europe east of Greenwich
+# (Norway, the Baltic) out of the window.
+#
+# Retires when: the spatial extent is inferred from coordinates that declare
+# their own sign convention (a geometry with a coordinate reference system, or
+# an explicit hemisphere column), so a bare positive number is no longer the
+# only evidence of where the data are.
+.ms_longitude_sign_is_suspect <- function(lons, lats) {
+  lon_window <- c(50, 180)
+  lat_window <- c(30, 75)
+  length(lons) > 0 && length(lats) > 0 &&
+    min(lons) >= lon_window[[1]] && max(lons) <= lon_window[[2]] &&
+    min(lats) >= lat_window[[1]] && max(lats) <= lat_window[[2]]
+}
+
 infer_dataset_metadata_from_resources <- function(resources, dataset_id = "dataset-1") {
   parse_date_values <- function(x) {
     try_parse <- function(values, format = NULL) {
@@ -535,6 +616,12 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
       date_cols <- names(df)[
         grepl("date|time|timestamp|dtt|obsdate|survey|year", tolower(names(df)))
       ]
+      # Temporal coverage is when the data were observed, so a date that
+      # records when a row was processed, entered or edited is left out: a
+      # `process_date` from 2017 put `temporal_end` eighteen years after a
+      # 1977-1999 survey stopped (hub item B-440). With only such dates there
+      # is no coverage to infer, and the field stays blank for the user.
+      date_cols <- date_cols[!.ms_is_administrative_date_column(date_cols)]
       dates <- unlist(
         lapply(
           date_cols,
@@ -575,6 +662,20 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
     glue::glue("lon={min(lons)}..{max(lons)}, lat={min(lats)}..{max(lats)}")
   } else {
     NA_character_
+  }
+  # A `REVIEW REQUIRED:` note, not a warning, so it stays in dataset.csv where
+  # strict validation, review_metadata() and the setters already find every
+  # unresolved placeholder. The inferred extent stays in the note, unflipped.
+  if (.ms_longitude_sign_is_suspect(lons, lats)) {
+    spatial_extent <- sprintf(
+      paste(
+        "REVIEW REQUIRED: every longitude is positive (%s), which places the",
+        "data in the eastern hemisphere. Western-hemisphere longitudes are",
+        "negative, so check the sign in the source data, then replace this",
+        "note with the confirmed extent."
+      ),
+      spatial_extent
+    )
   }
 
   keywords <- unique(

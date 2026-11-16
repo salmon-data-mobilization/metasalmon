@@ -1,6 +1,37 @@
 metasalmon (development version)
 --------------------------------
 
+* `create_sdp()` and `infer_salmon_datapackage_artifacts()` now read a unit
+  named at the end of a measurement column's name (hub item B-440). A column
+  such as `fish_length_mm`, `fish_weight_g` or `depth_m` now searches for
+  millimetre, gram or metre. Before this change, a numeric column whose name
+  mentioned fish was taken for a count, so it searched for a count variable and
+  seeded the QUDT `COUNT` unit, and `depth_m` got no unit. A column that names
+  a length, weight, depth or other physical quantity is no longer searched as a
+  count unless its name also says count or number. A one-letter `m` or `g` is
+  read as a unit only beside a length or mass word, because `spawners_m` can
+  mean males. The unit token is also left out of the variable search query, so
+  `fish_length_mm` searches for `fish length`. The unit IRI is still written as
+  a `REVIEW:` draft for you to confirm.
+
+* Dataset temporal coverage now ignores administrative date columns (hub item
+  B-440). Columns that record when a row was processed, entered, created,
+  modified, loaded, received or checked (`process_date`, `CREATED_DTT`,
+  `DateModified`, `data_entry_date`) no longer set `temporal_start` or
+  `temporal_end`. Before this change, a 2017 processing date set
+  `temporal_end` for a survey that ended in 1999. A qualified entry date such
+  as `river_entry_date` still counts as an observation. If every date column is
+  administrative, the coverage fields stay blank for you to fill in.
+
+* `dataset.csv` now gets a `REVIEW REQUIRED:` note in `spatial_extent` when
+  every longitude is positive and the extent lies in the mirror image of the
+  North American salmon range (longitude 50 to 180, latitude 30 to 75), where
+  a missing minus sign is likely (hub item B-440). The note keeps the inferred
+  extent and never changes its sign, because the same numbers are correct for
+  data from Japan or the Russian Far East. Strict validation refuses the note
+  until you replace it with the confirmed extent. A metasalmonpy port of these
+  three changes is owed as hub item B-441.
+
 * Unknown `find_terms()` source names now produce `unsupported` diagnostics
   and an incomplete-lookup warning instead of a successful empty search,
   including when a local match short-circuits other supported sources.
