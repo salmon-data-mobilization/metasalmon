@@ -1,0 +1,13 @@
+id: B-440
+kind: defect
+title: 'create_sdp() seeds the QUDT COUNT unit for fish_length_mm, takes temporal_end from a processing date, and writes all-positive western longitudes without a note'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: .hub/workpads/B-440.md
+retires_when: 'IN METASALMON, three dataset-level inferences on the create_sdp() path read the cues a column name gives, each pinned by tests in tests/testthat/test-create-sdp-inference-cues.R demonstrated RED on the code before the fix: (1) a trailing unit token in a measurement column name (fish_length_mm, fish_weight_g, depth_m) becomes the unit search query (millimeter, gram, meter), a column naming a physical quantity is no longer searched as a count, and a one-letter m or g is read as a unit only beside a length or mass word; (2) temporal_start and temporal_end ignore administrative date columns (processing, data entry, created, modified, loaded, checked), and a qualified entry date such as river_entry_date still counts; (3) when every longitude is positive inside the mirrored North American window, dataset.csv carries a REVIEW REQUIRED note that keeps the inferred extent unflipped, and strict validation refuses it until it is resolved. THE METASALMONPY HALF IS B-441, and each names the other.'

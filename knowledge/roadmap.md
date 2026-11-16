@@ -700,6 +700,16 @@ port passage of [`parity-deviations.md`](parity-deviations.md). The two current
 implementations key the exclusion the same way; this is an owed port, with
 no deliberate difference to register.
 
+**The `create_sdp()` inference cues also owe a mirror port:** a unit named at
+the end of a measurement column's name, temporal coverage that leaves out
+administrative dates, and a review note for all-positive longitudes in the
+mirrored North American window. The R/Python pair is **B-440** (metasalmon
+pull request #285) and **B-441**, specified in the corresponding port passage
+of [`parity-deviations.md`](parity-deviations.md). The Python half is deferred
+because the R fix was asked for on its own, after a contractor's R output
+showed the gaps, and metasalmonpy shares all three today; this is an owed
+port, with no deliberate difference to register.
+
 **The REVIEW-marker ruling is mirrored:** R **B-177** landed in metasalmon
 #225, and **B-230** **landed 2026-10-05 as metasalmonpy #103**, `6e26d614`.
 Strict/default marker findings, the EDH gate and the schema-declared metadata
