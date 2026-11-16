@@ -23,8 +23,11 @@ unit_cue_frame <- function() {
   )
 }
 
-unit_cue_targets <- function(df) {
+unit_cue_targets <- function(df, force_measurement = character()) {
   dict <- infer_dictionary(df, dataset_id = "d1", table_id = "trawl")
+  # A column the name heuristics type `attribute` gets no unit target at all,
+  # so a test of the unit reader marks it a measurement, as a user would.
+  dict$column_role[dict$column_name %in% force_measurement] <- "measurement"
   metasalmon:::.ms_semantic_discover_targets(
     dict = dict,
     codes = tibble::tibble(),
@@ -85,6 +88,26 @@ test_that("a bare one-letter suffix is read as a unit only beside a quantity it 
   expect_false(identical(target_query(targets, "spawners_m", "unit_iri"), "meter"))
   expect_true(is.na(target_query(targets, "catch_g", "unit_iri")))
   expect_false(identical(target_query(targets, "weight_m", "unit_iri"), "meter"))
+})
+
+test_that("a compound unit is not read from its last token", {
+  # `mg/kg` is a concentration and `per kg` a rate, so reading the
+  # denominator alone would draft kilogram for something that is not a mass
+  # (Codex review of #285). They stay unresolved, as before B-440.
+  compound <- c("mercury_mg/kg", "mercury_mg_kg", "eggs_per_kg", "fish_length_per_m")
+  targets <- unit_cue_targets(
+    tibble::tibble(
+      `mercury_mg/kg` = c(0.12, 0.30, 0.08),
+      mercury_mg_kg = c(0.12, 0.30, 0.08),
+      eggs_per_kg = c(1500, 2100, 1800),
+      fish_length_per_m = c(0.2, 0.4, 0.3)
+    ),
+    force_measurement = compound
+  )
+
+  for (column in compound) {
+    expect_true(is.na(target_query(targets, column, "unit_iri")), info = column)
+  }
 })
 
 test_that("create_sdp() seeds millimetre, gram and metre from unit suffixes, not COUNT", {

@@ -1532,6 +1532,25 @@ conformance fixtures, and every golden `packet_id` moved. At that observation, m
 
 **This mirror debt is closed.** `B-199` landed as metasalmonpy pull request **#76** on 2026-10-06, merge `92df2ffddd9bdb4918617e7c601c3dcb1268c7ca`, from accepted head `13e17faebcb7bfbf779189766afb4f12f2ce5773`. The completed port restores the shared `sdp-0.3.2` pin and eight-file manifest-bound bundle; it records no B327 completion or new parity choice.
 
+**The development version after 0.6.0 adds to what the port owes (2026-11-15):
+three `create_sdp()` inference cues** (hub item **B-440**, metasalmon pull
+request #285). R now reads a trailing unit token in a measurement column's name,
+so `fish_length_mm` searches for millimeter rather than count, while a compound
+unit such as `mg/kg` is left unread; it leaves administrative date columns
+(processed, data entry, created, modified and similar) out of temporal
+coverage; and it writes a `REVIEW REQUIRED:` `spatial_extent` note, keeping the
+extent unflipped, when every longitude is positive in the window longitude 50
+to 180, latitude 30 to 75. metasalmonpy has all three gaps on `main` at
+`2530d07`: `infer_dataset_metadata_from_resources()` in `metadata.py` uses the
+same date-name pattern and writes the extent unchecked, and
+`_is_count_like_measurement()` in `semantics.py` mirrors the count fallback.
+The port is **B-441**, and its item file holds its state and ordering; its
+twins of the tests in `tests/testthat/test-create-sdp-inference-cues.R` are
+what retire it. It did not land in the same stream because the R fix was asked
+for on its own, after a contractor's R output showed the gaps. **No new
+numbered row**: both implementations share the gaps today, so this is an owed
+port, not a chosen difference.
+
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

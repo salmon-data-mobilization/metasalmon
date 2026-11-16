@@ -408,18 +408,32 @@
     "elevation", "elev", "altitude", "diameter"
   )
   unit_suffix_mass_words <- c("weight", "wt", "mass")
+  # Tokens that, just before the last one, make it the denominator of a ratio
+  # (`mg_kg`, `eggs_per_kg`) rather than the unit of the whole column.
+  unit_suffix_ratio_leads <- c(
+    "per", "ng", "ug", "mg", "g", "kg", "mm", "cm", "m", "km",
+    "ml", "l", "mol", "mmol", "umol", "ppm", "ppt"
+  )
   trailing_unit_token <- function(text) {
-    tokens <- strsplit(
-      tolower(clean_query(gsub("\\([^)]*\\)", " ", as.character(text %||% "")))),
-      "[^a-z0-9]+"
-    )[[1]]
+    cleaned <- tolower(clean_query(gsub("\\([^)]*\\)", " ", as.character(text %||% ""))))
+    tokens <- strsplit(cleaned, "[^a-z0-9]+")[[1]]
     tokens <- tokens[nzchar(tokens)]
     # A name that is only a unit (`mm`) names no measurement to attach it to.
     if (length(tokens) < 2) {
       return(list(unit = "", stem = tokens))
     }
-
     stem <- tokens[-length(tokens)]
+    # A compound unit is a ratio: `mercury_mg/kg` is a concentration, and its
+    # last token is only the denominator, so reading it would draft kilogram
+    # for something that is not a mass (Codex review of #285). Nothing is read,
+    # which leaves the unit unresolved as it was before B-440.
+    if (
+      grepl("/\\s*[a-z0-9]+\\s*$", cleaned) ||
+        stem[[length(stem)]] %in% unit_suffix_ratio_leads
+    ) {
+      return(list(unit = "", stem = stem))
+    }
+
     unit <- normalize_measurement_unit_query(tokens[[length(tokens)]])
     unit <- switch(
       unit,

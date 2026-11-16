@@ -10,7 +10,9 @@ metasalmon (development version)
   a length, weight, depth or other physical quantity is no longer searched as a
   count unless its name also says count or number. A one-letter `m` or `g` is
   read as a unit only beside a length or mass word, because `spawners_m` can
-  mean males. The unit token is also left out of the variable search query, so
+  mean males. A compound unit such as `mercury_mg/kg`, `mercury_mg_kg` or
+  `eggs_per_kg` is not read, because its last token is only the denominator of
+  a ratio. The unit token is also left out of the variable search query, so
   `fish_length_mm` searches for `fish length`. The unit IRI is still written as
   a `REVIEW:` draft for you to confirm.
 
