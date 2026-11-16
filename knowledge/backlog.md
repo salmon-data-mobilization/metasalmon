@@ -9162,3 +9162,35 @@ stops before a public mutation, and completed review summaries are read with
 actual review threads. This preserves the existing HUB gate. A further
 review was already present here, so this is not evidence that the numerical
 review cap should change. Original checkpoints and terminal ownership remain.
+
+### B-438 — NuSEDS crosswalks miss four code values found in released NuSEDS data
+
+**Source-verified, 2026-10-23.** The PSF cleaned NuSEDS release (Carturan and
+Peacock 2026, [doi:10.5281/zenodo.19959144](https://doi.org/10.5281/zenodo.19959144),
+derived from the 2025-11-03 DFO NuSEDS extract) carries four values that the
+three crosswalks in `R/nuseds-method-crosswalk.R` do not list. A DuckDB profile
+of its 315,501 rows counted `ESTIMATE_CLASSIFICATION` `NO SURVEY` in 50 rows,
+`ESTIMATE_METHOD` `Fence Count` in 2,553 and `Aerial Survey` in 6, and the
+`ENUMERATION_METHODS` token `Net` once.
+
+Brett ruled on 2026-10-23 to add the four values, with `Fence Count` mapped to
+`gcdfo:FixedStationTally`, the concept `Fixed Site Census` already uses; a
+subject lookup finds it declared in gcdfo 0.0.9 and gcdfo `main`, in
+`EstimateMethodScheme`. The other three stay unmapped with a note each: `NO
+SURVEY` is the same absence-of-observation marker as `NO SURVEY THIS YEAR`;
+`Aerial Survey` is a field method recorded in the estimate-method column, and
+`gcdfo:AerialSurveyCount` is an enumeration method rather than an estimate
+method; and `Net` names no documented gear or procedure.
+
+The same profile met `Based on Angling Catch`, whose target
+`gcdfo:EnumerationMethod` no gcdfo release declares yet (#76). That row is out
+of scope here: Brett's later 2026-10-23 ruling on #76 keeps both method branches
+in gcdfo and has gcdfo mint `gcdfo:EnumerationMethod` as its enumeration-method
+top concept, mapped to `smn:EnumerationMethod`, so the row becomes valid as
+written.
+
+### B-439 — Port B-438's four NuSEDS crosswalk rows to metasalmonpy
+
+**Source-verified, 2026-10-23.** metasalmonpy's three crosswalks in
+`nuseds.py` lack the same four values. The port is catch-up to B-438's ruling
+under the mirror contract, not a new parity row.
