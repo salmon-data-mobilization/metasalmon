@@ -1027,7 +1027,10 @@ derivation.
 
 **Ruling: two, the Foundry repository and SalmonBench.** Nothing else moves:
 `smn-sci-plgn` stays a personal repository and is repointed at metasalmon 0.5.0
-in place, and the eight existing hub members stay where they are. Naming
+in place *(measured 2026-11-24: GitHub reports it as
+`salmon-data-mobilization/smn-sci-plgn`, owned by the organization, so it has
+moved there since this ruling; when, and on whose word, this bundle does not
+record)*, and the eight existing hub members stay where they are. Naming
 SalmonBench as an institute repository from the start reverses the review's
 "keep it in `bench/` until extraction criteria are met", so the extraction
 happens at creation time and the plan records that cost.
@@ -1906,6 +1909,16 @@ the plugin should become a hub member. Under the test Q10 adopted, membership
 follows from this hub sequencing a repository's work, so S16 records the
 harness skill as an external dependency and sequences none of the plugin's
 work. Admitting the plugin would be a membership ruling.
+
+**Membership, 2026-11-24 (Brett):** *"Add keeping the relevant skills in
+smn-sci-plgn repo up to date with the ecosystem of tools you coordinate."* The
+hub read that as the membership ruling this paragraph left open. Keeping a
+repository's skills current with this hub's releases is this hub sequencing
+that repository's work, which is the Q10 test, so the plugin is the tenth member
+and its skill updates are queue items (B-442 is the first). The reading is
+Brett's to confirm, and merging the pull request that recorded it is that
+confirmation, because it edits `HUB.md` and `queue/config.yaml` (class 7). The
+version bump and tag stay the plugin's own release act.
 **Owner:** [S14](sequences/s14-salmon-science-foundry.md), whose execplan the
 Foundry plan is.
 

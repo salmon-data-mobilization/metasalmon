@@ -1212,6 +1212,7 @@ an issue, or opened a pull request:
 | `salmon-data-standards-workshop` | one collaborator, in commits and issues | **no** |
 | `dfo-salmon-ontology` | two, and it is another organization's | **no** |
 | `psc-salmon-vocabularies` | PSC, on GitLab | **no** |
+| `smn-sci-plgn` (measured 2026-11-24, when it was admitted) | none: every pull request and issue is Brett's, and the only other commit author is the agent account | yes |
 
 **`dfo-salmon-ontology` has a reviewer, which changes how work leaves this
 machine for it, not whether the grant applies** (Brett, 2026-09-23: *"Note that

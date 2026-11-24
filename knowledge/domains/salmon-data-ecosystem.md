@@ -1,7 +1,7 @@
 ---
 type: ScientificDataDomain
 title: "Salmon data ecosystem"
-description: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, the salmon knowledge commons, the standards workshop, and the Salmon Science Foundry, coordinated through the metasalmon hub. Nine repositories, one hub; membership follows from this hub sequencing that repository's work (ruled 2026-08-24)."
+description: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, the salmon knowledge commons, the standards workshop, the Salmon Science Foundry, and the smn-sci-plgn skills plugin, coordinated through the metasalmon hub. Ten repositories, one hub; membership follows from this hub sequencing that repository's work (ruled 2026-08-24)."
 status: draft
 tags: [salmon, sdp, ecosystem]
 psc:
@@ -9,8 +9,9 @@ psc:
 ---
 
 The domain this bundle coordinates. The table below is the complete allowlist:
-**nine repositories, one hub** (nine since 2026-09-05, when Brett's Q19 ruling
-admitted `salmon-science-foundry`).
+**ten repositories, one hub** (ten since 2026-11-24, when Brett admitted
+`smn-sci-plgn`; nine from 2026-09-05, when his Q19 ruling admitted
+`salmon-science-foundry`).
 
 **"Complete" was contested until 2026-08-24, and is not any more.** This card
 and the roadmap stated two different membership tests. Brett ruled that
@@ -33,6 +34,7 @@ at the foot of this card.
 | `salmon-knowledge-commons` | Source-backed prose about salmon ecology, biology, conservation, management, and research, written for people and agents (upstream OKF v0.2, private) — every concept names its ontology term or records a structured gap, and that gap register is the front end of this package's term-request pipeline |
 | `salmon-data-standards-workshop` | The Carpentries-style lesson teaching the SDP workflow (sandpaper; six sessions plus a bonus) — **the eighth member, admitted 2026-08-24 (Brett)** because this hub sequences its rebuild as [S4](../sequences/s4-workshop-rebuild.md) |
 | `salmon-science-foundry` | The Salmon Science Foundry: an orchestration, data-access, and evaluation layer above the SDP tooling — a Tier 0 run ledger with digest-bound approvals, tool receipts around metasalmon and metasalmonpy, and the `salmon` data-access verbs. Python; calls the R package only through command tools, never as a dependency; not a third implementation of SDP behaviour. An institute repository of the Symecology Institute, whose GitHub organization does not exist yet (checked 2026-09-09), so there is no home organization to name; SalmonBench is a **separate** institute repository from the start (Brett, Q26, 2026-09-05), not a directory inside this one. **The ninth member, admitted 2026-09-05 (Brett, [Q19](../questions.md))**, because this hub sequences its work as **S14** |
+| `smn-sci-plgn` | The Salmon Science Research plugin for Claude and Codex: the skills that drive metasalmon and metasalmonpy, the SDP spec, term search across smn, gcdfo and the PSC CV, the commons, and the harness side of semantic review (`sdp-semantic-review`), which judges the review packet now that the model call leaves the packages. **The tenth member, admitted 2026-11-24 (Brett)**, so that its skills stay current with the tools this hub releases |
 
 **The Foundry repository does not exist yet, and that is a valid entry.** As of
 2026-09-09 `salmon-science-foundry` has no commit, no tag, and no release
@@ -168,9 +170,10 @@ discarded is what stops it regrowing.
    it. That was the third half-question inside OD-1 and it is answered.
 
 **What moved in the same change:** the allowlist table (eight rows then; **nine
-since 2026-09-05**, when Q19 admitted the Foundry), the
-"eight repositories, one hub" line at the top of this card (**nine** since the
-same date), the roadmap's
+since 2026-09-05**, when Q19 admitted the Foundry; **ten since 2026-11-24**, when
+the plugin was admitted), the
+"eight repositories, one hub" line at the top of this card (**ten** since
+2026-11-24), the roadmap's
 *Domain allowlist* rule (now the sequencing test alone), the roadmap's
 "eight sections for seven members" note, its frontmatter description, the
 [hub-coordination context](../contexts/hub-coordination.md), and the
@@ -181,7 +184,9 @@ Foundry row landed on the Q19 ruling of 2026-09-05: this card, the
 [hub-coordination context](../contexts/hub-coordination.md), the
 [S6 card](../sequences/s6-ecosystem.md), `index.md`, and the roadmap. The count
 has now drifted twice, which is why the walk is written down as a list rather
-than left to whoever remembers.
+than left to whoever remembers. It was walked a third time on 2026-11-24, when
+`smn-sci-plgn` was admitted: the same places, plus `knowledge/index.md`'s
+member list, Q69 in `questions.md`, and the S16 card's paragraph on the plugin.
 
 **The one thing the ruling forces, stated so it is not lost.**
 `salmon-knowledge-commons` was admitted on 2026-08-17 under the test that has
