@@ -5,7 +5,7 @@
   "title": "Fraser River coho salmon natural adult spawner estimates, 2023-2024",
   "description": "Estimates of natural adult coho salmon (Oncorhynchus kisutch) spawners for 87 Fraser River populations in DFO sub-districts 29F, 29G, 29J and 29K, analysis years 2023 and 2024: 173 records from the DFO New Salmon Escapement Database System (NuSEDS), each with the estimate method, estimate classification, estimate stage and stream-inspection window behind it. The metasalmon gold-standard Salmon Data Package.",
   "sdp": {
-    "specVersion": "sdp-0.3.0",
+    "specVersion": "sdp-0.3.2",
     "profile": "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.3/profile.json",
     "rules": "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/sdp.rules.yaml",
     "metadata": {
