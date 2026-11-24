@@ -489,6 +489,8 @@ test_that("the package holds no model client: no provider entry point and no cha
   # (backlog #3), which retired with the builder. A model client added back
   # would construct that request, so the endpoint path is the instrument; the
   # positive control proves the walk reaches string constants in bodies.
+  # Retires when: Brett reverses Q67 and a model call comes back into the
+  # package.
   ns <- asNamespace("metasalmon")
   for (name in provider_symbols()) {
     expect_false(exists(name, envir = ns, inherits = FALSE), info = name)

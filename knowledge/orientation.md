@@ -457,7 +457,7 @@ every release — re-run the count rather than trusting these to the digit.
 | `knb-publication.R` | 3704 | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
 | `eml-export.R` | 3001 | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
 | `term_search.R` | 2790 | Deterministic ontology retrieval (`find_terms`) + ranking; emits the role hints the role contract depends on. |
-| `llm-semantic-helpers.R` | 784 (2026-11-24) | Context parsing/scoring, assessment validation, the retry-query classifier and rejection escalation, for the review packet and ingester. Its provider and orchestration code went with B-329. |
+| `llm-semantic-helpers.R` | 783 (2026-11-24) | Context parsing/scoring, assessment validation, the retry-query classifier and rejection escalation, for the review packet and ingester. Its provider and orchestration code went with B-329. |
 | `dictionary-helpers.R` | 1578 | `infer_dictionary` + `infer_*_from_resources`, `apply_salmon_dictionary`. |
 | `edh-xml-export.R` | 1293 | EDH HNAP/ISO 19139 XML export. |
 | `term-request-helpers.R` | 1267 | Ontology new-term request rendering + issue submission. |
@@ -465,7 +465,7 @@ every release — re-run the count rather than trusting these to the digit.
 | `sssom.R` | 1131 | Strict SSSOM 1.1 mapping-set serialization and manifest validation. |
 | `observation-structures.R` | 1093 | Mixed-grain observation structures and `extract_sdp_observations`. |
 | `semantics-helpers.R` | 1183 (2026-11-24) | `suggest_semantics` (retrieval, role-collision) and the `role_to_field` map. |
-| `semantic-bundle-review.R` | 93 (2026-11-24) | Bundle roles and slot fields — **the role contract's authority**, read by the role-contract guard; its review prompt went with B-329, and the vendored review instructions carry the judgement sentence now. |
+| `semantic-bundle-review.R` | 92 (2026-11-24) | Bundle roles and slot fields — **the role contract's authority**, read by the role-contract guard; its review prompt went with B-329, and the vendored review instructions carry the judgement sentence now. |
 | `semantic-bundle-validators.R` | 853 | Deterministic bundle validators, including the role-type veto. |
 | `measurement-decompositions.R` | 849 | Ordered I-ADOPT-style component evidence kept separate from SSSOM mappings. |
 | `github-helpers.R` | 638 | GitHub CSV access + auth setup. |

@@ -959,7 +959,9 @@ fixes owe metasalmonpy nothing, which was measured: its `find_terms()` has no
 parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is `B-302`, **landed 2026-10-10 as
-metasalmonpy #80** (`27e37de`).
+metasalmonpy #80** (`27e37de`). *(2026-11-24: B-329 removed the `llm_top_n`
+widening from R with the rest of the in-package model call, so the shortlist
+half of this port no longer describes R; metasalmonpy's copy goes with B-330.)*
 
 **The development version after 0.5.0 changes what the mirror owes on row 51
 (2026-09-25): one shared ownership sentinel, `.sdp-package` holding

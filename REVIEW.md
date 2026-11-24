@@ -13,7 +13,8 @@ Important is anything that should stop a merge:
   wrong reason;
 - a broken `AGENTS.md` contract, especially the non-negotiable ones: R and
   metasalmonpy diverging without a `knowledge/parity-deviations.md` row,
-  an LLM or network call reachable without `llm_assess = TRUE`, a renamed or
+  a model call anywhere in the package (none may exist since hub item B-329
+  removed the in-package call), a renamed or
   reordered frozen column, a semantic role missing one of its seven surfaces,
   locale-dependent ordering in anything hashed, written or returned, external
   text reaching a cli template unescaped;

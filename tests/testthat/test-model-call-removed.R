@@ -3,6 +3,9 @@
 # one is gone rather than ignored. A caller still passing it gets an error at
 # the call, not a silent deterministic run. The judgement route that replaces
 # it is the review packet, pinned in test-semantic-review-packet.R.
+#
+# *Retires when:* Brett reverses Q67 and a model call comes back into the
+# package, which would be a design decision with its own tests.
 
 test_that("no public signature takes an llm_* or chat_* argument", {
   ns <- asNamespace("metasalmon")

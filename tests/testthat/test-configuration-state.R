@@ -117,7 +117,8 @@ test_that("no model-provider credential or setting is read or registered", {
   # switch rather than literals at Sys.getenv(), so the literal walk above
   # could not see them; this reads every function body's text instead, so a
   # dynamic read is caught too. The positive control proves the text walk
-  # reaches a variable the package still reads.
+  # reaches a variable the package still reads. Retires when: Brett reverses
+  # Q67 and a model call, with its credentials, comes back into the package.
   ns <- asNamespace("metasalmon")
   functions <- Filter(is.function, mget(ls(ns, all.names = TRUE), envir = ns))
   bodies <- vapply(functions, function(fn) {
