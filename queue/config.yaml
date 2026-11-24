@@ -179,7 +179,9 @@ max_concurrent_claims: 1
 # base permission is `write` and every member inherits access to everything, so
 # the collaborator list would say `true` nowhere and make this field empty. Ask
 # who has ever participated instead. Ownership fails the other way: Brett owns
-# or administers all ten, and three of them still read `false` here.
+# or administers every member repository that exists, and three of them still
+# read `false` here for who has participated. A fourth, salmon-science-foundry,
+# reads `false` because its repository does not exist yet.
 #
 # What it gates: the standing authorization in `HUB.md` covers pushing a work
 # branch and opening one draft pull request only where this reads `true`. Where
