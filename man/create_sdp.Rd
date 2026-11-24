@@ -18,17 +18,6 @@ create_sdp(
   seed_table_meta = TRUE,
   seed_dataset_meta = TRUE,
   semantic_code_scope = c("factor", "all", "none"),
-  llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-  llm_model = NULL,
-  llm_api_key = NULL,
-  llm_base_url = NULL,
-  llm_reasoning_effort = NULL,
-  llm_top_n = 5L,
-  llm_context_files = NULL,
-  llm_context_text = NULL,
-  llm_timeout_seconds = 60,
-  llm_request_fn = NULL,
   check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
@@ -80,41 +69,6 @@ rows are sent through \code{suggest_semantics()} during one-shot seeding.
 low-cardinality character columns in the original data frame(s); \code{"all"}
 analyzes all inferred or supplied code rows; \code{"none"} skips code-level
 semantic suggestions.}
-
-\item{llm_assess}{Logical; if \code{TRUE}, run the optional LLM shortlist
-assessment inside \code{suggest_semantics()}. Measurement columns are reviewed
-as six-slot bundles; other targets keep their existing per-target path.}
-
-\item{llm_provider}{LLM provider preset forwarded to \code{suggest_semantics()}.}
-
-\item{llm_model}{Optional LLM model identifier forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_api_key}{Optional API key override forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_base_url}{Optional OpenAI-compatible base URL forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_reasoning_effort}{Optional reasoning-effort hint forwarded to
-\code{suggest_semantics()} when using the OpenAI provider.}
-
-\item{llm_top_n}{Maximum number of retrieved candidates sent to the LLM per
-target.}
-
-\item{llm_context_files}{Optional character vector of local context file
-paths forwarded to \code{suggest_semantics()} when \code{llm_assess = TRUE}. Pass
-file paths, not parsed data frames, XML documents, or R Markdown objects.
-See \code{suggest_semantics()} for supported file types, including HTML, DOCX,
-\code{.R}, \code{.Rmd}, \code{.qmd}, PDF, and Excel context files.}
-
-\item{llm_context_text}{Optional inline context snippets forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.}
-
-\item{llm_request_fn}{Advanced/test hook overriding the low-level
-OpenAI-compatible request function.}
 
 \item{check_updates}{Logical; if \code{TRUE}, run a short, non-fatal
 \code{\link[=check_for_updates]{check_for_updates()}} call after writing the package and mention newer
@@ -179,12 +133,11 @@ The package root contains \code{README-review.txt},
 \code{semantic_suggestions.csv} as a fallback shortlist when you want more
 context or a better match. To keep that review file usable,
 \code{semantic_suggestions.csv} trims code-level suggestions that do not have
-enough human-readable context to review safely. When \code{llm_assess = TRUE},
-the same review file also carries \verb{llm_*} columns so the bundled LLM
-judgments, retry rejections, escalation origins, and validator downgrades
-stay explicit and reviewable. Only accepted variable, property, entity, and
-unit selections are eligible for column auto-prefill; constraint and method
-assessments always remain manual. Any auto-applied column/table IRI
+enough human-readable context to review safely. To have a model judge the
+shortlists, write a review packet for the package with
+\code{\link[=write_semantic_review_packet]{write_semantic_review_packet()}}, have your own harness answer it, and read
+the answers back with \code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}; neither call writes
+the metadata CSVs. Any auto-applied column/table IRI
 draft is written back into the metadata CSVs as a \verb{REVIEW:}-prefixed value
 for manual confirmation there. Required-field review placeholders are also
 inserted into the inferred metadata files. In

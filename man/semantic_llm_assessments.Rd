@@ -2,7 +2,7 @@
 % Please edit documentation in R/semantics-helpers.R
 \name{semantic_llm_assessments}
 \alias{semantic_llm_assessments}
-\title{Target-level LLM assessments attached to a dictionary}
+\title{Target-level assessments ingested from a harness}
 \usage{
 semantic_llm_assessments(x)
 }
@@ -18,15 +18,15 @@ attached. For a package path, the record
 \code{review/semantic-llm-assessments.csv}, typed as the 30-column assessment
 row and carrying the validator findings as its
 \code{semantic_validator_findings} attribute, or \code{NULL} when no record has
-been ingested. The in-package model call never writes one. A \verb{review/}
-directory or record that is a symbolic link is refused rather than
-followed.
+been ingested. A \verb{review/} directory or record that is a symbolic link
+is refused rather than followed.
 }
 \description{
 The companion accessor to \code{\link[=semantic_suggestions]{semantic_suggestions()}}, for the
-\code{semantic_llm_assessments} attribute that \code{suggest_semantics(llm_assess = TRUE)}
-attaches. Reading LLM review is never itself an LLM call: this only reports
-assessments that already exist.
+\code{semantic_llm_assessments} attribute that \code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}
+attaches to the dictionary it returns. The package makes no model call:
+this only reports assessments your harness already wrote and the ingester
+read back.
 }
 \examples{
 dict <- tibble::tibble(column_name = "spawner_count")

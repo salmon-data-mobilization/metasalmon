@@ -27,8 +27,10 @@ attribute from \code{dict}.}
 \item{strategy}{Selection strategy per column-role pair. \code{"top"} keeps the
 original lexical ranking. \code{"reviewed"} applies only rows whose \code{decision}
 is \code{"accepted"} (or the equivalent \code{"accept"}). \code{"llm"} applies only
-candidates marked with \code{llm_selected = TRUE} by
-\code{suggest_semantics(..., llm_assess = TRUE)}. When reviewed or LLM-reviewed
+candidates marked \code{llm_selected = TRUE}, which
+\code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}} sets on the candidate your harness
+accepted for a review packet; when the frame carries \code{llm_decision}, the
+row must also record an \code{accept}. When reviewed or harness-reviewed
 selections contain multiple constraints for one measurement, their IRIs
 are deduplicated in first-occurrence order and written to \code{constraint_iri}
 as the SDP-compatible semicolon-separated value. Other roles continue to

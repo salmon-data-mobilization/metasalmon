@@ -229,13 +229,13 @@
 #' feature: paste it into a script and the decision becomes reproducible,
 #' which the spreadsheet workflow this replaces never was.
 #'
-#' **This never contacts a network or an LLM.** It reads the
+#' **This never contacts a network or a model.** It reads the
 #' `semantic_suggestions` attribute (or `semantic_suggestions.csv`) that
 #' `suggest_semantics()` / `create_sdp()` already produced. When those
-#' suggestions carry a model's assessment -- ingested from your own harness by
-#' [ingest_semantic_assessments()], or made by the deprecated
-#' `llm_assess = TRUE` -- this shows it, an accept under the candidate it chose
-#' and any other decision once per slot and role; it never generates one.
+#' suggestions carry a model's assessment, ingested from your own harness by
+#' [ingest_semantic_assessments()], this shows it, an accept under the
+#' candidate it chose and any other decision once per slot and role; it never
+#' generates one.
 #'
 #' @param x A written package path, a dictionary carrying the
 #'   `semantic_suggestions` attribute, or the artifact list returned by

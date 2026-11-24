@@ -18,18 +18,6 @@ test_that("BioPortal's missing-key warning leaves user options untouched", {
   expect_identical(options(), before)
 })
 
-test_that("session identifiers neither advance nor initialize the user's RNG", {
-  withr::local_seed(738L)
-  before <- .Random.seed
-  ids <- vapply(seq_len(20L), function(i) .ms_chat_new_session_id(), character(1))
-  expect_true(identical(.Random.seed, before))
-  expect_length(unique(ids), length(ids))
-  expect_true(all(grepl("^mscur-[0-9]{14}-[a-f0-9]{8}$", ids)))
-  rm(".Random.seed", envir = .GlobalEnv)
-  .ms_chat_new_session_id()
-  expect_false(exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
-})
-
 test_that("load defaults preserve user options and backend timeout inheritance", {
   registry <- .ms_configuration_options()
   defaults <- lapply(registry, `[[`, "default")
@@ -40,7 +28,6 @@ test_that("load defaults preserve user options and backend timeout inheritance",
   expect_false(getOption("metasalmon.term_search_parallel"))
   expect_identical(getOption("metasalmon.sdp_schema_source"), "vendored")
   expect_identical(getOption("metasalmon.validation_message_mode"), "default")
-  expect_false(getOption("metasalmon.llm_deprecation_quiet"))
   # An unset global timeout must keep each backend's existing fallback.
   withr::local_envvar(c(METASALMON_TERM_SEARCH_TIMEOUT = "",
                        METASALMON_TERM_SEARCH_TIMEOUT_NVS = ""))
@@ -122,11 +109,30 @@ test_that("configuration registry covers live option and environment reads", {
   expect_true("BIOPORTAL_APIKEY" %in% env_reads)
   expect_true(all(env_reads %in% names(.ms_configuration_envvars())))
   expect_true("METASALMON_TERM_SEARCH_TIMEOUT_<SOURCE>" %in% names(.ms_configuration_envvars()))
-  # The provider-selected API key names are strings in the switch, rather than
-  # literals at Sys.getenv(). Pin that dynamic map to the same registry.
-  provider_text <- paste(deparse(body(.ms_llm_resolve_config)), collapse = " ")
-  provider_keys <- c("OPENAI_API_KEY", "OPENROUTER_API_KEY", "CHAPI_API_KEY",
-                     "METASALMON_LLM_API_KEY")
-  expect_true(all(vapply(provider_keys, grepl, logical(1), x = provider_text, fixed = TRUE)))
-  expect_true(all(provider_keys %in% names(.ms_configuration_envvars())))
+})
+
+test_that("no model-provider credential or setting is read or registered", {
+  # The in-package model call was removed (hub item B-329), and with it the
+  # nine environment variables it read. Its key names were strings in a
+  # switch rather than literals at Sys.getenv(), so the literal walk above
+  # could not see them; this reads every function body's text instead, so a
+  # dynamic read is caught too. The positive control proves the text walk
+  # reaches a variable the package still reads.
+  ns <- asNamespace("metasalmon")
+  functions <- Filter(is.function, mget(ls(ns, all.names = TRUE), envir = ns))
+  bodies <- vapply(functions, function(fn) {
+    paste(deparse(body(fn), width.cutoff = 500L), collapse = " ")
+  }, character(1))
+  expect_true(any(grepl("BIOPORTAL_APIKEY", bodies, fixed = TRUE)))
+  provider_vars <- c(
+    "OPENAI_API_KEY", "OPENROUTER_API_KEY", "CHAPI_API_KEY",
+    "METASALMON_LLM_API_KEY", "METASALMON_LLM_MODEL", "CHAPI_MODEL",
+    "METASALMON_LLM_BASE_URL", "CHAPI_BASE_URL",
+    "METASALMON_LLM_REASONING_EFFORT"
+  )
+  for (var in provider_vars) {
+    expect_false(any(grepl(var, bodies, fixed = TRUE)), info = var)
+  }
+  expect_length(intersect(provider_vars, names(.ms_configuration_envvars())), 0L)
+  expect_false("metasalmon.llm_deprecation_quiet" %in% names(.ms_configuration_options()))
 })

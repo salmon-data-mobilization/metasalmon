@@ -44,10 +44,9 @@
 #   every source answered and    GAP. This one, and only this one.
 #   none has the term
 #
-# NO LLM REACHES THIS PATH. `find_terms()` is deterministic ontology search;
-# there is no `llm_assess` argument here and nothing below constructs an LLM
-# request. Pinned by `tests/testthat/test-semantic-closure.R`, which runs the
-# whole producer with `.ms_llm_chat_json_request()` bound to a `stop()`.
+# NO MODEL REACHES THIS PATH. `find_terms()` is deterministic ontology search,
+# and since hub item B-329 the package holds no model client at all, which
+# `tests/testthat/test-semantic-review-packet.R` pins for the whole namespace.
 # ---------------------------------------------------------------------------
 
 # The vocabulary evidence fields, in the order
@@ -209,7 +208,7 @@
   if (is.null(evidence)) {
     return(NULL)
   }
-  # The same early-type contract `llm_context_files` carries: a caller who hands
+  # The same early-type contract review-packet `context_files` carries: a caller who hands
   # over a parsed object rather than rows gets an error here, not a confusing
   # failure eight frames down.
   if (!is.data.frame(evidence)) {

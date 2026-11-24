@@ -11,9 +11,10 @@ variables are read at call time and are never set by package loading.
 }
 \details{
 The inventories below are generated from the same registry that owns the
-load defaults. The in-package LLM provider path is deprecated and removed in
-0.7.0; its environment variables do not by themselves request a model call.
-Prefer the external semantic review packet workflow for new review work.
+load defaults. The package makes no model call and reads no model-provider
+credential: model judgement of semantic candidates runs in your own harness
+against a review packet, through \code{\link[=write_semantic_review_packet]{write_semantic_review_packet()}} and
+\code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}.
 }
 \examples{
 old <- options(metasalmon.term_search_parallel = FALSE)
@@ -30,7 +31,6 @@ options(old)
 \item{\code{metasalmon.sdp_schema_url}}{Default: \code{NULL}. Legacy schema URL override. When nonempty, its schema/sdp.schema.yaml suffix is removed to obtain the bundle base URL; it takes precedence over sdp_schema_base_url.}
 \item{\code{metasalmon.term_search_timeout}}{Default: \code{NULL (inherit backend timeout)}. Positive timeout in seconds. Source-specific environment timeout overrides the global environment timeout, which overrides this option. Unset/invalid falls back to the backend's 30 or 60 seconds.}
 \item{\code{metasalmon.term_search_parallel}}{Default: \code{TRUE}. Enable parallel term retrieval. METASALMON_TERM_SEARCH_PARALLEL takes precedence.}
-\item{\code{metasalmon.llm_deprecation_quiet}}{Default: \code{FALSE}. Suppress the in-package LLM deprecation warning. It does not enable a model call. The deprecated provider path is removed in 0.7.0.}
 \item{\code{metasalmon.validation_message_mode}}{Default: \code{"default"}. Internal validation message mode: "default" or "review_ready". create_sdp temporarily sets and restores it; ordinarily leave it unchanged.}
 \item{\code{metasalmon.validation_semantics_seeded}}{Default: \code{FALSE}. Internal validation message context. create_sdp temporarily sets and restores it; ordinarily leave it unchanged.}
 \item{\code{metasalmon.knb_adapter}}{Default: \code{NULL}. Internal adapter injection hook for KNB tests. It does not change the closed publication-environment registry.}
@@ -47,13 +47,4 @@ options(old)
 \item{\code{METASALMON_TERM_SEARCH_TIMEOUT_<SOURCE>}}{Positive retrieval timeout for an uppercase source name, such as NVS, ZOOMA or QUDT; highest timeout precedence.}
 \item{\code{METASALMON_TERM_SEARCH_PARALLEL}}{Parallel override: 1/true/yes/on enables; 0/false/no/off disables; unset/unrecognized falls back to the option.}
 \item{\code{METASALMON_TERM_SEARCH_WORKERS}}{Positive worker-count override; otherwise worker count derives from source count and available cores.}
-\item{\code{OPENAI_API_KEY}}{OpenAI credential for the deprecated in-package provider path; only read on explicit LLM assessment.}
-\item{\code{OPENROUTER_API_KEY}}{OpenRouter credential for the deprecated in-package provider path; only read on explicit LLM assessment.}
-\item{\code{CHAPI_API_KEY}}{Chapi credential for the deprecated in-package provider path; only read on explicit LLM assessment.}
-\item{\code{METASALMON_LLM_API_KEY}}{OpenAI-compatible credential and fallback for provider-specific keys. Explicit llm_api_key takes precedence.}
-\item{\code{METASALMON_LLM_MODEL}}{Model fallback for the deprecated provider path. Explicit llm_model takes precedence; Chapi checks CHAPI_MODEL first.}
-\item{\code{CHAPI_MODEL}}{Chapi model fallback before METASALMON_LLM_MODEL; otherwise the Chapi model default applies.}
-\item{\code{METASALMON_LLM_BASE_URL}}{Endpoint fallback for the deprecated provider path. Explicit llm_base_url takes precedence; Chapi checks CHAPI_BASE_URL first.}
-\item{\code{CHAPI_BASE_URL}}{Chapi endpoint fallback before METASALMON_LLM_BASE_URL; otherwise the Chapi endpoint default applies.}
-\item{\code{METASALMON_LLM_REASONING_EFFORT}}{Reasoning-effort fallback for the deprecated provider path; explicit llm_reasoning_effort takes precedence.}
 }}

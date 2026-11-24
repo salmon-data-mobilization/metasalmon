@@ -49,6 +49,14 @@
   sources
 }
 
+# The shortlist width the seeding wrappers hand to `suggest_semantics()`: a
+# positive whole number, one at the least. It was the non-model branch of the
+# shortlist rule the in-package model call widened (backlog #57), kept when that
+# call was removed (hub item B-329) so the wrappers' retrieval is unchanged.
+.ms_semantic_shortlist_size <- function(max_per_role) {
+  max(1L, as.integer(max_per_role[[1]] %||% 1L))
+}
+
 .ms_semantic_source_policy <- function(sources, omitted = FALSE) {
   omitted <- isTRUE(omitted) ||
     isTRUE(attr(sources, "metasalmon_sources_omitted", exact = TRUE))
@@ -327,8 +335,7 @@
 #' @param max_per_role Maximum number of suggestions to keep per semantic role
 #'   (variable, property, entity, unit, constraint, statistical_modifier;
 #'   plus method for code values) per column. Default
-#'   is 3. When `llm_assess = TRUE`, at least `llm_top_n` are kept, because
-#'   the LLM can only be shown the candidates retrieval kept.
+#'   is 3.
 #' @param search_fn Function used to search terms. Defaults to `find_terms()`.
 #'   Can be replaced for testing or custom search strategies.
 #' @param codes Optional `codes.csv`-like tibble. When provided, suggestions are
@@ -338,52 +345,6 @@
 #' @param dataset_meta Optional `dataset.csv`-like tibble. When provided,
 #'   suggestions are generated for missing `dataset.csv$keywords` as candidate
 #'   semantic keywords (IRIs intended for keyword curation).
-#' @param llm_assess Logical; if `TRUE`, assess the top semantic candidates per
-#'   target with an LLM after deterministic retrieval. When the first shortlist
-#'   looks weak, the LLM may request at most one bounded alternate-query pass
-#'   before a single reassessment. Measurement-column roles are reviewed as one
-#'   six-slot bundle; generic, code, table, and dataset targets retain
-#'   per-target review. Default is `FALSE`.
-#' @param llm_provider LLM provider preset. One of `"openai"`,
-#'   `"openrouter"`, `"openai_compatible"`, or `"chapi"`.
-#' @param llm_model Character model identifier. Required when
-#'   `llm_assess = TRUE` unless supplied via `METASALMON_LLM_MODEL`. When
-#'   `llm_provider = "openrouter"` and no model is supplied, the package
-#'   defaults to `"openrouter/free"`. Any valid OpenRouter model ID may be
-#'   supplied here (for example `"openai/gpt-5.4-mini"`). When
-#'   `llm_provider = "chapi"` and no model is supplied, the package defaults
-#'   to `"ollama2.mistral:7b"` and also checks `CHAPI_MODEL`.
-#' @param llm_api_key Optional API key override. If omitted, provider-specific
-#'   environment variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
-#'   `CHAPI_API_KEY`, or `METASALMON_LLM_API_KEY`).
-#' @param llm_base_url Optional base URL override for the OpenAI-compatible
-#'   chat endpoint. Required for `llm_provider = "openai_compatible"` when not
-#'   set via `METASALMON_LLM_BASE_URL`. For `llm_provider = "chapi"`, the
-#'   package defaults to `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`
-#'   and also checks `CHAPI_BASE_URL`.
-#' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to the
-#'   OpenAI chat-completions request body when `llm_provider = "openai"`.
-#' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
-#'   per target for each assessment round. Default is `5`. Retrieval keeps at
-#'   least this many per role when `llm_assess = TRUE`, whatever
-#'   `max_per_role` says.
-#' @param llm_context_files Optional character vector of local context files
-#'   (for example README/markdown notes, CSV dictionaries, HTML exports,
-#'   DOCX files, source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
-#'   workbooks, or PDF reports) used to provide extra domain context to the
-#'   LLM when `llm_assess = TRUE`. Pass file paths, not parsed data frames, XML
-#'   documents, or R Markdown objects. Supplying context does not enable LLM
-#'   review; without `llm_assess = TRUE`, it is ignored with a warning. PDF
-#'   support uses the optional `pdftools` package; Excel support uses the
-#'   optional `readxl` package.
-#' @param llm_context_text Optional character vector of extra inline context
-#'   snippets passed alongside `llm_context_files`.
-#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
-#'   `chapi` models matching `gpt-oss` are automatically given at least 120
-#'   seconds because the internal endpoint can be slow to warm up.
-#' @param llm_request_fn Advanced/test hook overriding the low-level
-#'   OpenAI-compatible request function.
-#'
 #' @return The dictionary tibble (unchanged) with a `semantic_suggestions`
 #'   attribute containing a tibble of suggested IRIs. The suggestions tibble
 #'   starts with `column_name`, `dictionary_role`, `table_id`, and `dataset_id`
@@ -399,14 +360,7 @@
 #'   For non-column targets, the tibble also includes explicit destination
 #'   context (`target_row_key`, `target_label`, `target_description`,
 #'   `code_value`, `code_label`, `code_description`) so table-, dataset-, and
-#'   code-level rows are inspectable without extra joins. When
-#'   `llm_assess = TRUE`, the suggestions also include `llm_*` review columns
-#'   such as `llm_decision`, `llm_confidence`, `llm_selected`,
-#'   `llm_candidate_rank`, and bounded exploration metadata, and the
-#'   dictionary gains a parallel `semantic_llm_assessments` attribute with one
-#'   row per assessed target. Its 30-column schema preserves the legacy
-#'   28-column prefix and appends `llm_escalated_from` and
-#'   `llm_retry_query_rejection_reason`.
+#'   code-level rows are inspectable without extra joins.
 #'   The dictionary also carries a `semantic_targets` attribute with the
 #'   discovered search targets (one row per unfilled semantic field, in the
 #'   `.ms_semantic_target_cols()` shape). [detect_semantic_term_gaps()] reads
@@ -424,32 +378,10 @@
 #' Table-level observation-unit queries ignore review placeholders such as
 #' `MISSING METADATA:` and fall back to real table metadata context instead.
 #'
-#' When `llm_assess = TRUE`, the LLM only judges deterministically retrieved
-#' candidates; it does not mint new IRIs. Measurement columns are reviewed as
-#' one bundle spanning variable, property, entity, unit, constraint, and
-#' statistical modifier (method appears only for code values),
-#' including empty slots. The public output still contains one assessment row
-#' per target and positional candidate indexes. If the first shortlist looks
-#' weak, the package gathers valid retry requests, runs at most one retrieval
-#' round, de-dupes the merged shortlist, and reassesses once. An exact duplicate
-#' retry query is retained as `retry_search`, records
-#' `llm_retry_query_rejection_reason = "duplicate_original_query"`, and does not
-#' spend another search or reassessment for that slot. If the model rejects the entire
-#' shortlist (`reject_shortlist`) and that bounded retry still surfaces no
-#' acceptable candidate, the assessment is escalated to `request_new_term` so a
-#' likely ontology gap shows up in `llm_decision` instead of a dead-end
-#' rejection. Local context files are read on disk, chunked, and lexically
-#' trimmed down before prompt assembly so large README/report/workbook files do
-#' not get dumped wholesale into the model call. Plain-text/CSV context with
-#' invalid UTF-8 is retried as Windows-1252/Latin-1, and colliding file base
-#' names are disambiguated in `llm_context_sources`. If a batched provider
-#' response has malformed, missing, or duplicate target items, valid siblings
-#' are retained and only affected targets fall back to individual review.
-#' Deterministic validators can downgrade an unsupported `accept` to `review`
-#' for missing statistical-modifier/constraint evidence, known role/type or dimensional
-#' incompatibility, or a curated redundancy rule. A downgrade clears the
-#' selection, preserves model confidence as provenance, and never substitutes
-#' a term or creates an ontology gap.
+#' Retrieval is deterministic and judges nothing. To have a model judge the
+#' shortlists, write them to a review packet with
+#' [write_semantic_review_packet()], have your own harness answer it, and read
+#' the answers back with [ingest_semantic_assessments()].
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).
@@ -470,7 +402,8 @@
 #' @seealso [find_terms()] for direct vocabulary searches, [infer_dictionary()]
 #'   for creating starter dictionaries, [apply_semantic_suggestions()] for
 #'   explicitly filling selected IRI fields, [validate_dictionary()] for
-#'   checking dictionary completeness.
+#'   checking dictionary completeness, [write_semantic_review_packet()] for
+#'   having your own harness judge the shortlists.
 #' @importFrom metasalmon suggest_dwc_mappings
 #'
 #' @export
@@ -502,47 +435,11 @@ suggest_semantics <- function(df,
                               search_fn = find_terms,
                               codes = NULL,
                               table_meta = NULL,
-                              dataset_meta = NULL,
-                              llm_assess = FALSE,
-                              llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-                              llm_model = NULL,
-                              llm_api_key = NULL,
-                              llm_base_url = NULL,
-                              llm_reasoning_effort = NULL,
-                              llm_top_n = 5L,
-                              llm_context_files = NULL,
-                              llm_context_text = NULL,
-                              llm_timeout_seconds = 60,
-                              llm_request_fn = NULL) {
-  # The in-package model call is deprecated (S16 step 1); one warning per
-  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
-  llm_deprecation_depth <- .ms_llm_deprecation_enter()
-  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
-  on.exit(
-    .ms_llm_deprecation_exit(llm_deprecation_depth, "suggest_semantics", llm_deprecation_triggered),
-    add = TRUE
-  )
+                              dataset_meta = NULL) {
   source_policy <- .ms_semantic_source_policy(
     sources,
     omitted = missing(sources)
   )
-  .ms_apply_llm_context_policy(
-    llm_assess = llm_assess,
-    context_files = llm_context_files,
-    context_text = llm_context_text
-  )
-  # The LLM can only be shown what retrieval kept, so keeping `max_per_role`
-  # candidates made the documented `llm_top_n` default of 5 silently become 3
-  # on this direct path (backlog #57). Every wrapper already widens by this
-  # rule through `.ms_llm_review_plan()`; applying it again to their widened
-  # value changes nothing. Without `llm_assess` the shortlist is untouched.
-  if (isTRUE(llm_assess)) {
-    max_per_role <- .ms_llm_effective_shortlist_size(
-      max_per_role %||% 3L,
-      llm_assess = TRUE,
-      llm_top_n = llm_top_n
-    )
-  }
 
   resource_lookup <- NULL
   default_df <- NULL
@@ -578,9 +475,6 @@ suggest_semantics <- function(df,
   if (nrow(dict) == 0 && nrow(codes) == 0 && nrow(table_meta) == 0 && nrow(dataset_meta) == 0) {
     attr(dict, "semantic_suggestions") <- tibble::tibble()
     attr(dict, "semantic_targets") <- tibble::tibble()
-    if (isTRUE(llm_assess)) {
-      attr(dict, "semantic_llm_assessments") <- .ms_empty_llm_assessments()
-    }
     if (isTRUE(include_dwc)) {
       attr(dict, "dwc_mappings") <- tibble::tibble()
     }
@@ -625,31 +519,6 @@ suggest_semantics <- function(df,
 
   if (nrow(suggestions) > 0) {
     suggestions <- .ms_semantic_flag_role_collisions(suggestions)
-  }
-
-  if (isTRUE(llm_assess) && nrow(targets) > 0) {
-    llm_results <- .ms_assess_semantic_suggestions_llm(
-      suggestions,
-      provider = llm_provider,
-      model = llm_model,
-      api_key = llm_api_key,
-      base_url = llm_base_url,
-      reasoning_effort = llm_reasoning_effort,
-      top_n = llm_top_n,
-      context_files = llm_context_files,
-      context_text = llm_context_text,
-      timeout_seconds = llm_timeout_seconds,
-      request_fn = llm_request_fn,
-      search_fn = search_fn,
-      sources = source_policy,
-      max_per_role = max_per_role,
-      targets = targets,
-      dict = dict
-    )
-    suggestions <- llm_results$suggestions
-    attr(dict, "semantic_llm_assessments") <- llm_results$assessments
-  } else if (isTRUE(llm_assess)) {
-    attr(dict, "semantic_llm_assessments") <- .ms_empty_llm_assessments()
   }
 
   attr(dict, "semantic_suggestions") <- suggestions
@@ -756,8 +625,10 @@ suggest_semantics <- function(df,
 #' @param strategy Selection strategy per column-role pair. `"top"` keeps the
 #'   original lexical ranking. `"reviewed"` applies only rows whose `decision`
 #'   is `"accepted"` (or the equivalent `"accept"`). `"llm"` applies only
-#'   candidates marked with `llm_selected = TRUE` by
-#'   `suggest_semantics(..., llm_assess = TRUE)`. When reviewed or LLM-reviewed
+#'   candidates marked `llm_selected = TRUE`, which
+#'   [ingest_semantic_assessments()] sets on the candidate your harness
+#'   accepted for a review packet; when the frame carries `llm_decision`, the
+#'   row must also record an `accept`. When reviewed or harness-reviewed
 #'   selections contain multiple constraints for one measurement, their IRIs
 #'   are deduplicated in first-occurrence order and written to `constraint_iri`
 #'   as the SDP-compatible semicolon-separated value. Other roles continue to
@@ -860,8 +731,8 @@ apply_semantic_suggestions <- function(dict,
   if (!is.null(min_llm_confidence) && !"llm_confidence" %in% names(suggestions)) {
     cli::cli_abort(
       c(
-        "{.arg min_llm_confidence} requires LLM-reviewed suggestions.",
-        "i" = "Run {.fn suggest_semantics} with {.code llm_assess = TRUE} or pass a suggestions tibble that includes {.field llm_confidence}."
+        "{.arg min_llm_confidence} requires harness-reviewed suggestions.",
+        "i" = "Ingest your harness's answers with {.fn ingest_semantic_assessments} or pass a suggestions tibble that includes {.field llm_confidence}."
       )
     )
   }
@@ -912,8 +783,8 @@ apply_semantic_suggestions <- function(dict,
     if (!"llm_selected" %in% names(suggestions)) {
       cli::cli_abort(
         c(
-          "{.arg strategy = 'llm'} requires LLM-reviewed suggestions.",
-          "i" = "Run {.fn suggest_semantics} with {.code llm_assess = TRUE} first."
+          "{.arg strategy = 'llm'} requires harness-reviewed suggestions.",
+          "i" = "Ingest your harness's answers with {.fn ingest_semantic_assessments} first."
         )
       )
     }
@@ -1210,12 +1081,13 @@ semantic_suggestions <- function(x) {
   tibble::as_tibble(found$value)
 }
 
-#' Target-level LLM assessments attached to a dictionary
+#' Target-level assessments ingested from a harness
 #'
 #' The companion accessor to [semantic_suggestions()], for the
-#' `semantic_llm_assessments` attribute that `suggest_semantics(llm_assess = TRUE)`
-#' attaches. Reading LLM review is never itself an LLM call: this only reports
-#' assessments that already exist.
+#' `semantic_llm_assessments` attribute that [ingest_semantic_assessments()]
+#' attaches to the dictionary it returns. The package makes no model call:
+#' this only reports assessments your harness already wrote and the ingester
+#' read back.
 #'
 #' @inheritParams semantic_suggestions
 #'
@@ -1225,9 +1097,8 @@ semantic_suggestions <- function(x) {
 #'   `review/semantic-llm-assessments.csv`, typed as the 30-column assessment
 #'   row and carrying the validator findings as its
 #'   `semantic_validator_findings` attribute, or `NULL` when no record has
-#'   been ingested. The in-package model call never writes one. A `review/`
-#'   directory or record that is a symbolic link is refused rather than
-#'   followed.
+#'   been ingested. A `review/` directory or record that is a symbolic link
+#'   is refused rather than followed.
 #' @export
 #'
 #' @examples

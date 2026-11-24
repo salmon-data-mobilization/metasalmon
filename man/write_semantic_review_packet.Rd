@@ -24,8 +24,14 @@ that \code{\link[=suggest_semantics]{suggest_semantics()}} attaches (an artifact
 \code{\link[=infer_salmon_datapackage_artifacts]{infer_salmon_datapackage_artifacts()}} shape is read through its \code{dict}).}
 
 \item{context_files}{Optional character vector of local file paths whose
-text is chunked and scored against each unit, under the same path-only
-contract as \code{llm_context_files}: a parsed object is refused.}
+text is chunked and scored against each unit. Pass file paths, not
+parsed data frames, XML documents or R Markdown objects: a parsed object
+is refused. Supported types are Markdown and text notes (\code{.md}, \code{.txt},
+\code{.rst}), delimited and structured text (\code{.csv}, \code{.tsv}, \code{.json},
+\code{.yaml}, \code{.yml}), source and notebook files (\code{.R}, \code{.Rmd}, \code{.qmd}), HTML
+(\code{.htm}, \code{.html}), Word (\code{.docx}), PDF (\code{.pdf}, with the optional
+\code{pdftools} package) and Excel workbooks (\code{.xls}, \code{.xlsx}, \code{.xlsm}, with
+the optional \code{readxl} package).}
 
 \item{context_text}{Optional character vector of inline context text.}
 

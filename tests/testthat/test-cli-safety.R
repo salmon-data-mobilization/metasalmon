@@ -65,29 +65,6 @@ test_that(".ms_redact_secrets removes common credential shapes", {
   )
 })
 
-test_that("a provider error containing braces is inert in the fallback warning", {
-  # The canary is long, distinctive, and always present in base R, so it cannot
-  # collide with real message content.
-  hostile <- "provider failed: {R.version.string}"
-
-  assessments <- tibble::tibble(
-    llm_error = c(hostile, hostile),
-    llm_decision = c(NA_character_, NA_character_)
-  )
-
-  msg <- tryCatch(
-    metasalmon:::.ms_llm_abort_if_provider_wide_failure(
-      assessments,
-      config = list(provider = "openai", model = "test-model"),
-      deterministic_suggestions = tibble::tibble()
-    ),
-    condition = conditionMessage
-  )
-
-  expect_true(grepl("{R.version.string}", msg, fixed = TRUE))
-  expect_false(grepl(R.version.string, msg, fixed = TRUE))
-})
-
 test_that("a column name containing an unbalanced brace does not crash validation", {
   # Before escaping, cli parsed the message template and this raised
   # "Expecting '}'" instead of the intended review message.
@@ -192,18 +169,6 @@ test_that("external text reaching cli through a forwarding wrapper is escaped", 
   )
   expect_false(grepl("Expecting '}'", msg2, fixed = TRUE))
   expect_true(grepl("rate{pct", msg2, fixed = TRUE))
-})
-
-test_that("bundle-review failures are redacted where they are captured", {
-  # The non-bundle path redacted at capture; the bundle path passed
-  # conditionMessage() straight through, so a credential echoed by a provider
-  # persisted in the exported semantic_llm_assessments attribute.
-  body_text <- paste(
-    deparse(body(metasalmon:::.ms_assess_one_semantic_bundle)),
-    collapse = "\n"
-  )
-  expect_false(grepl("reason <- conditionMessage", body_text, fixed = TRUE))
-  expect_true(grepl(".ms_redact_secrets(conditionMessage", body_text, fixed = TRUE))
 })
 
 test_that("credential keys are redacted in serialized JSON form", {

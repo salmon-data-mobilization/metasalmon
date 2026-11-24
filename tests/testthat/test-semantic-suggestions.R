@@ -1,33 +1,13 @@
-test_that("semantic suggestion module owns target and candidate row shape", {
-  suggestions <- tibble::tibble(
-    dataset_id = c("d1", "d1", "d1"),
-    table_id = c("t1", "t1", "t1"),
-    column_name = c("spawner_count", "spawner_count", "run_type"),
-    dictionary_role = c("variable", "property", "variable"),
-    target_scope = c("column", "column", "column"),
-    target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv"),
-    target_sdp_field = c("term_iri", "property_iri", "term_iri"),
-    target_row_key = c("d1/t1/spawner_count", "d1/t1/spawner_count", "d1/t1/run_type"),
-    target_label = c("Spawner count", "Spawner count", "Run type"),
-    target_description = c("Spawner abundance", "Spawner abundance", "Run classification"),
-    search_query = c("spawner abundance", "abundance", "run type"),
-    label = c("Spawner abundance", "Abundance", "Run type"),
-    iri = c("https://example.org/spawner-abundance", "https://example.org/abundance", "https://example.org/run-type"),
-    source = c("smn", "smn", "smn"),
-    ontology = c("demo", "demo", "demo"),
-    definition = c("Variable", "Property", "Attribute")
-  )
-  dict_row <- test_spawner_dictionary()
-
-  target <- metasalmon:::.ms_semantic_target_from_candidate_rows(suggestions, dict_row = dict_row)
-  filtered <- metasalmon:::.ms_semantic_filter_column_term_suggestions(suggestions, dict_row)
-
-  expect_equal(names(target), metasalmon:::.ms_semantic_target_cols())
-  expect_equal(target$target_sdp_field[[1]], "term_iri")
-  expect_equal(nrow(filtered), 1L)
-  expect_equal(filtered$dictionary_role[[1]], "variable")
-  expect_equal(filtered$target_sdp_field[[1]], "term_iri")
-})
+# A target row in the frozen 19-column shape, built from a candidate row the
+# way the review packet's slots carry one. It stands in for the chat-only
+# `.ms_semantic_target_from_candidate_rows()`, removed with
+# `chat_decomposition()` (hub item B-329).
+target_row_from_candidate <- function(candidate_row) {
+  cols <- metasalmon:::.ms_semantic_target_cols()
+  target <- candidate_row[1, intersect(cols, names(candidate_row)), drop = FALSE]
+  target <- metasalmon:::.ms_semantic_add_missing_cols(target, cols)
+  target[, cols, drop = FALSE]
+}
 
 test_that("semantic target row contract preserves column order", {
   expected_cols <- c(
@@ -52,7 +32,7 @@ test_that("semantic target row contract preserves column order", {
     "code_description"
   )
 
-  target <- metasalmon:::.ms_semantic_target_from_candidate_rows(
+  target <- target_row_from_candidate(
     tibble::tibble(
       dataset_id = "d1",
       table_id = "t1",
@@ -83,6 +63,17 @@ test_that("semantic target row contract preserves column order", {
 
   expect_equal(metasalmon:::.ms_semantic_target_cols(), expected_cols)
   expect_equal(names(target), expected_cols)
+  # Target discovery, which every packet's targets come from, emits the same
+  # columns in the same order.
+  discovered <- metasalmon:::.ms_semantic_discover_targets(
+    dict = test_spawner_dictionary(),
+    codes = tibble::tibble(),
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    default_df = tibble::tibble(spawner_count = c(10L, 20L))
+  )
+  expect_true(nrow(discovered) > 0L)
+  expect_equal(names(discovered), expected_cols)
 })
 
 test_that("semantic target discovery emits normalized rows across all SDP scopes", {
@@ -257,7 +248,7 @@ test_that("semantic target discovery preserves paired value/unit resource contex
   expect_equal(unit_target$search_query, "square meter")
 })
 
-test_that("LLM assessment row contract preserves column order and empty/success symmetry", {
+test_that("assessment row contract preserves column order and empty/success symmetry", {
   expected_cols <- c(
     "dataset_id",
     "table_id",
@@ -290,7 +281,7 @@ test_that("LLM assessment row contract preserves column order and empty/success 
     "llm_escalated_from",
     "llm_retry_query_rejection_reason"
   )
-  target <- metasalmon:::.ms_semantic_target_from_candidate_rows(
+  target <- target_row_from_candidate(
     tibble::tibble(
       dataset_id = "d1",
       table_id = "t1",
@@ -321,7 +312,7 @@ test_that("LLM assessment row contract preserves column order and empty/success 
     ontology = c("demo", "demo"),
     definition = c("Variable one", "Variable two")
   )
-  config <- list(provider = "openrouter", model = "openrouter/free")
+  config <- list(provider = "fixture-harness", model = "semantic-review-v1")
   validated <- list(
     decision = "accept",
     confidence = 0.9,
@@ -369,7 +360,7 @@ test_that("legacy LLM assessment rows normalize to the additive 30-column contra
       target_sdp_field = "property_iri",
       search_query = "count"
     ),
-    list(provider = "openrouter", model = "openai/gpt-5.4-mini")
+    list(provider = "fixture-harness", model = "semantic-review-v1")
   )[, seq_len(28), drop = FALSE]
 
   normalized <- metasalmon:::.ms_llm_normalize_assessment_rows(legacy)
@@ -391,8 +382,8 @@ test_that("legacy LLM assessment values normalize to declared column types", {
     target_sdp_file = "column_dictionary.csv",
     target_sdp_field = "property_iri",
     search_query = "count",
-    llm_provider = "openrouter",
-    llm_model = "openai/gpt-5.4-mini",
+    llm_provider = "fixture-harness",
+    llm_model = "semantic-review-v1",
     llm_decision = "accept",
     llm_confidence = "0.91",
     llm_selected_candidate_index = 1,
@@ -435,71 +426,6 @@ test_that("empty LLM assessment tables retain typed contract columns", {
   expect_type(empty$llm_confidence, "double")
   expect_type(empty$llm_selected_candidate_index, "integer")
   expect_type(empty$llm_exploration_used, "logical")
-})
-
-test_that("LLM review adapter validates chat-style JSON responses", {
-  response <- list(
-    content = '{"decision":"accept","selected_candidate_index":1,"confidence":0.91,"rationale":"Fits the target.","missing_context":""}',
-    data = NULL
-  )
-  candidates <- tibble::tibble(
-    label = "Spawner abundance",
-    iri = "https://example.org/spawner-abundance"
-  )
-
-  validated <- metasalmon:::.ms_llm_review_validate_assessment(response, candidates)
-
-  expect_equal(validated$decision, "accept")
-  expect_equal(validated$selected_candidate_index, 1L)
-  expect_equal(validated$confidence, 0.91)
-})
-
-test_that("LLM review adapter reports malformed wrapped content with a snippet", {
-  response <- list(
-    content = '{"decision":',
-    data = NULL
-  )
-  candidates <- tibble::tibble(
-    label = "Spawner abundance",
-    iri = "https://example.org/spawner-abundance"
-  )
-
-  err <- tryCatch(
-    metasalmon:::.ms_llm_review_validate_assessment(
-      response,
-      candidates,
-      null_message = "Chat adapter did not return a usable JSON object for decomposition review."
-    ),
-    error = identity
-  )
-
-  expect_s3_class(err, "error")
-  expect_match(conditionMessage(err), "Chat adapter did not return", fixed = TRUE)
-  expect_match(conditionMessage(err), "Response content snippet", fixed = TRUE)
-  expect_match(conditionMessage(err), "decision", fixed = TRUE)
-})
-
-test_that("LLM review adapter prefers parsed data over malformed wrapped content", {
-  response <- list(
-    content = '{"decision":',
-    data = list(
-      decision = "review",
-      selected_candidate_index = NULL,
-      confidence = 0.44,
-      rationale = "Parsed data should win.",
-      missing_context = ""
-    )
-  )
-  candidates <- tibble::tibble(
-    label = "Spawner abundance",
-    iri = "https://example.org/spawner-abundance"
-  )
-
-  validated <- metasalmon:::.ms_llm_review_validate_assessment(response, candidates)
-
-  expect_equal(validated$decision, "review")
-  expect_equal(validated$confidence, 0.44)
-  expect_true(is.na(validated$selected_candidate_index))
 })
 
 test_that("procedure-column codes receive method candidates without a measurement parent", {

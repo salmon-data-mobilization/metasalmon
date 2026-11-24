@@ -48,7 +48,7 @@ retrieval found candidates for one, \code{\link[=review_semantics]{review_semant
 \item \code{tables.csv} rows with a blank \code{observation_unit_iri}.
 }
 
-It never contacts an LLM, and under the default options it never contacts a
+It never contacts a model, and under the default options it never contacts a
 network: the SDP schema it reads the required fields from is the copy
 bundled with metasalmon. When the \code{metasalmon.sdp_schema_source} or
 \code{metasalmon.sdp_schema_base_url} option selects a different schema, it reads

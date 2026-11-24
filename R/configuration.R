@@ -27,10 +27,6 @@
       TRUE, "TRUE",
       "Enable parallel term retrieval. METASALMON_TERM_SEARCH_PARALLEL takes precedence."
     ),
-    metasalmon.llm_deprecation_quiet = .ms_configuration_option(
-      FALSE, "FALSE",
-      "Suppress the in-package LLM deprecation warning. It does not enable a model call. The deprecated provider path is removed in 0.7.0."
-    ),
     metasalmon.validation_message_mode = .ms_configuration_option(
       "default", '"default"',
       'Internal validation message mode: "default" or "review_ready". create_sdp temporarily sets and restores it; ordinarily leave it unchanged.'
@@ -64,16 +60,7 @@
     METASALMON_TERM_SEARCH_TIMEOUT = "Global positive retrieval timeout in seconds; overrides the option but yields to the source-specific variable.",
     `METASALMON_TERM_SEARCH_TIMEOUT_<SOURCE>` = "Positive retrieval timeout for an uppercase source name, such as NVS, ZOOMA or QUDT; highest timeout precedence.",
     METASALMON_TERM_SEARCH_PARALLEL = "Parallel override: 1/true/yes/on enables; 0/false/no/off disables; unset/unrecognized falls back to the option.",
-    METASALMON_TERM_SEARCH_WORKERS = "Positive worker-count override; otherwise worker count derives from source count and available cores.",
-    OPENAI_API_KEY = "OpenAI credential for the deprecated in-package provider path; only read on explicit LLM assessment.",
-    OPENROUTER_API_KEY = "OpenRouter credential for the deprecated in-package provider path; only read on explicit LLM assessment.",
-    CHAPI_API_KEY = "Chapi credential for the deprecated in-package provider path; only read on explicit LLM assessment.",
-    METASALMON_LLM_API_KEY = "OpenAI-compatible credential and fallback for provider-specific keys. Explicit llm_api_key takes precedence.",
-    METASALMON_LLM_MODEL = "Model fallback for the deprecated provider path. Explicit llm_model takes precedence; Chapi checks CHAPI_MODEL first.",
-    CHAPI_MODEL = "Chapi model fallback before METASALMON_LLM_MODEL; otherwise the Chapi model default applies.",
-    METASALMON_LLM_BASE_URL = "Endpoint fallback for the deprecated provider path. Explicit llm_base_url takes precedence; Chapi checks CHAPI_BASE_URL first.",
-    CHAPI_BASE_URL = "Chapi endpoint fallback before METASALMON_LLM_BASE_URL; otherwise the Chapi endpoint default applies.",
-    METASALMON_LLM_REASONING_EFFORT = "Reasoning-effort fallback for the deprecated provider path; explicit llm_reasoning_effort takes precedence."
+    METASALMON_TERM_SEARCH_WORKERS = "Positive worker-count override; otherwise worker count derives from source count and available cores."
   )
 }
 
@@ -109,9 +96,10 @@
 #' variables are read at call time and are never set by package loading.
 #'
 #' The inventories below are generated from the same registry that owns the
-#' load defaults. The in-package LLM provider path is deprecated and removed in
-#' 0.7.0; its environment variables do not by themselves request a model call.
-#' Prefer the external semantic review packet workflow for new review work.
+#' load defaults. The package makes no model call and reads no model-provider
+#' credential: model judgement of semantic candidates runs in your own harness
+#' against a review packet, through [write_semantic_review_packet()] and
+#' [ingest_semantic_assessments()].
 #'
 #' @seealso [ms_setup_github()] for the GitHub credential helper,
 #'   [find_terms()] for retrieval, [create_sdp()] for schema-backed creation.

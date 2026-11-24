@@ -2,11 +2,11 @@
 #
 # cli treats every element of a condition message vector as a glue template,
 # including named bullet elements -- the name only selects the glyph. So text
-# that arrives from an LLM provider, an HTTP response, an ontology label, or a
-# user's own CSV must never be passed through as a message element:
+# that arrives from a harness's assessment file, an HTTP response, an ontology
+# label, or a user's own CSV must never be passed through as a message element:
 #
-#   * balanced braces are evaluated as R code, so a provider error containing
-#     `{Sys.getenv("OPENAI_API_KEY")}` prints the key;
+#   * balanced braces are evaluated as R code, so an error text containing
+#     `{Sys.getenv("BIOPORTAL_APIKEY")}` prints the key;
 #   * an unbalanced brace is a parse error, so a column literally named
 #     `rate{pct` replaces the intended message with `Error: Expecting '}'`.
 #
@@ -53,9 +53,9 @@
   value <- gsub(
     paste0(
       # A vendor prefix and a trailing qualifier are both part of the name.
-      # Without them a leading \\b never matches the variables this package
-      # actually reads -- `_` is a word character, so `OPENAI_API_KEY` has no
-      # boundary before `API_KEY` and the secret survived untouched.
+      # Without them a leading \\b never matches the vendor-prefixed names a
+      # captured error carries -- `_` is a word character, so `OPENAI_API_KEY`
+      # has no boundary before `API_KEY` and the secret survived untouched.
       "(?i)\\b((?:[A-Za-z0-9]+[_-])*",
       "(?:authorization|proxy-authorization|set-cookie|cookie|",
       "api[_-]?key|access[_-]?token|refresh[_-]?token|secret[_-]?key|",
@@ -69,8 +69,8 @@
       # final name segment -- without the lookahead, `max_token_count = 4096`
       # and `total_tokens = 1500` matched and the rule then consumed the rest of
       # the line, destroying exactly the numbers a user needs to fix a rejected
-      # LLM request. Those fields are common in provider errors, and the errors
-      # are persisted into assessment output.
+      # model request. Those fields are common in the error text a harness
+      # records in an assessment row, and that text is persisted.
       #
       # The trade is deliberate: a credential whose name continues past `token`
       # (`dataone_token_v2`) is not matched by this branch and would need

@@ -211,56 +211,6 @@
   ids
 }
 
-.ms_semantic_first_non_empty <- function(...) {
-  values <- unlist(list(...), use.names = FALSE)
-  values <- vapply(values, .ms_semantic_trim_string, character(1), default = NA_character_)
-  values <- values[!is.na(values)]
-  if (length(values) == 0L) {
-    return(NA_character_)
-  }
-  values[[1]]
-}
-
-.ms_semantic_column_term_target_from_dictionary <- function(dict_row) {
-  dict_row <- tibble::as_tibble(dict_row)
-
-  dataset_id <- if ("dataset_id" %in% names(dict_row)) dict_row$dataset_id[[1]] else NA_character_
-  table_id <- if ("table_id" %in% names(dict_row)) dict_row$table_id[[1]] else NA_character_
-  column_name <- if ("column_name" %in% names(dict_row)) dict_row$column_name[[1]] else NA_character_
-  column_label <- if ("column_label" %in% names(dict_row)) dict_row$column_label[[1]] else column_name
-  column_description <- if ("column_description" %in% names(dict_row)) dict_row$column_description[[1]] else NA_character_
-  search_query <- .ms_semantic_first_non_empty(column_description, column_label, column_name)
-
-  tibble::tibble(
-    dataset_id = dataset_id,
-    table_id = table_id,
-    column_name = column_name,
-    code_value = NA_character_,
-    dictionary_role = "variable",
-    search_role = "variable",
-    target_scope = "column",
-    target_sdp_file = "column_dictionary.csv",
-    target_sdp_field = "term_iri",
-    target_row_key = paste(dataset_id, table_id, column_name, sep = "/"),
-    target_label = column_label,
-    target_description = column_description,
-    search_query = search_query,
-    target_query_basis = dplyr::case_when(
-      !is.na(.ms_semantic_trim_string(column_description)) ~ "column_description",
-      !is.na(.ms_semantic_trim_string(column_label)) ~ "column_label",
-      TRUE ~ "column_name"
-    ),
-    target_query_context = .ms_semantic_first_non_empty(
-      paste(column_label, column_description),
-      column_name
-    ),
-    column_label = column_label,
-    column_description = column_description,
-    code_label = NA_character_,
-    code_description = NA_character_
-  )
-}
-
 # Whether a `codes.csv` row's `code_value` is empty, which gives the row no
 # semantic target in any role (hub item B-276, ruled by Brett 2026-09-25). The
 # codes schema defines `term_iri` as "the specific term that code_value
@@ -1169,64 +1119,6 @@
   targets <- targets[, target_cols, drop = FALSE]
 
   targets
-}
-
-.ms_semantic_target_from_candidate_rows <- function(candidate_rows = NULL, dict_row = NULL) {
-  candidate_rows <- .ms_semantic_candidate_rows(candidate_rows)
-  target_cols <- .ms_semantic_target_cols()
-
-  if (nrow(candidate_rows) > 0L) {
-    target <- candidate_rows[1, intersect(target_cols, names(candidate_rows)), drop = FALSE]
-    target <- .ms_semantic_add_missing_cols(target, target_cols)
-    return(target[, target_cols, drop = FALSE])
-  }
-
-  if (!is.null(dict_row)) {
-    # Candidate-row callers need a narrow term_iri target fallback for one
-    # dictionary row. Full six-role discovery stays in .ms_semantic_discover_targets().
-    target <- .ms_semantic_column_term_target_from_dictionary(dict_row)
-    target <- .ms_semantic_add_missing_cols(target, target_cols)
-    return(target[, target_cols, drop = FALSE])
-  }
-
-  tibble::as_tibble(stats::setNames(rep(list(NA_character_), length(target_cols)), target_cols))
-}
-
-.ms_semantic_filter_column_term_suggestions <- function(suggestions, dict_row) {
-  suggestions <- .ms_semantic_candidate_rows(suggestions)
-  if (nrow(suggestions) == 0L) {
-    return(suggestions)
-  }
-
-  keep <- rep(TRUE, nrow(suggestions))
-  if ("dataset_id" %in% names(suggestions) && "dataset_id" %in% names(dict_row)) {
-    keep <- keep & (is.na(suggestions$dataset_id) | suggestions$dataset_id == dict_row$dataset_id[[1]])
-  }
-  if ("table_id" %in% names(suggestions) && "table_id" %in% names(dict_row)) {
-    keep <- keep & (is.na(suggestions$table_id) | suggestions$table_id == dict_row$table_id[[1]])
-  }
-  if ("column_name" %in% names(suggestions)) {
-    keep <- keep & suggestions$column_name == dict_row$column_name[[1]]
-  }
-  if ("target_sdp_field" %in% names(suggestions)) {
-    keep <- keep & suggestions$target_sdp_field == "term_iri"
-  }
-  if ("dictionary_role" %in% names(suggestions)) {
-    keep <- keep & suggestions$dictionary_role == "variable"
-  }
-
-  suggestions[keep, , drop = FALSE]
-}
-
-.ms_semantic_has_usable_suggestions <- function(suggestions) {
-  suggestions <- tibble::as_tibble(suggestions)
-  if (nrow(suggestions) == 0 || !"iri" %in% names(suggestions)) {
-    return(FALSE)
-  }
-
-  iris <- as.character(suggestions$iri)
-  iris[is.na(iris)] <- ""
-  any(nzchar(trimws(iris)))
 }
 
 .ms_semantic_merge_llm_assessments <- function(suggestions, assessments, top_n) {

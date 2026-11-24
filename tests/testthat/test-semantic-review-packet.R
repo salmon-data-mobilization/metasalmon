@@ -467,20 +467,44 @@ test_that("semantic_llm_assessments(path) reads the persisted record with its fi
 # The sentinel: no model call ever, and no network except through search_fn
 # -----------------------------------------------------------------------------
 
+# The entry points of the in-package model call, which hub item B-329 deleted:
+# the provider configuration, the two chat request functions and the builder
+# they shared, the retry stack, and the orchestration that called them. Kept
+# as a list so the guards below can say they are gone rather than merely
+# unreached.
 provider_symbols <- function() {
   c(
     ".ms_llm_request_with_retries", ".ms_llm_chat_json_request", ".ms_llm_chat_request",
-    ".ms_llm_resolve_config", ".ms_llm_review_request_assessment", ".ms_llm_assess_one_record",
-    ".ms_assess_semantic_suggestions_llm", ".ms_assess_semantic_candidate_records",
-    ".ms_assess_semantic_bundles", ".ms_llm_explore_record", ".ms_semantic_bundle_retry"
+    ".ms_llm_chat_completion", ".ms_llm_build_chat_request_body", ".ms_chat_http_request",
+    ".ms_chat", ".ms_llm_resolve_config", ".ms_llm_retry_after_seconds",
+    ".ms_llm_retry_wait_seconds", ".ms_llm_review_request_assessment",
+    ".ms_llm_assess_one_record", ".ms_assess_semantic_suggestions_llm",
+    ".ms_assess_semantic_candidate_records", ".ms_assess_semantic_bundles",
+    ".ms_llm_explore_record", ".ms_semantic_bundle_retry", "chat_decomposition"
   )
 }
 
-test_that("the builder and the ingester make no model call: a stopping provider is never reached", {
-  stop_fn <- function(...) stop("a model-provider entry point was called")
-  bindings <- stats::setNames(rep(list(stop_fn), length(provider_symbols())), provider_symbols())
-  bindings <- bindings[vapply(names(bindings), function(name) exists(name, envir = asNamespace("metasalmon"), inherits = FALSE), logical(1))]
-  do.call(local_mocked_bindings, c(bindings, list(.package = "metasalmon")))
+test_that("the package holds no model client: no provider entry point and no chat request", {
+  # This inverts the guard that kept one chat-completions request builder
+  # (backlog #3), which retired with the builder. A model client added back
+  # would construct that request, so the endpoint path is the instrument; the
+  # positive control proves the walk reaches string constants in bodies.
+  ns <- asNamespace("metasalmon")
+  for (name in provider_symbols()) {
+    expect_false(exists(name, envir = ns, inherits = FALSE), info = name)
+  }
+  expect_false("chat_decomposition" %in% getNamespaceExports("metasalmon"))
+  bodies <- vapply(ls(ns, all.names = TRUE), function(name) {
+    fn <- get(name, envir = ns)
+    if (!is.function(fn) || is.primitive(fn)) return("")
+    paste(deparse(body(fn)), collapse = " ")
+  }, character(1))
+  expect_true(any(grepl("semantic-review-packet.json", bodies, fixed = TRUE)))
+  expect_false(any(grepl("/chat/completions", bodies, fixed = TRUE)))
+})
+
+test_that("the builder and the ingester make no network call but through search_fn", {
+  stop_fn <- function(...) stop("an HTTP client was called")
   local_mocked_bindings(GET = stop_fn, POST = stop_fn, .package = "httr")
   local_mocked_bindings(req_perform = stop_fn, .package = "httr2")
 
@@ -557,6 +581,10 @@ test_that("no provider symbol is reachable from the two exported functions", {
   }
   expect_length(intersect(reachable, provider_symbols()), 0L)
   expect_false(any(grepl("^\\.ms_llm_(chat|request|messages|generic|decomposition|batch|exploration)", reachable)))
+  # The walk reaches the kept helpers, so an empty intersection is about the
+  # target and not the instrument.
+  expect_true(".ms_validate_llm_assessment" %in% reachable)
+  expect_true(".ms_collect_context_chunks" %in% reachable)
   # Retrieval is reached only through the `search_fn` argument, whose default
   # is `find_terms()`; a default value is not a call, so it is not in the walk.
   expect_identical(formals(write_semantic_review_packet)$search_fn, quote(find_terms))
@@ -1110,6 +1138,75 @@ test_that("a package that started with no shortlist gets one when a retry gains 
   review <- suppressMessages(review_semantics(path))
   expect_true("https://w3id.org/smn/WaterTemperature" %in% review$iri)
   expect_true(any(review$llm_decision %in% "accept"))
+})
+
+# Retargeted from the in-package bundle review's retry tests, which went with
+# the model call (hub item B-329): the source policy now reaches a retry
+# through the packet, and the ingester runs the retry retrieval.
+test_that("the packet records the source policy and the ingester's retry retrieval keeps to it", {
+  target <- tibble::tibble(
+    dataset_id = "fixture-1", table_id = "catch", column_name = "GEAR_TYPE", code_value = NA_character_,
+    dictionary_role = "variable", search_role = "variable", target_scope = "column",
+    target_sdp_file = "column_dictionary.csv", target_sdp_field = "term_iri",
+    target_row_key = "fixture-1/catch/GEAR_TYPE", target_label = "Gear type",
+    target_description = "The fishing gear used.", search_query = "gear type",
+    target_query_basis = "column_description", target_query_context = "Gear type: The fishing gear used.",
+    column_label = "Gear type", column_description = "The fishing gear used.",
+    code_label = NA_character_, code_description = NA_character_
+  )
+  candidates <- dplyr::bind_cols(target, tibble::tibble(
+    label = "Equipment", iri = "https://w3id.org/smn/Equipment", source = "smn",
+    ontology = "Salmon Ontology", role = "variable", match_type = "label_partial",
+    definition = "Equipment.", score = 0.4, term_type = "owl_class",
+    retrieval_query = "gear type", retrieval_pass = 1L
+  ))
+  dict <- tibble::tibble(
+    dataset_id = "fixture-1", table_id = "catch", column_name = "GEAR_TYPE",
+    column_label = "Gear type", column_description = "The fishing gear used.",
+    column_role = "categorical", value_type = "string", term_iri = NA_character_
+  )
+  attr(dict, "semantic_targets") <- target
+  attr(dict, "semantic_suggestions") <- candidates
+  # An adapter that leaks a source nobody asked for, and records what it was
+  # asked to search.
+  seen <- list()
+  leaky <- function(query, role, sources) {
+    seen[[length(seen) + 1L]] <<- sources
+    tibble::tibble(
+      label = c("Fishing gear", "Leaked gear"),
+      iri = c("https://w3id.org/smn/FishingGear", "https://qudt.org/vocab/Gear"),
+      source = c("smn", "qudt"), ontology = c("Salmon Ontology", "QUDT"), role = role,
+      match_type = "label_partial", definition = c("Fishing gear.", "Leaked."), score = c(0.8, 0.99)
+    )
+  }
+  retry <- semantic_review_harness_row(target, llm_decision = "retry_search", llm_confidence = 0.3,
+    llm_rationale = "Generic.", llm_retry_query = "fishing gear type")
+
+  # An explicit allowlist is recorded, handed to the retry search, and
+  # filters what the adapter leaks.
+  explicit_dir <- file.path(withr::local_tempdir(), "review")
+  built <- write_semantic_review_packet(dict, sources = "smn", review_dir = explicit_dir, quiet = TRUE)
+  policy <- semantic_review_read_json(built$path)$pins$retrieval$source_policy
+  expect_identical(policy$mode, "explicit")
+  expect_identical(unlist(policy$explicit_allowlist), "smn")
+  first <- ingest_semantic_assessments(dict, assessments = retry, packet_id = built$packet_id,
+    review_dir = explicit_dir, search_fn = leaky, quiet = TRUE)
+  expect_identical(first$status, "awaiting_pass_2")
+  expect_length(seen, 1L)
+  expect_identical(seen[[1]], "smn")
+  slot <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(first$next_packet))[[1]]
+  expect_true("https://w3id.org/smn/FishingGear" %in% slot$candidates$iri)
+  expect_false(any(slot$candidates$source == "qudt"))
+
+  # Omitted sources keep the role-aware defaults on the retry too.
+  seen <- list()
+  default_dir <- file.path(withr::local_tempdir(), "review")
+  built <- write_semantic_review_packet(dict, review_dir = default_dir, quiet = TRUE)
+  expect_identical(semantic_review_read_json(built$path)$pins$retrieval$source_policy$mode, "role_defaults")
+  ingest_semantic_assessments(dict, assessments = retry, packet_id = built$packet_id,
+    review_dir = default_dir, search_fn = leaky, quiet = TRUE)
+  expect_length(seen, 1L)
+  expect_identical(seen[[1]], sources_for_role("variable"))
 })
 
 test_that("a pass-2 row with a blank provider or model keeps the pass-1 answer like any other unusable answer", {

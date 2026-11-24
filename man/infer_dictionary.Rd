@@ -15,18 +15,7 @@ infer_dictionary(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = NULL,
-  seed_dataset_meta = NULL,
-  llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-  llm_model = NULL,
-  llm_api_key = NULL,
-  llm_base_url = NULL,
-  llm_reasoning_effort = NULL,
-  llm_top_n = 5L,
-  llm_context_files = NULL,
-  llm_context_text = NULL,
-  llm_timeout_seconds = 60,
-  llm_request_fn = NULL
+  seed_dataset_meta = NULL
 )
 }
 \arguments{
@@ -61,42 +50,6 @@ seeding semantic suggestions.}
 
 \item{seed_dataset_meta}{Optional \code{dataset.csv}-style tibble forwarded to
 \code{suggest_semantics()} when \code{seed_semantics = TRUE}.}
-
-\item{llm_assess}{Logical; if \code{TRUE}, run the optional LLM shortlist
-assessment inside \code{suggest_semantics()}. The LLM and context options below
-take effect only when \code{seed_semantics = TRUE}; supplying them with
-\code{seed_semantics = FALSE} emits a warning and is otherwise ignored.}
-
-\item{llm_provider}{LLM provider preset forwarded to \code{suggest_semantics()}.}
-
-\item{llm_model}{Optional LLM model identifier forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_api_key}{Optional API key override forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_base_url}{Optional OpenAI-compatible base URL forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_reasoning_effort}{Optional reasoning-effort hint forwarded to
-\code{suggest_semantics()} when using the OpenAI provider.}
-
-\item{llm_top_n}{Maximum number of retrieved candidates sent to the LLM per
-target.}
-
-\item{llm_context_files}{Optional character vector of local context file
-paths forwarded to \code{suggest_semantics()} when \code{llm_assess = TRUE}. Pass
-file paths, not parsed data frames, XML documents, or R Markdown objects.
-See \code{suggest_semantics()} for supported file types, including HTML, DOCX,
-\code{.R}, \code{.Rmd}, \code{.qmd}, PDF, and Excel context files.}
-
-\item{llm_context_text}{Optional inline context snippets forwarded to
-\code{suggest_semantics()}.}
-
-\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.}
-
-\item{llm_request_fn}{Advanced/test hook overriding the low-level
-OpenAI-compatible request function.}
 }
 \value{
 A tibble with dictionary schema columns in canonical Salmon Data
@@ -104,8 +57,7 @@ Package order: \code{dataset_id}, \code{table_id}, \code{column_name}, \code{col
 \code{column_description}, \code{term_iri}, \code{property_iri}, \code{entity_iri},
 \code{constraint_iri}, \code{statistical_modifier_iri}, \code{unit_label}, \code{unit_iri}, \code{term_type},
 \code{value_type}, \code{column_role}, \code{required}. With semantic seeding, suggestions
-are attached as \code{semantic_suggestions}; with explicit LLM review, the
-30-column target summaries are attached as \code{semantic_llm_assessments}.
+are attached as \code{semantic_suggestions}.
 }
 \description{
 Proposes a starter dictionary (column dictionary schema) from raw data by

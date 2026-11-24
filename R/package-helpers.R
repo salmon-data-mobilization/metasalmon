@@ -788,31 +788,6 @@ write_salmon_datapackage <- function(
 #'   low-cardinality character columns in the original data frame(s); `"all"`
 #'   analyzes all inferred or supplied code rows; `"none"` skips code-level
 #'   semantic suggestions.
-#' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
-#'   assessment inside `suggest_semantics()`. Measurement columns are reviewed
-#'   as six-slot bundles; other targets keep their existing per-target path.
-#' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
-#' @param llm_model Optional LLM model identifier forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_api_key Optional API key override forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_base_url Optional OpenAI-compatible base URL forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to
-#'   `suggest_semantics()` when using the OpenAI provider.
-#' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
-#'   target.
-#' @param llm_context_files Optional character vector of local context file
-#'   paths forwarded to `suggest_semantics()` when `llm_assess = TRUE`. Pass
-#'   file paths, not parsed data frames, XML documents, or R Markdown objects.
-#'   See `suggest_semantics()` for supported file types, including HTML, DOCX,
-#'   `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
-#' @param llm_context_text Optional inline context snippets forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
-#' @param llm_request_fn Advanced/test hook overriding the low-level
-#'   OpenAI-compatible request function.
-#'
 #' @return A named list with the following components:
 #'   - `resources`: Named list of input tables
 #'   - `dict`: Inferred dictionary tibble
@@ -820,7 +795,9 @@ write_salmon_datapackage <- function(
 #'   - `codes`: Inferred candidate codes tibble
 #'   - `dataset_meta`: Inferred dataset metadata one-row tibble
 #'   - `semantic_suggestions`: Semantic suggestion tibble (or `NULL`)
-#'   - `semantic_llm_assessments`: Target-level LLM review summary tibble (or `NULL`)
+#'   - `semantic_llm_assessments`: Always `NULL`. Kept so code that reads the
+#'     element keeps working; assessments now come from
+#'     [ingest_semantic_assessments()].
 #' @export
 #'
 #' @examples
@@ -861,46 +838,13 @@ infer_salmon_datapackage_artifacts <- function(
     seed_codes = NULL,
     seed_table_meta = TRUE,
     seed_dataset_meta = TRUE,
-    semantic_code_scope = c("factor", "all", "none"),
-    llm_assess = FALSE,
-    llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-    llm_model = NULL,
-    llm_api_key = NULL,
-    llm_base_url = NULL,
-    llm_reasoning_effort = NULL,
-    llm_top_n = 5L,
-    llm_context_files = NULL,
-    llm_context_text = NULL,
-    llm_timeout_seconds = 60,
-    llm_request_fn = NULL
+    semantic_code_scope = c("factor", "all", "none")
 ) {
-  # The in-package model call is deprecated (S16 step 1); one warning per
-  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
-  llm_deprecation_depth <- .ms_llm_deprecation_enter()
-  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
-  on.exit(
-    .ms_llm_deprecation_exit(llm_deprecation_depth, "infer_salmon_datapackage_artifacts", llm_deprecation_triggered),
-    add = TRUE
-  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)
   )
-  llm_review <- .ms_llm_review_plan(
-    seed_semantics = seed_semantics,
-    semantic_max_per_role = semantic_max_per_role,
-    llm_assess = llm_assess,
-    llm_provider = llm_provider,
-    llm_model = llm_model,
-    llm_api_key = llm_api_key,
-    llm_base_url = llm_base_url,
-    llm_reasoning_effort = llm_reasoning_effort,
-    llm_top_n = llm_top_n,
-    llm_context_files = llm_context_files,
-    llm_context_text = llm_context_text,
-    llm_timeout_seconds = llm_timeout_seconds,
-    llm_request_fn = llm_request_fn
-  )
+  semantic_max_per_role <- .ms_semantic_shortlist_size(semantic_max_per_role)
 
   if (inherits(resources, "data.frame")) {
     resources <- list(resources)
@@ -947,7 +891,6 @@ infer_salmon_datapackage_artifacts <- function(
   semantic_codes <- artifact_context$semantic_codes
 
   semantic_suggestions <- NULL
-  semantic_llm_assessments <- NULL
   if (isTRUE(seed_semantics)) {
     if (seed_verbose) {
       cli::cli_alert_info("Seeding semantic suggestions during infer_salmon_datapackage_artifacts().")
@@ -957,13 +900,12 @@ infer_salmon_datapackage_artifacts <- function(
       df = resources,
       dict = dict,
       sources = semantic_sources,
-      max_per_role = llm_review$semantic_max_per_role,
+      max_per_role = semantic_max_per_role,
       include_dwc = FALSE,
       codes = semantic_codes,
       table_meta = table_meta,
       dataset_meta = dataset_meta
     )
-    suggest_args <- c(suggest_args, llm_review$suggest_args)
     dict <- do.call(suggest_semantics, suggest_args)
 
     semantic_suggestions <- .ms_mark_crosswalk_suggestions(
@@ -971,7 +913,6 @@ infer_salmon_datapackage_artifacts <- function(
       artifact_context$crosswalk_prefills
     )
     attr(dict, "semantic_suggestions") <- semantic_suggestions
-    semantic_llm_assessments <- attr(dict, "semantic_llm_assessments", exact = TRUE)
   }
 
   dict <- .ms_fill_review_placeholders_dictionary(dict)
@@ -986,7 +927,10 @@ infer_salmon_datapackage_artifacts <- function(
     codes = codes,
     dataset_meta = dataset_meta,
     semantic_suggestions = semantic_suggestions,
-    semantic_llm_assessments = semantic_llm_assessments
+    # Always NULL since the in-package model call was removed (hub item B-329),
+    # and kept as an element for one release (decision 19 of the S16
+    # execplan) so a script that reads it does not break.
+    semantic_llm_assessments = NULL
   )
 }
 
@@ -1026,30 +970,6 @@ infer_salmon_datapackage_artifacts <- function(
 #'   low-cardinality character columns in the original data frame(s); `"all"`
 #'   analyzes all inferred or supplied code rows; `"none"` skips code-level
 #'   semantic suggestions.
-#' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
-#'   assessment inside `suggest_semantics()`. Measurement columns are reviewed
-#'   as six-slot bundles; other targets keep their existing per-target path.
-#' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
-#' @param llm_model Optional LLM model identifier forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_api_key Optional API key override forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_base_url Optional OpenAI-compatible base URL forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to
-#'   `suggest_semantics()` when using the OpenAI provider.
-#' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
-#'   target.
-#' @param llm_context_files Optional character vector of local context file
-#'   paths forwarded to `suggest_semantics()` when `llm_assess = TRUE`. Pass
-#'   file paths, not parsed data frames, XML documents, or R Markdown objects.
-#'   See `suggest_semantics()` for supported file types, including HTML, DOCX,
-#'   `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
-#' @param llm_context_text Optional inline context snippets forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
-#' @param llm_request_fn Advanced/test hook overriding the low-level
-#'   OpenAI-compatible request function.
 #' @param check_updates Logical; if `TRUE`, run a short, non-fatal
 #'   [check_for_updates()] call after writing the package and mention newer
 #'   releases only when one is available. Defaults to `interactive()`.
@@ -1101,12 +1021,11 @@ infer_salmon_datapackage_artifacts <- function(
 #' `semantic_suggestions.csv` as a fallback shortlist when you want more
 #' context or a better match. To keep that review file usable,
 #' `semantic_suggestions.csv` trims code-level suggestions that do not have
-#' enough human-readable context to review safely. When `llm_assess = TRUE`,
-#' the same review file also carries `llm_*` columns so the bundled LLM
-#' judgments, retry rejections, escalation origins, and validator downgrades
-#' stay explicit and reviewable. Only accepted variable, property, entity, and
-#' unit selections are eligible for column auto-prefill; constraint and method
-#' assessments always remain manual. Any auto-applied column/table IRI
+#' enough human-readable context to review safely. To have a model judge the
+#' shortlists, write a review packet for the package with
+#' [write_semantic_review_packet()], have your own harness answer it, and read
+#' the answers back with [ingest_semantic_assessments()]; neither call writes
+#' the metadata CSVs. Any auto-applied column/table IRI
 #' draft is written back into the metadata CSVs as a `REVIEW:`-prefixed value
 #' for manual confirmation there. Required-field review placeholders are also
 #' inserted into the inferred metadata files. In
@@ -1149,17 +1068,6 @@ create_sdp <- function(
     seed_table_meta = TRUE,
     seed_dataset_meta = TRUE,
     semantic_code_scope = c("factor", "all", "none"),
-    llm_assess = FALSE,
-    llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-    llm_model = NULL,
-    llm_api_key = NULL,
-    llm_base_url = NULL,
-    llm_reasoning_effort = NULL,
-    llm_top_n = 5L,
-    llm_context_files = NULL,
-    llm_context_text = NULL,
-    llm_timeout_seconds = 60,
-    llm_request_fn = NULL,
     check_updates = interactive(),
     format = "csv",
     overwrite = FALSE,
@@ -1167,14 +1075,6 @@ create_sdp <- function(
     prune = FALSE,
     ...
 ) {
-  # The in-package model call is deprecated (S16 step 1); one warning per
-  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
-  llm_deprecation_depth <- .ms_llm_deprecation_enter()
-  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
-  on.exit(
-    .ms_llm_deprecation_exit(llm_deprecation_depth, "create_sdp", llm_deprecation_triggered),
-    add = TRUE
-  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)
@@ -1253,8 +1153,7 @@ create_sdp <- function(
   # `create_sdp()`'s own copy of the write-directory gate, deliberately kept
   # rather than deferred to `.ms_check_package_write_dir()`: this one runs
   # BEFORE inference, so a doomed call never reaches `suggest_semantics()` and
-  # never spends an LLM request or a network round trip on output it will
-  # refuse to write. `test-package-helpers.R` "create_sdp requires
+  # never spends a network round trip on output it will refuse to write. `test-package-helpers.R` "create_sdp requires
   # overwrite=TRUE to write into an existing directory" pins that by asserting
   # the mocked `suggest_semantics()` was called zero times.
   #
@@ -1294,18 +1193,7 @@ create_sdp <- function(
     seed_codes = seed_codes,
     seed_table_meta = seed_table_meta,
     seed_dataset_meta = seed_dataset_meta,
-    semantic_code_scope = semantic_code_scope,
-    llm_assess = llm_assess,
-    llm_provider = llm_provider,
-    llm_model = llm_model,
-    llm_api_key = llm_api_key,
-    llm_base_url = llm_base_url,
-    llm_reasoning_effort = llm_reasoning_effort,
-    llm_top_n = llm_top_n,
-    llm_context_files = llm_context_files,
-    llm_context_text = llm_context_text,
-    llm_timeout_seconds = llm_timeout_seconds,
-    llm_request_fn = llm_request_fn
+    semantic_code_scope = semantic_code_scope
   )
 
   suggestions <- artifacts$semantic_suggestions
@@ -1313,21 +1201,12 @@ create_sdp <- function(
     suggestions <- attr(artifacts$dict, "semantic_suggestions", exact = TRUE)
   }
   if (!is.null(suggestions) && nrow(suggestions) > 0) {
-    if (isTRUE(llm_assess) && "llm_selected" %in% names(suggestions)) {
-      auto_apply_suggestions <- .ms_prepare_llm_auto_apply_suggestions(artifacts$dict, suggestions)
-      apply_strategy <- "llm"
-      min_llm_confidence <- NULL
-    } else {
-      auto_apply_suggestions <- .ms_filter_auto_apply_suggestions(artifacts$dict, suggestions)
-      apply_strategy <- "top"
-      min_llm_confidence <- NULL
-    }
+    auto_apply_suggestions <- .ms_filter_auto_apply_suggestions(artifacts$dict, suggestions)
     dict_before_apply <- artifacts$dict
     artifacts$dict <- apply_semantic_suggestions(
       artifacts$dict,
       suggestions = auto_apply_suggestions,
-      strategy = apply_strategy,
-      min_llm_confidence = min_llm_confidence,
+      strategy = "top",
       overwrite = FALSE,
       verbose = FALSE
     )
@@ -1335,13 +1214,11 @@ create_sdp <- function(
       artifacts$dict,
       dict_before_apply,
       auto_apply_suggestions,
-      strategy = apply_strategy
+      strategy = "top"
     )
     artifacts$table_meta <- .ms_apply_table_semantic_suggestions(
       artifacts$table_meta,
       suggestions = suggestions,
-      strategy = apply_strategy,
-      min_llm_confidence = min_llm_confidence,
       overwrite = FALSE,
       mark_review = TRUE
     )
@@ -3699,6 +3576,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   length(intersect(query_tokens, label_tokens)) > 0
 }
 
+# The prefill an accepted model selection used to receive inside `create_sdp()`.
+# No package path calls these two, or `strategy = "llm"` of
+# `.ms_mark_reviewed_dictionary_iris()`, since the in-package model call was
+# removed (hub item B-329): the Theme A replay reproduces that downstream
+# prefill through them, in `tests/testthat/test-semantic-review-packet.R` and
+# `scripts/build-semantic-review-fixtures.R`, so the recorded oracles keep their
+# meaning. Retires when the Theme A fixtures stop recording the prefill.
 .ms_create_sdp_llm_auto_apply_roles <- function() {
   c("variable", "property", "entity", "unit")
 }
@@ -4217,8 +4101,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   tokens[!(tokens %in% stop_words) & (nchar(tokens) >= 3 | tokens %in% c("cu", "id"))]
 }
 
-.ms_table_suggestion_is_compatible <- function(suggestion, table_row, strategy = c("top", "llm")) {
-  strategy <- match.arg(strategy)
+.ms_table_suggestion_is_compatible <- function(suggestion, table_row) {
   query_basis <- if ("target_query_basis" %in% names(suggestion)) .ms_scalar_text(suggestion$target_query_basis) else ""
   query_context <- if ("target_query_context" %in% names(suggestion)) .ms_scalar_text(suggestion$target_query_context) else ""
 
@@ -4265,13 +4148,10 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
 .ms_apply_table_semantic_suggestions <- function(table_meta,
                                                suggestions,
-                                               strategy = c("top", "llm"),
-                                               min_llm_confidence = NULL,
                                                overwrite = FALSE,
                                                mark_review = FALSE) {
   table_meta <- .ms_normalize_table_meta(table_meta)
   suggestions <- tibble::as_tibble(suggestions)
-  strategy <- match.arg(strategy)
 
   if (nrow(table_meta) == 0 || nrow(suggestions) == 0) {
     return(table_meta)
@@ -4292,19 +4172,6 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       .data$iri != ""
     ) %>%
     dplyr::arrange(.data$.row_id)
-
-  if (identical(strategy, "llm")) {
-    if (!"llm_selected" %in% names(table_suggestions)) {
-      return(table_meta)
-    }
-    table_suggestions <- dplyr::filter(table_suggestions, !is.na(.data$llm_selected) & .data$llm_selected)
-    if (!is.null(min_llm_confidence)) {
-      table_suggestions <- dplyr::filter(
-        table_suggestions,
-        !is.na(.data$llm_confidence) & .data$llm_confidence >= min_llm_confidence
-      )
-    }
-  }
 
   if (nrow(table_suggestions) == 0) {
     return(table_meta)
@@ -4338,8 +4205,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     candidate_rows <- candidate_rows[vapply(candidate_rows, function(i) {
       .ms_table_suggestion_is_compatible(
         table_suggestions[i, , drop = FALSE],
-        out[row_id, , drop = FALSE],
-        strategy = strategy
+        out[row_id, , drop = FALSE]
       )
     }, logical(1))]
     if (length(candidate_rows) == 0) {

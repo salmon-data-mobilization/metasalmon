@@ -665,8 +665,8 @@
 }
 
 # The excerpts for one unit: scored per target against the pool, deduplicated
-# across the unit's targets, capped at four (the in-package bundle limit with
-# the provider special case removed).
+# across the unit's targets, capped at four (the limit the removed in-package
+# bundle review used, without its provider special case).
 .ms_semantic_review_unit_context <- function(targets, candidate_groups, context_pool, max_chunks = 4L) {
   if (is.null(context_pool) || nrow(context_pool) == 0L) {
     return(tibble::tibble())
@@ -913,8 +913,14 @@
 #'   that [suggest_semantics()] attaches (an artifact list in the
 #'   [infer_salmon_datapackage_artifacts()] shape is read through its `dict`).
 #' @param context_files Optional character vector of local file paths whose
-#'   text is chunked and scored against each unit, under the same path-only
-#'   contract as `llm_context_files`: a parsed object is refused.
+#'   text is chunked and scored against each unit. Pass file paths, not
+#'   parsed data frames, XML documents or R Markdown objects: a parsed object
+#'   is refused. Supported types are Markdown and text notes (`.md`, `.txt`,
+#'   `.rst`), delimited and structured text (`.csv`, `.tsv`, `.json`,
+#'   `.yaml`, `.yml`), source and notebook files (`.R`, `.Rmd`, `.qmd`), HTML
+#'   (`.htm`, `.html`), Word (`.docx`), PDF (`.pdf`, with the optional
+#'   `pdftools` package) and Excel workbooks (`.xls`, `.xlsx`, `.xlsm`, with
+#'   the optional `readxl` package).
 #' @param context_text Optional character vector of inline context text.
 #' @param top_n Integer. The shortlist shown per slot and, for a package
 #'   path, the retrieval depth. Default 5.

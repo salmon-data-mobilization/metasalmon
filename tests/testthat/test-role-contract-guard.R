@@ -2,7 +2,8 @@
 # surfaces. Adding or renaming a role means touching every one of:
 #
 #   1. the target/role maps          (semantic-suggestions.R, semantics-helpers.R)
-#   2. the bundle roles + slot fields (semantic-bundle-review.R, incl. the prompt)
+#   2. the bundle roles + slot fields (semantic-bundle-review.R, incl. the
+#      review instructions the packet carries)
 #   3. the role-hint vocabulary      (.smn_role_flags + both hint emitters:
 #                                     .smn_index_row and .parse_salmon_rdfxml)
 #   4. the retrieval filters         (sources_for_role, .gcdfo_filter_for_role)
@@ -107,16 +108,25 @@ test_that("SURFACE 1: the role/field maps agree with the dictionary slot fields"
 
 
 # ---------------------------------------------------------------------------
-# SURFACE 2 — the bundle roles and slot fields (including the review prompt)
+# SURFACE 2 — the bundle roles and slot fields (including the review
+# instructions)
 # ---------------------------------------------------------------------------
+#
+# Until hub item B-329 this surface read the in-package bundle review prompt,
+# `.ms_semantic_bundle_system_prompt()`, and checked that the vendored
+# review-packet instructions carried its judgement sentence verbatim. The
+# prompt went with the in-package model call, so the instructions file is now
+# the only text that tells a judge which slots to judge, and both checks below
+# read it. Retires with this surface: when the role vocabulary becomes one
+# declarative table the instructions are generated from.
 
-test_that("SURFACE 2: the bundle review prompt judges exactly the dictionary slots", {
-  # The prompt's opening instruction is a role-contract surface: sdp-0.3.0 left
-  # it naming the removed `method` slot and omitting the one that replaced it,
-  # so the prompt contradicted its own later "A method is never a dictionary
-  # slot" line.
-  prompt <- metasalmon:::.ms_semantic_bundle_system_prompt()
-  judge <- regmatches(prompt, regexpr("Judge [^.]*\\.", prompt))
+test_that("SURFACE 2: the review instructions judge exactly the dictionary slots", {
+  # The instructions' opening judgement sentence is a role-contract surface:
+  # sdp-0.3.0 left the prompt it was copied from naming the removed `method`
+  # slot and omitting the one that replaced it, so it contradicted its own
+  # later "A method is never a dictionary slot" line.
+  instructions <- metasalmon:::.ms_semantic_review_instructions()
+  judge <- regmatches(instructions, regexpr("Judge [^.]*\\.", instructions))
 
   expect_length(judge, 1L)
   for (role in slot_roles()) {
@@ -126,32 +136,11 @@ test_that("SURFACE 2: the bundle review prompt judges exactly the dictionary slo
   expect_false(grepl("method", judge, fixed = TRUE))
 })
 
-test_that("SURFACE 2: the bundle prompt describes the roles it asks the model to judge", {
-  prompt <- metasalmon:::.ms_semantic_bundle_system_prompt()
-  for (role in slot_roles()) {
-    expect_match(prompt, role, fixed = TRUE)
-  }
-})
-
-test_that("SURFACE 2: the vendored review-packet instructions judge exactly the dictionary slots", {
-  # The instructions a harness reads from the packet carry the bundle
-  # prompt's judgement sentence verbatim (S16 step 1, hub item B-326), so
-  # they inherit this surface: a role added to the slot fields must reach
-  # the instructions file in both packages, and `method` never appears in
-  # the judgement sentence.
+test_that("SURFACE 2: the review instructions describe every role they ask a judge to judge", {
   instructions <- metasalmon:::.ms_semantic_review_instructions()
-  judge <- regmatches(instructions, regexpr("Judge [^.]*\\.", instructions))
-  prompt_judge <- regmatches(
-    metasalmon:::.ms_semantic_bundle_system_prompt(),
-    regexpr("Judge [^.]*\\.", metasalmon:::.ms_semantic_bundle_system_prompt())
-  )
-
-  expect_length(judge, 1L)
-  expect_identical(judge, prompt_judge)
   for (role in slot_roles()) {
-    expect_match(judge, role, fixed = TRUE)
+    expect_match(instructions, role, fixed = TRUE)
   }
-  expect_false(grepl("method", judge, fixed = TRUE))
 })
 
 test_that("SURFACE 2: method is a bundle role but never a dictionary slot", {
