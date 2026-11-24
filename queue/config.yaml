@@ -115,6 +115,19 @@ heartbeat_minutes: 60
 #   either way, including when it is zero.
 reclaim_grace_minutes: 60
 
+# How long an agent waits after a Codex run that ended without a review
+# ("Something went wrong", "couldn't complete this request") before it posts the
+# one further `@codex review` HUB.md's re-review row allows.
+# Calibrate on: how long the failures of 2026-09-25/26 lasted. Every request from
+#   23:08 to 01:35 UTC failed, so a retry sooner than an hour mostly spends a
+#   request on the same outage.
+# Revisit: on the next outage, with its length recorded.
+# Set to 60 on 2026-09-26 by Brett ("as recommended", on the decisions page).
+# Retires when: the failed-run clause in HUB.md's re-review row retires, which
+#   is when the cap is counted by a check that reads only completed reviews, or
+#   when the hub stops using Codex as its reviewer.
+codex_failed_run_retry_minutes: 60
+
 # How many times one item may be reclaimed from an abandoned lease in a rolling
 # 24 hours. The client enforces this on the reclaim path and reads it with no
 # default, because a default would be a second home for the constant.
