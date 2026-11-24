@@ -149,7 +149,9 @@ A smaller `nuseds-fraser-coho-sample.csv` file is still bundled for tiny smoke t
 
 The package also now ships a matching starter dictionary for the fuller example (`system.file("extdata", "nuseds-fraser-coho-2023-2024-column_dictionary.csv", package = "metasalmon")`), which is useful when you want a ready-made context file for the package-native LLM review path.
 
-See `example-data-README.md` for the record/resource URLs, row counts, licensing note, and the `data-raw/` script that reproduces the 2023-2024 example.
+To see what a finished package looks like, open the gold standard: the same 173 rows as a complete Salmon Data Package, annotated and clean under strict validation (`system.file("extdata", "nuseds-fraser-coho-2023-2024-sdp", package = "metasalmon")`). `data-raw/fraser_coho_gold_standard.R` in this repository builds it with the functions above.
+
+See `example-data-README.md` for the record/resource URLs, row counts, licensing note, and the `data-raw/` scripts that reproduce the 2023-2024 example and the gold standard.
 
 To continue:
 
