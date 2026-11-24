@@ -1,0 +1,13 @@
+id: B-447
+kind: defect
+title: 'R''s apply_semantic_suggestions(strategy = "llm") still requires only llm_selected, so the column-presence requirement S16 decision 15 rules for the removal release has no owner'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P3
+blocked_by: [B-329]
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMON, apply_semantic_suggestions(strategy = "llm") requires the frame to carry llm_selected, llm_decision and llm_confidence, and applies only rows whose llm_selected is truthy and whose llm_decision is accept, as metasalmonpy has, so parity register row 31 is closed in the direction decision 15 of the S16 execplan recommends ("at the removal release"). A test shows a frame missing llm_decision or llm_confidence refused, and a selected row whose decision is not accept left unapplied; each test is red before the change. The register row is retired the way the register retires rows, in the same change as the code. NEWS.md has an entry under the development heading, because a caller passing a hand-built frame with only llm_selected now gets an error. FOUND 2026-11-24 by the B-329 worker (metasalmon pull request 287): the decision is ruled for the removal release, but B-329''s retires_when does not list it and no queue item owned it. It is filed blocked by B-329 so it lands in the same release or the next, without widening #287. Whether it must ship in the same release as B-329 is Brett''s, because he sets that release''s contents and number. metasalmonpy needs no change: it already has the stricter behaviour.'
