@@ -122,9 +122,14 @@ holds the order and the reasons for it.
 
 The judgement itself runs in a `smn-sci-plgn` skill that builds a packet, has
 the harness judge it, writes the assessments and ingests them
-([Q69](../questions.md)). **This hub does not sequence that work.** The plugin
-is not a hub member, its own repository owns the skill's tasks and releases,
-and no item here is a step of it. What this card records is the dependency,
+([Q69](../questions.md)). **This hub did not sequence that work until
+2026-11-24, and from then sequences only the skills' upkeep.** The plugin was not
+a hub member, its own repository owned the skill's tasks and releases, and no
+item here was a step of it. On 2026-11-24 Brett admitted it as the tenth member
+so that its skills stay current with the tools (Q69). The skill's design and
+releases are still the plugin's, but a release here that makes a skill stale
+now files an item there. The first is B-442, for the release that carries B-329
+and B-330. What this card records is the dependency,
 the way the roadmap records a typed external edge: steps 3 and 4 above each
 need a *released* skill, and the skill needs a released step 1, because a skill
 calls a released package.
@@ -164,11 +169,13 @@ direction of each divergence the execplan lists. Still his:
 - **Whether `Q-54`'s differences are registered** for the releases before
   step 3, or left unregistered because step 3 deletes both sides.
 - **Q23's pilot anchor**, only if step 2 cannot keep the replay.
-- **Whether the plugin should become a hub member.** Under the test Q10
-  adopted, membership follows from this hub sequencing a repository's work,
-  which is why this card records the skill as an external dependency and
-  sequences none of it. Admitting the plugin would be a membership ruling, and
-  it would move the skill's tasks into this card's order.
+- **Whether the skill's own design and release tasks move into this card's
+  order.** Membership is no longer open: Brett admitted the plugin as the
+  tenth member on 2026-11-24 (Q69, *Membership*), and from then this hub
+  sequences the skills' upkeep against its releases, starting with B-442. What
+  stays his is whether the skill's own tasks become steps here. Until he rules
+  on that, they stay the plugin's, and this card records the skill as a
+  dependency rather than a step.
 
 ## Retires when
 
