@@ -55,7 +55,7 @@ sdp_path <- create_sdp(
 #> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
 #>   package with `seed_semantics = TRUE` before final validation.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-1101116246bd1
+#> ✔ Created Salmon Data Package at /tmp/RtmpuFZJ3j/sdp-615541095f39
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
@@ -86,11 +86,11 @@ components <- data.frame(
   required_when_observed = c(TRUE, TRUE)
 )
 write_sdp_observation_structures(sdp_path, structures, components)
-#> ✔ Loaded Salmon Data Package from /private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-1101116246bd1
-#> ✔ Loaded Salmon Data Package from /private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-1101116246bd1
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-615541095f39
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-615541095f39
 extract_sdp_observations(sdp_path, table_id = "table_1")
-#> ✔ Loaded Salmon Data Package from /private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-1101116246bd1
-#> ✔ Loaded Salmon Data Package from /private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-1101116246bd1
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-615541095f39
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-615541095f39
 #> $`table_1::spawners_by_stock`
 #> # A tibble: 2 × 2
 #>   stock_id total_spawners

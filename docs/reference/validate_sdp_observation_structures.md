@@ -38,7 +38,7 @@ sdp_path <- create_sdp(
 #> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
 #>   package with `seed_semantics = TRUE` before final validation.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-110117a98641f
+#> ✔ Created Salmon Data Package at /tmp/RtmpuFZJ3j/sdp-61553db5375c
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
@@ -69,9 +69,9 @@ components <- data.frame(
   required_when_observed = c(TRUE, TRUE)
 )
 write_sdp_observation_structures(sdp_path, structures, components)
-#> ✔ Loaded Salmon Data Package from /private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-110117a98641f
-#> ✔ Loaded Salmon Data Package from /private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-110117a98641f
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-61553db5375c
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-61553db5375c
 validate_sdp_observation_structures(sdp_path)
-#> ✔ Loaded Salmon Data Package from /private/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T/RtmpP4K6i1/sdp-110117a98641f
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-61553db5375c
 unlink(sdp_path, recursive = TRUE)
 ```

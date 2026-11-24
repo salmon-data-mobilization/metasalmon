@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Frequently Asked Questions">
 </head>
@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,8 +40,9 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
-    <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
+    <li><a class="dropdown-item" href="../articles/harness-semantic-review.html">Semantic Review in Your Harness</a></li>
     <li><a class="dropdown-item" href="../articles/tidy-data-for-sdp.html">Tidy Data for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="../articles/semantic-review.html">Semantic Review in R</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -306,9 +307,9 @@ characters (accents, non-English letters):</p>
 <code>read.csv("file.csv", encoding = "UTF-8")</code>
 </li>
 </ol>
-<p>For LLM context, plain-text and CSV files with invalid UTF-8 are
-retried as Windows-1252/Latin-1. R Markdown and HTML context files are
-still expected to be UTF-8.</p>
+<p>For the context files a review packet quotes, plain-text and CSV
+files with invalid UTF-8 are retried as Windows-1252/Latin-1. R Markdown
+and HTML context files are still expected to be UTF-8.</p>
 </div>
 <div class="section level3">
 <h3 id="can-i-use-this-with-data-in-formats-other-than-csv">Can I use this with data in formats other than CSV?<a class="anchor" aria-label="anchor" href="#can-i-use-this-with-data-in-formats-other-than-csv"></a>
@@ -322,8 +323,8 @@ format into R first:</p>
 <span></span>
 <span><span class="co"># From a database</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dbi.r-dbi.org" class="external-link">DBI</a></span><span class="op">)</span></span>
-<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">dbConnect</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dbi.r-dbi.org/reference/dbReadTable.html" class="external-link">dbReadTable</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"your_table"</span><span class="op">)</span></span>
+<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">dbConnect</span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">dbReadTable</span><span class="op">(</span><span class="va">con</span>, <span class="st">"your_table"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># From Parquet</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/apache/arrow/" class="external-link">arrow</a></span><span class="op">)</span></span>
@@ -460,24 +461,25 @@ multi-table package:</p>
 <h2 id="workflow-questions">Workflow Questions<a class="anchor" aria-label="anchor" href="#workflow-questions"></a>
 </h2>
 <div class="section level3">
-<h3 id="why-did-llm_context_files-not-change-my-output">Why did <code>llm_context_files</code> not change my output?<a class="anchor" aria-label="anchor" href="#why-did-llm_context_files-not-change-my-output"></a>
+<h3 id="how-do-i-give-a-model-my-methods-notes-when-it-reviews-the-shortlists">How do I give a model my methods notes when it reviews the
+shortlists?<a class="anchor" aria-label="anchor" href="#how-do-i-give-a-model-my-methods-notes-when-it-reviews-the-shortlists"></a>
 </h3>
-<p>The two most common causes are input type and opt-in state:</p>
+<p><code>metasalmon</code> makes no model call itself. Pass your notes
+to <code><a href="../reference/write_semantic_review_packet.html">write_semantic_review_packet()</a></code> as
+<code>context_files</code>, and the packet carries the best-scoring
+excerpts from them beside each target, for your harness to read while it
+judges. Two things to check:</p>
 <ul>
 <li>
-<code>llm_context_files</code> must contain local path strings such
-as <code>"./00_data/data-dictionary.csv"</code>; do not pass the tibble
+<code>context_files</code> must contain local path strings such as
+<code>"./00_data/data-dictionary.csv"</code>; do not pass the tibble
 from <code><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">readr::read_csv()</a></code> or the XML object from
-<code><a href="http://xml2.r-lib.org/reference/read_xml.html" class="external-link">xml2::read_html()</a></code>.</li>
-<li>Context never enables LLM review by itself. Set
-<code>llm_assess = TRUE</code> and choose a configured provider. Without
-that flag, <code>metasalmon</code> warns and continues with
-deterministic semantic retrieval, so similar output is expected.</li>
+<code><a href="http://xml2.r-lib.org/reference/read_xml.html" class="external-link">xml2::read_html()</a></code>, which is refused with an error.</li>
+<li>Use <code>context_text</code> instead when the context is already a
+character string rather than a file.</li>
 </ul>
-<p>When using <code><a href="../reference/infer_dictionary.html">infer_dictionary()</a></code> directly, also set
-<code>seed_semantics = TRUE</code>. Use <code>llm_context_text</code>
-instead when the context is already a character string rather than a
-file.</p>
+<p><a href="harness-semantic-review.html">Semantic Review in Your
+Harness</a> has the whole route.</p>
 </div>
 <div class="section level3">
 <h3 id="why-did-semantic-review-ignore-or-omit-a-vocabulary">Why did semantic review ignore or omit a vocabulary?<a class="anchor" aria-label="anchor" href="#why-did-semantic-review-ignore-or-omit-a-vocabulary"></a>
@@ -485,22 +487,24 @@ file.</p>
 <p>Source selection distinguishes an omitted argument from an explicit
 value:</p>
 <ul>
-<li>omit <code>sources</code> in <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> or
-<code>semantic_sources</code> in <code><a href="../reference/create_sdp.html">create_sdp()</a></code> to use
-role-aware defaults;</li>
+<li>omit <code>sources</code> in <code><a href="../reference/find_terms.html">find_terms()</a></code> or
+<code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>, or <code>semantic_sources</code> in
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code>, to use role-aware defaults;</li>
 <li>supply a vector to make it a strict allowlist for initial and retry
-retrieval.</li>
+retrieval. Names are matched whatever their case or surrounding
+whitespace, so <code>"SMN"</code> and <code>" smn "</code> both mean
+smn.</li>
 </ul>
 <p>For example, <code>sources = "smn"</code> deliberately excludes QUDT
 even for a unit slot. Use <code>sources_for_role("unit")</code> when you
 want the normal unit vocabulary set.</p>
-<p>For measurement columns, the LLM reviews variable, property, entity,
-unit, constraint, and statistical-modifier candidates together. Only
-variable, property, entity, and unit acceptances can become
-<code>REVIEW:</code> prefills. Constraint and statistical-modifier
-decisions always require manual application, and deterministic
-validators can downgrade unsupported model acceptances to
-<code>review</code>.</p>
+<p>For measurement columns, a harness judging a review packet reviews
+variable, property, entity, unit, constraint, and statistical-modifier
+candidates together, and the ingester’s deterministic validators can
+downgrade an unsupported acceptance to <code>review</code>. Nothing a
+harness answers is written into the metadata until you accept it with
+<code><a href="../reference/accept_suggestion.html">accept_suggestion()</a></code> and write your decisions with
+<code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code>.</p>
 <p>A method is not among them: since sdp-0.3.0 a method is never a
 dictionary column. See <a href="migrating-to-sdp-0-3-0.html">Migrating
 to SDP 0.3.0</a> for where it lives now.</p>

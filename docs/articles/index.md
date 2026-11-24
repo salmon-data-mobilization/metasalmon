@@ -6,8 +6,8 @@
   Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.md):
 - [5-Minute
   Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md):
-- [LLM Review With Context
-  Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.md):
+- [Semantic Review in Your
+  Harness](https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.md):
 
 ### Guides
 
@@ -15,7 +15,8 @@ Step-by-step guides for common workflows
 
 - [Tidy Data for Salmon Data
   Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/tidy-data-for-sdp.md):
-- [Semantic Review in R](https://salmon-data-mobilization.github.io/metasalmon/articles/semantic-review.md):
+- [Semantic Review in
+  R](https://salmon-data-mobilization.github.io/metasalmon/articles/semantic-review.md):
 - [After Excel Review: Finalize and Publish Your
   Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md):
 - [Publishing Data

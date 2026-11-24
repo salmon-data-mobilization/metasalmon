@@ -19,18 +19,7 @@ infer_salmon_datapackage_artifacts(
   seed_codes = NULL,
   seed_table_meta = TRUE,
   seed_dataset_meta = TRUE,
-  semantic_code_scope = c("factor", "all", "none"),
-  llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-  llm_model = NULL,
-  llm_api_key = NULL,
-  llm_base_url = NULL,
-  llm_reasoning_effort = NULL,
-  llm_top_n = 5L,
-  llm_context_files = NULL,
-  llm_context_text = NULL,
-  llm_timeout_seconds = 60,
-  llm_request_fn = NULL
+  semantic_code_scope = c("factor", "all", "none")
 )
 ```
 
@@ -99,67 +88,6 @@ infer_salmon_datapackage_artifacts(
   original data frame(s); `"all"` analyzes all inferred or supplied code
   rows; `"none"` skips code-level semantic suggestions.
 
-- llm_assess:
-
-  Logical; if `TRUE`, run the optional LLM shortlist assessment inside
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-  Measurement columns are reviewed as six-slot bundles; other targets
-  keep their existing per-target path.
-
-- llm_provider:
-
-  LLM provider preset forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_model:
-
-  Optional LLM model identifier forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_api_key:
-
-  Optional API key override forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_base_url:
-
-  Optional OpenAI-compatible base URL forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_reasoning_effort:
-
-  Optional reasoning-effort hint forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
-  when using the OpenAI provider.
-
-- llm_top_n:
-
-  Maximum number of retrieved candidates sent to the LLM per target.
-
-- llm_context_files:
-
-  Optional character vector of local context file paths forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
-  when `llm_assess = TRUE`. Pass file paths, not parsed data frames, XML
-  documents, or R Markdown objects. See
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
-  for supported file types, including HTML, DOCX, `.R`, `.Rmd`, `.qmd`,
-  PDF, and Excel context files.
-
-- llm_context_text:
-
-  Optional inline context snippets forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_timeout_seconds:
-
-  Timeout for each LLM request in seconds.
-
-- llm_request_fn:
-
-  Advanced/test hook overriding the low-level OpenAI-compatible request
-  function.
-
 ## Value
 
 A named list with the following components:
@@ -176,8 +104,9 @@ A named list with the following components:
 
 - `semantic_suggestions`: Semantic suggestion tibble (or `NULL`)
 
-- `semantic_llm_assessments`: Target-level LLM review summary tibble (or
-  `NULL`)
+- `semantic_llm_assessments`: Always `NULL`. Kept so code that reads the
+  element keeps working; assessments now come from
+  [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md).
 
 ## Details
 

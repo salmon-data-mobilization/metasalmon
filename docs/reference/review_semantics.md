@@ -37,7 +37,10 @@ review_semantics(
 
 - max_candidates:
 
-  Maximum candidates shown per slot. `Inf` shows all.
+  Maximum candidates shown per target: per slot, and per role where a
+  code value's slot holds its constraint, entity and method targets.
+  `Inf` shows all. A candidate a model accepted is shown whatever its
+  rank.
 
 - columns:
 
@@ -51,14 +54,16 @@ there is one) as the `review_path` attribute.
 
 ## Details
 
-**This never contacts a network or an LLM.** It reads the
+**This never contacts a network or a model.** It reads the
 `semantic_suggestions` attribute (or `semantic_suggestions.csv`) that
 [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
 /
 [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
-already produced. When those suggestions carry LLM review – only
-possible if they were generated with `llm_assess = TRUE` – this surfaces
-it; it never generates it.
+already produced. When those suggestions carry a model's assessment,
+ingested from your own harness by
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md),
+this shows it, an accept under the candidate it chose and any other
+decision once per slot and role; it never generates one.
 
 ## See also
 

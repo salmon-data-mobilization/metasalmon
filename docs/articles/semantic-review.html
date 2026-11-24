@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Semantic Review in R">
 </head>
@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,7 +40,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
-    <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
+    <li><a class="dropdown-item" href="../articles/harness-semantic-review.html">Semantic Review in Your Harness</a></li>
     <li><a class="dropdown-item" href="../articles/tidy-data-for-sdp.html">Tidy Data for Salmon Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/semantic-review.html">Semantic Review in R</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
@@ -103,11 +103,15 @@ methods before accepting. Ranking is a retrieval aid; it does not decide
 whether a term is appropriate.</p>
 <p><code><a href="../reference/review_semantics.html">review_semantics()</a></code> reads existing suggestions from the
 package, a dictionary with a <code>semantic_suggestions</code>
-attribute, or inferred artifacts. It makes no network or model call. To
-revisit filled slots, use <code>include_filled = TRUE</code>; use
+attribute, or inferred artifacts. It makes no network or model call.
+Where those suggestions carry a model’s assessment, ingested from <a href="#have-your-own-harness-judge-the-shortlists">your own harness</a>,
+it shows it: an accept under the candidate it chose, any other decision
+once per slot and role. To revisit filled slots, use
+<code>include_filled = TRUE</code>; use
 <code>columns = "NATURAL_ADULT_SPAWNERS"</code> to focus on one column.
-The default shows five candidates per slot;
-<code>max_candidates = Inf</code> shows all of them.</p>
+The default shows five candidates for each target, which is one slot or,
+for a code value, one of its roles; <code>max_candidates = Inf</code>
+shows all of them.</p>
 <p>An empty queue does not establish that the package is finished. A
 required slot with no retrieved candidates can still appear in
 <code><a href="../reference/review_metadata.html">review_metadata()</a></code> below.</p>
@@ -253,39 +257,108 @@ steps. A rejected shortlist or unresolved ontology gap needs a decision
 before that path can finish.</p>
 </div>
 <div class="section level2">
-<h2 id="optional-decomposition-dialogue">Optional decomposition dialogue<a class="anchor" aria-label="anchor" href="#optional-decomposition-dialogue"></a>
+<h2 id="have-your-own-harness-judge-the-shortlists">Have your own harness judge the shortlists<a class="anchor" aria-label="anchor" href="#have-your-own-harness-judge-the-shortlists"></a>
 </h2>
-<p>In 0.5.0, <code><a href="../reference/chat_decomposition.html">chat_decomposition()</a></code> provides a console
-dialogue for one measurement column’s variable term. It asks grouped
-questions, proposes a patch or term request, and requires explicit
-approval of the preview. It returns the proposal and session record; it
-does not apply the patch to your package.</p>
+<p>Model judgement runs outside metasalmon. The package writes a review
+packet, your own harness reads it and writes its answers to a CSV, and
+the package reads them back. <strong>Neither step calls a
+model</strong>; the only network either one reaches is vocabulary
+search, through <code>search_fn</code>. metasalmonpy writes the same
+packet, byte for byte apart from its <code>producer</code> member, so
+one harness serves both packages. The <code>sdp-semantic-review</code>
+skill of the <a href="https://github.com/salmon-data-mobilization/smn-sci-plgn" class="external-link">smn-sci-plgn</a>
+plugin is a ready-made harness for Claude Code and Codex; <a href="harness-semantic-review.html">Semantic Review in Your Harness</a>
+shows that route. This section shows what any harness does, so you can
+write your own.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
-<span><span class="va">session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/chat_decomposition.html">chat_decomposition</a></span><span class="op">(</span></span>
-<span>  dict <span class="op">=</span> <span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span>,</span>
-<span>  column_name <span class="op">=</span> <span class="st">"NATURAL_ADULT_SPAWNERS"</span>,</span>
-<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">session</span><span class="op">$</span><span class="va">approval_status</span></span>
-<span><span class="va">session</span><span class="op">$</span><span class="va">approved_patch</span></span></code></pre></div>
-<p>At the console, <code>/preview</code> displays the proposal,
-<code>/approve</code> approves it and <code>/quit</code> saves the
-session and stops. Keep the returned <code>session_id</code> and pass it
-to <code><a href="../reference/chat_decomposition.html">chat_decomposition()</a></code> to resume. Review the approved
-patch before writing its chosen term with
-<code><a href="../reference/set_sdp_dataset.html">set_sdp_column()</a></code>.</p>
-<p>Without chat adapter settings, the dialogue uses its deterministic
-fallback over retrieved candidates. Retrieving candidates can contact
-vocabulary services. Supplying <code>chat_provider</code>,
-<code>chat_model</code> and the corresponding credentials opts into the
-optional model adapter.</p>
-<p><strong>Development builds deprecate this dialogue and the in-package
-model call; they warn on use and remove them in 0.7.0.</strong> On those
-builds, use <code><a href="../reference/write_semantic_review_packet.html">write_semantic_review_packet()</a></code> and
-<code><a href="../reference/ingest_semantic_assessments.html">ingest_semantic_assessments()</a></code> for a review conducted in
-your own harness. The ordinary review queue and setters above remain the
-path for writing your decisions.</p>
+<code class="sourceCode R"><span><span class="va">packet</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_semantic_review_packet.html">write_semantic_review_packet</a></span><span class="op">(</span><span class="va">pkg_path</span>, context_files <span class="op">=</span> <span class="st">"methods-note.md"</span><span class="op">)</span></span>
+<span><span class="va">packet</span><span class="op">$</span><span class="va">path</span>      <span class="co"># &lt;package&gt;/review/semantic-review-packet.json</span></span>
+<span><span class="va">packet</span><span class="op">$</span><span class="va">packet_id</span> <span class="co"># the SHA-256 the ingester checks</span></span></code></pre></div>
+<p>The packet holds exactly the slots <code><a href="../reference/review_semantics.html">review_semantics()</a></code>
+would queue, each with its shortlist retrieved again
+(<code>top_n = 5</code> by default) and the evidence the package’s own
+validators read: label, IRI, source, native type, role hints, definition
+and scores. It also holds the measurement bundles with their current
+slots, scored excerpts from your context files, the review instructions,
+and the 30-column answer schema, which names an owner for every column.
+It is written under <code>review/</code>, which no publication path
+reads.</p>
+<p>The harness answers every slot with one of five decisions:
+<code>accept</code> (giving the candidate’s index and echoing its IRI),
+<code>review</code>, <code>retry_search</code> (with a short query),
+<code>reject_shortlist</code> or <code>request_new_term</code>. It
+writes them, with a CSV library, to
+<code>review/semantic-assessments-pass-1.csv</code>, and writes the
+packet’s <code>packet_id</code> to the one-line sidecar
+<code>semantic-assessments-pass-1.csv.packet-id</code> beside it. The
+packet’s <code>instructions</code> member is the full brief. The shape
+of a harness, written here in R with the judgement left to yours:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">review_packet</span> <span class="op">&lt;-</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/jsonlite/man/read_json.html" class="external-link">read_json</a></span><span class="op">(</span><span class="va">packet</span><span class="op">$</span><span class="va">path</span><span class="op">)</span></span>
+<span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">review_packet</span><span class="op">$</span><span class="va">output</span><span class="op">$</span><span class="va">columns</span>, <span class="va">`[[`</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, <span class="st">"name"</span><span class="op">)</span></span>
+<span><span class="va">answer</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="va">review_packet</span><span class="op">$</span><span class="va">output</span><span class="op">$</span><span class="va">file</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">unit</span> <span class="kw">in</span> <span class="va">review_packet</span><span class="op">$</span><span class="va">units</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">slot</span> <span class="kw">in</span> <span class="va">unit</span><span class="op">$</span><span class="va">slots</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">row</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">""</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">columns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, <span class="va">columns</span><span class="op">)</span></span>
+<span>    <span class="va">identity</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">slot</span><span class="op">$</span><span class="va">identity</span>, <span class="kw">function</span><span class="op">(</span><span class="va">value</span><span class="op">)</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="st">""</span> <span class="kw">else</span> <span class="va">value</span><span class="op">)</span></span>
+<span>    <span class="va">row</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">identity</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">identity</span></span>
+<span>    <span class="va">row</span><span class="op">$</span><span class="va">llm_provider</span> <span class="op">&lt;-</span> <span class="st">"my-harness"</span></span>
+<span>    <span class="va">row</span><span class="op">$</span><span class="va">llm_model</span> <span class="op">&lt;-</span> <span class="st">"my-model"</span></span>
+<span>    <span class="co"># judge() is yours. It returns a named list with llm_decision and</span></span>
+<span>    <span class="co"># llm_confidence, and for an accept llm_selected_candidate_index and</span></span>
+<span>    <span class="co"># llm_selected_iri.</span></span>
+<span>    <span class="va">verdict</span> <span class="op">&lt;-</span> <span class="fu">judge</span><span class="op">(</span><span class="va">unit</span>, <span class="va">slot</span><span class="op">)</span></span>
+<span>    <span class="va">row</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">verdict</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">verdict</span></span>
+<span>    <span class="va">rows</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rows</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1L</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">row</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/write_delim.html" class="external-link">write_csv</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">rows</span><span class="op">)</span>, <span class="va">answer</span>, na <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">review_packet</span><span class="op">$</span><span class="va">packet_id</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">answer</span>, <span class="st">".packet-id"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Then read the answers back:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ingest_semantic_assessments.html">ingest_semantic_assessments</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
+<span><span class="va">result</span><span class="op">$</span><span class="va">status</span> <span class="co"># "complete", or "awaiting_pass_2"</span></span>
+<span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semantic_llm_assessments.html">semantic_llm_assessments</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<p>The ingester checks the file against the packet it names, then each
+row. An IRI the packet did not offer is recorded as an error and never
+applied, a candidate index that is not a whole number is refused, and a
+final <code>reject_shortlist</code> is escalated to
+<code>request_new_term</code>, so the ontology gap is filed rather than
+lost. The record is kept in
+<code>review/semantic-llm-assessments.csv</code>. A
+<code>retry_search</code> whose search finds new candidates writes a
+second packet, <code>review/semantic-review-packet-pass-2.json</code>:
+answer it in <code>semantic-assessments-pass-2.csv</code> the same way
+and call <code><a href="../reference/ingest_semantic_assessments.html">ingest_semantic_assessments()</a></code> again. Nothing from
+that slot is merged until then, and there is no third pass.</p>
+<p><strong>Nothing the harness writes reaches the metadata.</strong> The
+ingester never touches the metadata CSVs; you confirm each answer in the
+review queue, where the harness’s verdict now sits under the candidate
+it chose:</p>
+<pre><code>── spawners · spawner_count · variable ───────────────────────────────────────
+   field:   column_dictionary.csv · term_iri
+   current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+
+   [1] Spawner Abundance   smn   score 4.9
+       Mature salmon returning to spawn.
+       https://w3id.org/smn/SpawnerAbundance
+       llm: accept (confidence 0.9)
+            Matches the column's definition.
+       review &lt;- accept_suggestion(review, "spawner_count", "variable", rank = 1)</code></pre>
+<p>A decision other than <code>accept</code> is printed once, under
+<code>current:</code>, because it judges the whole shortlist. Accept or
+reject as in section 2, then write your decisions as in section 3.</p>
+<p>For a dictionary you have not written yet, pass it in place of the
+path, with a <code>review_dir</code> for the session’s files:
+<code>write_semantic_review_packet(dict, review_dir = "review")</code>,
+then
+<code>ingest_semantic_assessments(dict, review_dir = "review")</code>.
+Its <code>result$dictionary</code> carries the assessments, so
+<code><a href="../reference/review_semantics.html">review_semantics()</a></code> and
+<code>apply_semantic_suggestions(..., strategy = "llm")</code> read them
+from there.</p>
 </div>
 <div class="section level2">
 <h2 id="spreadsheet-fallback">Spreadsheet fallback<a class="anchor" aria-label="anchor" href="#spreadsheet-fallback"></a>

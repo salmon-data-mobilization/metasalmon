@@ -57,7 +57,6 @@ that tested it, so a package could claim a key and ship duplicate rows.
 Declare it in `tables.csv`:
 
 ``` r
-
 tables <- readr::read_csv("escapement-sdp/metadata/tables.csv", na = "")
 
 tables$primary_key[tables$table_id == "escapement"] <- "stream_id,survey_year"
@@ -70,7 +69,6 @@ Three things can go wrong, and each produces a different message.
 #### The Key Repeats
 
 ``` r
-
 validate_salmon_datapackage("escapement-sdp", require_iris = FALSE)
 ```
 
@@ -132,7 +130,6 @@ like data. It is a **warning, never an error**. The SDP will still
 package untidy data; it just stops implying that it checked.
 
 ``` r
-
 wide <- tibble::tibble(
   stream_id = c("BEAR", "COHO"),
   `2021`    = c(310L, 980L),
@@ -186,7 +183,6 @@ ordinary `x2`/`x3` pair is not flagged:
   `.`, `-`, or nothing.
 
 ``` r
-
 # Flagged: three columns share the stem "count" with numeric tails.
 c("stream_id", "count_1998", "count_1999", "count_2000")
 
@@ -227,7 +223,6 @@ call the column made from their *names*, and what to call the column
 made from their *values*.
 
 ``` r
-
 long <- tidyr::pivot_longer(
   wide,
   cols = c(`2021`, `2022`, `2023`),
@@ -264,7 +259,6 @@ Three arguments do the real work:
 Then package the long form and declare the key you now have:
 
 ``` r
-
 pkg_path <- create_sdp(
   long,
   path = file.path(tempdir(), "escapement-sdp"),
@@ -300,7 +294,6 @@ Sometimes a wide column name packs more than one variable — `coho_2021`,
 `chinook_2021`, `coho_2022`. Split them in one step with `names_sep`:
 
 ``` r
-
 wide_two <- tibble::tibble(
   stream_id    = c("BEAR", "COHO"),
   coho_2021    = c(310L, 980L),
@@ -342,10 +335,10 @@ Separately from the tidy checks, a package you just created will warn
 about placeholders:
 
     Warning message:
-    8 metadata fields still hold a placeholder.
+    7 metadata fields still hold a placeholder.
     ✖ column_dictionary.csv$column_description, dataset.csv$contact_email,
       dataset.csv$contact_name, dataset.csv$creator, dataset.csv$description,
-      dataset.csv$license
+      tables.csv$description
     ℹ Replace them before publication; `require_iris = TRUE` reports these as
       errors.
 

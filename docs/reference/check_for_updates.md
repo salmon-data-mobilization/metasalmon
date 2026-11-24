@@ -57,6 +57,6 @@ can call it optionally when `check_updates = TRUE`.
 # \donttest{
 # Queries the GitHub releases API and degrades quietly when unreachable.
 check_for_updates()
-#> ✔ metasalmon "0.5.0" matches the latest GitHub release "0.5.0".
+#> ✔ metasalmon "0.6.0" matches the latest GitHub release "0.6.0".
 # }
 ```

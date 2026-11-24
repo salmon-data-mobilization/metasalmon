@@ -32,7 +32,6 @@ discover terms without drowning in jargon.
     vocabularies.
 
 ``` r
-
 library(metasalmon)
 find_terms("spawner count",
            role = "property",
@@ -55,7 +54,6 @@ can query multiple vocabulary sources. Use
 to get the recommended sources for each I-ADOPT role:
 
 ``` r
-
 sources_for_role("unit")
 # Returns: c("qudt", "nvs", "ols")
 
@@ -70,29 +68,28 @@ remains the DFO-specific source with canonical IRIs under
 `https://w3id.org/gcdfo/salmon#`. metasalmon does not silently rewrite
 legacy `salmon:`-namespace variants.
 
-| Role | Recommended Sources | Notes |
-|----|----|----|
-| `unit` | QUDT, NVS P06, OLS | QUDT preferred for SI units |
-| `property` | SMN, GCDFO, QUDT, NVS P01, OLS, ZOOMA | Shared salmon-domain properties first; broader fallbacks after |
-| `entity` | SMN, GCDFO, GBIF, WoRMS, BioPortal, OLS | Shared salmon-domain entities first; taxon resolvers after |
-| `method` | SMN, GCDFO, BioPortal, OLS, ZOOMA | Code values only (`codes.csv` `term_iri`): a method is never a dictionary column under sdp-0.3.0 |
-| `statistical_modifier` | SMN, OLS | Aggregations and summaries (mean, maximum, total, peak); part of variable identity |
-| `variable` | SMN, GCDFO, NVS, OLS, ZOOMA | Shared salmon-domain variables first |
-| `constraint` | SMN, GCDFO, OLS | Shared/context vocabularies first |
+| Role                   | Recommended Sources                     | Notes                                                                                            |
+|------------------------|-----------------------------------------|--------------------------------------------------------------------------------------------------|
+| `unit`                 | QUDT, NVS P06, OLS                      | QUDT preferred for SI units                                                                      |
+| `property`             | SMN, GCDFO, QUDT, NVS P01, OLS, ZOOMA   | Shared salmon-domain properties first; broader fallbacks after                                   |
+| `entity`               | SMN, GCDFO, GBIF, WoRMS, BioPortal, OLS | Shared salmon-domain entities first; taxon resolvers after                                       |
+| `method`               | SMN, GCDFO, BioPortal, OLS, ZOOMA       | Code values only (`codes.csv` `term_iri`): a method is never a dictionary column under sdp-0.3.0 |
+| `statistical_modifier` | SMN, OLS                                | Aggregations and summaries (mean, maximum, total, peak); part of variable identity               |
+| `variable`             | SMN, GCDFO, NVS, OLS, ZOOMA             | Shared salmon-domain variables first                                                             |
+| `constraint`           | SMN, GCDFO, OLS                         | Shared/context vocabularies first                                                                |
 
 When `sources` is omitted from
 [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
 these role-aware defaults are selected separately for each target. An
-explicitly supplied vector is a strict allowlist for both the first
-search and any LLM-requested retry:
+explicitly supplied vector is a strict allowlist for the search, and
+`write_semantic_review_packet(sources = )` makes it one for a
+harness-requested retry too:
 
 ``` r
-
 smn_only <- suggest_semantics(
   df,
   dict,
-  sources = "smn",
-  llm_assess = FALSE
+  sources = "smn"
 )
 ```
 
@@ -109,7 +106,6 @@ and
 For unit columns, QUDT provides authoritative unit IRIs:
 
 ``` r
-
 find_terms("kilogram", role = "unit", sources = sources_for_role("unit")) |>
   dplyr::select(label, iri, source, score) |>
   head()
@@ -120,7 +116,6 @@ find_terms("kilogram", role = "unit", sources = sources_for_role("unit")) |>
 For species or organism columns, use taxon resolvers:
 
 ``` r
-
 find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms")) |>
   dplyr::select(label, iri, source, ontology, score) |>
   head()
@@ -142,7 +137,6 @@ The results include several columns for transparency:
 Filter out alignment-only terms when selecting canonical IRIs:
 
 ``` r
-
 results <- find_terms("salmon", role = "entity", sources = sources_for_role("entity"))
 canonical <- results[!results$alignment_only, ]
 ```
@@ -152,7 +146,6 @@ canonical <- results[!results$alignment_only, ]
 If a search returns unexpected results, check the diagnostics:
 
 ``` r
-
 results <- find_terms("temperature", role = "property", sources = c("gcdfo", "ols", "nvs", "zooma"))
 diagnostics <- attr(results, "diagnostics")
 print(diagnostics)
@@ -170,7 +163,6 @@ print(diagnostics)
     URI in multiple columns unless they genuinely mean different things.
 
 ``` r
-
 dict <- infer_dictionary(
   df,
   dataset_id = "my-dataset-2026",
@@ -212,8 +204,9 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
   workflow (for example a local `proposed_terms.csv`) or the new gap
   detection tools in metasalmon:
   - [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
-    combines candidate gaps with final LLM `request_new_term`
-    assessments and records which evidence detected each gap.
+    combines candidate gaps with the final `request_new_term`
+    assessments your harness recorded and records which evidence
+    detected each gap.
   - [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
     routes reviewed proposals to shared SMN, DFO-specific GCDFO, or a
     local profile and renders the active repository-specific issue body
@@ -242,7 +235,6 @@ can look at your dictionary and offer `term_iri`, `entity_iri`, or
 I-ADOPT components based on the bundled catalog.
 
 ``` r
-
 dict_suggested <- suggest_semantics(df, dict)
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 head(suggestions)
@@ -269,8 +261,6 @@ tweak anything that misses your domain nuance.
   Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.md)
   guide when you are assembling metadata tables manually before
   publishing.
-- For AI-assisted drafting and package-native review, see the [optional
-  LLM semantic review
-  workflow](https://salmon-data-mobilization.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
-  on the package home page when you want help reviewing shortlisted
-  terms.
+- For model-assisted review of the shortlisted terms in your own
+  harness, see [Semantic Review in Your
+  Harness](https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.md).

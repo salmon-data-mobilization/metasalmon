@@ -12,7 +12,6 @@ Start with a package created by the
 [quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md):
 
 ``` r
-
 library(metasalmon)
 pkg_path <- "fraser-coho-2023-2024-sdp"
 ```
@@ -20,7 +19,6 @@ pkg_path <- "fraser-coho-2023-2024-sdp"
 ## 1. Inspect the semantic review queue
 
 ``` r
-
 review <- review_semantics(pkg_path)
 review
 ```
@@ -34,10 +32,14 @@ a term is appropriate.
 [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
 reads existing suggestions from the package, a dictionary with a
 `semantic_suggestions` attribute, or inferred artifacts. It makes no
-network or model call. To revisit filled slots, use
-`include_filled = TRUE`; use `columns = "NATURAL_ADULT_SPAWNERS"` to
-focus on one column. The default shows five candidates per slot;
-`max_candidates = Inf` shows all of them.
+network or model call. Where those suggestions carry a model’s
+assessment, ingested from [your own
+harness](#have-your-own-harness-judge-the-shortlists), it shows it: an
+accept under the candidate it chose, any other decision once per slot
+and role. To revisit filled slots, use `include_filled = TRUE`; use
+`columns = "NATURAL_ADULT_SPAWNERS"` to focus on one column. The default
+shows five candidates for each target, which is one slot or, for a code
+value, one of its roles; `max_candidates = Inf` shows all of them.
 
 An empty queue does not establish that the package is finished. A
 required slot with no retrieved candidates can still appear in
@@ -50,7 +52,6 @@ Paste the printed call for a candidate you have reviewed. For example,
 **if rank 1 fits** the measurement column in your queue:
 
 ``` r
-
 review <- accept_suggestion(
   review, "NATURAL_ADULT_SPAWNERS", "variable", rank = 1,
   table = "escapement"
@@ -62,7 +63,6 @@ This example reason is illustrative; replace it with the finding from
 your review:
 
 ``` r
-
 review <- reject_suggestion(
   review, "NATURAL_ADULT_SPAWNERS", "unit", table = "escapement",
   reason = "The shortlisted definitions do not match the unit recorded in the source."
@@ -90,7 +90,6 @@ The setter route in step 4 also handles a field with no candidates.
 ## 3. Write and resume your decisions
 
 ``` r
-
 apply_sdp_semantics(pkg_path, review)
 ```
 
@@ -104,7 +103,6 @@ Rebuild the queue after writing, or when you return to the package
 later:
 
 ``` r
-
 review <- review_semantics(pkg_path)
 review
 ```
@@ -115,7 +113,6 @@ Previously decided slots are omitted by default. Use
 ## 4. Fill metadata and fields with no candidates
 
 ``` r
-
 review_metadata(pkg_path)
 ```
 
@@ -130,7 +127,6 @@ rows in the bundled quickstart package; adapt the prose to your own
 source:
 
 ``` r
-
 set_sdp_dataset(
   pkg_path,
   title = "Fraser coho spawner estimates, 2023-2024",
@@ -172,7 +168,6 @@ again to see what remains.
 ## 5. Validate and continue to publication
 
 ``` r
-
 review_metadata(pkg_path)
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 ```
@@ -187,46 +182,121 @@ for term gaps, closure evidence and those export and deposit steps. A
 rejected shortlist or unresolved ontology gap needs a decision before
 that path can finish.
 
-## Optional decomposition dialogue
+## Have your own harness judge the shortlists
 
-In 0.5.0,
-[`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md)
-provides a console dialogue for one measurement column’s variable term.
-It asks grouped questions, proposes a patch or term request, and
-requires explicit approval of the preview. It returns the proposal and
-session record; it does not apply the patch to your package.
+Model judgement runs outside metasalmon. The package writes a review
+packet, your own harness reads it and writes its answers to a CSV, and
+the package reads them back. **Neither step calls a model**; the only
+network either one reaches is vocabulary search, through `search_fn`.
+metasalmonpy writes the same packet, byte for byte apart from its
+`producer` member, so one harness serves both packages. The
+`sdp-semantic-review` skill of the
+[smn-sci-plgn](https://github.com/salmon-data-mobilization/smn-sci-plgn)
+plugin is a ready-made harness for Claude Code and Codex; [Semantic
+Review in Your
+Harness](https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.md)
+shows that route. This section shows what any harness does, so you can
+write your own.
 
 ``` r
-
-pkg <- read_salmon_datapackage(pkg_path)
-session <- chat_decomposition(
-  dict = pkg$dictionary,
-  column_name = "NATURAL_ADULT_SPAWNERS",
-  table_id = "escapement"
-)
-session$approval_status
-session$approved_patch
+packet <- write_semantic_review_packet(pkg_path, context_files = "methods-note.md")
+packet$path      # <package>/review/semantic-review-packet.json
+packet$packet_id # the SHA-256 the ingester checks
 ```
 
-At the console, `/preview` displays the proposal, `/approve` approves it
-and `/quit` saves the session and stops. Keep the returned `session_id`
-and pass it to
-[`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md)
-to resume. Review the approved patch before writing its chosen term with
-[`set_sdp_column()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md).
+The packet holds exactly the slots
+[`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+would queue, each with its shortlist retrieved again (`top_n = 5` by
+default) and the evidence the package’s own validators read: label, IRI,
+source, native type, role hints, definition and scores. It also holds
+the measurement bundles with their current slots, scored excerpts from
+your context files, the review instructions, and the 30-column answer
+schema, which names an owner for every column. It is written under
+`review/`, which no publication path reads.
 
-Without chat adapter settings, the dialogue uses its deterministic
-fallback over retrieved candidates. Retrieving candidates can contact
-vocabulary services. Supplying `chat_provider`, `chat_model` and the
-corresponding credentials opts into the optional model adapter.
+The harness answers every slot with one of five decisions: `accept`
+(giving the candidate’s index and echoing its IRI), `review`,
+`retry_search` (with a short query), `reject_shortlist` or
+`request_new_term`. It writes them, with a CSV library, to
+`review/semantic-assessments-pass-1.csv`, and writes the packet’s
+`packet_id` to the one-line sidecar
+`semantic-assessments-pass-1.csv.packet-id` beside it. The packet’s
+`instructions` member is the full brief. The shape of a harness, written
+here in R with the judgement left to yours:
 
-**Development builds deprecate this dialogue and the in-package model
-call; they warn on use and remove them in 0.7.0.** On those builds, use
-[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
-and
+``` r
+review_packet <- jsonlite::read_json(packet$path)
+columns <- vapply(review_packet$output$columns, `[[`, character(1), "name")
+answer <- file.path(pkg_path, review_packet$output$file)
+
+rows <- list()
+for (unit in review_packet$units) {
+  for (slot in unit$slots) {
+    row <- stats::setNames(as.list(rep("", length(columns))), columns)
+    identity <- lapply(slot$identity, function(value) if (is.null(value)) "" else value)
+    row[names(identity)] <- identity
+    row$llm_provider <- "my-harness"
+    row$llm_model <- "my-model"
+    # judge() is yours. It returns a named list with llm_decision and
+    # llm_confidence, and for an accept llm_selected_candidate_index and
+    # llm_selected_iri.
+    verdict <- judge(unit, slot)
+    row[names(verdict)] <- verdict
+    rows[[length(rows) + 1L]] <- tibble::as_tibble(row)
+  }
+}
+readr::write_csv(dplyr::bind_rows(rows), answer, na = "")
+writeLines(review_packet$packet_id, paste0(answer, ".packet-id"))
+```
+
+Then read the answers back:
+
+``` r
+result <- ingest_semantic_assessments(pkg_path)
+result$status # "complete", or "awaiting_pass_2"
+assessments <- semantic_llm_assessments(pkg_path)
+```
+
+The ingester checks the file against the packet it names, then each row.
+An IRI the packet did not offer is recorded as an error and never
+applied, a candidate index that is not a whole number is refused, and a
+final `reject_shortlist` is escalated to `request_new_term`, so the
+ontology gap is filed rather than lost. The record is kept in
+`review/semantic-llm-assessments.csv`. A `retry_search` whose search
+finds new candidates writes a second packet,
+`review/semantic-review-packet-pass-2.json`: answer it in
+`semantic-assessments-pass-2.csv` the same way and call
 [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
-for a review conducted in your own harness. The ordinary review queue
-and setters above remain the path for writing your decisions.
+again. Nothing from that slot is merged until then, and there is no
+third pass.
+
+**Nothing the harness writes reaches the metadata.** The ingester never
+touches the metadata CSVs; you confirm each answer in the review queue,
+where the harness’s verdict now sits under the candidate it chose:
+
+    ── spawners · spawner_count · variable ───────────────────────────────────────
+       field:   column_dictionary.csv · term_iri
+       current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+
+       [1] Spawner Abundance   smn   score 4.9
+           Mature salmon returning to spawn.
+           https://w3id.org/smn/SpawnerAbundance
+           llm: accept (confidence 0.9)
+                Matches the column's definition.
+           review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+
+A decision other than `accept` is printed once, under `current:`,
+because it judges the whole shortlist. Accept or reject as in section 2,
+then write your decisions as in section 3.
+
+For a dictionary you have not written yet, pass it in place of the path,
+with a `review_dir` for the session’s files:
+`write_semantic_review_packet(dict, review_dir = "review")`, then
+`ingest_semantic_assessments(dict, review_dir = "review")`. Its
+`result$dictionary` carries the assessments, so
+[`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+and `apply_semantic_suggestions(..., strategy = "llm")` read them from
+there.
 
 ## Spreadsheet fallback
 

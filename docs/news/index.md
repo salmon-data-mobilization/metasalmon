@@ -4,6 +4,185 @@
 
 ### Breaking changes
 
+- **metasalmon no longer makes a model call** (hub item B-329, S16 step
+  3; deprecated since 0.6.0, ruled by Brett on 2026-09-25, hub Q67). The
+  package holds no model client and reads no model-provider credential.
+  Removed, with their tests:
+
+  - `llm_assess` and the other ten `llm_*` arguments (`llm_provider`,
+    `llm_model`, `llm_api_key`, `llm_base_url`, `llm_reasoning_effort`,
+    `llm_top_n`, `llm_context_files`, `llm_context_text`,
+    `llm_timeout_seconds`, `llm_request_fn`) of
+    [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
+    [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+    [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
+    and
+    [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md).
+    Passing one is now an error at the call: R’s “unused argument” for
+    the first three, and for
+    [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+    its “Unused argument” abort, which names every one before anything
+    is inferred or written.
+  - the provider presets (`"openai"`, `"openrouter"`,
+    `"openai_compatible"`, `"chapi"`) and the nine environment variables
+    they read: `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `CHAPI_API_KEY`,
+    `METASALMON_LLM_API_KEY`, `METASALMON_LLM_MODEL`, `CHAPI_MODEL`,
+    `METASALMON_LLM_BASE_URL`, `CHAPI_BASE_URL` and
+    `METASALMON_LLM_REASONING_EFFORT`. None of them is read any more,
+    and
+    [`?metasalmon_configuration`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_configuration.md)
+    no longer lists them.
+  - the chat-completions request code and the request builder both paths
+    shared, the retry stack with its `Retry-After` handling, and the
+    batch, exploration and measurement-bundle review that called them.
+  - `chat_decomposition()` and its `chat_*` arguments. Sessions it saved
+    under your user state directory are left in place; nothing reads
+    them now.
+  - the deprecation itself: the `metasalmon_llm_deprecated` warning and
+    the `metasalmon.llm_deprecation_quiet` option.
+
+  What replaces each:
+
+  - **Model judgement of the shortlists**, which `llm_assess = TRUE` ran
+    inside
+    [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+    and its wrappers: write a review packet with
+    [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md),
+    have your own harness judge it, and read the answers back with
+    [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md).
+    Neither function calls a model. The documented harness route is the
+    `sdp-semantic-review` skill of the public
+    [`salmon-data-mobilization/smn-sci-plgn`](https://github.com/salmon-data-mobilization/smn-sci-plgn)
+    plugin, released in v0.2.0, which judges a packet either package
+    wrote. The new article *Semantic Review in Your Harness* walks
+    through both.
+  - **`llm_context_files` and `llm_context_text`**: the `context_files`
+    and `context_text` arguments of
+    [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md),
+    which read the same file types the same way, under the same
+    path-only contract. A parsed object passed there is refused with an
+    error that now names `context_files`.
+  - **`llm_top_n`**: `write_semantic_review_packet(top_n = )`.
+  - **`create_sdp(llm_assess = TRUE)`**, which wrote accepted model
+    selections into the metadata as `REVIEW:` drafts: create the
+    package, run the packet route on it, and confirm each accepted term
+    in
+    [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+    before
+    [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+    writes it. The ingester never writes the metadata CSVs.
+  - **`chat_decomposition()`**: the harness skill judges a measurement
+    column’s variable, property, entity, unit, constraint and
+    statistical modifier together, as one bundle, and a slot nothing
+    fits becomes a `request_new_term` that
+    [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+    and
+    [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
+    carry on. Write a decided term with
+    [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
+    and
+    [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md),
+    or with
+    [`set_sdp_column()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md).
+  - **The `semantic_llm_assessments` attribute** that
+    [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+    attached under `llm_assess = TRUE`:
+    [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+    attaches it to the dictionary it returns, and
+    [`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)
+    reads it from there or from a package path.
+    [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
+    keeps its `semantic_llm_assessments` element for one more release,
+    always `NULL`.
+
+  What stays: the context readers, retrieval and ranking, the
+  deterministic bundle validators, the merge into suggestions, gap
+  detection and the term request pipeline, the redaction of secrets in
+  captured text, the 30-column assessment row (its `llm_*` column names
+  included), and `apply_semantic_suggestions(strategy = "llm")`, which
+  applies the candidates an ingest marked `llm_selected`. Its errors now
+  point to
+  [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+  rather than to `llm_assess = TRUE`. The package website no longer
+  documents the in-package call anywhere but this changelog.
+  metasalmonpy removes the same paths under hub item B-330; until it
+  does, it still carries its in-package call.
+
+### Changed
+
+- [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  and
+  [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
+  now read a unit named at the end of a measurement column’s name (hub
+  item B-440). A column such as `fish_length_mm`, `fish_weight_g` or
+  `depth_m` now searches for millimetre, gram or metre. Before this
+  change, a numeric column whose name mentioned fish was taken for a
+  count, so it searched for a count variable and seeded the QUDT `COUNT`
+  unit, and `depth_m` got no unit. A column that names a length, weight,
+  depth or other physical quantity is no longer searched as a count
+  unless its name also says count or number. A one-letter `m` or `g` is
+  read as a unit only beside a length or mass word, because `spawners_m`
+  can mean males. A compound unit such as `mercury_mg/kg`,
+  `mercury_mg_kg` or `eggs_per_kg` is not read, because its last token
+  is only the denominator of a ratio. The unit token is also left out of
+  the variable search query, so `fish_length_mm` searches for
+  `fish length`. The unit IRI is still written as a `REVIEW:` draft for
+  you to confirm.
+
+- Dataset temporal coverage now ignores administrative date columns (hub
+  item B-440). Columns that record when a row was processed, entered,
+  created, modified, loaded, received or checked (`process_date`,
+  `CREATED_DTT`, `DateModified`, `data_entry_date`) no longer set
+  `temporal_start` or `temporal_end`. Before this change, a 2017
+  processing date set `temporal_end` for a survey that ended in 1999. A
+  qualified entry date such as `river_entry_date` still counts as an
+  observation. If every date column is administrative, the coverage
+  fields stay blank for you to fill in.
+
+- `dataset.csv` now gets a `REVIEW REQUIRED:` note in `spatial_extent`
+  when every longitude is positive and the extent lies in the mirror
+  image of the North American salmon range (longitude 50 to 180,
+  latitude 30 to 75), where a missing minus sign is likely (hub item
+  B-440). The note keeps the inferred extent and never changes its sign,
+  because the same numbers are correct for data from Japan or the
+  Russian Far East. Strict validation refuses the note until you replace
+  it with the confirmed extent. A metasalmonpy port of these three
+  changes is owed as hub item B-441.
+
+- Unknown
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  source names now produce `unsupported` diagnostics and an
+  incomplete-lookup warning instead of a successful empty search,
+  including when a local match short-circuits other supported sources.
+  Supported results are retained and mixed unsupported results are not
+  cached. A successful OLS response with no matches now keeps the
+  canonical empty result instead of failing during result assembly.
+  Mirrored diagnostic behaviour with metasalmonpy.
+
+- Accept the canonical SEMAPV `AgentBasedMatching` justification in
+  SSSOM readers and writers. Unknown justifications remain invalid; this
+  does not accept or review a mapping. Mirrored with metasalmonpy.
+
+## metasalmon 0.6.0
+
+Roadmap S16 step 1, released together with metasalmonpy 0.6.0. **Model
+judgement now runs outside the package.**
+[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+writes the shortlists a harness judges, and
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+reads its answers back through the same validators, so a semantic review
+needs no API key and no model call from R. The packet’s schema,
+instructions and conformance fixtures are one contract, shared byte for
+byte with metasalmonpy. The in-package model call (`llm_assess = TRUE`,
+the eleven `llm_*` arguments and `chat_decomposition()`) is deprecated
+and is removed in 0.7.0. A term search can also be pinned to one smn or
+gcdfo release, and its result records the release it read (tern
+ECOSYSTEM M-12). Four breaking changes come first. Where an entry below
+says a Python port is owed, it describes the state when the entry was
+written; `knowledge/parity-deviations.md` records what is still open.
+
+### Breaking changes
+
 - **The Theme A benchmark now has offline `replay` and replay-to-replay
   `compare` modes only** (hub item B-328, S16 step 2). The live
   provider, capture, cohort gate, and promotion paths and the separate
@@ -27,8 +206,8 @@
   eligible matching cache. It previously could return smn’s body for
   another ontology. Named fallbacks are tried as before; explicit `NULL`
   and [`character()`](https://rdrr.io/r/base/character.html) name none.
-  The package’s own callers already name their fallbacks. The Python
-  mirror remains owed in B-334 and the existing unmerged PR75.
+  The package’s own callers already name their fallbacks. metasalmonpy
+  0.6.0 makes the same change (B-334, its pull request 75).
 
 - **[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   searches the sources a role calls for when you name a role and no
@@ -94,6 +273,25 @@
 
 ### Added
 
+- **[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  and
+  [`fetch_salmon_ontology()`](https://salmon-data-mobilization.github.io/metasalmon/reference/fetch_salmon_ontology.md)
+  read a pinned release of smn or gcdfo** (tern ECOSYSTEM M-12).
+  `find_terms(release = c(smn = "0.0.3"))` searches that release instead
+  of the latest ontology. The release is downloaded once per session
+  from its version IRI and checked against its `MANIFEST.sha256` when it
+  has one; `snapshot_dir = c(smn = "<dir>")` reads a local copy of the
+  release directory instead. The result’s `"ontology_release"` attribute
+  records what was searched: the version, the declared `owl:versionIRI`,
+  the file, its SHA-256 and whether a manifest verified it.
+  `fetch_salmon_ontology(release = "0.0.3")` returns the release file
+  `accept` prefers, cached under `cache_dir/releases/`. A pin never
+  falls back to the latest ontology: a release that cannot be read, or
+  does not match its manifest, is an error. A pinned smn release is read
+  from its RDF/XML, and its terms get the role hints the module reader
+  gives them, except an entity hint that comes only from membership of
+  the `01-entity-systematics` module. metasalmonpy does the same.
+
 - [`capture_catalogue_query()`](https://salmon-data-mobilization.github.io/metasalmon/reference/capture_catalogue_query.md)
   captures bounded public KNB/DataONE metadata pages and a
   checksum-bearing query receipt, with explicit record/page/byte limits,
@@ -112,12 +310,12 @@
   `reproducibility/provenance/semantic-iri-dereference.csv` before
   reporting *all* failed IRIs. Publication workflows can checksum that
   CSV. The check confirms HTTP resolution; it does not judge whether a
-  term is suitable.
-  Vector condition messages stay in one redacted failure row so they cannot
-  interrupt the remaining IRI checks or prevent the complete report.
-  Default GETs stop after complete final headers and discard body bytes, with
-  a 30-second timeout across connection and redirects. `curl` is declared
-  directly in Imports; it was already installed as httr2's transport dependency.
+  term is suitable. Vector condition messages stay in one redacted
+  failure row so they cannot interrupt the remaining IRI checks or
+  prevent the complete report. Default GETs stop after complete final
+  headers and discard body bytes, with a 30-second timeout across
+  connection and redirects. `curl` is declared directly in Imports; it
+  was already installed as httr2’s transport dependency.
 
 - `detect_semantic_term_gaps(commons_gaps = "gaps.json")` reads the
   commons `okf-check.py --gaps` export (B-278), retaining lifecycle,
@@ -362,7 +560,161 @@
   EML sidecar is written first and the producer pins its digests, which
   removes the script’s last hand-computed file digest as well.
 
+### Deprecated
+
+- **`llm_assess = TRUE`, the eleven `llm_*` arguments and
+  `chat_decomposition()` are deprecated, and are removed in metasalmon
+  0.7.0** (hub item B-326, S16 execplan section 6; ruled by Brett on
+  2026-09-25, hub Q67). Model judgement now runs in the caller’s own
+  harness against a review packet, through
+  [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+  and
+  [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+  (see *Added*).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+  [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
+  and
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  warn once per top-level call whenever `llm_assess = TRUE` or any
+  `llm_*` argument is supplied. Each entry point detects that with
+  [`missing()`](https://rdrr.io/r/base/missing.html), so an argument
+  passed explicitly at its default warns too, and the calls the four
+  make to one another do not warn again: a nested chain warns once,
+  naming the outermost entry point, even when `seed_semantics = FALSE`
+  leaves the options unused. `chat_decomposition()` warns on every call,
+  on entry, before its interactive session starts. The warning is a
+  classed `cli_warn()` (`metasalmon_llm_deprecated`,
+  `deprecatedWarning`), so it can be caught or silenced by class, and it
+  comes after the existing opt-in warnings;
+  `options(metasalmon.llm_deprecation_quiet = TRUE)` silences it until
+  the removal, as the test suite’s setup file does. The opt-in contract
+  is untouched: context supplied without `llm_assess` still warns that
+  it is ignored and makes no model call, and the default path warns
+  nothing. Pinned in `tests/testthat/test-llm-deprecation.R`.
+  metasalmonpy deprecates the same surface with `LLMDeprecationWarning`,
+  a `FutureWarning` subclass (hub item B-327).
+
 ### Fixed
+
+- The RDF/XML ontology reader names its namespaces by URI, not by the
+  prefixes the file happens to use. It looked them up in the file, so a
+  file that bound the OBO namespace to another prefix, as the smn 0.0.3
+  release binds it to `ns1`, lost every IAO definition, with one warning
+  per term. metasalmonpy’s reader already matched by namespace.
+
+- **[`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  shows a model’s accept under the candidate it chose, and any other
+  decision once per slot and role.** An assessment is one row per
+  target, and merging it into the suggestions copies its decision,
+  confidence and rationale onto every candidate, with only
+  `llm_selected` saying which candidate an accept chose. The console
+  printed `llm: accept` under every candidate in the slot, so whoever
+  confirmed a harness’s accept of candidate 2 could not tell which
+  candidate it meant. The accept now stays on the chosen candidate,
+  which stays in view past `max_candidates`, and any other decision
+  prints once, under `current:`, because it judges the whole shortlist.
+  A measurement column’s code holds its constraint, entity and method
+  targets in one slot, and each target’s verdict prints on its own line,
+  naming its role. `max_candidates` now caps each of those targets
+  rather than the slot, where five candidates for the first target hid
+  every row of the others, and their verdicts with them; ranks stay the
+  slot’s, as
+  [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
+  reads them. Suggestions without an `llm_selected` column print as
+  before. Pinned in `tests/testthat/test-review-console.R`, which failed
+  before the change; the same change lands in metasalmonpy. *Semantic
+  Review in R* gains a section on having your own harness judge the
+  shortlists, and *LLM Review With Context Files* now says that the call
+  it describes is deprecated.
+
+- **`apply_semantic_suggestions(strategy = "llm")` reads a selection
+  flag held as text.** A package’s `semantic_suggestions.csv`, and the
+  suggestions an ingest of a package path returns, hold `llm_selected`
+  as the text `TRUE` or `FALSE`, which the strategy refused with
+  “operations are possible only for numeric, logical or complex types”.
+  It now reads that text as the flag it is, as
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  does. Pinned in `tests/testthat/test-semantic-review-packet.R`;
+  metasalmonpy, which read `"FALSE"` as true and so applied the first
+  candidate whichever one the harness chose, makes the same fix.
+
+- **Defects in the review-packet contract are fixed before it ships**
+  (hub item B-424; metasalmonpy’s half is B-425). metasalmonpy found
+  each while porting the contract (B-327) and reproduced it there on
+  purpose, so that the shared conformance fixtures would agree; Brett
+  ruled on 2026-09-26 that they be fixed now, in both packages. The
+  fixtures under `tests/testthat/fixtures/semantic-review/v1/` moved
+  with them, and each fix is pinned by a test that failed before it
+  (`tests/testthat/test-semantic-review-packet.R`).
+
+  1.  **The `propose_new_term` alias no longer counts as a downgrade.**
+      The ingest summary counts a downgrade when the recorded decision
+      differs from the one the harness wrote, and it exempted the alias
+      with `identical(aliases[harness_decision] %||% NA, decision)`,
+      which never holds: `[` keeps the alias vector’s name, and a named
+      string is never
+      [`identical()`](https://rdrr.io/r/base/identical.html) to the
+      decision it holds. A harness that wrote `propose_new_term` was
+      recorded as `request_new_term`, correctly, and counted as
+      downgraded. Row validation and the count now read the decision
+      through one helper, and the `row_errors` case records four
+      downgrades where it recorded five.
+  2.  **Every role of a code value of a measurement column reaches the
+      packet as its own target.** Discovery gives such a code a
+      constraint, an entity and a method target, and all three write
+      into the code’s one `codes.csv` `term_iri`, so they share one slot
+      id. A target unit was keyed by its slot alone, so the three
+      collided: an in-memory
+      [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+      aborted with *“units must have unique keys”*, and a package path
+      kept only the first role’s shortlist, because it took one queued
+      target per slot. A target unit’s key is now its slot and its role,
+      `target:<slot_id>|<dictionary_role>`, so every packet holding a
+      target unit has new bytes and a new `packet_id`; bundle keys are
+      unchanged. `packet_version` stays `semantic-review-packet/1.0`:
+      the contract has not been released, and nothing reads a target
+      unit’s key back, so a packet written before the change still
+      ingests to the same record. On a package path the queue now gives
+      one target per slot and role, and blank-slot recovery asks whether
+      each target, not each slot, has a suggestion row, so a role that
+      found nothing at creation is recovered even when another role of
+      its slot has rows; a slot with a recorded decision still recovers
+      nothing. The ingester’s rewrite of `semantic_suggestions.csv`
+      replaces rows target by target, so finalizing one role no longer
+      drops another role’s rows, whether that role is still awaiting its
+      second pass or was accepted a pass earlier. A new conformance
+      case, `code_roles`, pins the in-memory build in both packages, and
+      the schema’s `unit_key` description says what a target key holds.
+  3.  **`prune = TRUE` warns before it deletes a review record in a
+      package with no shortlist file.** The warning returned early when
+      there was no `semantic_suggestions.csv`, before it asked whether
+      `review/` held an ingested record. A packet that holds only blank
+      slots with no candidates leaves exactly that package: ingesting
+      `review` or `request_new_term` answers for it writes
+      `review/semantic-llm-assessments.csv` and no shortlist file, so a
+      later rewrite with `prune = TRUE` deleted the whole record without
+      a word. The record is now looked for first, whatever the shortlist
+      file’s state.
+
+- **A retry query written as a CURIE is recognised as an identifier
+  whatever letters it holds** (hub item B-380; metasalmonpy’s half is
+  B-381). `.ms_llm_query_looks_like_identifier()` ended its CURIE
+  pattern in `[^\\s]+`, and R’s default regular-expression engine reads
+  a backslash inside a bracket expression literally, so the class meant
+  “neither a backslash nor the letter s” rather than “not whitespace”.
+  `smn:species` and `smn:MeshSize` were therefore searched as lexical
+  queries, and `abc:d e` was treated as an identifier. The class is now
+  `[^[:space:]]`, the one the query normalizer collapses, so a URL, a
+  URN, a DOI or a CURIE with no whitespace is an identifier and nothing
+  else is. Both callers of the classifier change: the assessment
+  ingester records such a query as `identifier_like_query` and does not
+  issue it (the `retry_dead_ends` fixture’s `smn:MeshSize` now gets the
+  reason its README promised, and the case makes one search call where
+  it made two), and the deprecated in-package retry asks the model for a
+  plain-language replacement query, as it always has for an
+  identifier-like one, instead of searching the CURIE. Pinned over the
+  backlog’s cases in `tests/testthat/test-llm-semantic-helpers.R`.
 
 - [`verify_sdp_semantic_iris()`](https://salmon-data-mobilization.github.io/metasalmon/reference/verify_sdp_semantic_iris.md)
   preserves legal semicolons in sixteen scalar IRI fields declared by
@@ -422,6 +774,20 @@
   C-locale run admitted an ideographic space that a UTF-8-locale run
   rejected.
 
+- SSSOM references now reject the same Unicode whitespace under C and
+  UTF-8 locales (B-432).
+  [`read_sssom_mapping_set()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.md)
+  and
+  [`validate_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_sssom.md)
+  checked `subject_source`, `object_source` and every mapping-cell CURIE
+  or URI with their own whitespace class, which a C-locale run resolved
+  as ASCII-only, so an ideographic space inside a reference was accepted
+  there and refused under UTF-8. They now use the class the shared IRI
+  predicate uses, and the reader marks the file’s text as UTF-8 once it
+  has checked the bytes, so a regex matches characters rather than bytes
+  in either locale. The bytes the writer emits do not change.
+  metasalmonpy’s `sssom` module already used this class.
+
 - The SSSOM reader validates `predicate_type` as its entity-type enum
   and accepts text in `subject_category`, `object_category` and
   `similarity_measure`, rather than requiring identifiers in those four
@@ -470,8 +836,8 @@
 - **[`fetch_salmon_ontology()`](https://salmon-data-mobilization.github.io/metasalmon/reference/fetch_salmon_ontology.md)
   no longer answers a request for one ontology with another’s body, or
   one representation’s request with another’s** (hub items B-333 and
-  B-335; the Python mirror remains owed in B-334/B-336 and the existing
-  unmerged PR75). Each is pinned by
+  B-335; metasalmonpy 0.6.0 makes the same changes, B-334 and B-336 in
+  its pull request 75). Each is pinned by
   `tests/testthat/test-ontology-fetch.R`, which stubs
   [`httr::GET()`](https://httr.r-lib.org/reference/GET.html) and failed
   before the change.
@@ -508,13 +874,10 @@
       body, still written to a temporary file in `cache_dir` and renamed
       into place, and a validator file is the header’s bytes and a
       newline, written in binary so that it is the same file on every
-      platform. The matching Python storage remains owed in the existing
-      unmerged PR75; its default branch still decodes a text type sent
-      with no charset as ISO-8859-1 and rewrites it. `timeout_seconds`
-      is unchanged in R: it bounds both connection and whole transfer.
-      Python’s default branch uses a fixed 15 s per request, and PR75’s
-      proposed configurable connect/read timeout does not bound the
-      whole transfer.
+      platform, as metasalmonpy 0.6.0 now stores it too.
+      `timeout_seconds` is unchanged in R: it bounds both connection and
+      whole transfer, and metasalmonpy’s new `timeout_seconds` bounds
+      the same two.
 
 - **Source lists are normalised consistently across R’s readers**
   (B-421). Unicode lower-casing uses an explicit locale, so the
@@ -531,9 +894,7 @@
   build (and so
   [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
   [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
-  and
-  [`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md),
-  which pass their sources to
+  and `chat_decomposition()`, which pass their sources to
   [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)),
   now trim each name you supply of exactly what Python’s `str.strip()`
   removes, lower-case it, and drop a missing or empty name and any
@@ -556,8 +917,8 @@
   [`unique()`](https://rdrr.io/r/base/unique.html) with no lower-casing,
   so `" SMN"` and `"smn"` were two sources there and a no-break space
   survived; metasalmonpy’s closure has a third rule of its own. All
-  three R readers now read a list one way; the corresponding Python
-  reader port remains owed in PR75. A list with no name left is still
+  three R readers now read a list one way, and metasalmonpy 0.6.0 ports
+  the reader (its pull request 75). A list with no name left is still
   refused. Pinned by `tests/testthat/test-semantic-closure.R`, which
   failed before the change.
 
@@ -647,7 +1008,11 @@
   (B-120). The existing prefill remains in `codes.csv` until a reviewer
   changes it; explicit caller IRIs and `semantic_code_scope = "none"`
   retain their behaviour. Importing a harness assessment preserves the
-  prefill’s provenance.
+  prefill’s provenance, and when the packet’s retrieval found nothing
+  for a slot, importing its assessment leaves the slot’s earlier rows in
+  place, carrying that assessment rather than any earlier one, so the
+  slot stays in the queue instead of vanishing with its IRI still
+  filled.
 
 - **Any final `reject_shortlist` now escalates to `request_new_term`,
   and four ways an LLM assessment was being mangled are fixed** (hub
@@ -791,9 +1156,12 @@
   [\#77](https://github.com/salmon-data-mobilization/metasalmon/issues/77)
   and is untouched. **Mirror:** metasalmonpy’s
   [`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
-  (`package_io.py`) has none of the three checks; the port is owed under
-  the S10 parity stream (queue item B-124; see the parity register), not
-  registered as a deviation.
+  (`package_io.py`) had none of the three checks when this landed; the
+  port was owed under the S10 parity stream (queue item B-124; see the
+  parity register), not registered as a deviation. \[corrected
+  2026-10-08: B-124 landed the port as metasalmonpy pull request 29,
+  `1e9245c`, on 2026-09-16, so both validators now make the three
+  checks.\]
 
 - **`infer_column_role()` now types an enumerable string column
   `categorical`, so
@@ -1391,11 +1759,13 @@
   never recognised the candidate and wrote `skos_concept`. The record in
   `semantic_suggestions.csv` now reads a candidate’s IRI the same way,
   trimmed as well as unmarked. A quoted IRI keeps a trailing newline
-  through `read_csv()`, so the record missed such a candidate and gave
-  the IRI a hand-picked row instead, which the rebuilt review replayed
-  as `skos_concept`. An IRI that no candidate in the shortlist carries
-  still writes `skos_concept`, as before. That includes hub item B-176’s
-  case, a term the reviewer typed whose type nothing records.
+  through
+  [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html),
+  so the record missed such a candidate and gave the IRI a hand-picked
+  row instead, which the rebuilt review replayed as `skos_concept`. An
+  IRI that no candidate in the shortlist carries still writes
+  `skos_concept`, as before. That includes hub item B-176’s case, a term
+  the reviewer typed whose type nothing records.
 
   **Mirror:** metasalmonpy’s
   [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
@@ -1734,7 +2104,45 @@
   on its `main` at `056fccc`. The warning is owed there as a port, hub
   item B-378.
 
+- **[`verify_sdp_semantic_iris()`](https://salmon-data-mobilization.github.io/metasalmon/reference/verify_sdp_semantic_iris.md)
+  reports a malformed IRI as malformed again under Ubuntu’s patched
+  libcurl.** Ubuntu’s libcurl security update 8.5.0-2ubuntu10.16
+  (2026-10-12) cannot read the effective URL of a request whose URL it
+  rejected, and says “Out of memory”. The default requester read that
+  before the transfer’s own failure, so it tried a malformed IRI three
+  times and recorded “Out of memory” as a transient error. It now
+  records the transfer’s reason after one attempt, as on every other
+  libcurl. The existing malformed-URL test in
+  `tests/testthat/test-semantic-iri-verification.R` failed under the
+  update and passes with the change. metasalmonpy’s requester uses
+  HTTPX, not libcurl, and needs no change.
+
 ### Changed
+
+- **[`write_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_sssom.md)
+  writes canonical SSSOM/TSV, so every mapping set’s bytes change, and
+  with them every `mapping-sets.json` sha256** (hub B-350; ruled by
+  Brett 2026-09-25 for the next minor version, both packages together).
+  The metadata block now has no space after `#`, writes a scalar plain
+  unless a YAML reader would read it back as something other than the
+  same string (so `sssom_version: "1.1"` stays quoted), puts `curie_map`
+  second as the MappingSet slot table does, writes a multivalued slot as
+  a block sequence, and leaves built-in and unused prefixes out of
+  `curie_map`, leaving the slot out entirely when nothing is left. In
+  the table, a cell is quoted only when it contains a double quote,
+  `confidence`, `reviewer_agreement` and `similarity_score` are rounded
+  to at most three decimals, and a missing value sorts before a present
+  one. Slots are not condensed, because condensation is the inverse of
+  propagation, which this profile does not do.
+  [`read_sssom_mapping_set()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.md)
+  reads every file it writes: it now accepts a set with no `curie_map`
+  and strips RFC 4180 quoting from a well-formed quoted cell, while a
+  cell an earlier version wrote with a bare `"` inside it still reads
+  byte for byte, and
+  [`validate_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_sssom.md)
+  still accepts a package in the earlier form. metasalmonpy’s writer
+  keeps the earlier bytes until its half, B-351, lands, so for now the
+  two packages do not write byte-identical mapping sets.
 
 - The publication guide distinguishes strict SDP validation and folder
   sharing from the reviewed closure and EML facts required for EML/KNB
@@ -2128,7 +2536,6 @@ which gains a `decision_reason` column.
   one with five candidates.
 
   ``` r
-
   review_metadata(pkg_path)
   #> ── dataset.csv ──────────────────────────────────────────────────────
   #>    creator: placeholder text, refused by strict validation
@@ -2183,7 +2590,6 @@ which gains a `decision_reason` column.
   C-collated, hash-verified and guarded.
 
   ``` r
-
   review <- review_semantics(pkg_path)
   review
   #> ── spawners · spawner_count · variable ─────────────────────────────
@@ -2497,7 +2903,7 @@ which gains a `decision_reason` column.
   [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93)
   item 4 was investigated and found unreachable, not fixed.** The item
   read that
-  [`jsonlite::write_json()`](https://jeroen.r-universe.dev/jsonlite/reference/read_json.html)
+  [`jsonlite::write_json()`](https://rdrr.io/pkg/jsonlite/man/read_json.html)
   pads a `Date` while
   [`readr::write_csv()`](https://readr.tidyverse.org/reference/write_delim.html)
   does not, so one
@@ -2643,10 +3049,10 @@ the package’s own final gate, and semantic ranking puts `smn` above
   ever had to vary. Two environments, matched exactly, with no partial
   matching, no custom endpoints, and no fallback between them:
 
-  | Environment | DataONE network | Member node | Credential |
-  |----|----|----|----|
-  | `"test"` | `STAGING` | `urn:node:mnTestKNB` at `dev.nceas.ucsb.edu` | `dataone_test_token` |
-  | `"production"` | `PROD` | `urn:node:KNB` at `knb.ecoinformatics.org` | `dataone_token` |
+  | Environment    | DataONE network | Member node                                  | Credential           |
+  |----------------|-----------------|----------------------------------------------|----------------------|
+  | `"test"`       | `STAGING`       | `urn:node:mnTestKNB` at `dev.nceas.ucsb.edu` | `dataone_test_token` |
+  | `"production"` | `PROD`          | `urn:node:KNB` at `knb.ecoinformatics.org`   | `dataone_token`      |
 
   Every value was read from the DataONE node documents themselves on
   2026-08-22 rather than assumed: the KNB Test Node answers 200 at
@@ -4025,11 +4431,10 @@ ecosystem review
 
 ## metasalmon 0.1.3
 
-- Added a first package-native
-  [`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md)
-  workflow for measurement-variable review: resumable R-console sessions
-  now keep structured curation state separate from transcript history,
-  ask grouped decomposition questions, and end in an explicit
+- Added a first package-native `chat_decomposition()` workflow for
+  measurement-variable review: resumable R-console sessions now keep
+  structured curation state separate from transcript history, ask
+  grouped decomposition questions, and end in an explicit
   preview/approve or new-term artifact with SKOS-variable /
   `usedProcedure` wording.
 - Added deterministic fallback behavior for provider-wide LLM review
@@ -4483,7 +4888,8 @@ ecosystem review
   similar to using [`dir()`](https://rdrr.io/r/base/list.files.html)
   with [`lapply()`](https://rdrr.io/r/base/lapply.html) for local files.
 - Supports pattern matching, version pinning, and passes options to
-  `read_csv()` for all files.
+  [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
+  for all files.
 - Added comprehensive test coverage for the new function.
 
 ## metasalmon 0.0.5

@@ -12,7 +12,7 @@ tool on your existing package.
 You do not need to have followed the specification discussion. You do
 need to be able to open your package’s `metadata/` CSVs.
 
-The migration itself needs no internet connection and no LLM. The
+The migration itself needs no internet connection and no model. The
 complete worked example below runs offline in a few seconds, and the
 console output shown beside it is real output from that example. Code
 chunks are not executed when this page is built, so you can copy them
@@ -71,11 +71,11 @@ dictionary to the level where it is actually constant.
 There are exactly three placements. Pick by asking **what the method is
 constant across**.
 
-| If the method is… | It goes in | Field |
-|----|----|----|
-| The same for every row of a table | `metadata/tables.csv` | `method_iri` |
+| If the method is…                               | It goes in                                      | Field                               |
+|-------------------------------------------------|-------------------------------------------------|-------------------------------------|
+| The same for every row of a table               | `metadata/tables.csv`                           | `method_iri`                        |
 | A published procedure document you want to cite | `metadata/tables.csv` or `metadata/dataset.csv` | `protocol_iri`, `protocol_citation` |
-| Different from row to row | your data, as a code column | `metadata/codes.csv` `term_iri` |
+| Different from row to row                       | your data, as a code column                     | `metadata/codes.csv` `term_iri`     |
 
 #### Placement 1: One Method for the Whole Table
 
@@ -84,7 +84,6 @@ weir counts is the classic case: the weir is the method, and it applies
 to the whole table.
 
 ``` r
-
 tables <- readr::read_csv("weir-counts-sdp/metadata/tables.csv", na = "")
 
 tables$method_iri[tables$table_id == "escapement"] <-
@@ -118,7 +117,6 @@ Put them on `tables.csv` when the protocol governs one table, and on
 `dataset.csv` when it governs the whole dataset.
 
 ``` r
-
 tables$protocol_iri[tables$table_id == "escapement"] <-
   "https://example.org/protocols/weir-2019"
 tables$protocol_citation[tables$table_id == "escapement"] <-
@@ -126,7 +124,6 @@ tables$protocol_citation[tables$table_id == "escapement"] <-
 ```
 
 ``` r
-
 readr::write_csv(tables, "weir-counts-sdp/metadata/tables.csv", na = "")
 ```
 
@@ -147,7 +144,6 @@ column, and then give each code a definition in `metadata/codes.csv`,
 pointing `term_iri` at the shared-vocabulary procedure it means.
 
 ``` r
-
 # 1. The method becomes a column in the data itself.
 escapement <- readr::read_csv("weir-counts-sdp/data/escapement.csv", na = "")
 escapement$enumeration_method <- c("weir", "aerial", "weir")
@@ -206,7 +202,6 @@ If your method values come from NuSEDS, the bundled crosswalks give you
 a starting map from the legacy labels to canonical method families:
 
 ``` r
-
 nuseds_enumeration_method_crosswalk()
 nuseds_estimate_method_crosswalk()
 ```
@@ -243,7 +238,6 @@ is a local lookup;
 queries vocabulary services and needs a network connection.
 
 ``` r
-
 sources_for_role("statistical_modifier")
 
 find_terms("mean", role = "statistical_modifier")
@@ -265,7 +259,6 @@ fix the problem and run it again.
 #### Always Dry-Run First
 
 ``` r
-
 library(metasalmon)
 
 report <- migrate_sdp_methods("weir-counts-sdp", dry_run = TRUE)
@@ -286,7 +279,6 @@ carrying a dictionary `method_iri`, and a `metadata/methods.csv`
 registry describing that method.
 
 ``` r
-
 library(metasalmon)
 
 legacy_path <- file.path(tempdir(), "weir-counts-sdp")
@@ -360,7 +352,6 @@ readr::write_csv(
 Now preview the migration:
 
 ``` r
-
 report <- migrate_sdp_methods(legacy_path, dry_run = TRUE)
 ```
 
@@ -380,7 +371,6 @@ The report is also returned, invisibly, as a list with three parts:
 `methods.csv`, so you can relocate their content).
 
 ``` r
-
 report$tables
 ```
 
@@ -390,7 +380,6 @@ report$tables
     1 escapement https://example.org/methods/weir-count spawner_count
 
 ``` r
-
 report$registry[c("method_label", "method_version", "citation")]
 ```
 
@@ -402,7 +391,6 @@ report$registry[c("method_label", "method_version", "citation")]
 The dry run agrees with what we intended, so run it for real:
 
 ``` r
-
 report <- migrate_sdp_methods(legacy_path)
 ```
 
@@ -414,7 +402,6 @@ The same report prints, followed by:
 Check the result. The method is now a property of the table:
 
 ``` r
-
 tables <- readr::read_csv(
   file.path(legacy_path, "metadata", "tables.csv"),
   show_col_types = FALSE, na = ""
@@ -431,7 +418,6 @@ The dictionary has lost `method_iri` and gained
 `statistical_modifier_iri`:
 
 ``` r
-
 names(readr::read_csv(
   file.path(legacy_path, "metadata", "column_dictionary.csv"),
   show_col_types = FALSE, na = ""
@@ -450,7 +436,6 @@ names(readr::read_csv(
 And the registry is gone:
 
 ``` r
-
 file.exists(file.path(legacy_path, "metadata", "methods.csv"))
 #> [1] FALSE
 ```
@@ -465,12 +450,12 @@ the next section.
 The migration also updates `datapackage.json` — it drops the
 `sdp_methods` resource, removes any legacy `iAdopt:methodIri` custom
 keys from the field definitions, and stamps the new profile and spec
-version — and sets `dataset.csv`’s `spec_version` to `sdp-0.3.0`.
+version — and sets `dataset.csv`’s `spec_version` to that same version,
+the one metasalmon’s SDP schema declares.
 
 #### Finally, Validate
 
 ``` r
-
 validate_salmon_datapackage(legacy_path, require_iris = FALSE)
 ```
 
@@ -585,15 +570,15 @@ the same place, and the migration reports them rather than relocating
 them, because two of them need a decision and three of them need to
 leave your package entirely.
 
-| Old registry column | Where it goes now |
-|----|----|
-| `method_iri` | `tables.csv$method_iri` **when every measurement column of a table agrees** — that promotion is the only one the migration makes. A method that varies by row goes to `codes.csv$term_iri`, which the migration cannot do for you: it needs a column added to your data |
-| `method_label` | The shared vocabulary — request the term |
-| `method_description` | The shared vocabulary — request the term |
-| `method_version` | `protocol_citation` |
-| `protocol_iri` | `protocol_iri` on `tables.csv` or `dataset.csv` |
-| `citation` | `protocol_citation` on `tables.csv` or `dataset.csv` |
-| `dataset_id` | Nothing — it was only there to key the registry |
+| Old registry column  | Where it goes now                                                                                                                                                                                                                                                       |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `method_iri`         | `tables.csv$method_iri` **when every measurement column of a table agrees** — that promotion is the only one the migration makes. A method that varies by row goes to `codes.csv$term_iri`, which the migration cannot do for you: it needs a column added to your data |
+| `method_label`       | The shared vocabulary — request the term                                                                                                                                                                                                                                |
+| `method_description` | The shared vocabulary — request the term                                                                                                                                                                                                                                |
+| `method_version`     | `protocol_citation`                                                                                                                                                                                                                                                     |
+| `protocol_iri`       | `protocol_iri` on `tables.csv` or `dataset.csv`                                                                                                                                                                                                                         |
+| `citation`           | `protocol_citation` on `tables.csv` or `dataset.csv`                                                                                                                                                                                                                    |
+| `dataset_id`         | Nothing — it was only there to key the registry                                                                                                                                                                                                                         |
 
 #### Labels and Descriptions Belong in the Vocabulary
 
@@ -618,7 +603,6 @@ longer carries the registry’s fields, so reading it back would find
 nothing to request.
 
 ``` r
-
 # `report$registry` is what migrate_sdp_methods() returned above.
 reviewed_dict <- read_salmon_datapackage(legacy_path)$dictionary
 
@@ -661,7 +645,6 @@ Take them from `report$registry` and place them by hand, deciding as you
 go whether the protocol governs one table or the whole dataset:
 
 ``` r
-
 report <- migrate_sdp_methods("weir-counts-sdp", dry_run = TRUE)
 
 report$registry[c("method_version", "protocol_iri", "citation")]
