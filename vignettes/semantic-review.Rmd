@@ -178,7 +178,11 @@ your own harness reads it and writes its answers to a CSV, and the package
 reads them back. **Neither step calls a model**; the only network either one
 reaches is vocabulary search, through `search_fn`. metasalmonpy writes the same
 packet, byte for byte apart from its `producer` member, so one harness serves
-both packages.
+both packages. The `sdp-semantic-review` skill of the
+[smn-sci-plgn](https://github.com/salmon-data-mobilization/smn-sci-plgn)
+plugin is a ready-made harness for Claude Code and Codex;
+[Semantic Review in Your Harness](harness-semantic-review.html) shows that route.
+This section shows what any harness does, so you can write your own.
 
 ```{r, purl = FALSE}
 packet <- write_semantic_review_packet(pkg_path, context_files = "methods-note.md")
@@ -273,41 +277,6 @@ a `review_dir` for the session's files:
 `ingest_semantic_assessments(dict, review_dir = "review")`. Its
 `result$dictionary` carries the assessments, so `review_semantics()` and
 `apply_semantic_suggestions(..., strategy = "llm")` read them from there.
-
-## Optional decomposition dialogue
-
-In 0.5.0, `chat_decomposition()` provides a console dialogue for one
-measurement column's variable term. It asks grouped questions, proposes a
-patch or term request, and requires explicit approval of the preview. It
-returns the proposal and session record; it does not apply the patch to your
-package.
-
-```{r, purl = FALSE}
-pkg <- read_salmon_datapackage(pkg_path)
-session <- chat_decomposition(
-  dict = pkg$dictionary,
-  column_name = "NATURAL_ADULT_SPAWNERS",
-  table_id = "escapement"
-)
-session$approval_status
-session$approved_patch
-```
-
-At the console, `/preview` displays the proposal, `/approve` approves it and
-`/quit` saves the session and stops. Keep the returned `session_id` and pass
-it to `chat_decomposition()` to resume. Review the approved patch before
-writing its chosen term with `set_sdp_column()`.
-
-Without chat adapter settings, the dialogue uses its deterministic fallback
-over retrieved candidates. Retrieving candidates can contact vocabulary
-services. Supplying `chat_provider`, `chat_model` and the corresponding
-credentials opts into the optional model adapter.
-
-**From 0.6.0 this dialogue and the in-package model call are deprecated:**
-they warn on use, and 0.7.0 removes them. Have
-[your own harness](#have-your-own-harness-judge-the-shortlists) judge the
-shortlists instead. The review queue and setters above remain the path for
-writing your decisions.
 
 ## Spreadsheet fallback
 

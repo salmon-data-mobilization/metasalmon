@@ -26,7 +26,7 @@ now, and how to run the migration tool on your existing package.
 You do not need to have followed the specification discussion. You do need to
 be able to open your package's `metadata/` CSVs.
 
-The migration itself needs no internet connection and no LLM. The complete
+The migration itself needs no internet connection and no model. The complete
 worked example below runs offline in a few seconds, and the console output shown
 beside it is real output from that example. Code chunks are not executed when
 this page is built, so you can copy them and run them yourself. Two later

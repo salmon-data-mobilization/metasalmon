@@ -133,9 +133,9 @@ metasalmon handles UTF-8 encoded data correctly. If you have special characters 
 2. Use `readr::read_csv()` which defaults to UTF-8
 3. If using base R, specify encoding: `read.csv("file.csv", encoding = "UTF-8")`
 
-For LLM context, plain-text and CSV files with invalid UTF-8 are retried as
-Windows-1252/Latin-1. R Markdown and HTML context files are still expected to be
-UTF-8.
+For the context files a review packet quotes, plain-text and CSV files with
+invalid UTF-8 are retried as Windows-1252/Latin-1. R Markdown and HTML context
+files are still expected to be UTF-8.
 
 ### Can I use this with data in formats other than CSV?
 
@@ -260,20 +260,22 @@ pkg_path <- write_salmon_datapackage(
 
 ## Workflow Questions
 
-### Why did `llm_context_files` not change my output?
+### How do I give a model my methods notes when it reviews the shortlists?
 
-The two most common causes are input type and opt-in state:
+`metasalmon` makes no model call itself. Pass your notes to
+`write_semantic_review_packet()` as `context_files`, and the packet carries the
+best-scoring excerpts from them beside each target, for your harness to read
+while it judges. Two things to check:
 
-- `llm_context_files` must contain local path strings such as
+- `context_files` must contain local path strings such as
   `"./00_data/data-dictionary.csv"`; do not pass the tibble from
-  `readr::read_csv()` or the XML object from `xml2::read_html()`.
-- Context never enables LLM review by itself. Set `llm_assess = TRUE` and choose
-  a configured provider. Without that flag, `metasalmon` warns and continues
-  with deterministic semantic retrieval, so similar output is expected.
+  `readr::read_csv()` or the XML object from `xml2::read_html()`, which is
+  refused with an error.
+- Use `context_text` instead when the context is already a character string
+  rather than a file.
 
-When using `infer_dictionary()` directly, also set `seed_semantics = TRUE`.
-Use `llm_context_text` instead when the context is already a character string
-rather than a file.
+[Semantic Review in Your Harness](harness-semantic-review.html) has the whole
+route.
 
 ### Why did semantic review ignore or omit a vocabulary?
 
@@ -288,12 +290,12 @@ Source selection distinguishes an omitted argument from an explicit value:
 For example, `sources = "smn"` deliberately excludes QUDT even for a unit slot.
 Use `sources_for_role("unit")` when you want the normal unit vocabulary set.
 
-For measurement columns, the LLM reviews variable, property, entity, unit,
-constraint, and statistical-modifier candidates together. Only variable,
-property, entity, and unit acceptances can become `REVIEW:` prefills.
-Constraint and statistical-modifier decisions always require manual
-application, and deterministic validators can downgrade unsupported model
-acceptances to `review`.
+For measurement columns, a harness judging a review packet reviews variable,
+property, entity, unit, constraint, and statistical-modifier candidates
+together, and the ingester's deterministic validators can downgrade an
+unsupported acceptance to `review`. Nothing a harness answers is written into
+the metadata until you accept it with `accept_suggestion()` and write your
+decisions with `apply_sdp_semantics()`.
 
 A method is not among them: since sdp-0.3.0 a method is never a dictionary
 column. See

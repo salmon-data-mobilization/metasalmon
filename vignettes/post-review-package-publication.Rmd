@@ -157,12 +157,14 @@ This is the key post-review gap table:
 
 - rows here are still unresolved;
 - `top_non_smn_*` columns show the best non-SMN evidence the package found;
-- `gap_detection_basis` distinguishes candidate evidence, a final LLM term-gap
-  decision, or both; and
+- `gap_detection_basis` distinguishes candidate evidence, a final
+  `request_new_term` decision your harness recorded, or both; and
 - `placement_recommendation` gives a first-pass routing guess.
 
 When `suggestions` is omitted, `detect_semantic_term_gaps()` reads both the
-`semantic_suggestions` and `semantic_llm_assessments` dictionary attributes.
+`semantic_suggestions` and `semantic_llm_assessments` dictionary attributes,
+the second attached by `ingest_semantic_assessments()` when your harness has
+judged a review packet.
 Final `request_new_term` decisions are therefore included automatically, even
 when candidate rows contain an SMN match. An unresolved `reject_shortlist`
 escalation remains traceable through `llm_escalated_from`.
