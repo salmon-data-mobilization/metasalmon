@@ -5,18 +5,11 @@ okf_version: "0.2"
 # metasalmon — ecosystem hub knowledge bundle
 
 This Open Knowledge Format bundle is the **coordinating hub** for the salmon
-data ecosystem: metasalmon (R), metasalmonpy (Python mirror), the Salmon Data
-Package spec (`smn-data-pkg`), the Salmon Domain Ontology
-(`salmon-domain-ontology`), the GC DFO Salmon Ontology
-(`dfo-salmon-ontology`), the PSC controlled vocabulary
-(`psc-salmon-vocabularies`), the salmon knowledge commons
-(`salmon-knowledge-commons`), the standards workshop
-(`salmon-data-standards-workshop`, the eighth member since Brett's 2026-08-24
-membership ruling), and the Salmon Science Foundry (`salmon-science-foundry`,
-the ninth member since Brett's Q19 ruling of 2026-09-05; the repository itself
-does not exist yet), and the Salmon Science Research plugin (`smn-sci-plgn`,
-the tenth member since 2026-11-24, whose skills drive these tools). Sequencing, execplans, and the cross-repo release
-index live here. It replaced the former `notes/` planning tree on 2026-08-13
+data ecosystem: the member repositories listed in the
+[domain card](domains/salmon-data-ecosystem.md), where the list is generated
+from `members:` in `queue/config.yaml` rather than written by hand, beside a
+table of what each member is for. Sequencing, execplans, and the cross-repo
+release index live here. It replaced the former `notes/` planning tree on 2026-08-13
 (only `notes/evidence/theme-a/` stays behind — it is wired into CI and tests
 and contains non-Markdown files a bundle cannot hold).
 

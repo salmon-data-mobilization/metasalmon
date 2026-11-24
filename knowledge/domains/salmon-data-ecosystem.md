@@ -1,27 +1,59 @@
 ---
 type: ScientificDataDomain
 title: "Salmon data ecosystem"
-description: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, the salmon knowledge commons, the standards workshop, the Salmon Science Foundry, and the smn-sci-plgn skills plugin, coordinated through the metasalmon hub. Ten repositories, one hub; membership follows from this hub sequencing that repository's work (ruled 2026-08-24)."
+description: "The salmon data mobilization ecosystem coordinated through the metasalmon hub: the repositories whose work this hub sequences, from SDP tooling and its specification to ontologies, vocabularies, knowledge, teaching and agent skills. The member list is generated from queue/config.yaml; membership follows from this hub sequencing that repository's work (ruled 2026-08-24)."
 status: draft
 tags: [salmon, sdp, ecosystem]
 psc:
   id: metasalmon:domain:salmon-data-ecosystem
 ---
 
-The domain this bundle coordinates. The table below is the complete allowlist:
-**ten repositories, one hub** (ten since 2026-11-24, when Brett admitted
-`smn-sci-plgn`; nine from 2026-09-05, when his Q19 ruling admitted
-`salmon-science-foundry`).
+The domain this bundle coordinates. The member list below is the complete
+allowlist, and it is generated: **`members:` in `queue/config.yaml` is the
+single source of the member count and the member list** (Brett, 2026-11-24), so
+a hand edit to either block fails `hub_queue.py check`, and `hub_queue.py lint`
+fails on a member count written by hand anywhere in this bundle. Point at this
+list rather than restating it. Brett admitted `smn-sci-plgn` on 2026-11-24, and
+`salmon-science-foundry` on his Q19 ruling of 2026-09-05.
+
+<!-- hub:generated:member-count -->
+<!-- Generated from the hub queue. Edit the queue file, not this block; regenerate with `python3 scripts/hub_queue.py render`. -->
+
+The salmon data ecosystem has **ten** member repositories.
+<!-- /hub:generated:member-count -->
+
+<!-- hub:generated:member-list -->
+<!-- Generated from the hub queue. Edit the queue file, not this block; regenerate with `python3 scripts/hub_queue.py render`. -->
+
+| Repository | Organization | Forge |
+|---|---|---|
+| [`metasalmon`](https://github.com/salmon-data-mobilization/metasalmon) | `salmon-data-mobilization` | GitHub |
+| [`metasalmonpy`](https://github.com/salmon-data-mobilization/metasalmonpy) | `salmon-data-mobilization` | GitHub |
+| [`smn-data-pkg`](https://github.com/salmon-data-mobilization/smn-data-pkg) | `salmon-data-mobilization` | GitHub |
+| [`salmon-domain-ontology`](https://github.com/salmon-data-mobilization/salmon-domain-ontology) | `salmon-data-mobilization` | GitHub |
+| [`dfo-salmon-ontology`](https://github.com/dfo-pacific-science/dfo-salmon-ontology) | `dfo-pacific-science` | GitHub |
+| [`psc-salmon-vocabularies`](https://gitlab.com/pacific-salmon-commission/psc-data-systems/psc-salmon-vocabularies) | `pacific-salmon-commission/psc-data-systems` | GitLab |
+| [`salmon-knowledge-commons`](https://github.com/salmon-data-mobilization/salmon-knowledge-commons) | `salmon-data-mobilization` | GitHub |
+| [`salmon-data-standards-workshop`](https://github.com/salmon-data-mobilization/salmon-data-standards-workshop) | `salmon-data-mobilization` | GitHub |
+| [`smn-sci-plgn`](https://github.com/salmon-data-mobilization/smn-sci-plgn) | `salmon-data-mobilization` | GitHub |
+| `salmon-science-foundry` | *not yet created* | GitHub |
+<!-- /hub:generated:member-list -->
 
 **"Complete" was contested until 2026-08-24, and is not any more.** This card
 and the roadmap stated two different membership tests. Brett ruled that
 **this card's test governs** — *membership follows from this hub sequencing that
 repository's work* — and the roadmap's competing *input* test has been deleted
-rather than left beside it. `salmon-data-standards-workshop` is the eighth row
-as a result, and `salmon-science-foundry` is the ninth row under the same test
+rather than left beside it. `salmon-data-standards-workshop` became the eighth
+member as a result, and `salmon-science-foundry` the ninth under the same test
 (Brett, Q19, 2026-09-05). See
 *[Which membership test governs — RULED 2026-08-24](#which-membership-test-governs--ruled-2026-08-24)*
 at the foot of this card.
+
+What each member is for. This role table is the one hand-written list of
+members left in the bundle, and `hub_queue.py lint` keeps it honest: it fails
+(rule `members-drift`) when the table names a repository the generated list
+does not, or misses one, so a new member gets its row here in the same change
+as its configuration entry.
 
 | Repo | Role |
 |---|---|
@@ -128,10 +160,10 @@ Shared tools, hyperlinks, consumed artifacts, and transitive dependencies do
 not add repositories to this domain, and neither does sharing a GitHub
 organization — **membership follows from this hub sequencing that repository's
 work**, not from who owns it and not from what it produces. Membership does not
-require sharing an organization either, and there are now two members that do
-not: `psc-salmon-vocabularies` lives on PSC's GitLab, and
-`salmon-science-foundry` belongs to the institute rather than to
-`salmon-data-mobilization`. That sentence is
+require sharing an organization either: `psc-salmon-vocabularies`, for example,
+lives on PSC's GitLab, and `salmon-science-foundry` belongs to the institute
+rather than to `salmon-data-mobilization`. The generated list above shows each
+member's organization and forge. That sentence is
 the ruled membership test as of 2026-08-24; it is the only one in this bundle,
 and the roadmap now states it in the same words. In particular, `psc-data-systems`,
 `psc-data-systems-site`, `campModelInput`, and `ctc-knowledge-map` are external
@@ -169,24 +201,27 @@ discarded is what stops it regrowing.
    0.1.8 is a constraint this package should know about, **not** an obligation on
    it. That was the third half-question inside OD-1 and it is answered.
 
-**What moved in the same change:** the allowlist table (eight rows then; **nine
-since 2026-09-05**, when Q19 admitted the Foundry; **ten since 2026-11-24**, when
-the plugin was admitted), the
-"eight repositories, one hub" line at the top of this card (**ten** since
-2026-11-24), the roadmap's
+**What moved in the same change:** the allowlist table (eight rows then), the
+"eight repositories, one hub" line at the top of this card, the roadmap's
 *Domain allowlist* rule (now the sequencing test alone), the roadmap's
 "eight sections for seven members" note, its frontmatter description, the
 [hub-coordination context](../contexts/hub-coordination.md), and the
 [S6 card](../sequences/s6-ecosystem.md). A count nobody maintains is the decay
-this rule exists to prevent, so the count now has one ruled answer in every
-place it appears. The same list was walked again on 2026-09-09, when the
+this rule exists to prevent, so the count was given one ruled answer in every
+place it appeared. The same list was walked again on 2026-09-09, when the
 Foundry row landed on the Q19 ruling of 2026-09-05: this card, the
 [hub-coordination context](../contexts/hub-coordination.md), the
-[S6 card](../sequences/s6-ecosystem.md), `index.md`, and the roadmap. The count
-has now drifted twice, which is why the walk is written down as a list rather
-than left to whoever remembers. It was walked a third time on 2026-11-24, when
-`smn-sci-plgn` was admitted: the same places, plus `knowledge/index.md`'s
-member list, Q69 in `questions.md`, and the S16 card's paragraph on the plugin.
+[S6 card](../sequences/s6-ecosystem.md), `index.md`, and the roadmap. It was
+walked a third time on 2026-11-24, when `smn-sci-plgn` was admitted: the same
+places, plus `knowledge/index.md`'s member list, Q69 in `questions.md`, and the
+S16 card's paragraph on the plugin. That admission took three review rounds,
+and every important finding was a copy the walk had missed.
+**There is no walk any more** (Brett, 2026-11-24). The count and the list are
+generated from `members:` in `queue/config.yaml` into the blocks at the top of
+this card, the copies the walk visited state no number and point here, and
+`hub_queue.py lint` fails on a member count written by hand in the bundle. Only
+the role table above is still written by hand, and lint compares it with the
+configuration.
 
 **The one thing the ruling forces, stated so it is not lost.**
 `salmon-knowledge-commons` was admitted on 2026-08-17 under the test that has
