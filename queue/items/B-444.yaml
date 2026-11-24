@@ -1,0 +1,13 @@
+id: B-444
+kind: defect
+title: 'metasalmonpy pins and vendors sdp-0.3.2, so it is not current with sdp-0.3.3, the mirror half of B-443'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: [B-443]
+legacy: ''
+evidence: knowledge/roadmap.md
+retires_when: 'IN METASALMONPY, the remote pin names the tag sdp-0.3.3, and the complete bundle is re-vendored from that tag byte for byte, with its manifest naming the tag and each file''s SHA-256, exactly as B-443 does in metasalmon and as B-199 first did. The profile path stays v0.3. The vendored semantic-review conformance fixtures are recopied from metasalmon''s regenerated tree once B-443 lands, so tests/test_semantic_review_parity.py still finds the two trees byte-identical; each golden packet''s pins.sdp_profile.version and packet_id change with the pin, which is why this item is blocked by B-443 rather than run beside it. A package written at sdp-0.3.2 still validates under the new pin with the same patch-level behaviour metasalmon has. CHANGELOG.md has one entry under ## Unreleased. Filed 2026-11-24, the day sdp-0.3.3 was tagged.'

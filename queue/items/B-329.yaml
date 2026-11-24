@@ -1,8 +1,8 @@
 id: B-329
 kind: defect
 title: 'Remove the in-package model call from metasalmon: the provider client, the chat request code, the retry stack, llm_request_fn, the llm_* arguments and chat_decomposition()'
-state: icebox
-claimable: false
+state: ready
+claimable: true
 repo: metasalmon
 venue: claude-code
 stream: S16
