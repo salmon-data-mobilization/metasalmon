@@ -1,8 +1,8 @@
 id: B-441
 kind: defect
 title: 'metasalmonpy seeds the QUDT COUNT unit for fish_length_mm, takes temporal_end from a processing date, and writes all-positive western longitudes without a note, the mirror half of B-440'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S2

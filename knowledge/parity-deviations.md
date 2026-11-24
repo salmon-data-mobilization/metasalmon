@@ -1551,6 +1551,8 @@ for on its own, after a contractor's R output showed the gaps. **No new
 numbered row**: both implementations share the gaps today, so this is an owed
 port, not a chosen difference.
 
+**This one is closed.** `B-441` landed as metasalmonpy pull request **#120** on 2026-11-24, merge `ee05cc956666ab1ca3810a9425f3b852ac633809`. The unit query in `semantics.py` reads a trailing unit token and no longer counts a column that names a physical quantity, and `infer_dataset_metadata_from_resources()` in `metadata.py` leaves administrative date columns out of temporal coverage and writes the same `REVIEW REQUIRED:` `spatial_extent` note in the same window. `tests/test_create_sdp_inference_cues.py` holds the twins of `tests/testthat/test-create-sdp-inference-cues.R`. No register row is added: the two implementations agree on all three again. The comparison that confirmed it found older differences in measurement-header reading that predate B-440; they are B-446.
+
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

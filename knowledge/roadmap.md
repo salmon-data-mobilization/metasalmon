@@ -709,6 +709,7 @@ of [`parity-deviations.md`](parity-deviations.md). The Python half is deferred
 because the R fix was asked for on its own, after a contractor's R output
 showed the gaps, and metasalmonpy shares all three today; this is an owed
 port, with no deliberate difference to register.
+**This one is closed:** `B-441` **landed 2026-11-24 as metasalmonpy #120**, `ee05cc956666ab1ca3810a9425f3b852ac633809`.
 
 **The REVIEW-marker ruling is mirrored:** R **B-177** landed in metasalmon
 #225, and **B-230** **landed 2026-10-05 as metasalmonpy #103**, `6e26d614`.
