@@ -242,6 +242,16 @@ members:
     org: salmon-data-mobilization
     forge: github
     solo: false
+  # The tenth member, admitted 2026-11-24 on Brett's word: "Add keeping the
+  # relevant skills in smn-sci-plgn repo up to date with the ecosystem of tools
+  # you coordinate." The plugin's skills drive metasalmon, metasalmonpy, the SDP
+  # spec, the ontologies and the commons, so their releases make its skills stale.
+  # solo: true is proposed with this change, and it is Brett's to rule (HUB.md
+  # class 7). Retires when: Brett confirms or changes the solo key.
+  - repo: smn-sci-plgn
+    org: salmon-data-mobilization
+    forge: github
+    solo: true
   # The ninth member, admitted 2026-09-05 on Brett's Q19 ruling. The repository
   # does not exist yet and neither does the organization that will hold it: the
   # institute's GitHub organization is Q35, unresolved, and its working name

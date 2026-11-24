@@ -18,7 +18,7 @@ ecosystem around it** — the coordinating hub for the repos in the
 <!-- hub:generated:member-count -->
 <!-- Generated from the hub queue. Edit the queue file, not this block; regenerate with `python3 scripts/hub_queue.py render`. -->
 
-The salmon data ecosystem has **nine** member repositories.
+The salmon data ecosystem has **ten** member repositories.
 <!-- /hub:generated:member-count -->
 
 The membership test was ruled 2026-08-24 (Brett) and the count was an open
@@ -1448,6 +1448,20 @@ heading unchanged** — other cards link to these anchors, and an entry that
 disappears on being answered takes every link with it. OD-1 is the first, ruled
 2026-08-24; the full index of decisions and their status is
 [questions.md](questions.md).
+
+### smn-sci-plgn (Salmon Science Research plugin) — current **v0.2.0**
+
+| Version | Date | One line |
+|---|---|---|
+| [`v0.2.0`](https://github.com/salmon-data-mobilization/smn-sci-plgn/releases/tag/v0.2.0) | 2026-10-30 | Pins metasalmon and metasalmonpy `v0.6.0`. Carries `sdp-semantic-review`, the harness skill that judges a review packet, which is the route to model judgement that B-329 waits on. |
+
+The tenth member, admitted 2026-11-24 on Brett's word, so that the skills stay
+current with the tools this hub releases. The rule is in `AGENTS.md`, "The
+`smn-sci-plgn` skills follow the tools". *(Measured 2026-11-24: the skills name
+metasalmon or metasalmonpy `v0.6.0` 17 times and no `sdp-` version, so they are
+current with both packages' latest release and unaffected by the spec's
+`sdp-0.3.3`.)* The next move they owe is to the release that removes the
+in-package model call, B-329 and B-330. That is queue item B-442.
 
 ### OD-1 — Which membership test governs, and is `salmon-data-standards-workshop` the eighth member?
 

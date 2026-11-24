@@ -1,0 +1,13 @@
+id: B-442
+kind: defect
+title: 'smn-sci-plgn''s skills pin metasalmon and metasalmonpy v0.6.0 and describe the in-package provider route as available until v0.7.0, so the release that removes it (B-329, B-330) leaves them stale'
+state: icebox
+claimable: true
+repo: smn-sci-plgn
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: [B-329, B-330]
+legacy: ''
+evidence: knowledge/roadmap.md
+retires_when: 'IN SMN-SCI-PLGN, once the release that carries B-329 and B-330 is tagged in both packages, no skill pins the version it replaced: every metasalmon@ and metasalmonpy@ pin and every prose version in skills/ names the new release (17 references to v0.6.0 measured 2026-11-24, across metasalmon-skill, its references and recipe, and sdp-semantic-review). No skill describes the in-package provider route (llm_assess, the llm_* options, chat_decomposition) as available, deprecated or scheduled; the text says it was removed in that release and that judgement runs through sdp-semantic-review. The note in metasalmon-skill that the pinned pair rejects semapv:AgentBasedMatching is rewritten if that release carries metasalmon #282 and its mirror. The plugin''s own scaffold validation and evals pass, and its version is bumped and released as its own release policy says. Filed 2026-11-24 with smn-sci-plgn''s admission as the tenth member, under the AGENTS.md rule that the skills follow the tools.'

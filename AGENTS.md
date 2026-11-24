@@ -10,8 +10,10 @@ file→responsibility map). This file is the short, must-know contract;
 **This repo is also the coordinating hub** for the salmon data ecosystem
 (metasalmonpy, `smn-data-pkg`, `salmon-domain-ontology`, `dfo-salmon-ontology`,
 `psc-salmon-vocabularies`, `salmon-knowledge-commons`,
-`salmon-data-standards-workshop`, and `salmon-science-foundry`, the ninth
-member admitted 2026-09-05, whose repository does not exist yet): sequencing,
+`salmon-data-standards-workshop`, `salmon-science-foundry`, the ninth
+member admitted 2026-09-05, whose repository does not exist yet, and
+`smn-sci-plgn`, the tenth, admitted 2026-11-24, whose skills drive these
+tools): sequencing,
 execplans, and the cross-repo release index live in the `knowledge/` OKF
 bundle, starting at `knowledge/roadmap.md`.
 
@@ -124,6 +126,27 @@ The mirror, semantic, guard, security, and release contracts below remain.
   changing R does **not** close a parity row by itself — the row records the
   divergence, the ruling, and which side moved, exactly as when Python
   changes.
+- **The `smn-sci-plgn` skills follow the tools** (Brett, 2026-11-24: *"Add
+  keeping the relevant skills in smn-sci-plgn repo up to date with the
+  ecosystem of tools you coordinate"*). The plugin's skills tell users which
+  release to install and which functions and workflows to run. So any change
+  that alters what a skill says updates the affected skills in the same
+  stream, or files a queue item on `smn-sci-plgn` that names the stale skill
+  and what changed. That includes:
+  - a release of metasalmon, metasalmonpy or the SDP spec;
+  - a function renamed, removed or deprecated;
+  - a changed review workflow;
+  - an ontology, vocabulary or commons change a skill relies on.
+
+  A release is not finished while a skill still pins the version it
+  replaced and no item records the lag. The skills that move with this
+  package are `metasalmon-skill` and `sdp-semantic-review`. The ones that
+  move with the ontologies, the PSC CV and the commons are `salmon-terms`,
+  `controlled-vocabulary`, `psc-vocabulary`, `graph-discovery` and
+  `commons-card`.
+
+  *Retires when:* the plugin's own CI fails on a skill that pins a version
+  older than the ecosystem's current release.
 - **LLM review is strictly opt-in.** Supplying `llm_context_files` /
   `llm_context_text` must NEVER trigger a network/LLM call. LLM review runs only
   when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
