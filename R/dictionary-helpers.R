@@ -61,7 +61,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' df <- data.frame(
 #'   species = c("Coho", "Chinook"),
 #'   count = c(100, 200),
@@ -69,6 +68,7 @@
 #' )
 #' dict <- infer_dictionary(df)
 #'
+#' \dontrun{
 #' # Optional: seed semantic suggestions from vocabulary services
 #' # (SMN is queried first; GCDFO is a distinct DFO-specific source)
 #' dict <- infer_dictionary(
@@ -95,6 +95,16 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             llm_context_text = NULL,
                             llm_timeout_seconds = 60,
                             llm_request_fn = NULL) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings, and one even when
+  # `seed_semantics = FALSE` leaves the options unused. See
+  # R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "infer_dictionary", llm_deprecation_triggered),
+    add = TRUE
+  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)
@@ -140,7 +150,8 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       guess_types = guess_types,
       dataset_id = dataset_id,
       semantic_sources = semantic_sources,
-      semantic_max_per_role = semantic_max_per_role,
+      # Preserve the widened shortlist if child seeding is ever enabled.
+      semantic_max_per_role = llm_review$semantic_max_per_role,
       seed_verbose = seed_verbose
     )
 
@@ -339,10 +350,12 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     dataset_meta$contact_email[blank_contact_email] <- "MISSING METADATA: add primary contact email."
   }
 
-  blank_license <- is.na(dataset_meta$license) | trimws(dataset_meta$license) == ""
-  if (any(blank_license)) {
-    dataset_meta$license[blank_license] <- "MISSING METADATA: add dataset license (for example, CC-BY-4.0)."
-  }
+  # No licence placeholder. The SDP specification makes `license` recommended
+  # rather than required (smn-data-pkg pull request 12; Brett, 2026-09-26:
+  # most datasets assign none), and only the rights holder can grant one, so a
+  # blank licence is itself the statement that none was granted. A prompt there
+  # would be text that strict validation refuses in a field that may stay
+  # empty. Every prompt above fills a field the schema requires.
 
   blank_spec_version <- is.na(dataset_meta$spec_version) | trimws(dataset_meta$spec_version) == ""
   if (any(blank_spec_version)) {
@@ -475,6 +488,87 @@ infer_codes_from_resources <- function(resources, dataset_id = "dataset-1") {
   .ms_normalize_codes(code_tables)
 }
 
+# Is each column name an administrative date: when a row was processed,
+# entered, created, modified, loaded or checked, rather than when the thing it
+# describes was observed? Temporal coverage reads observation dates only
+# (hub item B-440). Glued spellings count too: `DateCreated`, `processdate`,
+# `lastmodified`, `CREATED_DTT`.
+#
+# `entry` and `entered` are administrative only on their own or as "data
+# entry", because `river_entry_date` and `fw_entry_date` are when fish entered
+# fresh water, which is an observation.
+.ms_is_administrative_date_column <- function(column_names) {
+  admin_words <- c(
+    "process", "processed", "processing",
+    "create", "created", "creation",
+    "modify", "modified", "modification", "mod",
+    "update", "updated",
+    "edit", "edited",
+    "load", "loaded",
+    "import", "imported",
+    "insert", "inserted",
+    "upload", "uploaded",
+    "submit", "submitted", "submission",
+    "receive", "received", "receipt",
+    "qc", "verify", "verified", "verification",
+    "audit", "audited",
+    "export", "exported"
+  )
+  entry_words <- c("entry", "entered")
+  date_words <- c("date", "time", "timestamp", "datetime", "dt", "dtt", "on", "at", "day")
+  # Strip the date part of a glued token, so `datecreated` reads `created`.
+  strip_date_affix <- function(tokens) {
+    tokens <- sub("^last", "", tokens)
+    tokens <- sub("^(date|time|dt)", "", tokens)
+    sub("(date|timestamp|time|dtt|dt|on|at)$", "", tokens)
+  }
+
+  vapply(as.character(column_names), function(name) {
+    if (is.na(name)) {
+      return(FALSE)
+    }
+    spaced <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", name, perl = TRUE)
+    tokens <- strsplit(tolower(spaced), "[^a-z0-9]+")[[1]]
+    tokens <- tokens[nzchar(tokens)]
+    if (length(tokens) == 0) {
+      return(FALSE)
+    }
+    cores <- strip_date_affix(tokens)
+
+    if (any(tokens %in% admin_words | cores %in% admin_words)) {
+      return(TRUE)
+    }
+    is_entry <- tokens %in% entry_words | cores %in% entry_words
+    if (!any(is_entry)) {
+      return(FALSE)
+    }
+    # Any other word qualifies the entry (`river`, `fw`), so it is a date
+    # something was observed entering, not a data-entry date.
+    is_filler <- tokens %in% c(date_words, "data", "last") | cores == ""
+    all(is_entry | is_filler)
+  }, logical(1), USE.NAMES = FALSE)
+}
+
+# Longitudes that are all positive inside the mirror image of the North
+# American salmon range are the shape a dropped minus sign takes: British
+# Columbia lakes read as lon=122..137, lat=48..60 land in Asia. The same
+# numbers are right for data from Japan or the Russian Far East, so the sign is
+# never flipped; the extent gets a review note the user must resolve
+# (hub item B-440). The longitude floor of 50 keeps Europe east of Greenwich
+# (Norway, the Baltic) out of the window.
+#
+# Retires when: the spatial extent is inferred from coordinates that declare
+# their own sign convention (a geometry with a coordinate reference system, or
+# an explicit hemisphere column), so a bare positive number is no longer the
+# only evidence of where the data are.
+.ms_longitude_sign_is_suspect <- function(lons, lats) {
+  lon_window <- c(50, 180)
+  lat_window <- c(30, 75)
+  length(lons) > 0 && length(lats) > 0 &&
+    min(lons) >= lon_window[[1]] && max(lons) <= lon_window[[2]] &&
+    min(lats) >= lat_window[[1]] && max(lats) <= lat_window[[2]]
+}
+
 infer_dataset_metadata_from_resources <- function(resources, dataset_id = "dataset-1") {
   parse_date_values <- function(x) {
     try_parse <- function(values, format = NULL) {
@@ -522,6 +616,12 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
       date_cols <- names(df)[
         grepl("date|time|timestamp|dtt|obsdate|survey|year", tolower(names(df)))
       ]
+      # Temporal coverage is when the data were observed, so a date that
+      # records when a row was processed, entered or edited is left out: a
+      # `process_date` from 2017 put `temporal_end` eighteen years after a
+      # 1977-1999 survey stopped (hub item B-440). With only such dates there
+      # is no coverage to infer, and the field stays blank for the user.
+      date_cols <- date_cols[!.ms_is_administrative_date_column(date_cols)]
       dates <- unlist(
         lapply(
           date_cols,
@@ -562,6 +662,20 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
     glue::glue("lon={min(lons)}..{max(lons)}, lat={min(lats)}..{max(lats)}")
   } else {
     NA_character_
+  }
+  # A `REVIEW REQUIRED:` note, not a warning, so it stays in dataset.csv where
+  # strict validation, review_metadata() and the setters already find every
+  # unresolved placeholder. The inferred extent stays in the note, unflipped.
+  if (.ms_longitude_sign_is_suspect(lons, lats)) {
+    spatial_extent <- sprintf(
+      paste(
+        "REVIEW REQUIRED: every longitude is positive (%s), which places the",
+        "data in the eastern hemisphere. Western-hemisphere longitudes are",
+        "negative, so check the sign in the source data, then replace this",
+        "note with the confirmed extent."
+      ),
+      spatial_extent
+    )
   }
 
   keywords <- unique(
@@ -1102,12 +1216,38 @@ infer_value_type <- function(col) {
   30L
 }
 
+# The readr test mirrored by Python's _text_reads_as_dates() (B-188 / B-310).
+# A date guess is shape-only, including an invalid calendar date. Date-times
+# must actually parse; guess_parser() alone also guesses invalid date-times.
+# Trim/drop blank text only for this decision, preserving emitted code bytes.
+.ms_text_reads_as_dates <- function(values) {
+  present <- trimws(values)
+  present <- present[nzchar(present)]
+  if (length(present) == 0L) {
+    return(FALSE)
+  }
+  if (all(grepl("^[0-9]{4}[-/][0-9]{2}[-/][0-9]{2}$", present))) {
+    return(TRUE)
+  }
+  # Ordinary codes are expected to fail this parser, and mean FALSE here.
+  # This warning suppression retires if readr supplies a quiet predicate with
+  # parse_datetime()'s acceptance rules. Literal "NA" is a present code value.
+  parsed <- suppressWarnings(readr::parse_datetime(present, na = character()))
+  all(!is.na(parsed))
+}
+
 .ms_code_list_values <- function(col, code_limit = .ms_code_list_limit()) {
   if (!(inherits(col, "factor") || inherits(col, "character"))) {
     return(character())
   }
   vals <- unique(stats::na.omit(as.character(col)))
   if (length(vals) == 0 || length(vals) > code_limit) {
+    return(character())
+  }
+  # A factor declares code-list intent and is exempt, like Python Categorical.
+  # The date exclusion retires when intent is declared for every column rather
+  # than inferred from text; factors already supply that declaration.
+  if (!inherits(col, "factor") && .ms_text_reads_as_dates(vals)) {
     return(character())
   }
   vals
@@ -1369,6 +1509,36 @@ infer_column_role <- function(col_name, col) {
   c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri")
 }
 
+# Reviewed and LLM-reviewed measurements can write several constraint IRIs in
+# one dictionary cell, separated by semicolons. Trim ASCII spaces only beside
+# separators: the producer writes `; `, while outer whitespace still makes an
+# IRI malformed. Keep empty components, including a trailing one, so strict
+# validation cannot accept an incomplete list.
+.ms_constraint_iri_components <- function(value) {
+  value <- as.character(value)[[1]]
+  if (is.na(value) || !nzchar(value)) {
+    return(value)
+  }
+  components <- strsplit(value, ";", fixed = TRUE)[[1]]
+  if (endsWith(value, ";")) {
+    components <- c(components, "")
+  }
+  if (length(components) > 1L) {
+    before_separator <- seq_len(length(components) - 1L)
+    after_separator <- seq.int(2L, length(components))
+    components[before_separator] <- sub(" *$", "", components[before_separator])
+    components[after_separator] <- sub("^ *", "", components[after_separator])
+  }
+  components
+}
+
+.ms_constraint_iri_has_review_marker <- function(value) {
+  if (is.na(value)) {
+    return(FALSE)
+  }
+  any(.ms_is_review_iri(.ms_constraint_iri_components(value)))
+}
+
 #' Validate a salmon data dictionary
 #'
 #' Validates a dictionary tibble against the salmon data package schema.
@@ -1465,7 +1635,13 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 
   review_marker_rows <- lapply(iri_fields, function(field) {
     vals <- dict[[field]]
-    !is.na(vals) & grepl("^\\s*REVIEW\\s*:", as.character(vals), ignore.case = TRUE)
+    if (identical(field, "constraint_iri")) {
+      return(vapply(
+        vals, .ms_constraint_iri_has_review_marker,
+        logical(1), USE.NAMES = FALSE
+      ))
+    }
+    .ms_is_review_iri(vals)
   })
   names(review_marker_rows) <- iri_fields
 
@@ -1577,6 +1753,35 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         )
       }
     }
+
+    # The REVIEW and exact NA/empty checks above own those states. Every other
+    # semantic IRI, including whitespace-only text and optional
+    # constraint/modifier slots,
+    # must have the same absolute-IRI shape used by the package's other IRI
+    # validators. Check the rendered value rather than a trimmed copy: leading
+    # whitespace is part of the malformed value, even when it is not ASCII.
+    for (field in iri_fields) {
+      vals <- as.character(dict[[field]])
+      populated <- !is.na(vals) & vals != ""
+      shape_ok <- if (identical(field, "constraint_iri")) {
+        vapply(vals, function(value) {
+          if (is.na(value) || value == "") {
+            return(FALSE)
+          }
+          all(.ms_absolute_iri_shape(.ms_constraint_iri_components(value)))
+        }, logical(1), USE.NAMES = FALSE)
+      } else {
+        .ms_absolute_iri_shape(vals)
+      }
+      malformed <- which(
+        populated & !review_marker_rows[[field]] & !shape_ok
+      )
+      if (length(malformed) > 0) {
+        cli::cli_abort(
+          "{.field {field}} is not an absolute IRI in rows {malformed}."
+        )
+      }
+    }
   }
 
   # Check for duplicate column names within same table
@@ -1604,6 +1809,10 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 #' A value that is not in its column's code list has no factor level, so it
 #' becomes `NA`. Each such value is named in a warning, whatever `strict` is.
 #' Blank strings are treated as missing and are not reported.
+#' A column backed by a vocabulary skips this codes step: any same-table
+#' codes row with a nonblank `vocabulary_iri` and missing or blank `code_value`
+#' marks the column as vocabulary-backed, even alongside explicit code rows.
+#' Independent declared type coercion still applies.
 #'
 #' @param df A data frame or tibble to transform
 #' @param dict A validated dictionary tibble
@@ -1718,7 +1927,24 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
           .data$column_name == col_name
         )
 
-      if (nrow(col_codes) > 0) {
+      # A vocabulary-only row denotes an open vocabulary, not a code list.
+      # Brett ruled (2026-09-25, B-346) that any such row exempts this entire
+      # column's codes step, including when explicit code rows are also present.
+      # Determine this only after table/column filtering; another table's row
+      # cannot exempt this column. Missing optional code_value is blank too.
+      vocabulary_backed <- FALSE
+      if ("vocabulary_iri" %in% names(col_codes)) {
+        code_present <- if ("code_value" %in% names(col_codes)) {
+          .ms_apply_dictionary_present(col_codes$code_value)
+        } else {
+          rep(FALSE, nrow(col_codes))
+        }
+        vocabulary_backed <- any(
+          .ms_apply_dictionary_present(col_codes$vocabulary_iri) & !code_present
+        )
+      }
+
+      if (nrow(col_codes) > 0 && !vocabulary_backed) {
         code_values <- col_codes$code_value
         code_labels <- col_codes$code_label
 

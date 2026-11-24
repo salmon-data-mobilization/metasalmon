@@ -236,10 +236,12 @@ releases only when one is available. Defaults to <code><a href="https://rdrr.io/
 <dd><p>Logical; if <code>FALSE</code> (default), errors when <code>path</code> is a
 directory that already holds something. An existing but <em>completely empty</em>
 directory is written into without <code>overwrite</code> — there is nothing there to
-destroy — while a dot-file, a stale <code>.metasalmon-package</code> sentinel, or an
+destroy — while a dot-file, a stale <code>.sdp-package</code> ownership sentinel, or an
 empty <code>data/</code> subdirectory all count as content and still require it. If
 <code>TRUE</code>, the package is updated in place — see <code>prune</code>. Replacement is only
-allowed for directories previously written by <code>metasalmon</code>.</p></dd>
+allowed for a directory recognised as a package: one holding the shared
+<code>.sdp-package</code> ownership sentinel, or its SDP metadata. An older
+<code>.metasalmon-package</code> sentinel on its own is not recognised.</p></dd>
 
 
 <dt id="arg-include-edh-xml">include_edh_xml<a class="anchor" aria-label="anchor" href="#arg-include-edh-xml"></a></dt>
@@ -314,17 +316,45 @@ repository <code>data-raw/</code> script used to derive the fuller example.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fraser_coho</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu">create_sdp</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">fraser_coho</span>,</span></span>
+<span class="r-in"><span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"fraser-coho-sdp-"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span></span>
 <span class="r-in"><span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span></span>
-<span class="r-in"><span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span>  seed_semantics <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  seed_verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Some measurement semantic IRI fields are still blank in this review-ready</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> package.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> That does not block review-ready creation, but those gaps must be filled</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   before final validation or publication.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   term_iri: NATURAL_SPAWNERS_TOTAL (rows 8) property_iri:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   NATURAL_SPAWNERS_TOTAL (rows 8) entity_iri: NATURAL_SPAWNERS_TOTAL (rows 8)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   unit_iri: NATURAL_SPAWNERS_TOTAL (rows 8)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Review <span style="color: #0000BB;">metadata/column_dictionary.csv</span> first (and <span style="color: #0000BB;">metadata/tables.csv</span> if</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   present), then fill the remaining gaps there.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If you want candidate IRIs later, run `suggest_semantics()` or recreate the</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   package with `seed_semantics = TRUE` before final validation.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Dictionary validation passed</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Created Salmon Data Package at <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/fraser-coho-sdp-110112618260e</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Created review-ready one-shot package with `create_sdp()`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Prefilled semantic values were written directly into the metadata CSVs only</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   where target fields were blank. Compatible table observation-unit drafts can</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   be auto-applied using observation-unit/description first and otherwise table</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   label/id fallback. Any <span style="color: #0000BB;">"REVIEW:"</span> entries already live in the metadata CSVs</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   and must be confirmed or edited there.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No shortlist was seeded, so set any IRI you already know with</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `set_sdp_column()`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Then run `review_metadata(pkg_path)` for the free-text fields and any</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   required IRI nothing was suggested for; it prints the `set_sdp_dataset()` /</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `set_sdp_table()` / `set_sdp_column()` call that fills each one.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Finish with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   rebuilding the EDH XML first if you need it. <span style="color: #0000BB;">README-review.txt</span> has the same</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   checklist.</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

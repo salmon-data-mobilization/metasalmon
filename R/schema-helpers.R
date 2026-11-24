@@ -84,6 +84,25 @@
   .ms_load_sdp_schema(quiet = TRUE)$version
 }
 
+# TRUE when two SDP version labels differ at most in the patch number, e.g.
+# `sdp-0.3.0` and `sdp-0.3.2`: a patch release keeps the profile path, so both
+# name the same profile. Anything that is not `sdp-<major>.<minor>.<patch>` is
+# FALSE, so an unrecognised label is treated as a real difference.
+.ms_sdp_same_minor_version <- function(a, b) {
+  pattern <- "^sdp-([0-9]+)[.]([0-9]+)[.]([0-9]+)$"
+  if (!is.character(a) || !is.character(b) || length(a) != 1L || length(b) != 1L ||
+      is.na(a) || is.na(b) || !grepl(pattern, a) || !grepl(pattern, b)) {
+    return(FALSE)
+  }
+  # Compare digit strings with leading zeros dropped, not integers: a component
+  # beyond R's integer range would coerce to NA, and two different NAs match.
+  minor <- function(x) {
+    parts <- regmatches(x, regexec(pattern, x))[[1]][2:3]
+    sub("^0+([0-9])", "\\1", parts)
+  }
+  identical(minor(a), minor(b))
+}
+
 .ms_default_sdp_schema_base_url <- function() {
   legacy_url <- getOption("metasalmon.sdp_schema_url", NULL)
   if (!is.null(legacy_url) && nzchar(legacy_url)) {
@@ -93,12 +112,26 @@
   getOption("metasalmon.sdp_schema_base_url", .ms_sdp_schema_pinned_base_url())
 }
 
-# Pinned to the spec release tag this package implements, not `main`:
+# Pinned to the spec release tag this package implements, never `main`:
 # tracking main meant every upstream spec release broke networked loads
 # (sdp-0.3.0 deleted methods.schema.json and the remote fetch 404ed).
-# Advancing the pin is part of implementing the new spec version.
+# Advancing the pin is part of implementing a new spec version, and so is
+# re-vendoring inst/extdata from the same tag in the same change. The two must
+# hold the same bytes: `source = "auto"` loads this ref first and the vendored
+# bundle only when that fetch fails, and `.ms_sdp_schema_options_are_default()`
+# lets an offline caller read the vendored bundle in its place.
+# inst/extdata/sdp-bundle-manifest.json names the tag and each vendored file's
+# SHA-256. test-schema-helpers.R fails offline when a vendored file or this tag
+# disagrees with it, and online when the tag serves different bytes.
+#
+# sdp-0.3.2 is the first release carrying Brett's Q-51 ruling, which admits an
+# ISO 8601 instant in temporal_start and temporal_end. Brett ruled on
+# 2026-09-23 that the pin names a tag rather than a commit (hub item B-198).
+# The pin is not a workaround, so it has no retirement condition. It advances,
+# with the vendored bundle and the manifest, when this package implements a
+# later spec release.
 .ms_sdp_schema_pinned_base_url <- function() {
-  "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
+  "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.2"
 }
 
 .ms_load_sdp_schema <- function(source = getOption("metasalmon.sdp_schema_source", "auto"),

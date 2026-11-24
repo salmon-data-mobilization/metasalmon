@@ -150,9 +150,39 @@ network.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-pkg <- create_sdp(resources, dataset_id = "demo-1")
-review_metadata(pkg)
+pkg <- create_sdp(
+  data.frame(spawner_count = c(12L, 19L)),
+  path = tempfile("sdp-setter-"),
+  seed_semantics = FALSE,
+  seed_verbose = FALSE,
+  check_updates = FALSE
+)
+#> Some measurement semantic IRI fields are still blank in this review-ready
+#> package.
+#> ℹ That does not block review-ready creation, but those gaps must be filled
+#>   before final validation or publication.
+#>   term_iri: spawner_count (rows 1) property_iri: spawner_count (rows 1)
+#>   entity_iri: spawner_count (rows 1) unit_iri: spawner_count (rows 1)
+#> ℹ Review metadata/column_dictionary.csv first (and metadata/tables.csv if
+#>   present), then fill the remaining gaps there.
+#> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
+#>   package with `seed_semantics = TRUE` before final validation.
+#> ✔ Dictionary validation passed
+#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3
+#> Created review-ready one-shot package with `create_sdp()`.
+#> ℹ Prefilled semantic values were written directly into the metadata CSVs only
+#>   where target fields were blank. Compatible table observation-unit drafts can
+#>   be auto-applied using observation-unit/description first and otherwise table
+#>   label/id fallback. Any "REVIEW:" entries already live in the metadata CSVs
+#>   and must be confirmed or edited there.
+#> ℹ No shortlist was seeded, so set any IRI you already know with
+#>   `set_sdp_column()`.
+#> ℹ Then run `review_metadata(pkg_path)` for the free-text fields and any
+#>   required IRI nothing was suggested for; it prints the `set_sdp_dataset()` /
+#>   `set_sdp_table()` / `set_sdp_column()` call that fills each one.
+#> ℹ Finish with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`,
+#>   rebuilding the EDH XML first if you need it. README-review.txt has the same
+#>   checklist.
 set_sdp_dataset(
   pkg,
   creator = "Fisheries and Oceans Canada",
@@ -160,7 +190,52 @@ set_sdp_dataset(
   contact_email = "data@example.org",
   license = "CC-BY-4.0"
 )
-set_sdp_table(pkg, "spawners", description = "One row per stream and year.")
-set_sdp_column(pkg, "spawner_count", column_description = "Spawners counted.")
-} # }
+#> ✔ Set 4 fields in dataset.csv: creator, contact_name, contact_email, and license.
+review_metadata(pkg)
+#> ── dataset.csv ───────────────────────────────────────────────────────────────
+#>    description: placeholder text, refused by strict validation
+#>       MISSING DESCRIPTION: describe the contents and purpose of dataset
+#>       'dataset-1'.
+#>
+#>    set_sdp_dataset("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3",
+#>      description = "<describe the contents and purpose of dataset 'dataset-1'>"
+#>    )
+#>
+#> ── tables.csv · table_1 ──────────────────────────────────────────────────────
+#>    description: placeholder text, refused by strict validation
+#>       MISSING DESCRIPTION: describe what each row in table 'table_1'
+#>       represents.
+#>    observation_unit: placeholder text, refused by strict validation
+#>       MISSING METADATA: describe the observation unit for table 'table_1'.
+#>    observation_unit_iri: required IRI and not yet decided
+#>
+#>    set_sdp_table("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3", "table_1",
+#>      description = "<describe what each row in table 'table_1' represents>",
+#>      observation_unit = "<describe the observation unit for table 'table_1'>",
+#>      observation_unit_iri = "<IRI for what one row represents>"
+#>    )
+#>
+#> ── column_dictionary.csv · table_1 · spawner_count ───────────────────────────
+#>    column_description: placeholder text, refused by strict validation
+#>       MISSING DESCRIPTION: define what 'spawner_count' means in table
+#>       'table_1'.
+#>    term_iri: required IRI and not yet decided
+#>    property_iri: required IRI and not yet decided
+#>    entity_iri: required IRI and not yet decided
+#>    unit_iri: required IRI and not yet decided
+#>
+#>    set_sdp_column("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3", "spawner_count", table = "table_1",
+#>      column_description = "<define what 'spawner_count' means in table 'table_1'>",
+#>      term_iri = "<IRI for term_iri>",
+#>      property_iri = "<IRI for property_iri>",
+#>      entity_iri = "<IRI for entity_iri>",
+#>      unit_iri = "<IRI for unit_iri>"
+#>    )
+#>
+#> ── next ──────────────────────────────────────────────────────────────────────
+#>    9 fields still block strict validation.
+#>    Replace each <...> with the real value, then paste the calls above.
+#>    5 of them are IRIs -- review_semantics() shows candidates for any that have them.
+#>    Then: validate_salmon_datapackage("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3", require_iris = TRUE)
+#>
 ```

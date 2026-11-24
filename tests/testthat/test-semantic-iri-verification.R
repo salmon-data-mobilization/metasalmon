@@ -1,0 +1,668 @@
+# B-130: the dereference report remains useful even when publication must stop.
+# Most requests are injected. The default malformed-URL control reaches only
+# libcurl parsing; these tests make no remote HTTP or model call.
+
+test_that("only complete corresponding terminal response headers are accepted", {
+  response <- function(status, headers) list(status_code = status, headers = charToRaw(headers))
+  redirect <- "HTTP/1.1 302 Found\r\nLocation: /final\r\n\r\n"
+  final <- "HTTP/1.1 200 OK\r\nContent-Length: 1000000\r\n\r\n"
+  expect_true(.ms_semantic_iri_final_headers(response(200L, final)))
+  expect_false(.ms_semantic_iri_final_headers(response(302L, redirect)))
+  expect_false(.ms_semantic_iri_final_headers(response(200L, redirect)))
+  expect_false(.ms_semantic_iri_final_headers(response(200L, paste0(redirect, "HTTP/1.1 200 OK\r\n"))))
+  expect_false(.ms_semantic_iri_final_headers(response(103L, "HTTP/1.1 103 Early Hints\r\n\r\n")))
+  expect_true(.ms_semantic_iri_final_headers(response(200L, paste0(redirect, final))))
+  expect_true(.ms_semantic_iri_final_headers(response(302L, "HTTP/1.1 302 Found\r\n\r\n")))
+  expect_true(.ms_semantic_iri_final_headers(response(404L, "HTTP/2 404\r\n\r\n")))
+})
+
+test_that("default GET cancels only after matching final headers and keeps curl failures", {
+  redirect <- charToRaw("HTTP/1.1 302 Found\r\nLocation: /final\r\n\r\n")
+  final <- charToRaw("HTTP/1.1 200 OK\r\n\r\n")
+  responses <- list(
+    list(status_code = 302L, headers = redirect),
+    list(status_code = 200L, headers = redirect),
+    list(status_code = 200L, headers = final, url = "https://example.org/final")
+  )
+  index <- 0L
+  cancelled <- 0L
+  failure <- NULL
+  testthat::local_mocked_bindings(
+    new_handle = function(...) {
+      options <- list(...)
+      expect_true(options$httpget)
+      expect_true(options$followlocation)
+      expect_true(options$suppress_connect_headers)
+      expect_identical(options$maxredirs, 30L)
+      expect_identical(options$timeout_ms, 30000L)
+      list()
+    },
+    new_pool = function(...) list(),
+    handle_setheaders = function(handle, ...) expect_identical(list(...), list(Accept = "*/*")),
+    multi_add = function(handle, done, fail, data, pool) {
+      failure <<- fail
+      expect_null(data(charToRaw("body bytes are discarded")))
+    },
+    multi_run = function(timeout, pool) {
+      expect_identical(timeout, 0)
+      index <<- index + 1L
+    },
+    handle_data = function(handle) responses[[index]],
+    multi_cancel = function(handle) cancelled <<- cancelled + 1L,
+    .package = "curl"
+  )
+  expect_identical(.ms_semantic_iri_request("https://example.org/start"),
+                   list(status = 200L, final_url = "https://example.org/final"))
+  expect_identical(index, 3L)
+  expect_identical(cancelled, 1L)
+
+  # This libcurl failure does not match the text heuristic; its transport class
+  # must still make it retryable, as the previous curl/httr2 default did.
+  index <- 0L
+  responses <- list(list(status_code = 0L, headers = raw()))
+  testthat::local_mocked_bindings(
+    multi_run = function(timeout, pool) {
+      index <<- index + 1L
+      failure("HTTP/2 stream was not closed cleanly")
+    }, .package = "curl"
+  )
+  result <- .ms_semantic_iri_attempt("https://example.org/start", .ms_semantic_iri_request)
+  expect_true(result$transient)
+  expect_identical(result$error, "HTTP/2 stream was not closed cleanly")
+  expect_identical(cancelled, 2L)
+})
+
+write_iri_fixture_csv <- function(root, relative_path, rows) {
+  target <- file.path(root, relative_path)
+  dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+  readr::write_csv(rows, target, na = "")
+  invisible(target)
+}
+
+make_iri_fixture_sdp <- function(root) {
+  write_iri_fixture_csv(root, "metadata/dataset.csv", tibble::tibble(
+    dataset_id = "iri-test"
+  ))
+  write_iri_fixture_csv(root, "metadata/tables.csv", tibble::tibble(
+    dataset_id = "iri-test", table_id = "observations"
+  ))
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    dataset_id = "iri-test", table_id = "observations",
+    column_name = "value", term_iri = NA_character_
+  ))
+  invisible(root)
+}
+
+read_iri_report <- function(root) {
+  readr::read_csv(
+    file.path(root, "reproducibility/provenance/semantic-iri-dereference.csv"),
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+}
+
+test_that("classified retries are bounded and every final failure is persisted", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "https://example.org/z#exact",
+    property_iri = "https://example.org/b#exact",
+    constraint_iri = "https://example.org/c#exact; https://example.org/a#exact",
+    unrelated_url = "https://example.org/not-a-semantic-selection"
+  ))
+  calls <- new.env(parent = emptyenv())
+  calls$count <- list()
+  calls$delays <- numeric()
+  requester <- function(iri) {
+    count <- length(calls$count[[iri]]) + 1L
+    calls$count[[iri]] <- c(calls$count[[iri]], count)
+    if (grepl("/a#", iri, fixed = TRUE) && count == 1L) {
+      return(list(status = 503L, final_url = iri))
+    }
+    if (grepl("/b#", iri, fixed = TRUE)) {
+      return(list(status = 404L, final_url = iri))
+    }
+    if (grepl("/c#", iri, fixed = TRUE)) {
+      stop("timeout; Authorization: Bearer test-credential")
+    }
+    list(status = 200L, final_url = sub("#.*$", "", iri))
+  }
+  sleep_fn <- function(seconds) {
+    calls$delays <- c(calls$delays, seconds)
+  }
+
+  expect_error(
+    verify_sdp_semantic_iris(root, requester = requester, sleep_fn = sleep_fn),
+    regexp = "https://example.org/b#exact.*https://example.org/c#exact"
+  )
+  report_path <- file.path(root, "reproducibility/provenance/semantic-iri-dereference.csv")
+  expect_true(file.exists(report_path))
+  first_bytes <- readBin(report_path, "raw", n = file.info(report_path)$size)
+  rows <- read_iri_report(root)
+  expect_named(rows, c("iri", "status", "final_url", "error", "attempts"))
+  expect_identical(rows$iri, paste0("https://example.org/", c("a", "b", "c", "z"), "#exact"))
+  expect_identical(as.integer(rows$attempts), c(2L, 1L, 3L, 1L))
+  expect_identical(rows$status, c("200", "404", NA_character_, "200"))
+  expect_identical(calls$delays, c(0.1, 0.1, 0.25))
+  expect_false(any(grepl("test-credential", readLines(report_path, warn = FALSE), fixed = TRUE)))
+  expect_true(grepl("[REDACTED]", rows$error[[3]], fixed = TRUE))
+
+  calls$count <- list()
+  calls$delays <- numeric()
+  expect_error(
+    verify_sdp_semantic_iris(root, requester = requester, sleep_fn = sleep_fn),
+    regexp = "https://example.org/b#exact.*https://example.org/c#exact"
+  )
+  second_bytes <- readBin(report_path, "raw", n = file.info(report_path)$size)
+  expect_identical(second_bytes, first_bytes)
+})
+
+test_that("vector condition messages stay in one row and do not abort the sweep", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = c("https://example.org/a#failure", "https://example.org/z#success")
+  ))
+  delays <- numeric()
+  requester <- function(iri) {
+    if (grepl("/a#", iri, fixed = TRUE)) {
+      stop(simpleError(c("timeout", "Authorization: Bearer test-credential")))
+    }
+    list(status = 200L, final_url = iri)
+  }
+  expect_error(verify_sdp_semantic_iris(
+    root, requester = requester,
+    sleep_fn = function(seconds) delays <<- c(delays, seconds)
+  ), regexp = "a#failure.*request-error")
+  rows <- read_iri_report(root)
+  expect_identical(rows$iri, c("https://example.org/a#failure", "https://example.org/z#success"))
+  expect_identical(rows$status, c(NA_character_, "200"))
+  expect_identical(rows$attempts, c("3", "1"))
+  expect_identical(delays, c(0.1, 0.25))
+  expect_identical(rows$error[[1]], "timeout\nAuthorization=[REDACTED]")
+})
+
+test_that("the exact selected semantic fields are collected across SDP metadata", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/dataset.csv", tibble::tibble(
+    protocol_iri = "https://example.org/dataset#protocol"
+  ))
+  write_iri_fixture_csv(root, "metadata/tables.csv", tibble::tibble(
+    method_iri = "https://example.org/table#method",
+    observation_unit_iri = "https://example.org/table#unit"
+  ))
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "https://example.org/column#term"
+  ))
+  write_iri_fixture_csv(root, "metadata/codes.csv", tibble::tibble(
+    term_iri = "https://example.org/code#term",
+    vocabulary_iri = "https://example.org/code#vocabulary"
+  ))
+  write_iri_fixture_csv(root, "metadata/semantic/measurement-decompositions.csv", tibble::tibble(
+    component_iri = "https://example.org/decomposition#component"
+  ))
+  write_iri_fixture_csv(root, "metadata/structure/observation_components.csv", tibble::tibble(
+    component_relation_iri = "https://example.org/structure#relation"
+  ))
+  write_iri_fixture_csv(root, "metadata/semantic_vocabulary.csv", tibble::tibble(
+    iri = "https://example.org/vocabulary#accepted",
+    source_url = "https://example.org/source-document"
+  ))
+  write_iri_fixture_csv(root, "reviewed_semantic_selections.csv", tibble::tibble(
+    iri = c("https://example.org/review#accepted", "https://example.org/review#rejected"),
+    decision = c("accepted", "rejected")
+  ))
+  write_iri_fixture_csv(root, "semantic_suggestions.csv", tibble::tibble(
+    iri = "https://example.org/candidate#only"
+  ))
+  seen <- character()
+  result <- verify_sdp_semantic_iris(root, requester = function(iri) {
+    seen <<- c(seen, iri)
+    list(status = 200L, final_url = iri)
+  }, sleep_fn = function(...) stop("No retry expected"))
+  expected <- sort(c(
+    "https://example.org/dataset#protocol", "https://example.org/table#method",
+    "https://example.org/table#unit", "https://example.org/column#term",
+    "https://example.org/code#term", "https://example.org/code#vocabulary",
+    "https://example.org/decomposition#component",
+    "https://example.org/structure#relation",
+    "https://example.org/vocabulary#accepted", "https://example.org/review#accepted"
+  ), method = "radix")
+  expect_identical(seen, expected)
+  expect_identical(result$iri, expected)
+  expect_false(any(grepl("candidate|rejected|source-document", result$iri)))
+})
+
+test_that("an SDP with no HTTP semantic IRI cannot produce a passing report", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = c("REVIEW:pending", "urn:example:local")
+  ))
+  expect_error(verify_sdp_semantic_iris(root, requester = function(...) {
+    stop("No request expected")
+  }), "At least one HTTP semantic IRI")
+})
+
+test_that("manifest-bound SSSOM semantic references are checked without CURIE expansion", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "https://example.org/column#term"
+  ))
+  source <- file.path(root, "source.sssom.tsv")
+  lines <- c(
+    "# sssom_version: 1.1",
+    "# mapping_set_id: https://example.org/mappings/test",
+    "# mapping_set_version: 2026-10-01",
+    "# license: https://creativecommons.org/licenses/by/4.0/",
+    "# subject_source: https://example.org/subject/",
+    "# subject_source_version: v1",
+    "# object_source: https://example.org/object/",
+    "# object_source_version: v1",
+    "# curie_map:",
+    "#   skos: http://www.w3.org/2004/02/skos/core#",
+    "#   semapv: https://w3id.org/semapv/vocab/",
+    paste(c(
+      "subject_id", "subject_label", "subject_category", "predicate_id",
+      "object_id", "object_label", "mapping_justification"
+    ), collapse = "\t"),
+    paste(c(
+      "https://example.org/subject#one", "Subject",
+      "https://example.org/category#one|https://example.org/category#two",
+      "http://www.w3.org/2004/02/skos/core#exactMatch",
+      "https://example.org/object#one", "Object",
+      "semapv:ManualMappingCuration"
+    ), collapse = "\t")
+  )
+  writeLines(lines, source, useBytes = TRUE)
+  write_sdp_sssom(root, mapping_sets = source)
+
+  seen <- character()
+  result <- verify_sdp_semantic_iris(root, requester = function(iri) {
+    seen <<- c(seen, iri)
+    list(status = 200L, final_url = iri)
+  }, sleep_fn = function(...) stop("No retry expected"))
+  expect_setequal(seen, c(
+    "https://example.org/column#term", "https://example.org/subject#one",
+    "https://example.org/category#one", "https://example.org/category#two",
+    "http://www.w3.org/2004/02/skos/core#exactMatch",
+    "https://example.org/object#one"
+  ))
+  expect_identical(result$iri, sort(seen, method = "radix"))
+  expect_false(any(grepl("semapv:|creativecommons", seen)))
+})
+
+test_that("a partial canonical package uses its descriptor rather than losing IRIs", {
+  root <- withr::local_tempdir()
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "https://example.org/stale-csv#term"
+  ))
+  dir.create(file.path(root, "data"))
+  write_iri_fixture_csv(root, "data/observations.csv", tibble::tibble(value = 1))
+  descriptor <- list(
+    id = "iri-test", name = "iri-test",
+    resources = list(list(
+      name = "observations", path = "data/observations.csv",
+      schema = list(fields = list(list(
+        name = "value", type = "number",
+        custom = list("sdp:termIri" = "https://example.org/descriptor#term")
+      )))
+    ))
+  )
+  jsonlite::write_json(descriptor, file.path(root, "datapackage.json"),
+                       auto_unbox = TRUE)
+  seen <- character()
+  suppressWarnings(suppressMessages(verify_sdp_semantic_iris(
+    root, requester = function(iri) {
+      seen <<- c(seen, iri)
+      list(status = 200L, final_url = iri)
+    }, sleep_fn = function(...) stop("No retry expected")
+  )))
+  expect_identical(seen, "https://example.org/descriptor#term")
+})
+
+test_that("malformed requester results become rows rather than stopping the sweep", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = c("https://example.org/a#malformed", "https://example.org/b#good")
+  ))
+  seen <- character()
+  expect_error(verify_sdp_semantic_iris(root, requester = function(iri) {
+    seen <<- c(seen, iri)
+    if (grepl("/a#", iri, fixed = TRUE)) {
+      return(list(status = list(200L), final_url = list(iri)))
+    }
+    list(status = 200L, final_url = iri)
+  }, sleep_fn = function(...) stop("Malformed responses are permanent")),
+  "https://example.org/a#malformed")
+  expect_identical(length(seen), 2L)
+  rows <- read_iri_report(root)
+  expect_identical(as.integer(rows$attempts), c(1L, 1L))
+  expect_true(grepl("Malformed requester response", rows$error[[1]], fixed = TRUE))
+  expect_identical(rows$status[[2]], "200")
+})
+
+test_that("scalar accepted IRIs preserve legal semicolons", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/semantic_vocabulary.csv", tibble::tibble(
+    iri = "https://example.org/term;variant#one"
+  ))
+  write_iri_fixture_csv(root, "reviewed_semantic_selections.csv", tibble::tibble(
+    iri = "https://example.org/review;variant#two", decision = "accepted"
+  ))
+  result <- verify_sdp_semantic_iris(root, requester = function(iri) {
+    list(status = 200L, final_url = iri)
+  }, sleep_fn = function(...) stop("No retry expected"))
+  expect_setequal(result$iri, c(
+    "https://example.org/term;variant#one",
+    "https://example.org/review;variant#two"
+  ))
+})
+
+test_that("the default report cannot cross a symlinked SDP directory", {
+  root <- withr::local_tempdir()
+  outside <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "https://example.org/term#one"
+  ))
+  expect_true(file.symlink(outside, file.path(root, "reproducibility")))
+  expect_error(verify_sdp_semantic_iris(root, requester = function(iri) {
+    list(status = 200L, final_url = iri)
+  }, sleep_fn = function(...) stop("No retry expected")), "symlink")
+  expect_false(file.exists(file.path(outside, "provenance/semantic-iri-dereference.csv")))
+})
+
+test_that("default malformed URLs are permanent while injected curl failures retain their rule", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "http://selected.invalid:connection/term"
+  ))
+  delays <- numeric()
+  expect_error(verify_sdp_semantic_iris(root, sleep_fn = function(seconds) {
+    delays <<- c(delays, seconds)
+  }), "request-error")
+  rows <- read_iri_report(root)
+  expect_identical(rows$attempts, "1")
+  expect_match(rows$error, "Port number")
+  expect_identical(delays, numeric())
+
+  # Only the default marks its permanent classes; existing injected classes
+  # and text heuristics keep their previous behavior.
+  for (classes in list("curl_error", c("curl_error_url_malformat", "curl_error"))) {
+    delays <- numeric()
+    expect_error(verify_sdp_semantic_iris(root, requester = function(iri) {
+      stop(errorCondition("Invalid port: connection", class = classes))
+    }, sleep_fn = function(seconds) delays <<- c(delays, seconds)), "request-error")
+    expect_identical(read_iri_report(root)$attempts, "3")
+    expect_identical(delays, c(0.1, 0.25))
+  }
+})
+
+test_that("default redirect-limit failure retains its supported curl class and is permanent", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "https://example.org/loop"
+  ))
+  callback <- NULL
+  cancelled <- 0L
+  failure <- structure("Number of redirects hit maximum amount", class = c(
+    "curl_error_too_many_redirects", "curl_error", "character"
+  ))
+  testthat::local_mocked_bindings(
+    new_handle = function(...) list(), new_pool = function(...) list(),
+    handle_setheaders = function(...) invisible(NULL),
+    multi_add = function(handle, done, fail, data, pool) callback <<- fail,
+    multi_run = function(...) callback(failure),
+    handle_data = function(...) list(status_code = 0L, headers = raw()),
+    multi_cancel = function(...) cancelled <<- cancelled + 1L,
+    .package = "curl"
+  )
+  captured <- tryCatch(.ms_semantic_iri_request("https://example.org/loop"), error = identity)
+  expect_s3_class(captured, "curl_error_too_many_redirects")
+  expect_s3_class(captured, "curl_error")
+  delays <- numeric()
+  expect_error(verify_sdp_semantic_iris(root, sleep_fn = function(seconds) {
+    delays <<- c(delays, seconds)
+  }), "request-error")
+  expect_identical(read_iri_report(root)$attempts, "1")
+  expect_identical(delays, numeric())
+  expect_identical(cancelled, 2L)
+})
+
+
+# A semicolon is legal in these scalar IRI fields. Only constraint_iri declares
+# list syntax; checking a truncated prefix violates B130's exact-IRI retirement.
+test_that("B130 public scalar metadata IRIs preserve legal semicolons", {
+  for (slot in list(
+    c("metadata/column_dictionary.csv", "unit_iri"),
+    c("metadata/column_dictionary.csv", "term_iri"),
+    c("metadata/column_dictionary.csv", "property_iri"),
+    c("metadata/column_dictionary.csv", "entity_iri"),
+    c("metadata/column_dictionary.csv", "statistical_modifier_iri"),
+    c("metadata/dataset.csv", "protocol_iri"),
+    c("metadata/tables.csv", "observation_unit_iri"),
+    c("metadata/tables.csv", "protocol_iri"),
+    c("metadata/tables.csv", "method_iri"),
+    c("metadata/codes.csv", "term_iri"),
+    c("metadata/codes.csv", "vocabulary_iri")
+  )) {
+    root <- withr::local_tempdir()
+    make_iri_fixture_sdp(root)
+    iri <- paste0("https://example.org/", slot[[2]], ";variant#one")
+    frame <- tibble::tibble(value = iri)
+    names(frame) <- slot[[2]]
+    write_iri_fixture_csv(root, slot[[1]], frame)
+    inputs <- list.files(root, full.names = TRUE, recursive = TRUE)
+    before <- lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size))
+    seen <- character()
+    result <- verify_sdp_semantic_iris(root, requester = function(selected) {
+      seen <<- c(seen, selected)
+      list(status = 200L, final_url = selected)
+    }, sleep_fn = function(...) stop("Successful scalars must not retry"))
+    # The old public path falsely succeeds and writes a passing report.
+    expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+    expect_identical(result$attempts, 1L)
+    expect_identical(lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size)), before)
+    expect_identical(seen, iri, info = slot[[2]])
+    expect_identical(result$iri, iri, info = slot[[2]])
+    expect_identical(read_iri_report(root)$iri, iri, info = slot[[2]])
+  }
+})
+
+test_that("B130 public declared constraint list and scalar ledger keep their owners", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    constraint_iri = "https://example.org/constraint-A; https://example.org/constraint-B"
+  ))
+  ledger <- "https://example.org/review;variant#accepted"
+  write_iri_fixture_csv(root, "reviewed_semantic_selections.csv", tibble::tibble(
+    iri = ledger, decision = "accepted"
+  ))
+  inputs <- list.files(root, full.names = TRUE, recursive = TRUE)
+  before <- lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size))
+  seen <- character()
+  result <- verify_sdp_semantic_iris(root, requester = function(iri) {
+    seen <<- c(seen, iri)
+    list(status = 200L, final_url = iri)
+  }, sleep_fn = function(...) stop("Successful list and ledger must not retry"))
+  expected <- sort(c("https://example.org/constraint-A", "https://example.org/constraint-B", ledger), method = "radix")
+  expect_identical(seen, expected)
+  expect_identical(result$iri, expected)
+  expect_identical(result$attempts, rep(1L, 3L))
+  expect_identical(lapply(inputs, function(p) readBin(p, "raw", file.info(p)$size)), before)
+})
+
+test_that("B130 public final URL reports remove only authority userinfo", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  final_urls <- c(
+    "https://audit-user:audit-password@example.org/final?x=1#frag",
+    "http://audit-user@example.org:8080/final",
+    "https://audit%40user:audit%3Apassword@[::1]:8443/a;b?q=a@b#c@d",
+    "HTTPS://:audit-password@example.org/a%2Fb?q=one%20two#fragment",
+    "http://@example.org/final",
+    "https://audit@user:audit-password@example.org/final",
+    "https://audit-user:audit-password@example.org/a@b?q=c@d#e@f",
+    "https://example.org/a@b?q=c@d#e@f",
+    "http://[::1]:8080/a;b?q=one%20two#fragment",
+    "HTTPS://example.org/a%2Fb"
+  )
+  expected_urls <- c(
+    "https://example.org/final?x=1#frag",
+    "http://example.org:8080/final",
+    "https://[::1]:8443/a;b?q=a@b#c@d",
+    "HTTPS://example.org/a%2Fb?q=one%20two#fragment",
+    "http://example.org/final",
+    "https://example.org/final",
+    "https://example.org/a@b?q=c@d#e@f",
+    final_urls[8:10]
+  )
+  selected <- sprintf("https://example.org/selected-%02d", seq_along(final_urls))
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = selected
+  ))
+  input_files <- list.files(file.path(root, "metadata"), full.names = TRUE)
+  before <- lapply(input_files, function(path) readBin(path, "raw", file.info(path)$size))
+  requested <- character()
+  requester <- function(iri) {
+    requested <<- c(requested, iri)
+    list(status = 200L, final_url = final_urls[[match(iri, selected)]])
+  }
+  result <- verify_sdp_semantic_iris(
+    root, requester = requester,
+    sleep_fn = function(delay) stop("Successful replies must not retry.")
+  )
+  for (index in seq_along(final_urls)) {
+    expect_identical(result$final_url[[index]], expected_urls[[index]],
+                     info = paste("final URL boundary", index))
+  }
+  expect_identical(requested, selected)
+  expect_identical(result$iri, selected)
+  expect_identical(result$status, rep(200L, length(selected)))
+  expect_identical(result$attempts, rep(1L, length(selected)))
+  expect_true(all(is.na(result$error)))
+  expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+  expect_identical(read_iri_report(root)$final_url, expected_urls)
+  report_path <- file.path(root, "reproducibility/provenance/semantic-iri-dereference.csv")
+  report_bytes <- readBin(report_path, "raw", file.info(report_path)$size)
+  expected <- result
+  expected$final_url <- expected_urls
+  expect_identical(report_bytes, .ms_sdp_extension_csv_bytes(expected))
+  expect_false(grepl("audit-user|audit-password|audit%40user|audit%3Apassword",
+                    rawToChar(report_bytes)))
+  expect_identical(before, lapply(input_files, function(path) {
+    readBin(path, "raw", file.info(path)$size)
+  }))
+})
+
+# These three files are already selected by the public verifier. Only fields
+# with an existing scalar contract are listed; an unknown extension _iri slot
+# must retain its prior representation rather than inherit a new convention.
+test_that("B130 known extension scalar owners preserve legal semicolons", {
+  owners <- list(
+    "metadata/methods.csv" = c("method_iri", "protocol_iri"),
+    "metadata/semantic/measurement-decompositions.csv" = c(
+      "measurement_concept_iri", "component_iri"
+    ),
+    "metadata/structure/observation_components.csv" = "component_relation_iri"
+  )
+  for (relative in names(owners)) {
+    for (field in owners[[relative]]) {
+      root <- withr::local_tempdir()
+      make_iri_fixture_sdp(root)
+      target <- paste0("https://example.org/", field, ";variant#exact")
+      rows <- tibble::tibble(value = target)
+      names(rows) <- field
+      rows$unknown_extension_iri <- "https://example.org/unknown-A; https://example.org/unknown-B"
+      write_iri_fixture_csv(root, relative, rows)
+      input_path <- file.path(root, relative)
+      before <- readBin(input_path, "raw", file.info(input_path)$size)
+      seen <- character()
+      result <- verify_sdp_semantic_iris(root, requester = function(iri) {
+        seen <<- c(seen, iri)
+        list(status = 200L, final_url = iri)
+      }, sleep_fn = function(delay) stop("Successful replies must not retry."))
+      expected <- sort(c(target, "https://example.org/unknown-A", "https://example.org/unknown-B"),
+                       method = "radix")
+      expect_identical(seen, expected, info = paste(relative, field))
+      expect_identical(result$iri, expected)
+      expect_false(sub(";.*$", "", target) %in% seen)
+      expect_identical(result$final_url, expected)
+      expect_identical(result$attempts, rep(1L, length(expected)))
+      expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+      expect_identical(before, readBin(input_path, "raw", file.info(input_path)$size))
+      report_path <- file.path(root, "reproducibility/provenance/semantic-iri-dereference.csv")
+      expected_rows <- result
+      expected_rows$iri <- expected
+      expected_rows$final_url <- expected
+      expect_identical(readBin(report_path, "raw", file.info(report_path)$size),
+                       .ms_sdp_extension_csv_bytes(expected_rows))
+    }
+  }
+})
+
+test_that("B130 native-valid extension selections remain exact", {
+  observation_root <- withr::local_tempdir()
+  make_structure_test_sdp(observation_root)
+  relation <- "https://example.org/relation;variant#exact"
+  components <- component_test_rows()
+  components$component_relation_iri[[1]] <- relation
+  suppressMessages(write_sdp_observation_structures(
+    observation_root, structure_test_rows(), components
+  ))
+  expect_true(isTRUE(suppressMessages(validate_sdp_observation_structures(observation_root))))
+
+  decomposition_root <- withr::local_tempdir()
+  concept <- "https://example.org/concept;variant#exact"
+  component <- "https://example.org/statistical-component;variant#exact"
+  make_eml_test_sdp(decomposition_root, measurement_term_iri = concept)
+  dictionary <- .ms_read_metadata_csv(file.path(decomposition_root, "metadata/column_dictionary.csv"))
+  measurement <- dictionary[dictionary$column_name == "count", , drop = FALSE]
+  decompositions <- tibble::tibble(
+    dataset_id = measurement$dataset_id[[1]], table_id = measurement$table_id[[1]],
+    column_name = "count", measurement_concept_iri = concept,
+    component_order = 1:4,
+    component_role = c("property", "entity", "unit", "statistical_modifier"),
+    component_status = "matched", component_relation = "",
+    related_component_order = NA_integer_,
+    component_iri = c(measurement$property_iri[[1]], measurement$entity_iri[[1]],
+                      measurement$unit_iri[[1]], component),
+    component_label = "Fixture component", rationale = "",
+    source = "Fixture", source_version = "1", source_url = "https://example.org/fixture",
+    provenance = "Offline exact-identifier control; no ontology selection is made."
+  )
+  write_sdp_measurement_decompositions(decomposition_root, decompositions)
+  expect_true(isTRUE(validate_sdp_measurement_decompositions(decomposition_root)))
+
+  for (entry in list(
+    list(root = observation_root, targets = relation),
+    list(root = decomposition_root, targets = c(concept, component))
+  )) {
+    input_files <- list.files(entry$root, recursive = TRUE, full.names = TRUE)
+    before <- lapply(input_files, function(path) readBin(path, "raw", file.info(path)$size))
+    seen <- character()
+    result <- verify_sdp_semantic_iris(entry$root, requester = function(iri) {
+      seen <<- c(seen, iri); list(status = 200L, final_url = iri)
+    }, sleep_fn = function(delay) stop("Successful replies must not retry."))
+    expect_true(all(entry$targets %in% seen))
+    # The concept is also a canonical dictionary term, so its pre-fix defect
+    # was an extra prefix request rather than an omitted full request. The
+    # relation/extra component independently demonstrate the missing-IRI case.
+    expect_false(any(sub(";.*$", "", entry$targets) %in% seen))
+    expect_identical(result$iri, seen)
+    expect_identical(result$final_url, seen)
+    expect_true(all(result$status == 200L & result$attempts == 1L))
+    expect_named(result, c("iri", "status", "final_url", "error", "attempts"))
+    expect_identical(before, lapply(input_files, function(path) {
+      readBin(path, "raw", file.info(path)$size)
+    }))
+  }
+})

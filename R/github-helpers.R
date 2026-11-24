@@ -606,7 +606,14 @@ ms_is_github_host <- function(url) {
 ms_github_get <- function(url, token = NULL) {
   req <- httr2::request(url) |>
     httr2::req_user_agent(ms_user_agent()) |>
-    httr2::req_retry(backoff = ~2^.x, max_tries = 4)
+    httr2::req_retry(backoff = ~2^.x, max_tries = 4) |>
+    # read_github_csv() owns the PAT/SSO/path remedies for these statuses.
+    # Other HTTP statuses and transport failures still raise normally.
+    # Retire this exception if that guidance moves into httr2's error handler.
+    httr2::req_error(is_error = function(resp) {
+      status <- httr2::resp_status(resp)
+      status >= 400L && !status %in% c(401L, 403L, 404L)
+    })
 
   if (is.null(token)) {
     token <- ""

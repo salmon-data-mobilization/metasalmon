@@ -44,19 +44,14 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Load raw proposed terms
-#' proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
-#'
-#' # Deduplicate
+#' proposed <- tibble::tibble(
+#'   term_label = c("Spawner Age 1", "Spawner Age 2", "Spawner Age 3"),
+#'   term_definition = rep("Spawner count by age", 3),
+#'   term_type = rep("owl_class", 3),
+#'   suggested_parent_iri = rep("", 3)
+#' )
 #' deduped <- deduplicate_proposed_terms(proposed)
-#'
-#' # Review collapsed terms
 #' deduped |> dplyr::filter(collapsed_from > 1)
-#'
-#' # Write cleaned output
-#' readr::write_csv(deduped, "work/semantics/proposed_terms_deduped.csv")
-#' }
 deduplicate_proposed_terms <- function(proposed_terms, warn_threshold = 30L) {
   if (!is.data.frame(proposed_terms) || nrow(proposed_terms) == 0) {
     return(tibble::tibble(
@@ -231,11 +226,11 @@ if (nrow(proposed_terms) > warn_threshold) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
+#' proposed <- tibble::tibble(
+#'   term_label = c("Spawner Age 1", "Spawner Age 2", "Spawner Age 3")
+#' )
 #' facets <- suggest_facet_schemes(proposed)
-#' print(facets)
-#' }
+#' facets$scheme_name
 suggest_facet_schemes <- function(proposed_terms) {
   if (!is.data.frame(proposed_terms) || nrow(proposed_terms) == 0) {
     return(tibble::tibble(

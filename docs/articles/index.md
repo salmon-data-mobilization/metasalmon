@@ -15,6 +15,7 @@ Step-by-step guides for common workflows
 
 - [Tidy Data for Salmon Data
   Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/tidy-data-for-sdp.md):
+- [Semantic Review in R](https://salmon-data-mobilization.github.io/metasalmon/articles/semantic-review.md):
 - [After Excel Review: Finalize and Publish Your
   Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md):
 - [Publishing Data

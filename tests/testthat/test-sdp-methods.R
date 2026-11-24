@@ -197,7 +197,7 @@ test_that("an agreeing legacy package migrates end-to-end", {
     file.path(root, "metadata", "dataset.csv"),
     show_col_types = FALSE
   )
-  expect_equal(dataset$spec_version, "sdp-0.3.0")
+  expect_equal(dataset$spec_version, "sdp-0.3.2")
 
   # The descriptor loses the registry resource and pointer and carries the
   # v0.3 identity.
@@ -225,7 +225,7 @@ test_that("an agreeing legacy package migrates end-to-end", {
       "profiles/salmon-data-package/v0.3/profile.json"
     )
   )
-  expect_identical(descriptor$sdp$specVersion, "sdp-0.3.0")
+  expect_identical(descriptor$sdp$specVersion, "sdp-0.3.2")
   expect_identical(
     descriptor$sdp$rules,
     "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/sdp.rules.yaml"
@@ -340,6 +340,20 @@ test_that("unresolved REVIEW bindings are dropped and reported, not migrated", {
   )
   expect_false("method_iri" %in% names(dictionary))
   expect_false(file.exists(file.path(root, "metadata", "methods.csv")))
+})
+
+test_that("migration drops a Q63 marker with a space before its colon", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(root, c(
+    abundance = "Review :https://ex.org/m/a"
+  ))
+  add_legacy_registry(root)
+
+  report <- suppressMessages(migrate_sdp_methods(root, dry_run = TRUE))
+  expect_equal(nrow(report$dropped_review), 1L)
+  expect_identical(report$dropped_review$method_iri, "Review :https://ex.org/m/a")
+  expect_equal(nrow(report$tables), 0L)
 })
 
 test_that("dry_run reports the migration without touching any file", {
@@ -733,7 +747,7 @@ test_that("migration rewrites the nested descriptor profile too", {
   migrated <- jsonlite::read_json(descriptor_path, simplifyVector = FALSE)
   expect_match(migrated$profile, "v0.3", fixed = TRUE)
   expect_match(migrated$sdp$profile, "v0.3", fixed = TRUE)
-  expect_identical(migrated$sdp$specVersion, "sdp-0.3.0")
+  expect_identical(migrated$sdp$specVersion, "sdp-0.3.2")
 })
 
 test_that("the placement report is in canonical order regardless of input order", {

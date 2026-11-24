@@ -6,13 +6,12 @@
   "description": "Versioned schema manifest used by the offline benchmark validator. The x-metasalmon-contracts section is executable without adding a JSON Schema validator dependency to the R package.",
   "x-metasalmon-validation": {
     "authority": "scripts/theme-a-benchmark.R",
-    "description": "JSON Schema describes artifact shape. The benchmark script additionally enforces ontology-manifest equality, the ordered 19-column target and 30-column assessment contracts, canonical nine-field joins, exact ordered candidate lineage, final-dictionary identity, candidate-index/IRI/label consistency, one selected suggestion per accept, one-to-one assessment-gap-request proposal lineage, promoted raw-to-reviewed checksums, cryptographic provider-interaction-to-assessment lineage, oracle evaluation, fixture hashes resolved directly from the recorded clean Git commit, endpoint normalization, and recomputed independent exact-source three-run cohorts.",
+    "description": "JSON Schema describes artifact shape. The benchmark script additionally enforces ontology-manifest equality, the ordered 19-column target and 30-column assessment contracts, canonical nine-field joins, exact ordered candidate lineage, final-dictionary identity, candidate-index/IRI/label consistency, one selected suggestion per accept, one-to-one assessment-gap-request proposal lineage, oracle evaluation, and replay comparison.",
     "comparison_unit": [
       "case_id",
       "oracle_bucket",
       "rule_id"
-    ],
-    "live_retrieval_mode": "frozen_fixture"
+    ]
   },
   "oneOf": [
     {
@@ -22,9 +21,6 @@
       "$ref": "#/$defs/replayFixture"
     },
     {
-      "$ref": "#/$defs/capture"
-    },
-    {
       "$ref": "#/$defs/ontologyManifest"
     }
   ],
@@ -32,7 +28,6 @@
     "cases_schema_version": "theme-a-cases-v1",
     "replay_schema_version": "theme-a-replay-v1",
     "historical_schema_version": "theme-a-historical-observations-v1",
-    "capture_schema_version": "theme-a-capture-v1",
     "ontology_manifest_schema_version": "theme-a-ontology-manifest-v1",
     "target_columns": [
       "dataset_id",
@@ -139,19 +134,6 @@
       "prefill",
       "gap",
       "routing"
-    ],
-    "capture_interaction_stages": [
-      "bundle_initial",
-      "bundle_reassessment",
-      "target_initial",
-      "target_batch",
-      "target_fallback",
-      "target_reassessment",
-      "query_generation"
-    ],
-    "capture_lineage_outcomes": [
-      "provider",
-      "deterministic_fallback"
     ],
     "required_case_ids": [
       "catch_count",
@@ -550,106 +532,6 @@
         "terms": {
           "type": "array",
           "minItems": 1
-        }
-      }
-    },
-    "capture": {
-      "type": "object",
-      "required": [
-        "schema_version",
-        "run_id",
-        "mode",
-        "evidence_status",
-        "review",
-        "provenance",
-        "interaction_events",
-        "assessment_lineage",
-        "cases",
-        "evaluation"
-      ],
-      "properties": {
-        "schema_version": {
-          "const": "theme-a-capture-v1"
-        },
-        "mode": {
-          "const": "live"
-        },
-        "evidence_status": {
-          "enum": [
-            "unreviewed_staging",
-            "reviewed_sanitized"
-          ]
-        },
-        "review": {
-          "type": "object",
-          "required": [
-            "status",
-            "sanitized",
-            "raw_capture_reviewed",
-            "raw_capture_safe_to_publish",
-            "reviewed_by",
-            "reviewed_at",
-            "notes",
-            "pre_sanitization_sha256"
-          ]
-        },
-        "provenance": {
-          "type": "object",
-          "required": [
-            "retrieval_mode",
-            "data_classification"
-          ]
-        },
-        "interaction_events": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "object",
-            "required": [
-              "interaction_id",
-              "event_type",
-              "stage",
-              "bundle_key",
-              "target_keys",
-              "assessment_target_keys",
-              "started_at",
-              "provider",
-              "configured_model",
-              "resolved_model",
-              "endpoint",
-              "messages",
-              "request_sha256",
-              "response_status",
-              "raw_response",
-              "response_sha256",
-              "provider_response_id",
-              "error",
-              "elapsed_seconds"
-            ]
-          }
-        },
-        "assessment_lineage": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "case_id",
-              "target_key",
-              "outcome",
-              "interaction_id",
-              "interaction_stage",
-              "dictionary_role",
-              "assessment_sha256",
-              "provider_assessment_sha256",
-              "fallback_reason"
-            ]
-          }
-        },
-        "cases": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/observedCase"
-          }
         }
       }
     }

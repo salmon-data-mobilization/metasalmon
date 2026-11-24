@@ -29,6 +29,20 @@
 #'   the gap scan (for example `c("variable", "property", "entity")`).
 #' @param min_score Optional minimum score filter. Rows with score below this value
 #'   are ignored when score is available.
+#' @param commons_gaps Optional path to the JSON file emitted by
+#'   `salmon-knowledge-commons/scripts/okf-check.py . --gaps`. File paths only;
+#'   mutually exclusive with `dict` and `suggestions`. SDP-only filters must
+#'   retain their defaults on this path. Malformed records fail rather than
+#'   being coerced or dropped.
+#'
+#' @details Commons input retains every register row in source order, including
+#'   multiple gaps on one concept. The usual gap columns retain their types,
+#'   with dataset, candidate and LLM evidence missing. They are followed by
+#'   `commons_` columns for all fifteen emitted fields and `commons_hold_reason`.
+#'   Only open, unheld rows explicitly targeted to SMN or GCDFO can become a
+#'   new request. Proposed/rejected, do-not-mint, blocked, conflicted, contested,
+#'   evidence-needed, unsupported-target and deprecated-card rows remain visible
+#'   on hold. Draft/unverified cards remain draft provenance, not approval.
 #'
 #' @return A tibble with one row per unresolved semantic target. The existing
 #'   23-column candidate-gap prefix is preserved, followed by target metadata,
@@ -47,6 +61,9 @@
 #'     `top_non_smn_score`;
 #'   - `non_smn_sources`, `candidate_count`, `placement_recommendation`,
 #'     `placement_confidence`, `placement_rationale`.
+#'   Commons rows use `gap_detection_basis = "commons_register"`; their
+#'   `commons_blocked_by` column is a list of concept identifiers and
+#'   `commons_verified` is logical. The default SDP result columns are unchanged.
 #'
 #' @seealso [render_ontology_term_request()], [submit_term_request_issues()],
 #'   [suggest_semantics()]
@@ -88,8 +105,22 @@ detect_semantic_term_gaps <- function(
     suggestions = NULL,
     include_target_scopes = c("column", "code", "table", "dataset"),
     include_dictionary_roles = NULL,
-    min_score = NA_real_
+    min_score = NA_real_,
+    commons_gaps = NULL
 ) {
+  if (!is.null(commons_gaps)) {
+    if (!is.null(dict) || !is.null(suggestions)) {
+      cli::cli_abort("`commons_gaps` is mutually exclusive with `dict` and `suggestions`.")
+    }
+    # These filters describe SDP retrieval evidence. A commons concept card is
+    # not a dataset target, and applying them would silently discard its gaps.
+    if (!identical(include_target_scopes, c("column", "code", "table", "dataset")) ||
+        !is.null(include_dictionary_roles) ||
+        !is.numeric(min_score) || length(min_score) != 1L || !is.na(min_score)) {
+      cli::cli_abort("SDP-only filters cannot be supplied with `commons_gaps`.")
+    }
+    return(.ms_read_commons_term_gaps(commons_gaps))
+  }
   suggestions_supplied <- !is.null(suggestions)
   assessments <- NULL
   if (!suggestions_supplied) {
@@ -650,6 +681,11 @@ detect_semantic_term_gaps <- function(
 #'
 #' For interactive workflows this function can prompt users row-by-row for whether a
 #' gap should be requested as a shared SMN term, a profile-specific term, or skipped.
+#' Commons register rows instead retain their explicit `mint_target` and
+#' lifecycle holds. The renderer rederives holds from source fields;
+#' `scope`, `scope_overrides` and `ask` cannot reopen or redirect them. Their
+#' bodies identify the concept card and draft gap note, and require a curator
+#' definition and term type rather than asserting dataset evidence.
 #'
 #' @param gaps Output from `detect_semantic_term_gaps()`.
 #' @param scope One of `"auto"`, `"smn"`, `"gcdfo"`, or `"profile"`.
@@ -730,6 +766,18 @@ render_ontology_term_request <- function(
 ) {
   scope <- match.arg(scope)
   gaps <- as.data.frame(gaps, stringsAsFactors = FALSE)
+
+  # Commons declarations carry their own routing and lifecycle. These fields,
+  # rather than SDP placement controls or a mutable display reason, decide
+  # whether a new request may be previewed.
+  if (any(startsWith(names(gaps), "commons_")) ||
+      ("gap_detection_basis" %in% names(gaps) &&
+       any(gaps$gap_detection_basis == "commons_register", na.rm = TRUE))) {
+    return(.ms_render_commons_term_requests(
+      gaps, issue_labels, term_request_template, ontology_repo,
+      gcdfo_term_request_template, gcdfo_repo
+    ))
+  }
 
   if (nrow(gaps) == 0L) {
     return(tibble::tibble())

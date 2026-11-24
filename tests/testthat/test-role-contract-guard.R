@@ -3,7 +3,8 @@
 #
 #   1. the target/role maps          (semantic-suggestions.R, semantics-helpers.R)
 #   2. the bundle roles + slot fields (semantic-bundle-review.R, incl. the prompt)
-#   3. the role-hint vocabulary      (.smn_role_flags + both hint emitters)
+#   3. the role-hint vocabulary      (.smn_role_flags + both hint emitters:
+#                                     .smn_index_row and .parse_salmon_rdfxml)
 #   4. the retrieval filters         (sources_for_role, .gcdfo_filter_for_role)
 #   5. the deterministic validators  (semantic-bundle-validators.R)
 #   6. the ranking preferences       (inst/extdata/ontology-preferences.csv)
@@ -132,6 +133,27 @@ test_that("SURFACE 2: the bundle prompt describes the roles it asks the model to
   }
 })
 
+test_that("SURFACE 2: the vendored review-packet instructions judge exactly the dictionary slots", {
+  # The instructions a harness reads from the packet carry the bundle
+  # prompt's judgement sentence verbatim (S16 step 1, hub item B-326), so
+  # they inherit this surface: a role added to the slot fields must reach
+  # the instructions file in both packages, and `method` never appears in
+  # the judgement sentence.
+  instructions <- metasalmon:::.ms_semantic_review_instructions()
+  judge <- regmatches(instructions, regexpr("Judge [^.]*\\.", instructions))
+  prompt_judge <- regmatches(
+    metasalmon:::.ms_semantic_bundle_system_prompt(),
+    regexpr("Judge [^.]*\\.", metasalmon:::.ms_semantic_bundle_system_prompt())
+  )
+
+  expect_length(judge, 1L)
+  expect_identical(judge, prompt_judge)
+  for (role in slot_roles()) {
+    expect_match(judge, role, fixed = TRUE)
+  }
+  expect_false(grepl("method", judge, fixed = TRUE))
+})
+
 test_that("SURFACE 2: method is a bundle role but never a dictionary slot", {
   # The dictionary slot is gone but the role is not: code-value targets still
   # search shared-vocabulary procedures.
@@ -162,12 +184,22 @@ test_that("SURFACE 3: the role-hint layers emit every role they can flag", {
   )
   expect_setequal(names(flags), paste0("is_", hint_roles))
 
-  ttl_emitter <- fn_source_text(metasalmon:::.parse_smn_ttl_modules)
+  # smn has one emitter, `.smn_index_row()`, and both of its readers -- the
+  # module reader for the latest ontology and the release reader for a pinned
+  # one -- build every row through it, so neither can emit a role the other
+  # drops. (Until the release reader existed the emitter sat inline in the
+  # module reader, and this check read that function's body.)
+  smn_emitter <- fn_source_text(metasalmon:::.smn_index_row)
   rdf_emitter <- fn_source_text(metasalmon:::.parse_salmon_rdfxml)
   for (role in hint_roles) {
     quoted <- paste0("\"", role, "\"")
-    expect_match(ttl_emitter, quoted, fixed = TRUE)
+    expect_match(smn_emitter, quoted, fixed = TRUE)
     expect_match(rdf_emitter, quoted, fixed = TRUE)
+  }
+  for (reader in c(".parse_smn_ttl_modules", ".smn_release_index")) {
+    body_text <- fn_source_text(get(reader, envir = asNamespace("metasalmon")))
+    expect_match(body_text, ".smn_index_row(", fixed = TRUE, info = reader)
+    expect_no_match(body_text, "role_hints = ", fixed = TRUE, info = reader)
   }
 })
 

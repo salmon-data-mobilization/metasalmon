@@ -41,3 +41,12 @@ fetch_salmon_ontology(
 ## Value
 
 Path to the cached ontology file (character string).
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Needs the remote ontology; run in checks once a local fixture is supported.
+ontology_path <- fetch_salmon_ontology(cache_dir = file.path(tempdir(), "smn-cache"))
+} # }
+```

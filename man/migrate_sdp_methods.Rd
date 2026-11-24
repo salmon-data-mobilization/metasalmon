@@ -42,3 +42,8 @@ belong in the shared vocabulary. A registry \code{method_version} or
 The rewrite is atomic: either every affected metadata file is updated and
 \code{metadata/methods.csv} removed, or nothing changes.
 }
+\examples{
+example_sdp <- system.file("extdata", package = "metasalmon")
+migration_plan <- migrate_sdp_methods(example_sdp, dry_run = TRUE)
+names(migration_plan)
+}

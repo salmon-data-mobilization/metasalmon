@@ -86,12 +86,16 @@ Evidence is resolved by re-running the package's own deterministic
 search
 ([`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md))
 for each IRI and keeping the hit whose IRI matches. An IRI every
-searched source answered about and none of them has is reported as a row
-of `gaps` – the shape
+searched source answered about and none of them has is reported in
+`gaps` – the shape
 [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
 returns, plus an `unresolved_iri` column – and both files are still
-written without it. That is deliberate: an IRI absent from every
-searched vocabulary is an ontology gap to file through
+written without it. A code-resolved procedure has one gap row per
+`codes.csv` row carrying its IRI, with that row's keys and `term_iri`
+address. Rendering these gaps produces one candidate term request per
+carrying code row; review them before filing so several uses of one IRI
+do not become duplicate ontology issues. That is deliberate: an IRI
+absent from every searched vocabulary is an ontology gap to file through
 [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
 and
 [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md),

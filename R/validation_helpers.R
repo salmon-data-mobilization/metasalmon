@@ -24,6 +24,12 @@
 #'   - `missing_terms`: tibble of measurement rows missing `term_iri`.
 #' @importFrom dplyr filter mutate select coalesce
 #' @importFrom tools toTitleCase
+#' @examples
+#' dictionary <- system.file(
+#'   "extdata", "column_dictionary.csv", package = "metasalmon"
+#' )
+#' result <- validate_semantics(dictionary, require_iris = FALSE)
+#' nrow(result$missing_terms)
 #' @export
 validate_semantics <- function(dict,
                                require_iris = FALSE,

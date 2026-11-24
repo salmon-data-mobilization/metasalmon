@@ -117,12 +117,12 @@ review_metadata(pkg_path)
 #> ── dataset.csv ────────────────────────────────────────────────────────
 #>    creator: placeholder text, refused by strict validation
 #>       MISSING METADATA: add creator, team, or originating program.
-#>    license: placeholder text, refused by strict validation
-#>       MISSING METADATA: add dataset license (for example, CC-BY-4.0).
+#>    contact_email: placeholder text, refused by strict validation
+#>       MISSING METADATA: add primary contact email.
 #>
 #>    set_sdp_dataset(pkg_path,
 #>      creator = "<add creator, team, or originating program>",
-#>      license = "<add dataset license (for example, CC-BY-4.0)>"
+#>      contact_email = "<add primary contact email>"
 #>    )
 ```
 

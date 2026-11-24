@@ -445,13 +445,10 @@ test_that("the descriptor instant renderer is readr's, by construction", {
 #   .ms_canonical_character()       renders an instant through
 #                                   as.character(), not through readr.
 #
-# WHAT THESE DELIBERATELY DO NOT PIN: a typed instant. The three copies of one
-# agree today, because the EML reads the CSV's bytes. But EML 2.2.0's
-# `calendarDate` is `xs:gYear | xs:date`, so `YYYY-MM-DDThh:mm:ssZ` fails the
-# schema check `write_eml_from_sdp()` runs, although the ruling on Q-51 put
-# that form in the SDP profile. Any EML that carries an instant has to differ
-# from the CSV there (for example a date plus EML's separate `time` element),
-# so a byte-agreement pin would make that fix look like a regression.
+# The year/date checks below pin the single `calendarDate` rendering. An SDP
+# instant cannot fit in that element: EML 2.2.0 uses a `calendarDate` plus an
+# optional `time`. The instant test below pins the pair instead, requiring it
+# to rejoin to the unchanged CSV text. No second renderer is introduced.
 #
 # *Retires when:* the EML stops being built from the package on disk. An EML
 # builder that takes a typed frame is a writer, and has to render through the
@@ -521,4 +518,106 @@ test_that("EML calendarDate follows dataset.csv where the two writers disagree",
 
   expect_identical(eml_calendar_dates(coverage), eml_dataset_csv_temporal(path))
   expect_identical(eml_calendar_dates(coverage)[[1]], "999-06-05")
+})
+
+test_that("EML emits valid date and time elements for package instants", {
+  # The public writer validates EML 2.2.0 before returning. Read the original
+  # CSV cells as text: splitting and rejoining each pair must reproduce them
+  # exactly, including the UTC marker, without another temporal rendering.
+  skip_if_not_installed("emld")
+
+  instants <- c("2024-01-01T00:00:00Z", "2024-12-31T23:59:59Z")
+  path <- suppressMessages(make_eml_test_sdp(
+    withr::local_tempdir(),
+    temporal_start = instants[[1]],
+    temporal_end = instants[[2]]
+  ))
+  expect_identical(eml_dataset_csv_temporal(path), instants)
+
+  result <- suppressMessages(write_eml_from_sdp(
+    path,
+    output_path = file.path(path, "metadata", "eml.xml")
+  ))
+  expect_true(isTRUE(emld::eml_validate(result$path)))
+
+  doc <- xml2::read_xml(result$path)
+  calendar <- eml_calendar_dates(doc)
+  times <- xml2::xml_text(xml2::xml_find_all(doc, ".//rangeOfDates/*/time"))
+  expect_identical(calendar, c("2024-01-01", "2024-12-31"))
+  expect_identical(times, c("00:00:00Z", "23:59:59Z"))
+  expect_identical(paste(calendar, times, sep = "T"), eml_dataset_csv_temporal(path))
+})
+
+test_that("EML handles mixed date and instant range ends independently", {
+  skip_if_not_installed("emld")
+
+  cases <- list(
+    list(
+      start = "2024-01-01",
+      end = "2024-12-31T23:59:59Z",
+      begin_time = NULL,
+      end_time = "23:59:59Z"
+    ),
+    list(
+      start = "2024-01-01T00:00:00Z",
+      end = "2024-12-31",
+      begin_time = "00:00:00Z",
+      end_time = NULL
+    )
+  )
+  for (case in cases) {
+    path <- suppressMessages(make_eml_test_sdp(
+      withr::local_tempdir(),
+      temporal_start = case$start,
+      temporal_end = case$end
+    ))
+    result <- suppressMessages(write_eml_from_sdp(
+      path,
+      output_path = file.path(path, "metadata", "eml.xml")
+    ))
+    expect_true(isTRUE(emld::eml_validate(result$path)))
+
+    doc <- xml2::read_xml(result$path)
+    calendar <- eml_calendar_dates(doc)
+    begin_time <- xml2::xml_find_first(doc, ".//rangeOfDates/beginDate/time")
+    end_time <- xml2::xml_find_first(doc, ".//rangeOfDates/endDate/time")
+    expect_identical(calendar, c("2024-01-01", "2024-12-31"))
+    expect_identical(inherits(begin_time, "xml_missing"), is.null(case$begin_time))
+    expect_identical(inherits(end_time, "xml_missing"), is.null(case$end_time))
+    if (!is.null(case$begin_time)) {
+      expect_identical(xml2::xml_text(begin_time), case$begin_time)
+    }
+    if (!is.null(case$end_time)) {
+      expect_identical(xml2::xml_text(end_time), case$end_time)
+    }
+    restored <- c(
+      if (is.null(case$begin_time)) calendar[[1]] else paste0(calendar[[1]], "T", xml2::xml_text(begin_time)),
+      if (is.null(case$end_time)) calendar[[2]] else paste0(calendar[[2]], "T", xml2::xml_text(end_time))
+    )
+    expect_identical(restored, eml_dataset_csv_temporal(path))
+  }
+})
+
+test_that("EML does not turn malformed instants into date and time pairs", {
+  # Strict package validation rejects these spellings before the public
+  # writer reaches EML. This direct boundary check ensures the EML builder
+  # leaves them for the schema to reject instead of creating a valid-looking
+  # pair, especially a date plus an empty time from a trailing `T`.
+  malformed <- c(
+    "2024-01-01T",
+    "2024-01-01T00:00:00ZT",
+    "2024-01-01T00:00:00.1Z",
+    "2024-01-01T00:00:00+00:00",
+    "2024-01-01T00:00:00Z\n"
+  )
+  for (value in malformed) {
+    doc <- xml2::xml_new_root("dataset")
+    metasalmon:::.ms_eml_add_coverage(
+      doc,
+      tibble::tibble(temporal_start = value, temporal_end = "2024-12-31"),
+      mapping = list()
+    )
+    expect_identical(eml_calendar_dates(doc), c(value, "2024-12-31"))
+    expect_length(xml2::xml_find_all(doc, ".//rangeOfDates/*/time"), 0L)
+  }
 })

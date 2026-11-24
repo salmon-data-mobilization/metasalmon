@@ -53,13 +53,12 @@ yaml_reader_fns <- c("yaml.load", "read_yaml", "yaml.load_file")
 # cannot find, a changed call shape) fails instead of passing over nothing.
 # Delete an entry when its read is deleted; add one when a read is added.
 known_yaml_read_fns <- c(
+  ".ms_eml_mapping_native_directive_start",
   ".ms_sssom_parse_metadata",
-  "write_eml_from_sdp",
-  ".ms_knb_sdp_artifact_paths",
-  ".ms_knb_build_plan",
   ".ms_fetch_remote_sdp_schema",
   ".ms_load_vendored_sdp_schema",
-  ".ms_closure_mapping_paths"
+  ".ms_eml_read_mapping_yaml",
+  ".ms_eml_mapping_has_unknown_tag"
 )
 
 # `yaml::read_yaml`, `yaml:::read_yaml`, or a bare `read_yaml`, as a function
@@ -429,7 +428,8 @@ test_that("the source scan flags a top-level read that the namespace walk cannot
 # `yaml.eval.expr` on, and asserts that the tag left no side effect. The option
 # is the worst case on a current yaml; on the 2.2.x that DESCRIPTION still
 # permits, evaluation needed no option at all. Where the site hands the value
-# on, the test also asserts that it arrived as the text it is.
+# on, these tests assert either a deliberate refusal (EML sidecar, Q62) or
+# that it arrived as inert text on readers whose contract still permits it.
 
 # The sentinel path goes inside an R string literal in the tag, so it is written
 # with forward slashes: on Windows a backslash would be an escape, the evaluation
@@ -459,7 +459,7 @@ error_info <- function(result) {
   if (inherits(result, "error")) conditionMessage(result) else NULL
 }
 
-test_that("write_eml_from_sdp() never evaluates an !expr tag in the EML sidecar", {
+test_that("write_eml_from_sdp() refuses an !expr tag without evaluating it", {
   # R/eml-export.R. The function stops before its read when emld is absent, so
   # without emld this test could only pass vacuously. *Retires when:* emld
   # becomes a hard dependency, or the read moves ahead of the emld check.
@@ -475,20 +475,13 @@ test_that("write_eml_from_sdp() never evaluates an !expr tag in the EML sidecar"
   )
 
   expect_false(file.exists(probe$sentinel))
-  expect_false(inherits(result, "error"), info = error_info(result))
-  # The tag reaches the EML methods as the text it is, not as its value.
-  methods_text <- if (inherits(result, "error")) {
-    character()
-  } else {
-    xml2::xml_text(xml2::xml_find_all(
-      xml2::read_xml(result$path),
-      ".//*[local-name()='methods']//*[local-name()='para']"
-    ))
+  expect_s3_class(result, "metasalmon_eml_mapping_tag")
+  if (inherits(result, "metasalmon_eml_mapping_tag")) {
+    expect_match(conditionMessage(result), "eml-mapping.yml", fixed = TRUE)
   }
-  expect_true(probe$text %in% methods_text)
 })
 
-test_that("the KNB artifact inventory never evaluates an !expr tag in the EML sidecar", {
+test_that("the KNB artifact inventory refuses an !expr tag without evaluating it", {
   # R/knb-publication.R, `.ms_knb_sdp_artifact_paths()`: reached by both KNB
   # representations, the archive one through the SDP archive inventory.
   probe <- yaml_expr_probe()
@@ -496,24 +489,26 @@ test_that("the KNB artifact inventory never evaluates an !expr tag in the EML si
   tag_fixture_sidecar(package_path, probe)
   withr::local_options(yaml.eval.expr = TRUE)
 
-  paths <- tryCatch(
+  result <- tryCatch(
     .ms_knb_sdp_artifact_paths(package_path),
     error = identity
   )
 
   expect_false(file.exists(probe$sentinel))
-  expect_false(inherits(paths, "error"), info = error_info(paths))
-  # The inventory returns the root ledger only after checking the parsed
-  # sidecar's `semantic_review.path` against it, so the sidecar was read.
-  expect_true(any(endsWith(paths, "/reviewed_semantic_selections.csv")))
+  expect_s3_class(result, "metasalmon_eml_mapping_tag")
+  if (inherits(result, "metasalmon_eml_mapping_tag")) {
+    expect_match(conditionMessage(result), "eml-mapping.yml", fixed = TRUE)
+  }
 })
 
-test_that("the KNB plan builder never evaluates an !expr tag in the EML sidecar", {
+test_that("the KNB plan builder refuses an !expr tag without evaluating it", {
   # R/knb-publication.R, `.ms_knb_build_plan()`, reached here through the
   # exported dry run. The builder's next step is stopped so that this test sees
-  # the builder's own read and no other: that step leads to the inventory and to
-  # the EML export, whose reads are pinned by the two tests above. *Retires
-  # when:* nothing after the builder's read parses YAML.
+  # the builder's own read and no other: that step leads to the inventory and
+  # EML export, whose reads are pinned by the two tests above. The stub must
+  # not be reached once the sidecar tag is refused. Retires when: nothing after
+  # the builder's read parses YAML, or the read no longer precedes archive
+  # construction.
   probe <- yaml_expr_probe()
   package_path <- make_knb_test_sdp(withr::local_tempdir())
   tag_fixture_sidecar(package_path, probe)
@@ -528,15 +523,19 @@ test_that("the KNB plan builder never evaluates an !expr tag in the EML sidecar"
     .package = "metasalmon"
   )
 
-  expect_error(
+  result <- tryCatch(
     suppressMessages(publish_sdp_to_knb(
       package_path,
       public = TRUE,
       dry_run = TRUE,
       knb_environment = "production"
     )),
-    class = "yaml_expr_guard_stop"
+    error = identity
   )
+  expect_s3_class(result, "metasalmon_eml_mapping_tag")
+  if (inherits(result, "metasalmon_eml_mapping_tag")) {
+    expect_match(conditionMessage(result), "eml-mapping.yml", fixed = TRUE)
+  }
   expect_false(file.exists(probe$sentinel))
 })
 
@@ -619,7 +618,7 @@ test_that("the vendored SDP rules read never evaluates an !expr tag", {
 test_that("the semantic closure's sidecar read never evaluates an !expr tag", {
   # R/semantic-closure.R, `.ms_closure_mapping_paths()`. The declared paths it
   # returns choose where write_sdp_semantic_closure() writes, so the tag is put
-  # on one of them: it must come back as the text it is.
+  # on one of them: Q62 now refuses it, but it must still never run.
   probe <- yaml_expr_probe()
   sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
   writeLines(
@@ -634,10 +633,6 @@ test_that("the semantic closure's sidecar read never evaluates an !expr tag", {
   )
   withr::local_options(yaml.eval.expr = TRUE)
 
-  paths <- .ms_closure_mapping_paths(sidecar)
-
+  expect_error(.ms_closure_mapping_paths(sidecar), "unsupported YAML tag")
   expect_false(file.exists(probe$sentinel))
-  # Parsed, not fallen back to the defaults: the declared path is honoured.
-  expect_identical(paths$vocabulary, "metadata/declared-vocabulary.csv")
-  expect_identical(paths$review, probe$text)
 })

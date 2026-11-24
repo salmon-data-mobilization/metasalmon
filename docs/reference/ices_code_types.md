@@ -26,3 +26,14 @@ ices_code_types(code_type = "", code_type_id = 0L, modified = "")
 ## Value
 
 Tibble of ICES code types (includes `key`, `description`, `guid`, etc.).
+Empty when ICES answers with no rows, and also when the request fails,
+which warns, naming the request.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Needs the live ICES service; run in checks once an offline fixture exists.
+types <- ices_code_types(code_type = "Gear")
+} # }
+```

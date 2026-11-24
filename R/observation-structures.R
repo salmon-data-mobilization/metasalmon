@@ -860,6 +860,29 @@
 #'
 #' @return A named character vector containing the two written paths,
 #'   invisibly; `NULL` for an explicit no-op.
+#' @examples
+#' sdp_path <- create_sdp(
+#'   data.frame(stock_id = c("A", "B"), total_spawners = c(100, 200)),
+#'   path = tempfile("sdp-"), seed_semantics = FALSE,
+#'   seed_verbose = FALSE, check_updates = FALSE
+#' )
+#' structures <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   structure_label = "Spawners by stock",
+#'   structure_description = "One count per stock"
+#' )
+#' components <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   component_order = c(1L, 2L),
+#'   column_name = c("stock_id", "total_spawners"),
+#'   component_role = c("dimension", "measure"),
+#'   component_relation_iri = c(NA, NA),
+#'   required_when_observed = c(TRUE, TRUE)
+#' )
+#' write_sdp_observation_structures(sdp_path, structures, components)
+#' unlink(sdp_path, recursive = TRUE)
 #' @export
 write_sdp_observation_structures <- function(path, structures = NULL,
                                              components = NULL,
@@ -957,6 +980,30 @@ write_sdp_observation_structures <- function(path, structures = NULL,
 #'   procedure bindings, and descriptor inventory when `TRUE`.
 #'
 #' @return A list with `structures` and `components` tibbles.
+#' @examples
+#' sdp_path <- create_sdp(
+#'   data.frame(stock_id = c("A", "B"), total_spawners = c(100, 200)),
+#'   path = tempfile("sdp-"), seed_semantics = FALSE,
+#'   seed_verbose = FALSE, check_updates = FALSE
+#' )
+#' structures <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   structure_label = "Spawners by stock",
+#'   structure_description = "One count per stock"
+#' )
+#' components <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   component_order = c(1L, 2L),
+#'   column_name = c("stock_id", "total_spawners"),
+#'   component_role = c("dimension", "measure"),
+#'   component_relation_iri = c(NA, NA),
+#'   required_when_observed = c(TRUE, TRUE)
+#' )
+#' write_sdp_observation_structures(sdp_path, structures, components)
+#' read_sdp_observation_structures(sdp_path)$structures
+#' unlink(sdp_path, recursive = TRUE)
 #' @export
 read_sdp_observation_structures <- function(path, validate = TRUE) {
   root <- .ms_sdp_extension_root(path)
@@ -994,6 +1041,30 @@ read_sdp_observation_structures <- function(path, validate = TRUE) {
 #'
 #' @return `TRUE`, invisibly, when the paired resources and all data-level
 #'   bindings are valid; otherwise an error.
+#' @examples
+#' sdp_path <- create_sdp(
+#'   data.frame(stock_id = c("A", "B"), total_spawners = c(100, 200)),
+#'   path = tempfile("sdp-"), seed_semantics = FALSE,
+#'   seed_verbose = FALSE, check_updates = FALSE
+#' )
+#' structures <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   structure_label = "Spawners by stock",
+#'   structure_description = "One count per stock"
+#' )
+#' components <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   component_order = c(1L, 2L),
+#'   column_name = c("stock_id", "total_spawners"),
+#'   component_role = c("dimension", "measure"),
+#'   component_relation_iri = c(NA, NA),
+#'   required_when_observed = c(TRUE, TRUE)
+#' )
+#' write_sdp_observation_structures(sdp_path, structures, components)
+#' validate_sdp_observation_structures(sdp_path)
+#' unlink(sdp_path, recursive = TRUE)
 #' @export
 validate_sdp_observation_structures <- function(path) {
   read_sdp_observation_structures(path, validate = TRUE)
@@ -1015,6 +1086,30 @@ validate_sdp_observation_structures <- function(path) {
 #'
 #' @return A deterministically named list of tibbles, one per selected logical
 #'   structure. Names use `table_id::observation_structure_id`.
+#' @examples
+#' sdp_path <- create_sdp(
+#'   data.frame(stock_id = c("A", "B"), total_spawners = c(100, 200)),
+#'   path = tempfile("sdp-"), seed_semantics = FALSE,
+#'   seed_verbose = FALSE, check_updates = FALSE
+#' )
+#' structures <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   structure_label = "Spawners by stock",
+#'   structure_description = "One count per stock"
+#' )
+#' components <- data.frame(
+#'   dataset_id = "dataset-1", table_id = "table_1",
+#'   observation_structure_id = "spawners_by_stock",
+#'   component_order = c(1L, 2L),
+#'   column_name = c("stock_id", "total_spawners"),
+#'   component_role = c("dimension", "measure"),
+#'   component_relation_iri = c(NA, NA),
+#'   required_when_observed = c(TRUE, TRUE)
+#' )
+#' write_sdp_observation_structures(sdp_path, structures, components)
+#' extract_sdp_observations(sdp_path, table_id = "table_1")
+#' unlink(sdp_path, recursive = TRUE)
 #' @export
 extract_sdp_observations <- function(path, table_id = NULL,
                                      observation_structure_id = NULL) {

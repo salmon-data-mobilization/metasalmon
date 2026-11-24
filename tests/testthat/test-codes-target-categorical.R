@@ -166,6 +166,56 @@ test_that("create_sdp() seeds no codes.csv row for a non-categorical column on t
   ))
 })
 
+test_that("date and date-time text seeds no code list unless declared as a factor", {
+  # These are readr's guesses pinned in the mirror's B-188 test: date shape
+  # alone includes invalid calendar dates, while date-time fields must parse.
+  # Whitespace and blank cells do not turn an otherwise date column into codes.
+  dates <- c("2001-11-06", "2001/11/07", "2001-02-30", NA_character_)
+  expect_identical(.ms_code_list_values(dates), character())
+  expect_identical(.ms_code_list_values(c(" 2001-11-06\t", "\r\n")), character())
+  expect_identical(
+    .ms_code_list_values(c("2001-11-06", "2001-11-07T10:00:00Z", "")),
+    character()
+  )
+
+  # The caller's categorical declaration wins over date-looking levels, as
+  # Python's Categorical does. Kept values retain their original byte/order.
+  factor_dates <- factor(c("2001-11-07", "2001-11-06", "2001-11-07"))
+  expect_identical(.ms_code_list_values(factor_dates), c("2001-11-07", "2001-11-06"))
+  mixed <- c("2001-11-06", "unknown", "2001-11-06")
+  expect_identical(.ms_code_list_values(mixed), c("2001-11-06", "unknown"))
+  expect_identical(.ms_code_list_values(c("2001-11-06", "NA")), c("2001-11-06", "NA"))
+  expect_identical(.ms_code_list_values("2001-02-30T10:00:00"), "2001-02-30T10:00:00")
+  expect_identical(.ms_code_list_values("10:00:00"), "10:00:00")
+  expect_identical(.ms_code_list_values(c(" ", "")), c(" ", ""))
+  expect_false(infer_column_role("SURVEY_WAVE", c("2001-11-06", "2001-11-07")) == "categorical")
+})
+
+test_that("create_sdp() seeds no date-text codes on the all-character bundled sample", {
+  # B-310's reproduction deliberately bypasses readr's type guess. Other
+  # numeric text columns retain separate known debt, so assert on the dates
+  # and a known categorical positive control rather than the whole package.
+  df <- readr::read_csv(
+    example_extdata_path("nuseds-fraser-coho-sample.csv"),
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  expect_type(df$START_DTT, "character")
+  expect_type(df$END_DTT, "character")
+  pkg_path <- file.path(withr::local_tempdir(), "b310-all-character")
+  suppressMessages(suppressWarnings(create_sdp(
+    df, path = pkg_path, dataset_id = "b310-all-character", table_id = "escapement",
+    seed_semantics = FALSE, seed_verbose = FALSE, check_updates = FALSE
+  )))
+  got <- codes_rows_off_categorical(pkg_path)
+  expect_true("SPECIES" %in% got$codes$column_name)
+  expect_true("Coho" %in% got$codes$code_value[got$codes$column_name == "SPECIES"])
+  expect_false(any(got$codes$column_name %in% c("START_DTT", "END_DTT")))
+  expect_true(all(got$dict$column_role[
+    got$dict$column_name %in% c("START_DTT", "END_DTT")
+  ] == "temporal"))
+})
+
 test_that("create_sdp() seeds no codes.csv row for a non-categorical column on the 30-row sample", {
   pkg_path <- build_example_sdp(
     "nuseds-fraser-coho-sample.csv",

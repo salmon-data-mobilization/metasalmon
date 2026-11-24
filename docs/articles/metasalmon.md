@@ -105,6 +105,9 @@ Excel workbooks, or PDF reports as context, continue with:
 
 ## Review In R
 
+The [Semantic Review in R](semantic-review.html) walkthrough shows the queue,
+decisions and all four metadata setters in more detail.
+
 [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 gives you a package that is **review-ready, not finished**. Two calls
 take it the rest of the way, and both print the exact call for the next

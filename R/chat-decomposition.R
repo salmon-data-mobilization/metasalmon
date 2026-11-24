@@ -30,7 +30,10 @@
 
 .ms_chat_new_session_id <- function(prefix = "mscur") {
   stamp <- format(Sys.time(), "%Y%m%d%H%M%S")
-  suffix <- paste(sample(c(letters[1:6], 0:9), 8L, replace = TRUE), collapse = "")
+  # tempfile supplies a process-specific nonce without reading or initializing
+  # R's statistical RNG, and creates no file. Hash to keep the existing eight
+  # hexadecimal character suffix; this is a session name, not a credential.
+  suffix <- digest::digest(tempfile(pattern = "mscur-"), algo = "xxhash32", serialize = FALSE)
   paste(prefix, stamp, suffix, sep = "-")
 }
 
@@ -1119,6 +1122,15 @@ chat_decomposition <- function(dict,
                                commands = NULL,
                                input_fn = readline,
                                output_fn = NULL) {
+  # Deprecated on every call (S16 step 1): the dialogue becomes a harness
+  # skill. Warned on entry, before a possibly long interactive session, and
+  # the scope keeps the `suggest_semantics()` call inside from warning again.
+  # See R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  on.exit(.ms_llm_deprecation_exit(llm_deprecation_depth, "chat_decomposition", FALSE), add = TRUE)
+  if (llm_deprecation_depth == 0L) {
+    .ms_llm_deprecation_warn("chat_decomposition")
+  }
   sources <- .ms_forward_semantic_sources(
     sources,
     omitted = missing(sources)

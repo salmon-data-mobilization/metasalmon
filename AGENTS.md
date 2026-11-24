@@ -21,6 +21,17 @@ at the repository root, one file per work item, and the claim protocol is in
 card is the one that is wrong. Read `queue/README.md` before editing anything
 under `queue/`.
 
+**Repository-local coherent-batch default (requested 2026-10-01; operative only
+after this policy merges):** This repository adopts `HUB.md` § *Coherent
+batches*: one PR may contain several separately claimed IDs in one coherent
+capability or substantial related-defect family, and that is the default where
+related eligible work exists. A substantial capability with one ID is ordinary;
+a narrow standalone or urgent fix remains valid with one brief scope reason in
+the lead workpad. One owner uses one lead implementation worktree and branch,
+with an exact per-ID handoff ref and short linked record; different owners stay
+isolated. Another member repository needs its own explicit `AGENTS.md` adoption.
+The mirror, semantic, guard, security, and release contracts below remain.
+
 ## Non-negotiable contracts (do not break without a logged decision)
 
 - **metasalmonpy mirrors this package — always.** (Brett, 2026-08-13.) Any
@@ -36,7 +47,10 @@ under `queue/`.
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
   when the mirrored behaviour actually lands. Current state, measured
-  2026-09-16: **both packages are at 0.5.0, so no catch-up window is open.**
+  2026-10-15: **both packages read 0.6.0 on `main`, so no catch-up window is
+  open.** 0.6.0 (S16 step 1) was ruled a joint release, so both numbers moved
+  together and no window opened; the `v0.6.0` tags are Brett's to make on the
+  two bump merges.
   The `0.4.0→0.5.0` window that metasalmon's `v0.5.0` opened on 2026-08-25
   (roadmap stream S5 — nine new exported functions: `review_semantics()`,
   `accept_suggestion()`, `reject_suggestion()`, `apply_sdp_semantics()`,
@@ -53,8 +67,8 @@ under `queue/`.
   ordinary "R shipped first" lag rather than a set of deliberate differences, so
   it was owed as a **port** — tracked in `knowledge/parity-deviations.md` and the
   roadmap's release index, and deliberately **not** as new register rows.
-  metasalmonpy's tree reads 0.5.0, and measured 2026-09-24 its newest tag is
-  `v0.5.0`, made that day on the bump merge `67fb486` with a GitHub Release.
+  metasalmonpy's tree then read 0.5.0, and measured 2026-09-24 its newest tag
+  was `v0.5.0`, made that day on the bump merge `67fb486` with a GitHub Release.
   **Parity is the state that decays fastest**, and the version of this
   paragraph that recorded 0.4.0/0.4.0 said exactly that while recording it: it
   decayed one release later, which is the argument for reading any parity
@@ -123,6 +137,32 @@ under `queue/`.
   improves the provider path has at most the releases before the removal to
   matter in. The order, and what stays, is the
   [S16 card](knowledge/sequences/s16-model-call-leaves-the-packages.md).
+  **The in-package model call is deprecated
+  (2026-09-25, hub Q67, stream S16):** `llm_assess = TRUE`, the eleven `llm_*`
+  arguments and `chat_decomposition()` warn once per top-level call (class
+  `metasalmon_llm_deprecated`; silenced suite-wide by the option
+  `metasalmon.llm_deprecation_quiet`) and are removed in 0.7.0. Judgement now
+  runs in the user's harness against a file: `write_semantic_review_packet()`
+  writes `review/semantic-review-packet.json` and `ingest_semantic_assessments()`
+  reads `review/semantic-assessments-pass-<n>.csv` back. **The file contract:**
+  the packet's `packet_id` is the SHA-256 of its canonical bytes minus
+  `packet_id` and `producer`, the harness names the packet it judged in a
+  one-line sidecar `<csv>.packet-id` (or the caller passes `packet_id`), an
+  IRI the packet did not offer is never applied, a retry is a second harness
+  pass (a continuation packet; nothing from that target merges until it is
+  answered), a rejected shortlist earns no second pass, and every harness
+  free-text value is redacted at capture. The 30-column row's per-column
+  ownership (`harness`, `package`, `harness_or_package`) and requiredness live
+  in `.ms_semantic_review_output_columns()` and are written into every packet.
+  Neither function may reach a model provider; the network is reached only
+  through `search_fn`, and `tests/testthat/test-semantic-review-packet.R`
+  walks the call graph to prove it. The schema, the instructions and the
+  conformance fixtures (`inst/extdata/semantic-review/`,
+  `tests/testthat/fixtures/semantic-review/v1/`) are one contract, which
+  metasalmonpy has vendored byte-identically since hub item B-327 landed there
+  (its pull request 72), and its `tests/test_semantic_review_parity.py`
+  compares the two trees. A change to any of them is a change to the contract
+  and needs the same change there.
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
   a tibble/XML/data frame to `llm_context_files` must error early.
 - **Preserve public signatures and return-value attributes.** Exported:
@@ -132,13 +172,17 @@ under `queue/`.
   attaches `semantic_suggestions` (+ `semantic_llm_assessments` when `llm_assess`).
   These are read by other modules and many tests.
 - **Frozen column contracts:** the 19-col semantic target row
-  (`.ms_semantic_target_cols()`) and the ~30-col LLM assessment row
+  (`.ms_semantic_target_cols()`) and the 30-col LLM assessment row
   (`R/llm-review-adapter.R`). The adapter's row builders read target columns
   positionally — a rename/reorder breaks them. Empty and success assessment rows
   must keep identical column sets. **The assessment row outlives the provider
   code** (hub Q67, 2026-09-25): it becomes the contract a harness writes and the
   package's assessment ingester reads, so it stays frozen after the model call
   is gone.
+  Since S16 step 1 (B-326) the packet's `output.columns` names each column's
+  owner and requiredness, `review/semantic-llm-assessments.csv` persists the
+  row, every row still comes from the two builders and leaves through the one
+  normalizer, and the persisted header is `.ms_llm_assessment_cols()`.
 - **Observable markers to preserve:** the `REVIEW:` IRI prefix (strict validation
   fails if any remain) and the `llm_context_sources` output column.
 - **A semantic role is a contract across seven surfaces, not a string.** Adding
@@ -286,7 +330,11 @@ under `queue/`.
   `tests/testthat/test-cli-safety-guard.R`.
 - LLM review decisions: `accept`, `review`, `retry_search`, `request_new_term`,
   `reject_shortlist`. An unresolved `reject_shortlist` escalates to
-  `request_new_term` (surfaces an ontology gap) — keep that distinction.
+  `request_new_term` (surfaces an ontology gap) — keep that distinction. **Any
+  final `reject_shortlist` escalates, whatever the decision before a retry was**
+  (B-361, ruled 2026-09-25); in the review-packet contract a rejection earns
+  no second pass and escalates at once, and only `retry_search` widens a
+  shortlist.
 
 ## Releases
 
@@ -335,6 +383,7 @@ Rscript -e 'devtools::test()'                             # full suite (must sta
 testthat::test_file("tests/testthat/test-<area>.R", reporter = "summary")
 devtools::document()                                     # after roxygen changes
 Rscript scripts/build-pkgdown.R                          # after doc changes
+Rscript scripts/build-pkgdown.R --news-only              # when only NEWS changed
 ```
 
 ```sh

@@ -25,4 +25,15 @@ ices_find_codes(query, code_type, max_results = 50)
 
 ## Value
 
-Filtered tibble of codes for the given code type.
+Filtered tibble of codes for the given code type. Empty when nothing
+matches, and also when the request to ICES fails, which warns, naming
+the request.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Needs the live ICES service; run in checks once an offline fixture exists.
+matching_gear_codes <- ices_find_codes("trawl", code_type = "Gear")
+} # }
+```

@@ -21,4 +21,14 @@ ices_find_code_types(query, max_results = 20)
 
 ## Value
 
-Filtered tibble of code types.
+Filtered tibble of code types. Empty when nothing matches, and also when
+the request to ICES fails, which warns, naming the request.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Needs the live ICES service; run in checks once an offline fixture exists.
+matching_types <- ices_find_code_types("gear")
+} # }
+```

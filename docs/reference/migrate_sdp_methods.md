@@ -47,3 +47,13 @@ to the shared vocabulary and citations to `protocol_citation`).
 
 The rewrite is atomic: either every affected metadata file is updated
 and `metadata/methods.csv` removed, or nothing changes.
+
+## Examples
+
+``` r
+example_sdp <- system.file("extdata", package = "metasalmon")
+migration_plan <- migrate_sdp_methods(example_sdp, dry_run = TRUE)
+#> Nothing to migrate: no method bindings and no metadata/methods.csv.
+names(migration_plan)
+#> [1] "tables"         "dropped_review" "registry"
+```

@@ -1,0 +1,13 @@
+id: B-437
+kind: defect
+title: 'metasalmon gives a procedure-named column''s codes the method role where metasalmonpy gives entity, and its create_sdp() drops a code shortlist lacking review context where metasalmonpy writes every one: the R half of two unregistered differences found by B-426'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'IN METASALMON, each of the two differences B-436 describes is ruled per divergence, and metasalmon then either carries the side the ruling chose, pinned by a test that fails before the change (nothing changes here when the ruling keeps R''s side), or registers the difference in a numbered knowledge/parity-deviations.md row that matches B-436''s PARITY.md row. (1) is the method role R/semantic-suggestions.R gives a procedure-named column''s codes (parent_names_procedure), which metasalmonpy does not; (2) is .ms_prepare_review_suggestions() dropping, at create_sdp() time, a code-scope row with no review context, which metasalmonpy does not, and B-120 is evidence that this filter hides work, so R moving is a live answer for (2). B-436 is the metasalmonpy half, and each names the other.'

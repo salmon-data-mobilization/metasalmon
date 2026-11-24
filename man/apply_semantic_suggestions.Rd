@@ -68,14 +68,15 @@ honored too. Suggestions that target non-column destinations (for example
 remain review-only.
 }
 \examples{
-\dontrun{
-dict <- infer_dictionary(my_data, dataset_id = "example", table_id = "main")
-dict <- suggest_semantics(my_data, dict)
-
-# Fill only the missing semantic fields for one measurement column
-dict <- apply_semantic_suggestions(dict, columns = "SPAWNER_COUNT")
-
-# Require stronger lexical matches when score is available
-dict <- apply_semantic_suggestions(dict, min_score = 2)
-}
+dict <- infer_dictionary(data.frame(spawner_count = c(12L, 19L)))
+# Example-only IRI: replace it with a reviewed term for a real SDP.
+reviewed <- tibble::tibble(
+  column_name = "spawner_count", dictionary_role = "variable",
+  iri = "https://example.org/terms/spawner-count", score = 3
+)
+filled <- apply_semantic_suggestions(
+  dict, suggestions = reviewed, columns = "spawner_count",
+  min_score = 2, verbose = FALSE
+)
+filled$term_iri
 }

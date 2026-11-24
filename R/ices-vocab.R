@@ -92,6 +92,11 @@ NULL
 #' @return Tibble of ICES code types (includes `key`, `description`, `guid`, etc.).
 #'   Empty when ICES answers with no rows, and also when the request fails,
 #'   which warns, naming the request.
+#' @examples
+#' \dontrun{
+#' # Needs the live ICES service; run in checks once an offline fixture exists.
+#' types <- ices_code_types(code_type = "Gear")
+#' }
 #' @export
 ices_code_types <- function(code_type = "",
                             code_type_id = 0L,
@@ -119,6 +124,11 @@ ices_code_types <- function(code_type = "",
 #'   column and a `url` column pointing at the corresponding `CodeDetail` API endpoint.
 #'   Empty when ICES answers with no rows, and also when the request fails,
 #'   which warns, naming the request.
+#' @examples
+#' \dontrun{
+#' # Needs the live ICES service; run in checks once an offline fixture exists.
+#' gear_codes <- ices_codes("Gear")
+#' }
 #' @export
 ices_codes <- function(code_type,
                        code = "",
@@ -156,6 +166,11 @@ ices_codes <- function(code_type,
 #'
 #' @return Filtered tibble of code types. Empty when nothing matches, and also
 #'   when the request to ICES fails, which warns, naming the request.
+#' @examples
+#' \dontrun{
+#' # Needs the live ICES service; run in checks once an offline fixture exists.
+#' matching_types <- ices_find_code_types("gear")
+#' }
 #' @export
 ices_find_code_types <- function(query, max_results = 20) {
   if (is.null(query) || is.na(query) || !nzchar(query)) return(.ices_empty())
@@ -171,9 +186,13 @@ ices_find_code_types <- function(query, max_results = 20) {
 #' @return Filtered tibble of codes for the given code type. Empty when nothing
 #'   matches, and also when the request to ICES fails, which warns, naming the
 #'   request.
+#' @examples
+#' \dontrun{
+#' # Needs the live ICES service; run in checks once an offline fixture exists.
+#' matching_gear_codes <- ices_find_codes("trawl", code_type = "Gear")
+#' }
 #' @export
 ices_find_codes <- function(query, code_type, max_results = 50) {
   if (is.null(query) || is.na(query) || !nzchar(query)) return(.ices_empty())
   .ices_filter_text(ices_codes(code_type), query, max_results)
 }
-

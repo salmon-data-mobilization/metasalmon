@@ -13,6 +13,12 @@
 #'
 #' @return A list representing the descriptor (invisible); writes to
 #'   `output_path` when provided.
+#' @examples
+#' resources <- data.frame(
+#'   name = "occurrence", path = "occurrence.csv", schema = "occurrence"
+#' )
+#' descriptor <- dwc_dp_build_descriptor(resources, validate = FALSE)
+#' descriptor$resources[[1]]$name
 #' @export
 dwc_dp_build_descriptor <- function(resources,
                                     profile_version = "master",

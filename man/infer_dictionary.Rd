@@ -112,7 +112,6 @@ Proposes a starter dictionary (column dictionary schema) from raw data by
 guessing column types, roles, and basic metadata.
 }
 \examples{
-\dontrun{
 df <- data.frame(
   species = c("Coho", "Chinook"),
   count = c(100, 200),
@@ -120,6 +119,7 @@ df <- data.frame(
 )
 dict <- infer_dictionary(df)
 
+\dontrun{
 # Optional: seed semantic suggestions from vocabulary services
 # (SMN is queried first; GCDFO is a distinct DFO-specific source)
 dict <- infer_dictionary(

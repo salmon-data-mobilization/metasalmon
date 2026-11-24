@@ -551,7 +551,10 @@
 }
 
 .ms_context_text_from_rmarkdown <- function(path) {
-  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  # Decode before trimws() or the fence checks inspect the lines: readLines()
+  # only marks Windows-1252 bytes as UTF-8, while the shared text reader
+  # validates and falls back to Windows-1252, then Latin-1.
+  lines <- strsplit(.ms_read_text_utf8(path), "\n", fixed = TRUE)[[1]]
   if (length(lines) == 0L) {
     return("")
   }
@@ -810,7 +813,11 @@
     sum(query_tokens %in% chunk_tokens)
   }, numeric(1))
 
-  chunks <- chunks[order(-chunks$context_score, nchar(chunks$chunk_text), chunks$source), , drop = FALSE]
+  # Radix, because this order reaches the review packet's bytes and its
+  # `packet_id` (hub item B-326): the `source` tie-break is character text,
+  # and a locale-collated sort would rank two sources differently on two
+  # machines.
+  chunks <- chunks[order(-chunks$context_score, nchar(chunks$chunk_text), chunks$source, method = "radix"), , drop = FALSE]
   utils::head(chunks, max(1L, as.integer(max_chunks[[1]] %||% 4L)))
 }
 
@@ -889,7 +896,32 @@
     }
     chunks
   })
-  dplyr::bind_rows(file_chunks, inline_chunks)
+  pool <- dplyr::bind_rows(file_chunks, inline_chunks)
+  # The review packet records each context input with its SHA-256 (hub item
+  # B-326): a file by the digest of its bytes, inline text by the digest of
+  # the text. Attached here, where the source labels are assigned, so the
+  # packet's labels and the excerpts' labels are one rendering.
+  attr(pool, "context_inputs") <- dplyr::bind_rows(
+    purrr::map_dfr(raw_context, function(item) {
+      tibble::tibble(
+        source = as.character(item$source),
+        kind = "file",
+        sha256 = digest::digest(
+          readBin(item$path, what = "raw", n = file.info(item$path)$size),
+          algo = "sha256",
+          serialize = FALSE
+        )
+      )
+    }),
+    purrr::imap_dfr(inline_text, function(text, item_index) {
+      tibble::tibble(
+        source = paste0("inline_context[", item_index, "]"),
+        kind = "text",
+        sha256 = digest::digest(charToRaw(enc2utf8(text)), algo = "sha256", serialize = FALSE)
+      )
+    })
+  )
+  pool
 }
 
 .ms_prepare_context_chunks <- function(target_row,
@@ -1256,6 +1288,15 @@
   chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", x)
 }
 
+# A retry query is an identifier when it is a URL, a URN, a DOI, or a CURIE
+# with no whitespace, whatever letters the CURIE holds. The CURIE's local part
+# is `[^[:space:]]+`, the class the normalizer's `\\s` collapses, so after
+# normalization the only whitespace it can meet is a single space. It was
+# `[^\\s]+`, and R's default TRE engine reads a backslash inside a bracket
+# expression literally, so that class meant "neither a backslash nor the
+# letter s": `smn:species` was a lexical query and `abc:d e` an identifier
+# (hub item B-380; metasalmonpy reproduced the quirk on purpose under B-362
+# and retires it under B-381).
 .ms_llm_query_looks_like_identifier <- function(x) {
   text <- .ms_llm_normalize_query_text(x)
   if (is.na(text)) {
@@ -1263,7 +1304,7 @@
   }
 
   grepl("^(https?://|urn:|doi:)", text, ignore.case = TRUE) ||
-    grepl("^[A-Za-z][A-Za-z0-9._+-]*:[^\\s]+$", text)
+    grepl("^[A-Za-z][A-Za-z0-9._+-]*:[^[:space:]]+$", text)
 }
 
 .ms_llm_classify_retry_query <- function(retry_query, original_query) {

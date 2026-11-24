@@ -62,7 +62,9 @@ test_that("SSSOM canonical bytes are a fixed value for a fixed mapping set", {
       algo = "sha256",
       serialize = FALSE
     ),
-    "7d80bd221e10385c0253e5ee2184e2d113a1b387d0fe2a43ffffdd2aa15e91f0"
+    # Moved by hub B-350 (canonical SSSOM/TSV, recorded in NEWS): `#curie_map:`
+    # second and unspaced, its values plain.
+    "0b8fcddbbe4bad1dd26bcdb35bb9d67fab50e5147a419257797dd730317b1c32"
   )
 })
 
@@ -78,8 +80,9 @@ test_that("the SSSOM curie map header is C-ordered, matching the mapping rows", 
         Zeta = "https://example.org/Z_"
       )
     ),
+    # Every prefix is used: a canonical writer drops an unused one (B-350).
     mappings = data.frame(
-      subject_id = "alpha:1",
+      subject_id = c("alpha:1", "Zeta:1"),
       predicate_id = "skos:exactMatch",
       object_id = "Beta:1",
       mapping_justification = "semapv:ManualMappingCuration",

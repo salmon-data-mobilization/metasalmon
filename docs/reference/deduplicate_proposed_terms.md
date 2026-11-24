@@ -68,17 +68,20 @@ facet handling.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Load raw proposed terms
-proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
-
-# Deduplicate
+proposed <- tibble::tibble(
+  term_label = c("Spawner Age 1", "Spawner Age 2", "Spawner Age 3"),
+  term_definition = rep("Spawner count by age", 3),
+  term_type = rep("owl_class", 3),
+  suggested_parent_iri = rep("", 3)
+)
 deduped <- deduplicate_proposed_terms(proposed)
-
-# Review collapsed terms
+#> ✔ Deduplicated 3 -> 1 terms (2 collapsed/removed).
+#> ℹ Review 'dedup_notes' column for facet handling guidance.
 deduped |> dplyr::filter(collapsed_from > 1)
-
-# Write cleaned output
-readr::write_csv(deduped, "work/semantics/proposed_terms_deduped.csv")
-} # }
+#> # A tibble: 1 × 10
+#>   term_label    term_definition      term_type suggested_parent_iri is_base_term
+#>   <chr>         <chr>                <chr>     <chr>                <lgl>
+#> 1 Spawner Age 1 Spawner count by age owl_class ""                   TRUE
+#> # ℹ 5 more variables: needs_age_facet <lgl>, needs_phase_facet <lgl>,
+#> #   collapsed_from <int>, dedup_notes <chr>, label_pattern <chr>
 ```

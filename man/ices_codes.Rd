@@ -23,3 +23,9 @@ which warns, naming the request.
 \description{
 List ICES codes for a code type
 }
+\examples{
+\dontrun{
+# Needs the live ICES service; run in checks once an offline fixture exists.
+gear_codes <- ices_codes("Gear")
+}
+}

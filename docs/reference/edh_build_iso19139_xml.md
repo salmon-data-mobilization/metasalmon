@@ -57,3 +57,15 @@ edh_build_iso19139_xml(
 ## Value
 
 Invisible list with elements `xml` (string) and `path`.
+
+## Examples
+
+``` r
+dataset <- readr::read_csv(
+  system.file("extdata", "dataset.csv", package = "metasalmon"),
+  show_col_types = FALSE
+)
+# The suppression retires with this deprecated alias; use
+# edh_build_hnap_xml() for new code.
+suppressWarnings(edh_build_iso19139_xml(dataset))
+```

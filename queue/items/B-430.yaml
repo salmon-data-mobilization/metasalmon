@@ -1,0 +1,13 @@
+id: B-430
+kind: defect
+title: 'Bounded article and reference updates require a full site build and manual cleanup of unrelated generated files'
+state: done
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The existing scripts/build-pkgdown.R supports optional named article and reference targets for a bounded docs update. A selected build updates the requested HTML and Markdown pages and rebuilds search and sitemap, while unrelated tracked pages remain byte-identical. Full builds and --news-only retain their existing behavior. Invalid or unknown targets fail before output is written, partial builds cannot accept a changed toolchain, and every existing publication and toolchain check still runs with its current scope. Verification includes a failing-before selector check, a real pinned-toolchain selected build with positive controls for changed selected pages and search entries, byte comparisons for unrelated pages, and rejection controls for invalid targets and toolchain/publication hazards. This is repository-local site tooling, with no package API change, ontology choice, parity-register change or Python package port. It does not close B-393, whose additional toolchain inputs remain a separate guard defect.'

@@ -104,6 +104,18 @@
 #   from a current one edited in place. It was run RED against both the client
 #   before B-187 and the first version of the change.
 #
+#   42 and 43 cover two read-only workflow aids. 42 asks one item at a time
+#   against absent, released, handed-off and live refs, then makes the locks
+#   remote unreadable: status must not mistake a failed read for an absent ref.
+#   It also keeps a resolved blocker visible in the raw queue field and refuses
+#   malformed claim records rather than presenting them as a valid action.
+#   43 checks that claim-time setup advice is shell-safe, appears again on an
+#   idempotent claim, and does not itself create a worktree or workpad.
+#   44 to 48 cover branchless chat handoffs: shared-member acceptance, solo
+#   refusal, and participation read from origin rather than local queue edits.
+#   Staged, unstaged, committed-ahead and local-only queue shapes are paired
+#   with canonical shared, unrelated-dirt and ordinary branch-handoff controls.
+#
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
 #   time assertions are appended. It was 16 until 16 to 20 arrived and 21 until
@@ -194,6 +206,24 @@ ABANDONED_ID="B-58"   # claim tip is another agent's claim, lease and grace both
 CAPPED_ID="B-59"      # as B-58, after one reclaim inside the rolling day: the cap of 1 is spent
 UNDERCAP_ID="B-60"    # as B-59, but the reclaim was 30 hours ago: outside the window
 
+# Assertion 42 alone. The done blocker is still named in the subject's raw
+# blocked_by field; the nine malformed or absent claim records use distinct refs so a
+# status read does not change any ref while the assertion is comparing them.
+STATUS_DONE_ID="T-41"
+STATUS_BLOCKED_ID="T-42"
+STATUS_NO_ACTION_ID="T-43"
+STATUS_BAD_ACTION_ID="T-44"
+STATUS_NO_AGENT_ID="T-45"
+STATUS_NO_LEASE_ID="T-46"
+STATUS_BAD_LEASE_ID="T-47"
+STATUS_WRONG_ID="T-48"
+STATUS_NO_RECORD_ID="T-49"
+STATUS_NO_HANDOFF_BRANCH_ID="T-50"
+STATUS_BAD_HANDOFF_BRANCH_ID="T-51"
+STATUS_CHAT_HANDOFF_ID="T-52"
+STATUS_BAD_CHAT_REASON_ID="T-53"
+STATUS_EMPTY_CHAT_BRANCH_ID="T-54"
+
 # The four hand-back items of assertions 22 and 23. Each one is held by this
 # caller on a live lease, seeded straight into the locks repository rather than
 # claimed through the client, so the hand-back assertions do not spend the
@@ -206,6 +236,10 @@ SOLO_ID="D-01"        # repo metasalmon: solo: true
 SHARED_ID="D-02"      # repo salmon-data-standards-workshop: solo: false
 UNKEYED_ID="D-03"     # repo metasalmonpy: the entry omits solo: altogether
 UNREADABLE_ID="D-04"  # repo smn-data-pkg: solo: unknown, neither true nor false
+CHAT_SHARED_ID="D-05" # chat hand-back with solo: false
+CHAT_UNKEYED_ID="D-06" # chat hand-back with solo: absent
+CHAT_SOLO_ID="D-07"   # chat hand-back must refuse solo: true
+CHAT_UNKNOWN_ID="D-08" # chat hand-back must refuse an unknown solo value
 
 # The cap fixture is a second queue with max_concurrent_claims of 1, pointed at
 # the same locks repository. It is separate because assertion 19 is the only
@@ -593,6 +627,117 @@ advance_origin() {
   g git -C "$up" push -q origin main >/dev/null 2>&1 || return 1
 }
 
+# chat_authority_case SCENARIO EXPECTATION - one independent queue origin,
+# locks repository and held ref. Local changes never reach another scenario's
+# origin or the main fixture, and the source repository is read-only.
+# RETIRES WHEN: chat handoffs stop depending on the canonical item's member
+# participation, at which point these origin-versus-local controls retire.
+chat_authority_case() {
+  local scenario="$1" expected="$2" dir="$TMPROOT/chat-authority-$1"
+  local locks="$dir.locks.git" cache="$dir.cache" out="$dir.out"
+  local id="$CHAT_SOLO_ID" changed="" ref seed tip rc bad=0 body
+  g git clone -q "$FIXTURE_REPO.origin.git" "$dir" >"$out" 2>&1 || return 1
+  # Each case needs its own origin: committing the solo:no control or a local
+  # ahead commit must not stale the existing legitimate shared-member cases.
+  g git clone -q --bare "$dir" "$dir.origin.git" >>"$out" 2>&1 || return 1
+  g git -C "$dir" remote set-url origin "$dir.origin.git" || return 1
+  g git init --bare -q --initial-branch=main "$locks" >>"$out" 2>&1 || return 1
+
+  case $scenario in
+    config-*|branch-config)
+      changed=queue/config.yaml
+      sed 's/solo: true/solo: false/' "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    item-*|branch-item)
+      case $scenario in
+        item-untracked|item-local-commit)
+          id=D-09
+          changed="queue/items/$id.yaml"
+          write_fixture_item "$dir/queue/items" "$id" salmon-data-standards-workshop ;;
+        *)
+          changed="queue/items/$id.yaml"
+          sed 's/^repo: metasalmon$/repo: salmon-data-standards-workshop/' \
+            "$dir/$changed" >"$dir/edit.tmp"
+          mv "$dir/edit.tmp" "$dir/$changed" ;;
+      esac ;;
+    solo-no)
+      changed=queue/config.yaml
+      sed 's/solo: true/solo: no/' "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    shared-working-solo)
+      id="$CHAT_SHARED_ID"
+      changed=queue/config.yaml
+      sed 's/solo: false/solo: true/' "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    shared-working-item)
+      id="$CHAT_SHARED_ID"
+      changed="queue/items/$id.yaml"
+      sed 's/^repo: salmon-data-standards-workshop$/repo: metasalmon/' \
+        "$dir/$changed" >"$dir/edit.tmp"
+      mv "$dir/edit.tmp" "$dir/$changed" ;;
+    unrelated-dirt)
+      id="$CHAT_SHARED_ID"
+      printf 'Unrelated local fixture note.\n' >"$dir/local-note.txt" ;;
+    *) note "unknown chat authority scenario: $scenario"; return 1 ;;
+  esac
+
+  case $scenario in
+    *-staged|*-ahead|item-local-commit|solo-no|branch-item|shared-working-item)
+      g git -C "$dir" add -- "$changed" || return 1 ;;
+  esac
+  case $scenario in
+    *-ahead|item-local-commit|solo-no)
+      g git -C "$dir" commit -q -m "fixture $scenario" || return 1 ;;
+  esac
+  if [ "$scenario" = "solo-no" ]; then
+    # Unlike the spoof cases, no is committed to this case's authoritative
+    # origin; it must still be refused because the grant says false or absent.
+    g git -C "$dir" push -q origin main || return 1
+  fi
+  g git -C "$dir" merge-base --is-ancestor \
+    "$(git -C "$dir.origin.git" rev-parse main)" HEAD || return 1
+
+  ref="refs/heads/claim/$id"
+  seed=$(mk_commit "$CLONE_A" "claim $scenario" \
+          "$(claim_record "$id" "$HUB_AGENT_TOKEN" claim "$(ts_shift +30)")") || return 1
+  g git -C "$CLONE_A" push "$locks" "$seed:$ref" >>"$out" 2>&1 || return 1
+  if [ "$expected" = "branch" ]; then
+    ( HUB_LOCKS_URL="$locks" fixture_hub "$dir/scripts/hub" "$cache" \
+        "$HUB_AGENT_TOKEN" done "$id" --branch "agent/$id/$HUB_AGENT_TOKEN" ) >"$out" 2>&1
+  else
+    ( HUB_LOCKS_URL="$locks" fixture_hub "$dir/scripts/hub" "$cache" \
+        "$HUB_AGENT_TOKEN" done "$id" --chat ) >"$out" 2>&1
+  fi
+  rc=$?
+  tip=$(git -C "$locks" rev-parse "$ref" 2>/dev/null)
+  if [ "$expected" = "refuse" ]; then
+    [ "$rc" = "$EX_FAIL" ] || bad=1
+    [ "$tip" = "$seed" ] || bad=1
+    case $scenario in
+      item-untracked|item-local-commit)
+        grep -Eiq 'cannot read .+ on origin/|(origin|canonical|authoritative).*(absent|missing|not.*(exist|found))|(absent|missing|not.*(exist|found)).*(origin|canonical|authoritative)' "$out" || bad=1 ;;
+      *) grep -Fq 'solo is false or absent' "$out" || bad=1 ;;
+    esac
+  else
+    [ "$rc" = "0" ] || bad=1
+    [ "$tip" != "$seed" ] || bad=1
+    [ "$(git -C "$locks" rev-parse "$ref^" 2>/dev/null)" = "$seed" ] || bad=1
+    body=$(git -C "$locks" show "$ref:claim.yaml" 2>/dev/null)
+    printf '%s\n' "$body" | grep -Fxq 'action: handoff' || bad=1
+    if [ "$expected" = "branch" ]; then
+      printf '%s\n' "$body" | grep -Fxq "branch: agent/$id/$HUB_AGENT_TOKEN" || bad=1
+    else
+      printf '%s\n' "$body" | grep -Fxq 'reason: hand-back in chat' || bad=1
+      printf '%s\n' "$body" | grep -q '^branch:' && bad=1
+    fi
+  fi
+  if [ "$bad" != "0" ]; then
+    note "$scenario: rc=$rc ref_changed=$([ "$tip" != "$seed" ] && echo yes || echo no)"
+    note "$(tail -n 3 "$out" | tr '\n' ' ')"
+  fi
+  return "$bad"
+}
+
 require_git_version() {
   local v major minor
   v=$(git --version 2>/dev/null | awk '{print $3}')
@@ -682,12 +827,45 @@ retires_when: The race test stops needing a fixture item, which is when claims s
 YAML
   done
 
+  cat >"$items/$STATUS_DONE_ID.yaml" <<YAML
+id: $STATUS_DONE_ID
+kind: defect
+title: Completed blocker for the status fixture
+state: done
+claimable: false
+repo: metasalmon
+blocked_by: []
+evidence: backlog.md
+retires_when: Status no longer needs the completed blocker fixture.
+YAML
+  cat >"$items/$STATUS_BLOCKED_ID.yaml" <<YAML
+id: $STATUS_BLOCKED_ID
+kind: defect
+title: Status fixture with a resolved blocker
+state: ready
+claimable: true
+repo: metasalmon
+blocked_by: [$STATUS_DONE_ID]
+evidence: backlog.md
+retires_when: Status no longer needs the raw blocked-by fixture.
+YAML
+  for id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+            "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+            "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID" \
+            "$STATUS_CHAT_HANDOFF_ID" "$STATUS_BAD_CHAT_REASON_ID" "$STATUS_EMPTY_CHAT_BRANCH_ID"; do
+    write_fixture_item "$items" "$id" metasalmon
+  done
+
   # The hand-back items. One per repository, because the repository is the
   # whole variable under test.
   write_fixture_item "$items" "$SOLO_ID" metasalmon
   write_fixture_item "$items" "$SHARED_ID" salmon-data-standards-workshop
   write_fixture_item "$items" "$UNKEYED_ID" metasalmonpy
   write_fixture_item "$items" "$UNREADABLE_ID" smn-data-pkg
+  write_fixture_item "$items" "$CHAT_SHARED_ID" salmon-data-standards-workshop
+  write_fixture_item "$items" "$CHAT_UNKEYED_ID" metasalmonpy
+  write_fixture_item "$items" "$CHAT_SOLO_ID" metasalmon
+  write_fixture_item "$items" "$CHAT_UNKNOWN_ID" smn-data-pkg
 }
 
 # write_fixture_item ITEMS_DIR ID REPO
@@ -1479,7 +1657,8 @@ main() {
   local h1 h2 e1
   h1=$(mk_commit "$CLONE_A" "claim $HANDOFF_ID by agent-a" "$(claim_record "$HANDOFF_ID" agent-a claim "$stale")")
   push_ref "$CLONE_A" "$h1" "$href" "$TMPROOT/handoff.1.out"
-  h2=$(mk_commit "$CLONE_A" "handoff $HANDOFF_ID by agent-a" "$(claim_record "$HANDOFF_ID" agent-a handoff "$stale")" "$h1")
+  h2=$(mk_commit "$CLONE_A" "handoff $HANDOFF_ID by agent-a" \
+         "$(claim_record "$HANDOFF_ID" agent-a handoff "$stale")"$'\n'"branch: agent/$HANDOFF_ID/agent-a" "$h1")
   push_ref "$CLONE_A" "$h2" "$href" "$TMPROOT/handoff.2.out"
   e1=$(mk_commit "$CLONE_A" "claim $EXPIRED_ID by agent-a" "$(claim_record "$EXPIRED_ID" agent-a claim "$stale")")
   push_ref "$CLONE_A" "$e1" "$eref" "$TMPROOT/expired.1.out"
@@ -1548,6 +1727,143 @@ main() {
     fi
   else
     skip 16 "client: ready answers HUB.md condition 4 rather than filtering on whether a ref exists"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 42 -------------------------------------------------------------------
+  # A one-item status view joins the queue file to the live claim tip. The
+  # absence case is not a failed read: this client has a distinct call-failed
+  # exit code, and a cache that once held the ref does not make a failed live
+  # read authoritative. Check all three outcomes, and check the command leaves
+  # the remote refs exactly as they were.
+  if [ "$probe_ok" = "0" ]; then
+    local status_release="$TMPROOT/client.status.release.out"
+    local status_handoff="$TMPROOT/client.status.handoff.out"
+    local status_chat="$TMPROOT/client.status.chat.out"
+    local status_live="$TMPROOT/client.status.live.out"
+    local status_absent="$TMPROOT/client.status.absent.out"
+    local status_blocked="$TMPROOT/client.status.blocked.out"
+    local status_failed="$TMPROOT/client.status.failed.out"
+    local status_before status_after status_field status_rc=0 status_bad_rc=0 status_ok=0
+    local status_locks="$TMPROOT/status-locks.git" status_bad_before status_bad_after
+    local bad_id bad_body bad_sha bad_ref bad_out bad_rc status_seed_ok=0
+
+    # These fixture commits precede the ref snapshot. Each malformed record
+    # has a separate id and ref in a separate local locks repository, so later
+    # claim and cap assertions never ingest an unreadable claim.yaml.
+    g git init --bare -q --initial-branch=main "$status_locks" >/dev/null 2>&1 || status_seed_ok=1
+    for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+                  "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID" \
+                  "$STATUS_CHAT_HANDOFF_ID" "$STATUS_BAD_CHAT_REASON_ID" "$STATUS_EMPTY_CHAT_BRANCH_ID"; do
+      bad_body=$(claim_record "$bad_id" status-fixture claim "$future")
+      case $bad_id in
+        "$STATUS_NO_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^action:/d') ;;
+        "$STATUS_BAD_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: bogus/') ;;
+        "$STATUS_NO_HANDOFF_BRANCH_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/; /^branch:/d') ;;
+        "$STATUS_BAD_HANDOFF_BRANCH_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/'); bad_body="$bad_body
+branch: arbitrary/branch
+reason: hand-back in chat" ;;
+        "$STATUS_CHAT_HANDOFF_ID"|"$STATUS_BAD_CHAT_REASON_ID"|"$STATUS_EMPTY_CHAT_BRANCH_ID")
+          bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/; /^branch:/d')
+          bad_body="$bad_body
+reason: hand-back in chat"
+          case $bad_id in
+            "$STATUS_BAD_CHAT_REASON_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^reason: .*/reason: not-a-chat-handoff/') ;;
+            "$STATUS_EMPTY_CHAT_BRANCH_ID") bad_body="$bad_body
+branch:" ;;
+          esac ;;
+        "$STATUS_NO_AGENT_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^agent:/d') ;;
+        "$STATUS_NO_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^lease_until:/d') ;;
+        "$STATUS_BAD_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^lease_until: .*/lease_until: not-a-date/') ;;
+        "$STATUS_WRONG_ID") bad_body=$(printf '%s\n' "$bad_body" | sed "s/^id: $bad_id$/id: T-other/") ;;
+      esac
+      if [ "$bad_id" = "$STATUS_NO_RECORD_ID" ]; then
+        # An empty tree gives the ref a real commit with no claim.yaml at all.
+        bad_sha=$(git -C "$CLONE_A" commit-tree \
+          "$(git -C "$CLONE_A" mktree </dev/null)" -m "missing claim record $bad_id")
+      else
+        bad_sha=$(mk_commit "$CLONE_A" "malformed status fixture $bad_id" "$bad_body")
+      fi
+      bad_ref="refs/heads/claim/$bad_id"
+      [ -n "$bad_sha" ] || status_seed_ok=1
+      if [ -n "$bad_sha" ]; then
+        g git -C "$CLONE_A" push "$status_locks" "$bad_sha:$bad_ref" \
+          >"$TMPROOT/status.seed.$bad_id.out" 2>&1 || status_seed_ok=1
+      fi
+    done
+    status_before=$(git -C "$LOCKS" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+    status_bad_before=$(git -C "$status_locks" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+    hub status "$RELEASED_ID" >"$status_release" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$HANDOFF_ID" >"$status_handoff" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$RACE_ID" >"$status_live" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$SELF_ID" >"$status_absent" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$STATUS_BLOCKED_ID" >"$status_blocked" 2>&1; [ "$?" = "0" ] || status_rc=1
+    ( HUB_LOCKS_URL="$status_locks" HUB_CACHE_DIR="$TMPROOT/status-cache" \
+        hub status "$STATUS_CHAT_HANDOFF_ID" ) >"$status_chat" 2>&1; [ "$?" = "0" ] || status_rc=1
+    for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+                  "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID" \
+                  "$STATUS_BAD_CHAT_REASON_ID" "$STATUS_EMPTY_CHAT_BRANCH_ID"; do
+      bad_out="$TMPROOT/client.status.$bad_id.out"
+      ( HUB_LOCKS_URL="$status_locks" HUB_CACHE_DIR="$TMPROOT/status-cache" \
+          hub status "$bad_id" ) >"$bad_out" 2>&1; bad_rc=$?
+      [ "$bad_rc" = "$EX_FAIL" ] || status_ok=1
+      grep -Fxq 'claim: unknown' "$bad_out" || status_ok=1
+      grep -Fxq 'claim: absent' "$bad_out" && status_ok=1
+    done
+    ( HUB_LOCKS_URL="$TMPROOT/no-such-locks.git" hub status "$RELEASED_ID" ) \
+      >"$status_failed" 2>&1; status_bad_rc=$?
+    status_after=$(git -C "$LOCKS" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+    status_bad_after=$(git -C "$status_locks" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+
+    [ "$status_seed_ok" = "0" ] || status_ok=1
+    [ "$status_rc" = "0" ] || status_ok=1
+    [ "$status_bad_rc" = "$EX_FAIL" ] || status_ok=1
+    [ "$status_before" = "$status_after" ] || status_ok=1
+    [ "$status_bad_before" = "$status_bad_after" ] || status_ok=1
+    for status_field in id title repo state claimable blocked_by evidence retires_when; do
+      grep -q "^$status_field:" "$status_release" || status_ok=1
+    done
+    grep -Fxq "id: $RELEASED_ID" "$status_release" || status_ok=1
+    grep -Fxq 'repo: metasalmon' "$status_release" || status_ok=1
+    grep -Fxq 'state: ready' "$status_release" || status_ok=1
+    grep -Fxq 'claimable: true' "$status_release" || status_ok=1
+    grep -Fxq 'claim: release' "$status_release" || status_ok=1
+    grep -Fxq 'claim: handoff' "$status_handoff" || status_ok=1
+    grep -Fxq 'agent: agent-a' "$status_handoff" || status_ok=1
+    grep -Fxq "lease_until: $stale" "$status_handoff" || status_ok=1
+    grep -Fxq "branch: agent/$HANDOFF_ID/agent-a" "$status_handoff" || status_ok=1
+    grep -Fxq 'claim: handoff' "$status_chat" || status_ok=1
+    grep -Fxq 'branch: ' "$status_chat" || status_ok=1
+    grep -Fxq 'reason: hand-back in chat' "$status_chat" || status_ok=1
+    grep -Fxq 'claim: reclaim' "$status_live" || status_ok=1
+    grep -Fxq 'claim: absent' "$status_absent" || status_ok=1
+    grep -Fxq "blocked_by: [$STATUS_DONE_ID]" "$status_blocked" || status_ok=1
+    grep -Fxq 'claim: absent' "$status_blocked" || status_ok=1
+    grep -Fxq 'claim: unknown' "$status_failed" || status_ok=1
+    grep -Fxq 'claim: absent' "$status_failed" && status_ok=1
+    if [ "$status_ok" = "0" ]; then
+      assert 42 "client: status joins one queue item to the live claim tip, distinguishes absent, release, handoff and live, fails closed on an unreadable remote, and writes no claim ref" 0
+    else
+      assert 42 "client: status distinguishes queue and claim states without treating a failed locks read as an absent ref (status calls $status_rc, failed read rc $status_bad_rc wanted $EX_FAIL)" 1
+      note "release: $(tr '\n' '|' <"$status_release")"
+      note "handoff: $(tr '\n' '|' <"$status_handoff")"
+      note "reclaim: $(tr '\n' '|' <"$status_live")"
+      note "absent: $(tr '\n' '|' <"$status_absent")"
+      note "resolved blocker: $(tr '\n' '|' <"$status_blocked")"
+      for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+                    "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+                    "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
+        note "malformed $bad_id: $(tr '\n' '|' <"$TMPROOT/client.status.$bad_id.out")"
+      done
+      note "failed read: $(tr '\n' '|' <"$status_failed")"
+      note "malformed refs seeded: $([ "$status_seed_ok" = "0" ] && echo yes || echo no)"
+      note "remote refs unchanged: $([ "$status_before" = "$status_after" ] && echo yes || echo no)"
+      note "malformed fixture refs unchanged: $([ "$status_bad_before" = "$status_bad_after" ] && echo yes || echo no)"
+    fi
+  else
+    skip 42 "client: status joins one queue item to the live claim tip and fails closed on a failed locks read"
     note "$CLIENT_SKIP_REASON"
   fi
 
@@ -1771,10 +2087,91 @@ main() {
       note "unkeyed member: $(printf '%s' "$unkeyed_out" | tail -n 6 | tr '\n' ' ')"
       note "solo: unknown member: $(printf '%s' "$unreadable_out" | tail -n 6 | tr '\n' ' ')"
     fi
+
+    # -- 44 and 45 -----------------------------------------------------------
+    # A shared member cannot push a work branch, so its handoff record has no
+    # branch. The exact reason distinguishes that deliberate absence from a
+    # malformed ordinary handoff. A child of the held tip keeps the claim and
+    # proves the client did not merely print a chat instruction.
+    local chat_id chat_ref chat_seed chat_tip chat_rc chat_ok=0 chat_refused=0
+    for chat_id in "$CHAT_SHARED_ID" "$CHAT_UNKEYED_ID"; do
+      chat_ref="refs/heads/claim/$chat_id"
+      chat_seed=$(mk_commit "$CLONE_A" "claim $chat_id by $HUB_AGENT_TOKEN" \
+                  "$(claim_record "$chat_id" "$HUB_AGENT_TOKEN" claim "$future")")
+      push_ref "$CLONE_A" "$chat_seed" "$chat_ref" "$TMPROOT/chat.$chat_id.push"
+      hub done "$chat_id" --chat >"$TMPROOT/chat.$chat_id.out" 2>&1; chat_rc=$?
+      chat_tip=$(git -C "$LOCKS" rev-parse "$chat_ref" 2>/dev/null)
+      [ "$chat_rc" = "0" ] || chat_ok=1
+      [ "$chat_tip" != "$chat_seed" ] || chat_ok=1
+      [ "$(git -C "$LOCKS" rev-parse "$chat_ref^" 2>/dev/null)" = "$chat_seed" ] || chat_ok=1
+      [ "$(tip_value "$chat_ref" action)" = "handoff" ] || chat_ok=1
+      [ "$(tip_value "$chat_ref" agent)" = "$HUB_AGENT_TOKEN" ] || chat_ok=1
+      [ -z "$(tip_value "$chat_ref" branch)" ] || chat_ok=1
+      [ "$(tip_value "$chat_ref" reason)" = "hand-back in chat" ] || chat_ok=1
+      grep -Fq "handed off $chat_id in chat" "$TMPROOT/chat.$chat_id.out" || chat_ok=1
+    done
+    if [ "$chat_ok" = "0" ]; then
+      assert 44 "client: a chat hand-back for solo false or absent appends a branchless handoff child with an explicit chat reason and keeps the claim" 0
+    else
+      assert 44 "client: chat hand-back did not record a branchless handoff for both shared members" 1
+      note "false: $(tail -n 3 "$TMPROOT/chat.$CHAT_SHARED_ID.out" | tr '\n' ' ')"
+      note "absent: $(tail -n 3 "$TMPROOT/chat.$CHAT_UNKEYED_ID.out" | tr '\n' ' ')"
+    fi
+
+    # A configured solo member, or a value the config cannot interpret, may
+    # not choose the branchless path. Neither refusal may move its claim ref.
+    for chat_id in "$CHAT_SOLO_ID" "$CHAT_UNKNOWN_ID"; do
+      chat_ref="refs/heads/claim/$chat_id"
+      chat_seed=$(mk_commit "$CLONE_A" "claim $chat_id by $HUB_AGENT_TOKEN" \
+                  "$(claim_record "$chat_id" "$HUB_AGENT_TOKEN" claim "$future")")
+      push_ref "$CLONE_A" "$chat_seed" "$chat_ref" "$TMPROOT/chat.$chat_id.push"
+      hub done "$chat_id" --chat >"$TMPROOT/chat.$chat_id.out" 2>&1; chat_rc=$?
+      [ "$chat_rc" = "$EX_FAIL" ] || chat_refused=1
+      [ "$(git -C "$LOCKS" rev-parse "$chat_ref" 2>/dev/null)" = "$chat_seed" ] || chat_refused=1
+      grep -Fq "only when solo is false or absent" "$TMPROOT/chat.$chat_id.out" || chat_refused=1
+    done
+    if [ "$chat_refused" = "0" ]; then
+      assert 45 "client: chat hand-back refuses solo true and unknown without moving either held ref" 0
+    else
+      assert 45 "client: chat hand-back failed to refuse solo true or unknown without moving its ref" 1
+      note "solo: $(tail -n 2 "$TMPROOT/chat.$CHAT_SOLO_ID.out" | tr '\n' ' ')"
+      note "unknown: $(tail -n 2 "$TMPROOT/chat.$CHAT_UNKNOWN_ID.out" | tr '\n' ' ')"
+    fi
+
+    # -- 46 to 48 -----------------------------------------------------------
+    # Commit freshness alone cannot authorize local repo/solo values. Each
+    # refusal must preserve the held ref, while canonical shared members and
+    # the existing branch handoff remain usable with unrelated/local edits.
+    # RETIRES WHEN: chat handoffs no longer depend on canonical participation.
+    local chat_case chat_case_rc
+    for chat_case in config-unstaged config-staged config-ahead item-unstaged \
+                     item-staged item-ahead item-untracked item-local-commit; do
+      chat_authority_case "$chat_case" refuse; chat_case_rc=$?
+      assert 46 "client: chat hand-back refuses $chat_case authority spoof and preserves the held ref" "$chat_case_rc"
+    done
+    chat_authority_case solo-no refuse; chat_case_rc=$?
+    assert 47 "client: chat hand-back refuses committed solo:no without moving its held ref" "$chat_case_rc"
+    for chat_case in shared-working-solo shared-working-item unrelated-dirt \
+                     branch-config branch-item; do
+      case $chat_case in branch-*) chat_authority_case "$chat_case" branch ;;
+                        *) chat_authority_case "$chat_case" chat ;; esac
+      chat_case_rc=$?
+      assert 48 "client: canonical shared or legacy branch handoff survives $chat_case" "$chat_case_rc"
+    done
   else
     skip 22 "client: hand-back in a solo repository instructs one draft pull request"
     note "$CLIENT_SKIP_REASON"
     skip 23 "client: hand-back in a shared repository instructs a stop and a wait"
+    note "$CLIENT_SKIP_REASON"
+    skip 44 "client: chat hand-back records a branchless handoff for shared members"
+    note "$CLIENT_SKIP_REASON"
+    skip 45 "client: chat hand-back refuses solo true and unknown"
+    note "$CLIENT_SKIP_REASON"
+    skip 46 "client: chat hand-back refuses local queue authority spoofing"
+    note "$CLIENT_SKIP_REASON"
+    skip 47 "client: chat hand-back refuses committed solo:no"
+    note "$CLIENT_SKIP_REASON"
+    skip 48 "client: canonical shared and legacy branch handoffs survive local edits"
     note "$CLIENT_SKIP_REASON"
   fi
 
@@ -1887,6 +2284,75 @@ main() {
     fi
   else
     skip 26 "client: a claim prints the participation answer at claim time"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 43 -------------------------------------------------------------------
+  # Setup advice is printed after a successful claim and on a same-agent
+  # idempotent repeat. It must keep shell argument boundaries even when the
+  # member checkout path contains spaces and an apostrophe. Run its git line
+  # with a stub function in a subshell, so this checks parsing without ever
+  # creating the suggested worktree. The client's own run must create neither
+  # a worktree nor a workpad. For a later same-owner batch claim, the reuse/skip
+  # advice must precede the executable setup hints, so copy-pasting does not
+  # create a redundant worktree before the condition is seen.
+  if [ "$probe_ok" = "0" ]; then
+    local hint_out="$TMPROOT/client.hint.idempotent.out"
+    local hint_args="$TMPROOT/client.hint.args" hint_expected="$TMPROOT/client.hint.expected"
+    local hint_line hint_checkout="$TMPROOT/member checkout's copy"
+    local hint_key="salmon-data-mobilization-metasalmon-$PART_SOLO_ID"
+    local hint_branch="agent/$PART_SOLO_ID/$PART_TOKEN"
+    local hint_ref="refs/heads/claim/$PART_SOLO_ID" hint_before hint_after
+    local hint_wt_before hint_wt_after hint_rc=0 hint_ok=0
+    hint_before=$(git -C "$LOCKS" rev-parse "$hint_ref" 2>/dev/null)
+    hint_wt_before=$(git -C "$PART_REPO" worktree list --porcelain)
+    ( HUB_CACHE_DIR="$PART_CACHE" HUB_AGENT_TOKEN="$PART_TOKEN" \
+        g bash "$PART_CLIENT" claim "$PART_SOLO_ID" ) >"$hint_out" 2>&1
+    hint_rc=$?
+    hint_after=$(git -C "$LOCKS" rev-parse "$hint_ref" 2>/dev/null)
+    hint_wt_after=$(git -C "$PART_REPO" worktree list --porcelain)
+
+    [ "$hint_rc" = "0" ] || hint_ok=1
+    [ "$hint_before" = "$hint_after" ] || hint_ok=1
+    [ "$hint_wt_before" = "$hint_wt_after" ] || hint_ok=1
+    [ "$(printf '%s\n' "$hint_wt_after" | grep -c '^worktree ')" = "1" ] || hint_ok=1
+    [ ! -e "$PART_REPO/../hub-worktrees/$hint_key" ] || hint_ok=1
+    [ ! -e "$PART_REPO/.hub/workpads/$PART_SOLO_ID.md" ] || hint_ok=1
+    grep -Fxq "worktree key: $hint_key" "$psolo_out" || hint_ok=1
+    grep -Fxq "worktree key: $hint_key" "$hint_out" || hint_ok=1
+    grep -Fxq "workpad: .hub/workpads/$PART_SOLO_ID.md" "$psolo_out" || hint_ok=1
+    grep -Fxq "workpad: .hub/workpads/$PART_SOLO_ID.md" "$hint_out" || hint_ok=1
+    for output in "$psolo_out" "$hint_out"; do
+      awk '/REUSES the lead worktree/ { reuse = NR }
+           /skip/ { skip = NR }
+           /^git -C .*worktree add -b/ { command = NR }
+           END { exit !(reuse && skip && command && reuse <= skip && skip < command) }' \
+        "$output" || hint_ok=1
+    done
+    hint_line=$(sed -n '/^[[:space:]]*git -C /{s/^[[:space:]]*//;p;}' "$psolo_out" | head -n 1)
+    [ -n "$hint_line" ] || hint_ok=1
+    if [ -n "$hint_line" ]; then
+      bash -n <<<"$hint_line" || hint_ok=1
+      ( MEMBER_CHECKOUT="$hint_checkout"
+        MEMBER_BASE=origin/main
+        git() { printf '%s\n' "$@" >"$hint_args"; }
+        eval "$hint_line"
+      ) || hint_ok=1
+      printf '%s\n' -C "$hint_checkout" worktree add -b "$hint_branch" \
+        "../hub-worktrees/$hint_key" origin/main >"$hint_expected"
+      cmp -s "$hint_args" "$hint_expected" || hint_ok=1
+    fi
+    grep -Fq 'mkdir -p ' "$psolo_out" || hint_ok=1
+    grep -Fq 'mkdir -p ' "$hint_out" || hint_ok=1
+    if [ "$hint_ok" = "0" ]; then
+      assert 43 "client: fresh and idempotent claim print shell-safe worktree and workpad hints without creating either" 0
+    else
+      assert 43 "client: successful claims print shell-safe, non-mutating setup hints (repeat rc $hint_rc, ref unchanged $([ "$hint_before" = "$hint_after" ] && echo yes || echo no))" 1
+      note "fresh hint: $(grep -E 'worktree key:|workpad:|git -C |mkdir -p ' "$psolo_out" | head -n 4 | tr '\n' ' ')"
+      note "repeat hint: $(grep -E 'worktree key:|workpad:|git -C |mkdir -p ' "$hint_out" | head -n 4 | tr '\n' ' ')"
+    fi
+  else
+    skip 43 "client: fresh and idempotent claim print shell-safe, non-mutating setup hints"
     note "$CLIENT_SKIP_REASON"
   fi
 

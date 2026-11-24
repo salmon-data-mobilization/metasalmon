@@ -13,10 +13,8 @@
 # and must fail. Keep this list in step with `extra-packages` in
 # `.github/workflows/R-CMD-check.yaml`.
 #
-# Not covered here, deliberately: the four Theme A integrity tests skip under
-# `R-CMD-check.yaml` by design and run in `theme-a-integrity.yaml`, which sets
-# `METASALMON_RUN_THEME_A_INTEGRITY=true`. A CI run of the check workflow should
-# therefore report exactly those four skips.
+# Theme A replay and ingester conformance tests run in the ordinary suite and
+# in the dedicated offline Theme A workflow. No live-evidence gate is skipped.
 ci_provided_packages <- c(
   "frictionless",
   "withr",

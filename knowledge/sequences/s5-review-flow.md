@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S5 — R-native review flow and API hygiene"
-description: "Scriptable, re-runnable semantic review and editing (review_semantics / accept_suggestion / apply_sdp_semantics / review_metadata / set_sdp_*), condition classes, and accessors. Backlog items 58, 59, 60, 74. M1-M5 all landed 2026-08-25 and #74 is closed; shipped as metasalmon 0.5.0 the same day; #58 and #59 remain."
+description: "Scriptable, re-runnable semantic review and editing (review_semantics / accept_suggestion / apply_sdp_semantics / review_metadata / set_sdp_*), condition classes, and accessors. Backlog items 58, 59, 60, 74. The M1-M5 review flow shipped as metasalmon 0.5.0 on 2026-08-25."
 status: draft
 tags: [review, api]
 psc:
@@ -11,8 +11,16 @@ psc:
 
 # S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · **shipped as 0.5.0**
 
-**#74 is closed (2026-08-25), and #60's accessor clause with it — #60's other
-clauses stand. #58 and #59 are what remain of this stream.**
+**The #74 accessor work shipped 2026-08-25, including #60's accessor clause.**
+
+**B-60 R packaging scope (recorded 2026-09-30):** executable Rd examples,
+removal of a blanket roxygen `httr` import, an `Authors@R`-only author
+declaration, and a naming convention for future R exports are package
+documentation and metadata hygiene. They change no exported signature, SDP
+format, or runtime behaviour. These R packaging mechanics need no Python code
+port; metasalmonpy's packaging and guides remain their own documentation
+surfaces. This records why the usual mirror presumption does not call for a
+Python code change in B-60.
 
 **Released as metasalmon `v0.5.0` on 2026-08-25** — annotated tag on the
 release merge, GitHub Release published with the `NEWS.md` entry as its body.
@@ -137,9 +145,15 @@ minor is next when it lands.
 recorded above, and the release proved the milder half of it wrong: #74 adding
 nine exported functions did **not** want a breaking bump, because adding an
 export breaks nobody. Only #58 does. So 0.5.0 shipped #74 alone as an ordinary
-minor, and the "one breaking-release story" is now #58 and #59's to spend
-together, not #74's. Kept rather than rewritten because the paragraph is the
-reasoning that was tested, and it is worth knowing which clause failed.
+minor. At that point, #58 and #59 were expected to share a later breaking-release
+story; #59 instead landed separately on 2026-10-01. Kept rather than
+rewritten because the paragraph is the reasoning that was tested, and it is
+worth knowing which clause failed.
+
+**#59 landed 2026-10-01 in metasalmon PR #243 (`d0339c0`).** The configuration
+registry and help topic, missing-only load defaults, private BioPortal warning
+state, and RNG-independent session IDs address the configuration and global-state
+scope separately from the 0.5.0 review flow.
 
 Independent of every other stream. ~~Smaller sibling: **#75**, an auto-applied
 `method_iri` with no `metadata/methods.csv` — fixed by the execplan's

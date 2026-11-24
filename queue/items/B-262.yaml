@@ -1,8 +1,8 @@
 id: B-262
 kind: defect
 title: 'The publication vignette''s step 9 says strict validation passes only when a package is publication-ready, which step 10 contradicts, and two closure comments keep the reviewer gloss B-192 removed from the vignette'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S11

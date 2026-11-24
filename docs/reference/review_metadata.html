@@ -121,11 +121,95 @@ loaded it, and otherwise by fetching it as they would.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_sdp.html">create_sdp</a></span><span class="op">(</span><span class="va">resources</span>, dataset_id <span class="op">=</span> <span class="st">"demo-1"</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_sdp.html">create_sdp</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>spawner_count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12L</span>, <span class="fl">19L</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"sdp-review-"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  seed_semantics <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  seed_verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Some measurement semantic IRI fields are still blank in this review-ready</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> package.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> That does not block review-ready creation, but those gaps must be filled</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   before final validation or publication.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   term_iri: spawner_count (rows 1) property_iri: spawner_count (rows 1)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   entity_iri: spawner_count (rows 1) unit_iri: spawner_count (rows 1)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Review <span style="color: #0000BB;">metadata/column_dictionary.csv</span> first (and <span style="color: #0000BB;">metadata/tables.csv</span> if</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   present), then fill the remaining gaps there.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If you want candidate IRIs later, run `suggest_semantics()` or recreate the</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   package with `seed_semantics = TRUE` before final validation.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Dictionary validation passed</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Created Salmon Data Package at <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Created review-ready one-shot package with `create_sdp()`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Prefilled semantic values were written directly into the metadata CSVs only</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   where target fields were blank. Compatible table observation-unit drafts can</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   be auto-applied using observation-unit/description first and otherwise table</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   label/id fallback. Any <span style="color: #0000BB;">"REVIEW:"</span> entries already live in the metadata CSVs</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   and must be confirmed or edited there.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No shortlist was seeded, so set any IRI you already know with</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `set_sdp_column()`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Then run `review_metadata(pkg_path)` for the free-text fields and any</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   required IRI nothing was suggested for; it prints the `set_sdp_dataset()` /</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `set_sdp_table()` / `set_sdp_column()` call that fills each one.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Finish with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   rebuilding the EDH XML first if you need it. <span style="color: #0000BB;">README-review.txt</span> has the same</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   checklist.</span>
 <span class="r-in"><span><span class="fu">review_metadata</span><span class="op">(</span><span class="va">pkg</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="set_sdp_dataset.html">set_sdp_dataset</a></span><span class="op">(</span><span class="va">pkg</span>, creator <span class="op">=</span> <span class="st">"Fisheries and Oceans Canada"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── dataset.csv ───────────────────────────────────────────────────────────────</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    description: placeholder text, refused by strict validation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       MISSING DESCRIPTION: describe the contents and purpose of dataset</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       'dataset-1'.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    creator: placeholder text, refused by strict validation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       MISSING METADATA: add creator, team, or originating program.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    contact_name: placeholder text, refused by strict validation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       MISSING METADATA: add primary contact name or team.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    contact_email: placeholder text, refused by strict validation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       MISSING METADATA: add primary contact email.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    set_sdp_dataset("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      description = "&lt;describe the contents and purpose of dataset 'dataset-1'&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      creator = "&lt;add creator, team, or originating program&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      contact_name = "&lt;add primary contact name or team&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      contact_email = "&lt;add primary contact email&gt;"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    )</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── tables.csv · table_1 ──────────────────────────────────────────────────────</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    description: placeholder text, refused by strict validation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       MISSING DESCRIPTION: describe what each row in table 'table_1'</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       represents.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    observation_unit: placeholder text, refused by strict validation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       MISSING METADATA: describe the observation unit for table 'table_1'.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    observation_unit_iri: required IRI and not yet decided</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    set_sdp_table("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76", "table_1",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      description = "&lt;describe what each row in table 'table_1' represents&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      observation_unit = "&lt;describe the observation unit for table 'table_1'&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      observation_unit_iri = "&lt;IRI for what one row represents&gt;"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    )</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── column_dictionary.csv · table_1 · spawner_count ───────────────────────────</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    column_description: placeholder text, refused by strict validation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       MISSING DESCRIPTION: define what 'spawner_count' means in table</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       'table_1'.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    term_iri: required IRI and not yet decided</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    property_iri: required IRI and not yet decided</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    entity_iri: required IRI and not yet decided</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    unit_iri: required IRI and not yet decided</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    set_sdp_column("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76", "spawner_count", table = "table_1",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      column_description = "&lt;define what 'spawner_count' means in table 'table_1'&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      term_iri = "&lt;IRI for term_iri&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      property_iri = "&lt;IRI for property_iri&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      entity_iri = "&lt;IRI for entity_iri&gt;",</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      unit_iri = "&lt;IRI for unit_iri&gt;"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    )</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── next ──────────────────────────────────────────────────────────────────────</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    12 fields still block strict validation.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Replace each &lt;...&gt; with the real value, then paste the calls above.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    5 of them are IRIs -- review_semantics() shows candidates for any that have them.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Then: validate_salmon_datapackage("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76", require_iris = TRUE)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

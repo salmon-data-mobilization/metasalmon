@@ -173,6 +173,23 @@ skip_unless_raw_github_serves <- function(url, token = "") {
   invisible(resp)
 }
 
+# read_github_csv_dir() lists through gh::gh() at api.github.com, not through
+# the raw host above. Probe a known directory with that same API call and token
+# before testing the expected 404 for a nonexistent directory. A failed probe
+# can skip only off CI; on CI the test's own listing remains the strict check.
+# Retires when the live directory tests stop reaching the GitHub API.
+skip_unless_github_api_serves <- function(repo, path, ref, token, request = gh::gh) {
+  endpoint <- sprintf("/repos/%s/contents/%s", repo, path)
+  response <- tryCatch(request(endpoint, .token = token, ref = ref), error = function(e) e)
+  if (isTRUE(as.logical(Sys.getenv("CI", "false")))) {
+    return(invisible(response))
+  }
+  if (inherits(response, "error")) {
+    testthat::skip(paste("Cannot list", path, "through the GitHub API:", conditionMessage(response)))
+  }
+  invisible(response)
+}
+
 # The pins below answer requests with httr2::local_mocked_responses()
 # (httr2 1.0.0) and read them back with httr2::req_get_headers() (1.2.0).
 # DESCRIPTION pins neither, so they skip on an older install, as
@@ -253,6 +270,37 @@ test_that("the raw-host guard skips only off CI", {
   expect_match(guard_skip(unreachable, ci = NA), "simulated transport failure")
 })
 
+test_that("the directory guard probes the API with the token and skips only off CI", {
+  seen <- NULL
+  probe <- function(endpoint, .token, ref) {
+    seen <<- list(endpoint = endpoint, token = .token, ref = ref)
+    list(list(type = "file", name = "sample.csv"))
+  }
+  skip_unless_github_api_serves("owner/repo", "inst/extdata", "main", "fixture-token", probe)
+  expect_identical(seen, list(
+    endpoint = "/repos/owner/repo/contents/inst/extdata",
+    token = "fixture-token",
+    ref = "main"
+  ))
+
+  guard_skip <- function(request, ci) {
+    withr::local_envvar(CI = ci)
+    tryCatch(
+      {
+        skip_unless_github_api_serves("owner/repo", "inst/extdata", "main", "fixture-token", request)
+        NA_character_
+      },
+      skip = conditionMessage
+    )
+  }
+  refused <- function(...) stop("simulated API refusal")
+  unreachable <- function(...) stop("simulated connection failure")
+  expect_match(guard_skip(refused, ci = NA), "simulated API refusal")
+  expect_match(guard_skip(unreachable, ci = NA), "simulated connection failure")
+  expect_identical(guard_skip(refused, ci = "true"), NA_character_)
+  expect_identical(guard_skip(unreachable, ci = "true"), NA_character_)
+})
+
 test_that("read_github_csv can read remote content with a token", {
   token <- metasalmon:::ms_current_token()
   skip_if(!nzchar(token), "No GitHub token configured; skipping Qualark fetch test.")
@@ -281,8 +329,11 @@ test_that("read_github_csv can read remote content with a token", {
 test_that("read_github_csv without token can read a known public GitHub raw CSV", {
   skip_if_offline()
 
+  url <- "https://raw.githubusercontent.com/salmon-data-mobilization/metasalmon/main/inst/extdata/nuseds-fraser-coho-sample.csv"
+  skip_unless_raw_github_serves(url, token = "")
+
   df <- read_github_csv(
-    "https://raw.githubusercontent.com/salmon-data-mobilization/metasalmon/main/inst/extdata/nuseds-fraser-coho-sample.csv",
+    url,
     token = "",
     progress = FALSE
   )
@@ -407,6 +458,11 @@ test_that("read_github_csv_dir handles empty directories", {
   # a private repo when testing those permissions specifically.
   repo <- Sys.getenv("METASALMON_GITHUB_TEST_REPO", "salmon-data-mobilization/metasalmon")
   ref <- Sys.getenv("METASALMON_GITHUB_TEST_REF", "main")
+
+  # The expected 404 below is informative only after a known directory in
+  # this repository can be listed through the same API and token.
+  known_dir <- Sys.getenv("METASALMON_GITHUB_TEST_DIR", "inst/extdata")
+  skip_unless_github_api_serves(repo, known_dir, ref, token)
 
   expect_error(
     read_github_csv_dir(

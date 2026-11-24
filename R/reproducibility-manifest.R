@@ -387,6 +387,20 @@
 #' @param overwrite Logical; replace an existing managed manifest when `TRUE`.
 #'
 #' @return The manifest path, invisibly.
+#' @examples
+#' sdp_path <- tempfile("sdp-")
+#' dir.create(file.path(sdp_path, "reproducibility", "workflow"),
+#'            recursive = TRUE)
+#' writeLines("message('prepare data')",
+#'            file.path(sdp_path, "reproducibility", "workflow", "prepare.R"))
+#' artifacts <- data.frame(
+#'   path = "reproducibility/workflow/prepare.R",
+#'   role = "workflow",
+#'   media_type = "text/x-r-source"
+#' )
+#' write_sdp_reproducibility_manifest(sdp_path, artifacts)
+#' validate_sdp_reproducibility_manifest(sdp_path)
+#' unlink(sdp_path, recursive = TRUE)
 #' @export
 write_sdp_reproducibility_manifest <- function(path, artifacts,
                                                 overwrite = FALSE) {
@@ -445,6 +459,21 @@ write_sdp_reproducibility_manifest <- function(path, artifacts,
 #'   provenance, deterministic ordering, and exact directory closure.
 #'
 #' @return The parsed manifest as a list.
+#' @examples
+#' sdp_path <- tempfile("sdp-")
+#' dir.create(file.path(sdp_path, "reproducibility", "workflow"),
+#'            recursive = TRUE)
+#' writeLines("message('prepare data')",
+#'            file.path(sdp_path, "reproducibility", "workflow", "prepare.R"))
+#' artifacts <- data.frame(
+#'   path = "reproducibility/workflow/prepare.R",
+#'   role = "workflow",
+#'   media_type = "text/x-r-source"
+#' )
+#' write_sdp_reproducibility_manifest(sdp_path, artifacts)
+#' manifest <- read_sdp_reproducibility_manifest(sdp_path)
+#' manifest$artifacts[[1]]$role
+#' unlink(sdp_path, recursive = TRUE)
 #' @export
 read_sdp_reproducibility_manifest <- function(path, validate = TRUE) {
   root <- .ms_sdp_reproducibility_root(path)
@@ -474,6 +503,20 @@ read_sdp_reproducibility_manifest <- function(path, validate = TRUE) {
 #' @param path Existing Salmon Data Package directory.
 #'
 #' @return `TRUE`, invisibly, when validation succeeds; otherwise an error.
+#' @examples
+#' sdp_path <- tempfile("sdp-")
+#' dir.create(file.path(sdp_path, "reproducibility", "workflow"),
+#'            recursive = TRUE)
+#' writeLines("message('prepare data')",
+#'            file.path(sdp_path, "reproducibility", "workflow", "prepare.R"))
+#' artifacts <- data.frame(
+#'   path = "reproducibility/workflow/prepare.R",
+#'   role = "workflow",
+#'   media_type = "text/x-r-source"
+#' )
+#' write_sdp_reproducibility_manifest(sdp_path, artifacts)
+#' validate_sdp_reproducibility_manifest(sdp_path)
+#' unlink(sdp_path, recursive = TRUE)
 #' @export
 validate_sdp_reproducibility_manifest <- function(path) {
   read_sdp_reproducibility_manifest(path, validate = TRUE)

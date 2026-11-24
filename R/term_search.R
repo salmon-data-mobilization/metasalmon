@@ -104,6 +104,61 @@
   unique(queries)
 }
 
+# The code points Python's `str.isspace()` accepts, which are what
+# `str.strip()` removes: 29, listed under Python 3.13.11 (Unicode 15.1), and the
+# same for every Python metasalmonpy supports, because U+180E, the last one to
+# move, left Unicode's whitespace category in 6.3. `trimws()` removes four of
+# them by default. A PCRE class cannot stand in for the list: R compiles a
+# pattern for ASCII-only input in byte mode, where any code point above 255 is
+# a compilation error.
+.ms_python_whitespace_code_points <- c(
+  0x09:0x0D, 0x1C:0x20, 0x85, 0xA0, 0x1680, 0x2000:0x200A,
+  0x2028, 0x2029, 0x202F, 0x205F, 0x3000
+)
+
+# Trims from both ends of each string what Python's `str.strip()` would. A
+# string that is not valid UTF-8 comes back as given: Python cannot hold one,
+# so there is nothing to mirror, and it names no source either way.
+.ms_strip_python_whitespace <- function(x) {
+  vapply(x, function(value) {
+    if (is.na(value) || identical(Encoding(value), "bytes")) {
+      return(value)
+    }
+    # Only a string declared latin1 is converted. `enc2utf8()` on a string of
+    # unknown encoding in a non-UTF-8 locale writes each non-ASCII byte out as
+    # the text "<xx>", which turned a no-break space into eight characters
+    # under `LC_ALL=C` rather than removing it.
+    utf8 <- if (identical(Encoding(value), "latin1")) enc2utf8(value) else value
+    if (!validUTF8(utf8)) {
+      return(value)
+    }
+    points <- utf8ToInt(utf8)
+    kept <- which(!points %in% .ms_python_whitespace_code_points)
+    if (length(kept) == 0L) {
+      return("")
+    }
+    intToUtf8(points[kept[[1L]]:kept[[length(kept)]]])
+  }, character(1), USE.NAMES = FALSE)
+}
+
+# A source list the caller named: each name trimmed as Python's `str.strip()`
+# trims it and lower-cased, a name that is missing or empty
+# after trimming dropped, and a repeat dropped after its first appearance, in
+# the caller's order (hub B-421). It used to be passed on as given, so a source
+# named in capitals was searched in Python and silently not here. Unicode
+# lower-casing uses an explicit locale so that ambient LC_CTYPE cannot change
+# a recognized source or the allowlist recorded in a review packet. The shared
+# Unicode test corpus also covers dotted I and context-sensitive final sigma;
+# this does not promise identical mappings across different Unicode versions.
+# metasalmonpy still needs the missing-entry
+# port: its released reader can turn `None` into a source called "none".
+.ms_normalize_explicit_sources <- function(sources) {
+  names <- .ms_strip_python_whitespace(as.character(unlist(sources, use.names = FALSE)))
+  foldable <- !is.na(names) & validUTF8(names)
+  names[foldable] <- stringi::stri_trans_tolower(names[foldable], locale = "en")
+  unique(names[!is.na(names) & nzchar(names)])
+}
+
 #' Find candidate terms across external vocabularies
 #'
 #' Lightweight meta-search helper for IRIs. Uses public APIs when available.
@@ -137,16 +192,44 @@
 #' @param query Character search string (e.g., `"spawner count"`, `"temperature"`).
 #' @param role Optional I-ADOPT role hint for ranking and source selection. One of:
 #'   `"variable"` (compound term), `"property"` (characteristic),
-#'   `"entity"` (thing measured), `"constraint"` (qualifier), `"method"`, or `"unit"`.
-#'   When specified, sources are optimized for the role and results are ranked higher
-#'   when they match preferred ontologies for that role.
-#' @param sources Character vector of vocabulary sources to query. Options:
-#'   `"smn"`, `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
-#'   Default is `c("smn", "gcdfo", "ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
+#'   `"entity"` (thing measured), `"constraint"` (qualifier),
+#'   `"statistical_modifier"`, `"method"`, or `"unit"`. Results are ranked
+#'   higher when they match preferred ontologies for the role, and when
+#'   `sources` is `NULL` the role also chooses which sources are searched.
+#' @param sources Character vector of vocabulary sources to query, or `NULL`
+#'   (the default) to query the sources [sources_for_role()] names for `role`;
+#'   with no role, that is `c("smn", "gcdfo", "ols", "nvs")`. Options:
+#'   `"smn"`, `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`,
+#'   `"worms"`, `"bioportal"`. A vector you supply is a strict allowlist, read
+#'   consistently by this package: each name is trimmed and Unicode lower-cased
+#'   independently of the session locale, a missing
+#'   or empty name is dropped, and a repeated name is dropped after its first
+#'   appearance, so `"SMN"` and `" smn "` both search smn. A name that is none
+#'   of the options is reported with `status = "unsupported"` and no lookup
+#'   is performed for it; supported sources in the same call still return their
+#'   results. An empty vector returns an empty tibble.
 #' @param expand_query Logical. If `TRUE` (default), applies role-aware query expansion
 #'   (Phase 4) to generate additional query variants based on the role context.
 #'   For example, unit queries get abbreviation expansions, method queries get
 #'   "method" suffix added. Set to `FALSE` to search only the exact query.
+#' @param release Optional release versions of smn and gcdfo to search instead
+#'   of the latest ontology, named by ontology: `c(smn = "0.0.3")`, or
+#'   `c(smn = "0.0.3", gcdfo = "0.0.9")`. Each is read from its release
+#'   snapshot, downloaded from its version IRI (`https://w3id.org/smn/0.0.3`)
+#'   once per session, and checked against the snapshot's `MANIFEST.sha256`
+#'   when it carries one. A pin never falls back to the latest ontology: a
+#'   release that cannot be read or does not match its manifest is an error.
+#'   Only smn and gcdfo can be pinned; other sources are searched as they are.
+#' @param snapshot_dir Optional local release snapshots, named by ontology the
+#'   same way, such as a checkout's `docs/releases/0.0.3/`. Each is read from
+#'   disk, with no download. When `release` names the same ontology too, a
+#'   snapshot that declares an `owl:versionIRI` must declare that version.
+#'
+#'   A pinned smn release is read from its RDF/XML (`smn.owl`), which holds
+#'   the same terms as the latest ontology's modules, and its terms get the
+#'   role hints the module reader gives them, with one difference: a release
+#'   records no module, so a term whose entity hint comes only from belonging
+#'   to the `01-entity-systematics` module has no entity hint in a release.
 #'
 #' @return Tibble with columns: `label`, `iri`, `source`, `ontology`, `role`,
 #'   `match_type`, `definition`, `score`, `alignment_only`, `agreement_sources`,
@@ -159,14 +242,27 @@
 #'
 #'   The result has a `"diagnostics"` attribute (access via `attr(result, "diagnostics")`)
 #'   containing per-source/query diagnostic information: source, query, status
-#'   (success/error), count, elapsed_secs, and error message if applicable. This
-#'   helps explain empty results or slow queries.
+#'   (`success`, `http_error`, `error` or `unsupported`), count, elapsed_secs,
+#'   and error message if applicable. A supported search with no matches remains
+#'   `success`. Unsupported and failed lookups warn that the result is incomplete
+#'   and are not cached. An unsupported name is still reported when a local smn
+#'   or gcdfo match short-circuits other supported lookups.
+#'
+#'   When `release` or `snapshot_dir` pins an ontology the call searched, the
+#'   result also has an `"ontology_release"` attribute: a tibble with one row
+#'   per pinned ontology the search asked, recording which release was
+#'   searched. smn is asked first, and when it matches a query by label, gcdfo
+#'   is not asked for that query, so a gcdfo pin that was never asked is not
+#'   recorded. The columns are `ontology`,
+#'   `version`, `version_iri` (as the snapshot declares it, or `NA`), `file`,
+#'   `sha256` (of the bytes read), `manifest_verified` (`TRUE` when the
+#'   snapshot's `MANIFEST.sha256` vouched for them, `FALSE` when it carries
+#'   none) and `source` (the version IRI or the snapshot directory).
 #'
 #' @seealso [suggest_semantics()] for automated suggestions based on your dictionary.
 #' @seealso [sources_for_role()] for role-optimized source selection.
 #'
 #' @export
-#' @import httr
 #' @importFrom rlang %||% .data
 #'
 #' @examples
@@ -178,8 +274,9 @@
 #' # Search specifically for property terms
 #' property_terms <- find_terms("temperature", role = "property")
 #'
-#' # Search for units with QUDT preference
-#' unit_terms <- find_terms("kilogram", role = "unit", sources = sources_for_role("unit"))
+#' # Search for units: with no sources named, the unit role searches
+#' # sources_for_role("unit"), which puts QUDT first
+#' unit_terms <- find_terms("kilogram", role = "unit")
 #'
 #' # Search for taxa using taxon resolvers
 #' taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms"))
@@ -189,14 +286,45 @@
 #'
 #' # Search multiple sources
 #' all_results <- find_terms("escapement", sources = c("smn", "gcdfo", "ols", "nvs"))
+#'
+#' # Search smn release 0.0.3 rather than the latest ontology, and record it
+#' pinned <- find_terms("escapement", sources = "smn", release = c(smn = "0.0.3"))
+#' attr(pinned, "ontology_release")
+#'
+#' # Pin the searches suggest_semantics() makes
+#' # suggest_semantics(dict, search_fn = function(query, role, sources) {
+#' #   find_terms(query, role = role, sources = sources, release = c(smn = "0.0.3"))
+#' # })
 #' }
 find_terms <- function(query,
                        role = NA_character_,
-                       sources = c("smn", "gcdfo", "ols", "nvs"),
-                       expand_query = TRUE) {
+                       sources = NULL,
+                       expand_query = TRUE,
+                       release = NULL,
+                       snapshot_dir = NULL) {
+  # Checked before anything else, so a mistyped pin fails even on a call that
+  # would search nothing.
+  release_pins <- .ms_find_terms_release_pins(release, snapshot_dir)
+
+  # An omitted source list is the role's, as it is in metasalmonpy's
+  # `find_terms()` and as `suggest_semantics()` already resolved it here (hub
+  # B-420; Q70, ruled by Brett on 2026-09-26: R moves). With no role that is the
+  # four sources this argument used to default to, so a call without a role
+  # searches what it always did. A list the caller names is read the way
+  # metasalmonpy reads it (hub B-421).
+  sources <- if (is.null(sources)) {
+    sources_for_role(role)
+  } else {
+    .ms_normalize_explicit_sources(sources)
+  }
   if (length(sources) == 0 || is.na(query) || query == "") {
     return(.empty_terms(role))
   }
+
+  # A pinned ontology is read from its release snapshot before any search runs,
+  # so a snapshot that cannot be read or verified stops the call instead of
+  # becoming a source that quietly answered nothing.
+  pinned <- .ms_find_terms_pinned_indexes(release_pins, sources)
 
   # Apply role-aware query expansion (Phase 4)
   queries <- if (expand_query) .expand_query(query, role) else query
@@ -212,10 +340,11 @@ find_terms <- function(query,
     role,
     paste(sort(sources, method = "radix"), collapse = ","),
     .ms_ranking_identity(),
+    pinned$identity,
     sep = "::"
   )
   if (.metasalmon_cache_enabled() && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
-    return(get(cache_key, envir = .metasalmon_cache))
+    return(.ms_with_release_record(get(cache_key, envir = .metasalmon_cache), pinned$record))
   }
 
   # Run searches for all expanded queries with diagnostic tracking (Phase 4)
@@ -231,11 +360,18 @@ find_terms <- function(query,
       # to this call, which is what makes it correct under `mclapply()`: each
       # forked worker fills its own and returns it inside the diagnostic.
       failures <- character()
+      unsupported <- FALSE
       result <- withCallingHandlers(
         tryCatch(
         {
-          res <- if (src == "smn") {
+          # An unpinned search calls the two searches exactly as it always
+          # has, so nothing that stands in for them needs to know about pins.
+          res <- if (src == "smn" && !is.null(pinned$indexes$smn)) {
+            .search_smn(q, role, index = pinned$indexes$smn)
+          } else if (src == "smn") {
             .search_smn(q, role)
+          } else if (src == "gcdfo" && !is.null(pinned$indexes$gcdfo)) {
+            .search_gcdfo(q, role, index = pinned$indexes$gcdfo)
           } else if (src == "gcdfo") {
             .search_gcdfo(q, role)
           } else if (src == "ols") {
@@ -253,6 +389,7 @@ find_terms <- function(query,
           } else if (src == "worms") {
             .search_worms(q, role)
           } else {
+            unsupported <- TRUE
             .empty_terms(role)
           }
           list(
@@ -262,10 +399,12 @@ find_terms <- function(query,
               query = q,
               # A source that returned rows despite a failed side request is
               # still a partial answer, not a clean success.
-              status = if (length(failures) == 0L) "success" else "http_error",
+              status = if (unsupported) "unsupported" else if (length(failures) == 0L) "success" else "http_error",
               count = nrow(res),
               elapsed_secs = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 2),
-              error = if (length(failures) == 0L) NA_character_ else paste(failures, collapse = "; ")
+              error = if (unsupported) {
+                paste0("Unsupported vocabulary source '", src, "'; no lookup was performed.")
+              } else if (length(failures) == 0L) NA_character_ else paste(failures, collapse = "; ")
             )
           )
         },
@@ -311,6 +450,14 @@ find_terms <- function(query,
         append_query_output(local_res)
         local_good_hit <- .local_short_circuit_hit(q, local_res$result)
         if (local_good_hit) {
+          # A local hit skips other supported lookups, but must not conceal a
+          # source name that this dispatcher cannot search at all.
+          unsupported_sources <- setdiff(sources, c(
+            "smn", "gcdfo", "ols", "nvs", "zooma", "bioportal", "qudt", "gbif", "worms"
+          ))
+          for (unsupported_src in unsupported_sources) {
+            append_query_output(run_source(unsupported_src))
+          }
           diagnostics <<- c(diagnostics, query_diagnostics)
           return(query_results)
         }
@@ -398,6 +545,7 @@ find_terms <- function(query,
   # Attach diagnostics as attribute (Phase 4)
   diag_df <- dplyr::bind_rows(lapply(diagnostics, tibble::as_tibble))
   attr(ranked, "diagnostics") <- diag_df
+  ranked <- .ms_with_release_record(ranked, pinned$record)
 
   failed_sources <- .ms_search_failed_sources(diag_df)
   if (length(failed_sources) > 0) {
@@ -432,7 +580,7 @@ find_terms <- function(query,
 # if `find_terms()` ever throws or returns a typed failure for a degraded source,
 # there is nothing left to distinguish and this goes with the warning below.
 .ms_search_degraded_statuses <- function() {
-  c("error", "http_error")
+  c("error", "http_error", "unsupported")
 }
 
 .ms_search_failed_sources <- function(diagnostics) {
@@ -516,6 +664,10 @@ find_terms <- function(query,
 }
 
 .metasalmon_cache <- new.env(parent = emptyenv())
+
+# Warning bookkeeping is private to the loaded namespace, never a user option.
+# The once-per-session suppression retires if BioPortal no longer needs a key.
+.ms_term_search_state <- new.env(parent = emptyenv())
 
 # A function, not a top-level binding. As a binding this was evaluated when the
 # namespace was built, so an installed package captured the *build* machine's
@@ -704,7 +856,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   encoded <- utils::URLencode(query, reserved = TRUE)
   url <- paste0("https://www.ebi.ac.uk/ols4/api/search?q=", encoded, "&rows=50")
   data <- .safe_json(url)
-  if (is.null(data) || is.null(data$response$docs)) {
+  if (is.null(data) || length(data$response$docs) == 0L) {
     return(.empty_terms(role))
   }
 
@@ -870,15 +1022,15 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
 .search_bioportal <- function(query, role) {
   apikey <- Sys.getenv("BIOPORTAL_APIKEY", unset = "")
   if (apikey == "") {
-    if (isFALSE(getOption("metasalmon.warned_bioportal_missing", FALSE))) {
+    if (!isTRUE(.ms_term_search_state$warned_bioportal_missing)) {
       warning(
-        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env and restart. ",
+        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env. ",
         "Example (bash/zsh): export BIOPORTAL_APIKEY=your_key_here. ",
         "Persist it by adding BIOPORTAL_APIKEY=your_key_here to ~/.Renviron or ~/.zshrc. ",
         "Get a key at https://bioportal.bioontology.org/register. ",
         call. = FALSE
       )
-      options(metasalmon.warned_bioportal_missing = TRUE)
+      .ms_term_search_state$warned_bioportal_missing <- TRUE
     }
     return(.empty_terms(role))
   }
@@ -1653,8 +1805,23 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   vals[nzchar(vals)]
 }
 
+# The namespaces the RDF/XML readers name, bound by URI. A document's own
+# prefixes are the serializer's choice: the smn 0.0.3 release binds the OBO
+# namespace to `ns1`, so reading through `xml2::xml_ns(doc)` left `obo:` unbound
+# and lost every IAO definition in it, with one warning per term.
+.ms_rdfxml_ns <- function() {
+  c(
+    rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    rdfs = "http://www.w3.org/2000/01/rdf-schema#",
+    owl = "http://www.w3.org/2002/07/owl#",
+    skos = "http://www.w3.org/2004/02/skos/core#",
+    obo = "http://purl.obolibrary.org/obo/",
+    dcterms = "http://purl.org/dc/terms/"
+  )
+}
+
 .parse_salmon_rdfxml <- function(doc, iri_pattern = "^https?://w3id\\.org/smn(#|/|$)") {
-  ns <- xml2::xml_ns(doc)
+  ns <- .ms_rdfxml_ns()
   nodes <- xml2::xml_find_all(doc, "/*/*[@rdf:about][not(self::owl:Ontology)]", ns = ns)
   if (length(nodes) == 0) {
     return(tibble::tibble())
@@ -1908,8 +2075,8 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   index[order(-index$backend_score, index$label, index$iri, method = "radix"), , drop = FALSE]
 }
 
-.search_smn <- function(query, role) {
-  index <- .smn_term_index()
+.search_smn <- function(query, role, index = NULL) {
+  index <- index %||% .smn_term_index()
   index <- .gcdfo_filter_for_role(index, role)
   index <- .gcdfo_match_terms(index, query)
   if (nrow(index) == 0) {
@@ -1932,8 +2099,8 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
     dplyr::distinct(iri, .keep_all = TRUE)
 }
 
-.search_gcdfo <- function(query, role) {
-  index <- .gcdfo_term_index()
+.search_gcdfo <- function(query, role, index = NULL) {
+  index <- index %||% .gcdfo_term_index()
   index <- .gcdfo_filter_for_role(index, role)
   index <- .gcdfo_match_terms(index, query)
   if (nrow(index) == 0) {
@@ -2607,6 +2774,18 @@ sources_for_role <- function(role) {
 #' @param fixture_path_override Optional preloaded fixture object. If provided,
 #'   `fixture_path` is ignored and this value is used as the fixture list.
 #' @return A list with `summary`, `per_case`, and `profiles`.
+#' @examples
+#' fixture <- list(list(
+#'   query = "spawner count", role = "variable",
+#'   expected = list(top = list(candidate_id = "smn-count")),
+#'   candidates = list(list(
+#'     candidate_id = "smn-count", label = "Spawner count",
+#'     iri = "https://example.org/term/spawner-count", source = "smn",
+#'     ontology = "smn", role = "variable", match_type = "label_exact",
+#'     definition = "A count of spawners.", backend_score = 3
+#'   ))
+#' ))
+#' benchmark_term_ranking_fixtures(fixture_path_override = fixture)$summary
 #' @export
 benchmark_term_ranking_fixtures <- function(fixture_path = NULL, profiles = NULL, top_k = 3L, include_details = TRUE, fixture_path_override = NULL) {
   if (is.null(fixture_path) && is.null(fixture_path_override)) {

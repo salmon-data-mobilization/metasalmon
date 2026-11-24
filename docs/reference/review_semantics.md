@@ -1,8 +1,9 @@
 # Review semantic suggestions in the console
 
 Builds a re-runnable review queue from suggestions that already exist.
-One entry per unfilled semantic slot, each with its ranked shortlist and
-the exact
+One entry per unfilled semantic slot, plus NuSEDS crosswalk-prefilled
+code slots that still hold their original prefill, each with its ranked
+shortlist and the exact
 [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
 call that decides it – printing that call is the feature: paste it into
 a script and the decision becomes reproducible, which the spreadsheet
@@ -30,7 +31,9 @@ review_semantics(
 - include_filled:
 
   Logical; if `TRUE`, also queue slots that already hold a final
-  (non-`REVIEW:`) IRI. Defaults to `FALSE`.
+  (non-`REVIEW:`) IRI. NuSEDS crosswalk-prefilled code slots with a
+  saved shortlist are shown by default until decided. Defaults to
+  `FALSE`.
 
 - max_candidates:
 

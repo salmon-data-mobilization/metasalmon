@@ -294,10 +294,9 @@
     "reproducibility",
     "manifest.json"
   )
-  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
-  mapping <- yaml::read_yaml(
-    file.path(path, "metadata", "eml-mapping.yml"),
-    eval.expr = FALSE
+  # Q62: share the EML sidecar's unknown-tag refusal and inert YAML parsing.
+  mapping <- .ms_eml_read_mapping_yaml(
+    file.path(path, "metadata", "eml-mapping.yml")
   )
   mapped_review <- as.character(mapping$semantic_review$path %||% "")
   reproducibility_relative <- character()
@@ -831,7 +830,7 @@
 
   xml <- as.character(document)
   if (grepl("file:", xml, fixed = TRUE) ||
-      grepl("REVIEW:", xml, fixed = TRUE) ||
+      .ms_document_has_review_iri(document, "ore") ||
       !grepl(
         utils::URLencode(resource_map_pid, reserved = TRUE),
         xml,
@@ -1573,10 +1572,9 @@
                                overwrite = FALSE) {
   representation <- match.arg(representation)
   .ms_knb_reject_review_candidate_annotations(path)
-  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
-  mapping <- yaml::read_yaml(
-    file.path(path, "metadata", "eml-mapping.yml"),
-    eval.expr = FALSE
+  # Q62: reject an unknown tag before deriving a KNB publication plan.
+  mapping <- .ms_eml_read_mapping_yaml(
+    file.path(path, "metadata", "eml-mapping.yml")
   )
   archive <- NULL
   package_objects <- if (identical(representation, "archive")) {

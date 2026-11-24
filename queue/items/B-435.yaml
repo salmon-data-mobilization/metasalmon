@@ -1,0 +1,13 @@
+id: B-435
+kind: defect
+title: Python HTML context extraction leaks head text when an implicit body has no text
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the surviving deterministic HTML reader detects the implicit body in valid tag-omitting markup even when it has no visible text, so a head title is not emitted as context for an empty implicit body. Reproduce Codex4184128012 on actual merged B-386 source with a real HTML file and unchanged native R baseline, preserve a genuine tests-only RED and minimal GREEN, and cover neighboring explicit-empty, head-only no-body fallback, ordinary fragments and hidden script/style boundaries through load_context_chunks. Preserve all existing extractor/chunking/scoring/default/public-signature, provider-removal and permanent row62 parser/library contracts, original B-386 checkpoint/terminal handoff and every unrelated runtime/test hunk. This separate post-merge repair follows the actual unresolved finding on Python91; no quiet follow-up to the merged PR or new deliberate parity difference.'

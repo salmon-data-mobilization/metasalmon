@@ -1,0 +1,12 @@
+id: B-433
+kind: defect
+title: Python's row 64 still describes the R date-text seeder difference after the ruled fix landed
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+severity: P3
+blocked_by: [B-310]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, PARITY.md row 64 records the already ruled code-row seeder convergence after metasalmon PR232/B-310 merged as 347f0d2cf28dae8b0a325b3982366abb87506470; its adjacent registration paragraph records that this separate Python amendment followed the R move. Preserve the row number, B-188/PR44/ruling and pre-fix measurement history, factor/Categorical exemption, code bytes/order/limits, every unrelated parity row and unchanged runtime. Leave numeric-text and unrelated role/value-type inference outside this factual correction. B-310 explicitly requires this Python half in a separate PR and excludes it from its R retirement condition; this is its source-verified documentation companion, not a new deliberate parity difference.'

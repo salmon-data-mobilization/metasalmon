@@ -46,3 +46,24 @@ benchmark_term_ranking_fixtures(
 ## Value
 
 A list with `summary`, `per_case`, and `profiles`.
+
+## Examples
+
+``` r
+fixture <- list(list(
+  query = "spawner count", role = "variable",
+  expected = list(top = list(candidate_id = "smn-count")),
+  candidates = list(list(
+    candidate_id = "smn-count", label = "Spawner count",
+    iri = "https://example.org/term/spawner-count", source = "smn",
+    ontology = "smn", role = "variable", match_type = "label_exact",
+    definition = "A count of spawners.", backend_score = 3
+  ))
+))
+benchmark_term_ranking_fixtures(fixture_path_override = fixture)$summary
+#> # A tibble: 1 × 8
+#>   profile  n_cases top1_accuracy top_k_accuracy expected_order_accuracy
+#>   <chr>      <int>         <dbl>          <dbl>                   <dbl>
+#> 1 baseline       1             1              1                       1
+#> # ℹ 3 more variables: no_disallow_rate <dbl>, mean_top1_margin <dbl>, mrr <dbl>
+```

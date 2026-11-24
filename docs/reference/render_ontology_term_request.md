@@ -88,7 +88,12 @@ templates. Rendering never submits an issue.
 
 For interactive workflows this function can prompt users row-by-row for
 whether a gap should be requested as a shared SMN term, a
-profile-specific term, or skipped.
+profile-specific term, or skipped. Commons register rows instead retain
+their explicit `mint_target` and lifecycle holds. The renderer rederives
+holds from source fields; `scope`, `scope_overrides` and `ask` cannot
+reopen or redirect them. Their bodies identify the concept card and
+draft gap note, and require a curator definition and term type rather
+than asserting dataset evidence.
 
 ## See also
 

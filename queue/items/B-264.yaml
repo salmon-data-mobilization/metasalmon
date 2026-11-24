@@ -1,8 +1,8 @@
 id: B-264
 kind: defect
 title: 'Nothing in metasalmonpy pins that a code-resolved procedure is a vocabulary term and never a review target, the twin of B-171''s test'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 severity: P3

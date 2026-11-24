@@ -120,10 +120,12 @@ the package root.</p>
 <dd><p>Logical; if <code>FALSE</code> (default), errors when <code>path</code> is a
 directory that already holds something. An existing but <em>completely empty</em>
 directory is written into without <code>overwrite</code> — there is nothing there to
-destroy — while a dot-file, a stale <code>.metasalmon-package</code> sentinel, or an
+destroy — while a dot-file, a stale <code>.sdp-package</code> ownership sentinel, or an
 empty <code>data/</code> subdirectory all count as content and still require it. If
 <code>TRUE</code>, the package is updated in place — see <code>prune</code>. Replacement is only
-allowed for directories previously written by <code>metasalmon</code>.</p></dd>
+allowed for a directory recognised as a package: one holding the shared
+<code>.sdp-package</code> ownership sentinel, or its SDP metadata. An older
+<code>.metasalmon-package</code> sentinel on its own is not recognised.</p></dd>
 
 
 <dt id="arg-write-datapackage">write_datapackage<a class="anchor" aria-label="anchor" href="#arg-write-datapackage"></a></dt>
@@ -163,8 +165,7 @@ permissions) between the wipe and the install can lose the deleted files.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># Create a simple package</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Create a simple package</span></span></span>
 <span class="r-in"><span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>main_table <span class="op">=</span> <span class="va">mtcars</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">dataset_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"test-1"</span>,</span></span>
@@ -180,9 +181,10 @@ permissions) between the wipe and the install can lose the deleted files.</p>
 <span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">mtcars</span>, dataset_id <span class="op">=</span> <span class="st">"test-1"</span>, table_id <span class="op">=</span> <span class="st">"main_table"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">write_salmon_datapackage</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">resources</span>, <span class="va">dataset_meta</span>, <span class="va">table_meta</span>, <span class="va">dict</span>,</span></span>
-<span class="r-in"><span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"sdp-example-"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Dictionary validation passed</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Created Salmon Data Package at <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-example-1101160f75d73</span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

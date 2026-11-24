@@ -7,8 +7,10 @@
 find_terms(
   query,
   role = NA_character_,
-  sources = c("smn", "gcdfo", "ols", "nvs"),
-  expand_query = TRUE
+  sources = NULL,
+  expand_query = TRUE,
+  release = NULL,
+  snapshot_dir = NULL
 )
 }
 \arguments{
@@ -16,18 +18,48 @@ find_terms(
 
 \item{role}{Optional I-ADOPT role hint for ranking and source selection. One of:
 \code{"variable"} (compound term), \code{"property"} (characteristic),
-\code{"entity"} (thing measured), \code{"constraint"} (qualifier), \code{"method"}, or \code{"unit"}.
-When specified, sources are optimized for the role and results are ranked higher
-when they match preferred ontologies for that role.}
+\code{"entity"} (thing measured), \code{"constraint"} (qualifier),
+\code{"statistical_modifier"}, \code{"method"}, or \code{"unit"}. Results are ranked
+higher when they match preferred ontologies for the role, and when
+\code{sources} is \code{NULL} the role also chooses which sources are searched.}
 
-\item{sources}{Character vector of vocabulary sources to query. Options:
-\code{"smn"}, \code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"}, \code{"worms"}, \code{"bioportal"}.
-Default is \code{c("smn", "gcdfo", "ols", "nvs")}. Use \code{\link[=sources_for_role]{sources_for_role()}} to get role-optimized sources.}
+\item{sources}{Character vector of vocabulary sources to query, or \code{NULL}
+(the default) to query the sources \code{\link[=sources_for_role]{sources_for_role()}} names for \code{role};
+with no role, that is \code{c("smn", "gcdfo", "ols", "nvs")}. Options:
+\code{"smn"}, \code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"},
+\code{"worms"}, \code{"bioportal"}. A vector you supply is a strict allowlist, read
+consistently by this package: each name is trimmed and Unicode lower-cased
+independently of the session locale, a missing
+or empty name is dropped, and a repeated name is dropped after its first
+appearance, so \code{"SMN"} and \code{" smn "} both search smn. A name that is none
+of the options is reported with \code{status = "unsupported"} and no lookup
+is performed for it; supported sources in the same call still return their
+results. An empty vector returns an empty tibble.}
 
 \item{expand_query}{Logical. If \code{TRUE} (default), applies role-aware query expansion
 (Phase 4) to generate additional query variants based on the role context.
 For example, unit queries get abbreviation expansions, method queries get
 "method" suffix added. Set to \code{FALSE} to search only the exact query.}
+
+\item{release}{Optional release versions of smn and gcdfo to search instead
+of the latest ontology, named by ontology: \code{c(smn = "0.0.3")}, or
+\code{c(smn = "0.0.3", gcdfo = "0.0.9")}. Each is read from its release
+snapshot, downloaded from its version IRI (\verb{https://w3id.org/smn/0.0.3})
+once per session, and checked against the snapshot's \code{MANIFEST.sha256}
+when it carries one. A pin never falls back to the latest ontology: a
+release that cannot be read or does not match its manifest is an error.
+Only smn and gcdfo can be pinned; other sources are searched as they are.}
+
+\item{snapshot_dir}{Optional local release snapshots, named by ontology the
+same way, such as a checkout's \verb{docs/releases/0.0.3/}. Each is read from
+disk, with no download. When \code{release} names the same ontology too, a
+snapshot that declares an \code{owl:versionIRI} must declare that version.
+
+A pinned smn release is read from its RDF/XML (\code{smn.owl}), which holds
+the same terms as the latest ontology's modules, and its terms get the
+role hints the module reader gives them, with one difference: a release
+records no module, so a term whose entity hint comes only from belonging
+to the \code{01-entity-systematics} module has no entity hint in a release.}
 }
 \value{
 Tibble with columns: \code{label}, \code{iri}, \code{source}, \code{ontology}, \code{role},
@@ -41,8 +73,22 @@ cross-source agreement). Returns empty tibble if no matches found.
 
 The result has a \code{"diagnostics"} attribute (access via \code{attr(result, "diagnostics")})
 containing per-source/query diagnostic information: source, query, status
-(success/error), count, elapsed_secs, and error message if applicable. This
-helps explain empty results or slow queries.
+(\code{success}, \code{http_error}, \code{error} or \code{unsupported}), count, elapsed_secs,
+and error message if applicable. A supported search with no matches remains
+\code{success}. Unsupported and failed lookups warn that the result is incomplete
+and are not cached. An unsupported name is still reported when a local smn
+or gcdfo match short-circuits other supported lookups.
+
+When \code{release} or \code{snapshot_dir} pins an ontology the call searched, the
+result also has an \code{"ontology_release"} attribute: a tibble with one row
+per pinned ontology the search asked, recording which release was
+searched. smn is asked first, and when it matches a query by label, gcdfo
+is not asked for that query, so a gcdfo pin that was never asked is not
+recorded. The columns are \code{ontology},
+\code{version}, \code{version_iri} (as the snapshot declares it, or \code{NA}), \code{file},
+\code{sha256} (of the bytes read), \code{manifest_verified} (\code{TRUE} when the
+snapshot's \code{MANIFEST.sha256} vouched for them, \code{FALSE} when it carries
+none) and \code{source} (the version IRI or the snapshot directory).
 }
 \description{
 Lightweight meta-search helper for IRIs. Uses public APIs when available.
@@ -87,8 +133,9 @@ head(results)
 # Search specifically for property terms
 property_terms <- find_terms("temperature", role = "property")
 
-# Search for units with QUDT preference
-unit_terms <- find_terms("kilogram", role = "unit", sources = sources_for_role("unit"))
+# Search for units: with no sources named, the unit role searches
+# sources_for_role("unit"), which puts QUDT first
+unit_terms <- find_terms("kilogram", role = "unit")
 
 # Search for taxa using taxon resolvers
 taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms"))
@@ -98,6 +145,15 @@ ols_results <- find_terms("salmon", sources = "ols")
 
 # Search multiple sources
 all_results <- find_terms("escapement", sources = c("smn", "gcdfo", "ols", "nvs"))
+
+# Search smn release 0.0.3 rather than the latest ontology, and record it
+pinned <- find_terms("escapement", sources = "smn", release = c(smn = "0.0.3"))
+attr(pinned, "ontology_release")
+
+# Pin the searches suggest_semantics() makes
+# suggest_semantics(dict, search_fn = function(query, role, sources) {
+#   find_terms(query, role = role, sources = sources, release = c(smn = "0.0.3"))
+# })
 }
 }
 \seealso{

@@ -81,7 +81,6 @@ input-dependent step has succeeded, but a filesystem failure (disk full,
 permissions) between the wipe and the install can lose the deleted files.
 }
 \examples{
-\dontrun{
 # Create a simple package
 resources <- list(main_table = mtcars)
 dataset_meta <- tibble::tibble(
@@ -98,7 +97,6 @@ table_meta <- tibble::tibble(
 dict <- infer_dictionary(mtcars, dataset_id = "test-1", table_id = "main_table")
 write_salmon_datapackage(
   resources, dataset_meta, table_meta, dict,
-  path = tempdir()
+  path = tempfile("sdp-example-")
 )
-}
 }

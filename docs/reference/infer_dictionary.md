@@ -171,7 +171,6 @@ explicit LLM review, the 30-column target summaries are attached as
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 df <- data.frame(
   species = c("Coho", "Chinook"),
   count = c(100, 200),
@@ -179,6 +178,7 @@ df <- data.frame(
 )
 dict <- infer_dictionary(df)
 
+if (FALSE) { # \dontrun{
 # Optional: seed semantic suggestions from vocabulary services
 # (SMN is queried first; GCDFO is a distinct DFO-specific source)
 dict <- infer_dictionary(

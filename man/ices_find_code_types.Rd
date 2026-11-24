@@ -18,3 +18,9 @@ when the request to ICES fails, which warns, naming the request.
 \description{
 Find ICES code types by text match
 }
+\examples{
+\dontrun{
+# Needs the live ICES service; run in checks once an offline fixture exists.
+matching_types <- ices_find_code_types("gear")
+}
+}

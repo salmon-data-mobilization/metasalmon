@@ -116,9 +116,13 @@ options that is the copy bundled with metasalmon, and neither contacts a
 network.
 }
 \examples{
-\dontrun{
-pkg <- create_sdp(resources, dataset_id = "demo-1")
-review_metadata(pkg)
+pkg <- create_sdp(
+  data.frame(spawner_count = c(12L, 19L)),
+  path = tempfile("sdp-setter-"),
+  seed_semantics = FALSE,
+  seed_verbose = FALSE,
+  check_updates = FALSE
+)
 set_sdp_dataset(
   pkg,
   creator = "Fisheries and Oceans Canada",
@@ -126,9 +130,7 @@ set_sdp_dataset(
   contact_email = "data@example.org",
   license = "CC-BY-4.0"
 )
-set_sdp_table(pkg, "spawners", description = "One row per stream and year.")
-set_sdp_column(pkg, "spawner_count", column_description = "Spawners counted.")
-}
+review_metadata(pkg)
 }
 \seealso{
 \code{\link[=review_metadata]{review_metadata()}}, \code{\link[=accept_suggestion]{accept_suggestion()}},

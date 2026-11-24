@@ -49,6 +49,11 @@ which is the failure mode a list of examples has and a rule does not.
 
 ## Primary workflow & entry points
 
+The R review walkthrough is `vignettes/semantic-review.Rmd`, linked from the
+quickstart and pkgdown's Guides index. It covers the review queue and metadata
+setters; `post-review-package-publication.Rmd` owns the publication steps.
+
+
 The headline path is one-shot package creation:
 
 ```
@@ -103,6 +108,19 @@ Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-pu
 `github-csv-access`, `faq`, `glossary`, plus S11 slice 2's
 `migrating-to-sdp-0-3-0` and `tidy-data-for-sdp`.
 
+## Public API names
+
+New exports use lowercase `snake_case` and name the action before the object.
+Use the existing families where they fit: `read_`, `write_`, and `validate_`
+for persisted SDP artifacts; `infer_`, `suggest_`, and `detect_` for candidates;
+`review_`, `set_`, and `apply_` for explicit review or changes; `find_` and
+`*_codes` for lookups; and `publish_` for remote publication. Keep `sdp` in a
+name when it distinguishes the package artifact from a general mapping or
+ontology function. Integration-specific prefixes such as `ices_`, `dwc_dp_`,
+`edh_`, and `ms_` remain for their existing families. Existing exported names
+stay stable; a new name should join its closest family rather than rename an
+older API for symmetry alone.
+
 ## Domain glossary
 
 - **SDP (Salmon Data Package):** a folder with four canonical CSVs —
@@ -111,12 +129,21 @@ Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-pu
   `codes.csv` (controlled-vocabulary code values). Validated against the canonical
   `smn-data-pkg` spec.
 - **SDP schema locations:** runtime schema fetches are pinned to the spec
-  release tag the package implements
-  (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<spec-tag>`,
-  currently `sdp-0.3.0`; metasalmonpy still stamps `sdp-0.2.0` until S10's
-  0.3.0 rung — parity register row 27); tracking `main` let upstream spec releases break
-  networked loads. Advancing the pin is part of implementing a new spec
-  version. Canonical SDP profile, rules, and resource-schema identifiers resolve at
+  release tag the package implements, never `main`
+  (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<spec-tag>`),
+  because tracking `main` let upstream spec releases break networked loads. The
+  tag is whatever `.ms_sdp_schema_pinned_base_url()` names, and this card does
+  not repeat it. `inst/extdata/sdp-bundle-manifest.json` names the same tag and
+  the SHA-256 of each vendored file. metasalmonpy's pin is parity register row
+  38. Advancing the pin is part of implementing a new spec version, and so is
+  re-vendoring every file in the manifest from the same tag in the same change.
+  Under `source = "auto"` the pinned tag loads first and the vendored bundle
+  loads only when that fetch fails, and under the default options
+  `review_metadata()` and the `set_sdp_*()` setters read the vendored bundle in
+  the tag's place. So the two must hold the same bytes, or an online session and
+  an offline one validate against different schemas. `test-schema-helpers.R`
+  checks the bundle against the manifest and the pin offline, and against the
+  tag online. Canonical SDP profile, rules, and resource-schema identifiers resolve at
   `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
   published contract identifiers distinct from the configurable source used for
   runtime schema retrieval.
@@ -411,6 +438,7 @@ every release — re-run the count rather than trusting these to the digit.
 
 | File | Lines | Responsibility |
 |---|---|---|
+| `configuration.R` | 125 (2026-09-30) | Option defaults and environment inventory; generates `metasalmon_configuration` help; `.onLoad` fills only missing concrete defaults. |
 | `package-helpers.R` | 3786 | SDP orchestration: `create_sdp`, `write_salmon_datapackage`, resource/codes/metadata inference, EDH post-processing. (God-file; split candidate.) |
 | `knb-publication.R` | 3704 | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
 | `eml-export.R` | 3001 | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |

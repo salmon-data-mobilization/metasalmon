@@ -34,3 +34,16 @@ A list with \code{summary}, \code{per_case}, and \code{profiles}.
 \description{
 Evaluate ranking quality across a curated fixture dataset to support profile tuning.
 }
+\examples{
+fixture <- list(list(
+  query = "spawner count", role = "variable",
+  expected = list(top = list(candidate_id = "smn-count")),
+  candidates = list(list(
+    candidate_id = "smn-count", label = "Spawner count",
+    iri = "https://example.org/term/spawner-count", source = "smn",
+    ontology = "smn", role = "variable", match_type = "label_exact",
+    definition = "A count of spawners.", backend_score = 3
+  ))
+))
+benchmark_term_ranking_fixtures(fixture_path_override = fixture)$summary
+}

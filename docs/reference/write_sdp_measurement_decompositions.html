@@ -123,6 +123,34 @@ ordered SDP semantic profile informed by I-ADOPT roles, not a claim of
 native I-ADOPT conformance.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># This local example demonstrates the closed row schema; actual components</span></span></span>
+<span class="r-in"><span><span class="co"># should come from a documented semantic review.</span></span></span>
+<span class="r-in"><span><span class="va">sdp_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span><span class="st">"sdp-"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">sdp_path</span>, <span class="st">"metadata"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">dictionary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"demo"</span>, table_id <span class="op">=</span> <span class="st">"counts"</span>, column_name <span class="op">=</span> <span class="st">"count"</span>,</span></span>
+<span class="r-in"><span>  column_role <span class="op">=</span> <span class="st">"measurement"</span>,</span></span>
+<span class="r-in"><span>  term_iri <span class="op">=</span> <span class="st">"https://example.org/variables/count"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/write_delim.html" class="external-link">write_csv</a></span><span class="op">(</span><span class="va">dictionary</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">sdp_path</span>, <span class="st">"metadata"</span>, <span class="st">"column_dictionary.csv"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">components</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"demo"</span>, table_id <span class="op">=</span> <span class="st">"counts"</span>, column_name <span class="op">=</span> <span class="st">"count"</span>,</span></span>
+<span class="r-in"><span>  measurement_concept_iri <span class="op">=</span> <span class="st">"https://example.org/variables/count"</span>,</span></span>
+<span class="r-in"><span>  component_order <span class="op">=</span> <span class="fl">1L</span>, component_role <span class="op">=</span> <span class="st">"property"</span>,</span></span>
+<span class="r-in"><span>  component_status <span class="op">=</span> <span class="st">"matched"</span>, component_relation <span class="op">=</span> <span class="st">""</span>,</span></span>
+<span class="r-in"><span>  related_component_order <span class="op">=</span> <span class="cn">NA_integer_</span>,</span></span>
+<span class="r-in"><span>  component_iri <span class="op">=</span> <span class="st">"https://example.org/properties/abundance"</span>,</span></span>
+<span class="r-in"><span>  component_label <span class="op">=</span> <span class="st">"Abundance"</span>, rationale <span class="op">=</span> <span class="st">""</span>, source <span class="op">=</span> <span class="st">"Example"</span>,</span></span>
+<span class="r-in"><span>  source_version <span class="op">=</span> <span class="st">"1"</span>, source_url <span class="op">=</span> <span class="st">"https://example.org/"</span>,</span></span>
+<span class="r-in"><span>  provenance <span class="op">=</span> <span class="st">"Illustrative review record"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">write_sdp_measurement_decompositions</span><span class="op">(</span><span class="va">sdp_path</span>, <span class="va">components</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">sdp_path</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

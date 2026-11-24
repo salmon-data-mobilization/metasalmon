@@ -189,11 +189,13 @@ create_sdp(
   Logical; if `FALSE` (default), errors when `path` is a directory that
   already holds something. An existing but *completely empty* directory
   is written into without `overwrite` — there is nothing there to
-  destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or
-  an empty `data/` subdirectory all count as content and still require
-  it. If `TRUE`, the package is updated in place — see `prune`.
-  Replacement is only allowed for directories previously written by
-  `metasalmon`.
+  destroy — while a dot-file, a stale `.sdp-package` ownership sentinel,
+  or an empty `data/` subdirectory all count as content and still
+  require it. If `TRUE`, the package is updated in place — see `prune`.
+  Replacement is only allowed for a directory recognised as a package:
+  one holding the shared `.sdp-package` ownership sentinel, or its SDP
+  metadata. An older `.metasalmon-package` sentinel on its own is not
+  recognised.
 
 - include_edh_xml:
 
@@ -271,15 +273,43 @@ repository `data-raw/` script used to derive the fuller example.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
 fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
 pkg <- create_sdp(
   fraser_coho,
+  path = tempfile("fraser-coho-sdp-"),
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
-  overwrite = FALSE
+  seed_semantics = FALSE,
+  seed_verbose = FALSE,
+  check_updates = FALSE
 )
-} # }
+#> Some measurement semantic IRI fields are still blank in this review-ready
+#> package.
+#> ℹ That does not block review-ready creation, but those gaps must be filled
+#>   before final validation or publication.
+#>   term_iri: NATURAL_SPAWNERS_TOTAL (rows 8) property_iri:
+#>   NATURAL_SPAWNERS_TOTAL (rows 8) entity_iri: NATURAL_SPAWNERS_TOTAL (rows 8)
+#>   unit_iri: NATURAL_SPAWNERS_TOTAL (rows 8)
+#> ℹ Review metadata/column_dictionary.csv first (and metadata/tables.csv if
+#>   present), then fill the remaining gaps there.
+#> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
+#>   package with `seed_semantics = TRUE` before final validation.
+#> ✔ Dictionary validation passed
+#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/fraser-coho-sdp-110112618260e
+#> Created review-ready one-shot package with `create_sdp()`.
+#> ℹ Prefilled semantic values were written directly into the metadata CSVs only
+#>   where target fields were blank. Compatible table observation-unit drafts can
+#>   be auto-applied using observation-unit/description first and otherwise table
+#>   label/id fallback. Any "REVIEW:" entries already live in the metadata CSVs
+#>   and must be confirmed or edited there.
+#> ℹ No shortlist was seeded, so set any IRI you already know with
+#>   `set_sdp_column()`.
+#> ℹ Then run `review_metadata(pkg_path)` for the free-text fields and any
+#>   required IRI nothing was suggested for; it prints the `set_sdp_dataset()` /
+#>   `set_sdp_table()` / `set_sdp_column()` call that fills each one.
+#> ℹ Finish with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`,
+#>   rebuilding the EDH XML first if you need it. README-review.txt has the same
+#>   checklist.
 ```

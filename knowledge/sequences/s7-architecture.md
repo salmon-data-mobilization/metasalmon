@@ -50,5 +50,13 @@ psc:
 - **Latent cleanups** (#22, #23, #24) — fold into whichever stream touches those
   files rather than scheduling separately.
 
+For #23, the R multi-table path forwards the effective shortlist size already
+computed by `.ms_llm_review_plan()` into child dictionary inference. The child
+calls still set `seed_semantics = FALSE`, and the focused test pins the
+widened, single top-level seeding call. Python's child calls
+also disable seeding, so this dormant forwarding correction changes no
+behaviour or capability to port; revisit both sides if seeding moves into
+child recursion.
+
 Deliberately last: it is the largest, and nothing depends on it. The model-call
 split is not part of that: it has its own stream, S16, and is sequenced now.

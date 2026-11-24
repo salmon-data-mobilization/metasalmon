@@ -70,7 +70,9 @@ fill_templates <- function(call_text) {
   for (template in names(replacements)) {
     call_text <- gsub(template, replacements[[template]], call_text, fixed = TRUE)
   }
-  call_text <- gsub("\"<add dataset license[^\"]*\"", "\"CC-BY-4.0\"", call_text)
+  # By argument rather than by hint: a licence row prompts with whatever hint
+  # it carries, a placeholder's own text or the schema's field description.
+  call_text <- gsub("license = \"<[^\"]*>\"", "license = \"CC-BY-4.0\"", call_text)
   call_text <- gsub("\"<add primary contact email>\"", "\"data@example.org\"", call_text, fixed = TRUE)
   gsub("\"<[^\"]*>\"", "\"a value a reviewer typed\"", call_text)
 }
@@ -363,10 +365,11 @@ test_that("an abort during the write leaves the package wholly unchanged", {
 test_that("`.ms_required_metadata_fields()` reads the schema, not a hand-written list", {
   # First consumer of `field$requirement`, which had five producers and no
   # consumers. If this ever stops reading the schema the round trip above still
-  # passes, so the source is asserted directly.
+  # passes, so the source is asserted directly. `license` is not in the set:
+  # sdp-0.3.2 made it recommended rather than required (hub item B-198).
   expect_setequal(
     .ms_required_metadata_fields("dataset.csv"),
-    c("title", "description", "creator", "contact_name", "contact_email", "license")
+    c("title", "description", "creator", "contact_name", "contact_email")
   )
   expect_setequal(
     .ms_required_metadata_fields("tables.csv"),
@@ -557,7 +560,7 @@ mark_metadata_field <- function(pkg, file_name, field, row, value) {
 # Refusal for any other reason is an error here rather than a `TRUE`, so a
 # fixture that broke for an unrelated reason cannot pass for a refused marker.
 # The two phrases are the two sweeps: `.ms_collect_review_iri_issues()` for
-# `tables.csv` and `validate_dictionary()` for the dictionary.
+# dataset, tables and codes; `validate_dictionary()` for the dictionary.
 refuses_review_marker <- function(pkg) {
   outcome <- tryCatch(
     {
@@ -581,11 +584,10 @@ test_that("review_metadata() reports a REVIEW: IRI exactly where strict validati
   pkg <- filled_coded_package()
   mark <- "REVIEW:https://example.org/Undecided"
 
-  # Every expectation is written out rather than read from
-  # `.ms_review_iri_files()`: a test comparing the scan against the list the
-  # scan is built from passes for any value of that list, which is no test at
-  # all. `refused` is what `validate_salmon_datapackage(require_iris = TRUE)`
-  # does with a marker in that field; `reported` is whether the scan lists it.
+  # Every expectation is written out rather than read from the metadata files
+  # the scan visits: a test comparing the scan against its own input list would
+  # pass if that list omitted a file. `refused` is what strict validation does
+  # with a marker in that field; `reported` is whether the scan lists it.
   expected <- tibble::tribble(
     ~file,                   ~field,                     ~refused, ~reported,
     "tables.csv",            "observation_unit_iri",     TRUE,     TRUE,
@@ -597,14 +599,11 @@ test_that("review_metadata() reports a REVIEW: IRI exactly where strict validati
     "column_dictionary.csv", "unit_iri",                 TRUE,     TRUE,
     "column_dictionary.csv", "constraint_iri",           TRUE,     TRUE,
     "column_dictionary.csv", "statistical_modifier_iri", TRUE,     TRUE,
-    # Strict validation does not sweep these two files for the marker (hub
-    # item B-177), so reporting one would claim a block that does not exist.
-    # If one of these rows starts failing because strict validation now
-    # refuses the marker, that is B-177 landing: move `.ms_review_iri_files()`
-    # with it and flip both columns, rather than deleting the row.
-    "codes.csv",             "term_iri",                 FALSE,    FALSE,
-    "codes.csv",             "vocabulary_iri",           FALSE,    FALSE,
-    "dataset.csv",           "protocol_iri",             FALSE,    FALSE
+    # Brett's B-177 ruling makes these three markers strict-validation blocks
+    # too; the review scan must list every one it refuses.
+    "codes.csv",             "term_iri",                 TRUE,     TRUE,
+    "codes.csv",             "vocabulary_iri",           TRUE,     TRUE,
+    "dataset.csv",           "protocol_iri",             TRUE,     TRUE
   )
 
   # Coverage comes from the schema, so a newly declared IRI field fails here
@@ -684,6 +683,23 @@ test_that("a package whose only gap is a REVIEW: IRI reaches strict validation t
 
   expect_equal(nrow(review_metadata(pkg)), 0L)
   expect_false(refuses_review_marker(pkg))
+})
+
+test_that("a later constraint component REVIEW marker is listed once", {
+  pkg <- filled_coded_package()
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "spawner_count")
+  mark_metadata_field(
+    pkg, "column_dictionary.csv", "constraint_iri", row,
+    "https://example.org/First; REVIEW: https://example.org/Second"
+  )
+
+  expect_true(refuses_review_marker(pkg))
+  review <- review_metadata(pkg)
+  hit <- review[review$file == "column_dictionary.csv" &
+                  review$field == "constraint_iri", , drop = FALSE]
+  expect_identical(nrow(hit), 1L)
+  expect_identical(hit$reason[[1]], "iri")
 })
 
 test_that("a REVIEW: measurement IRI is reported once, and its call runs", {
@@ -877,12 +893,10 @@ test_that("the REVIEW: marker has its own predicate, and the prose ones stay nar
     c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE)
   )
   # Widening either prose test instead would have pushed the marker into
-  # strict validation's placeholder sweep, which would then refuse it as
-  # prose -- in `dataset.csv` and `codes.csv` too, which strict validation does
-  # not sweep for the marker today. That scope is interim rather than chosen:
-  # hub item B-177 widens it, and moves `.ms_review_iri_files()` in the same
-  # change. The marker would also have reached the hint `.ms_metadata_gap_row()`
-  # builds from a value's own text.
+  # strict validation's placeholder sweep, duplicating the dedicated IRI
+  # refusal that now covers all four metadata files. The marker would also
+  # have reached the hint `.ms_metadata_gap_row()` builds from a value's own
+  # text.
   expect_identical(
     .ms_is_unfilled_metadata(values),
     c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)
@@ -958,4 +972,210 @@ test_that("a dictionary IRI field a configured schema adds is listed only if str
   expect_true(refuses_review_marker(pkg))
   review <- review_metadata(pkg)
   expect_identical(paste(review$file, review$field), "column_dictionary.csv constraint_iri")
+})
+
+# --------------------------------------------------------------------------
+# The licence is recommended, not required
+# --------------------------------------------------------------------------
+#
+# The SDP specification makes `license` recommended rather than required
+# (smn-data-pkg pull request 12; Brett, 2026-09-26: most datasets assign none),
+# so a blank licence states that none was granted. This package reads the
+# requirement from its SDP schema bundle, and the bundle it ships still requires
+# the licence, because the bundle and the remote pin move only together and only
+# from a release tag (hub items B-198 and B-199). So the tests that need the
+# licence to be optional serve a bundle whose licence field reads the way that
+# pull request writes it. metasalmonpy's tests/test_sdp_field_setters.py has
+# the twins of these, under the same names.
+#
+# *Retires when:* B-198 re-vendors a bundle in which the licence is optional.
+# The tests can then read the shipped bundle instead of serving one.
+
+# The shipped bundle with the licence field as the specification now declares
+# it: no `constraints.required`, and `sdp:requirement` "recommended". Rebuilt
+# from the raw documents and passed back through `.ms_validate_sdp_schema()`,
+# so the parse of the new field is exercised, not assumed.
+licence_optional_bundle <- function() {
+  shipped <- .ms_load_vendored_sdp_schema()
+  schemas <- shipped$metadata_schemas
+  at <- which(purrr::map_chr(schemas$dataset$fields, "name") == "license")
+  schemas$dataset$fields[[at]]$constraints <- NULL
+  schemas$dataset$fields[[at]][["sdp:requirement"]] <- "recommended"
+  bundle <- .ms_validate_sdp_schema(list(
+    metadata_schemas = schemas,
+    profile = shipped$profile,
+    rules = shipped$rules
+  ))
+  bundle$source <- "remote"
+  bundle
+}
+
+# Every schema reader in the calling test gets that bundle. A non-default
+# source sends them all through the loader, as the configured-schema tests
+# above do.
+local_licence_optional_schema <- function(env = parent.frame()) {
+  bundle <- licence_optional_bundle()
+  withr::local_options(metasalmon.sdp_schema_source = "remote", .local_envir = env)
+  local_mocked_bindings(.ms_load_sdp_schema = function(...) bundle, .env = env)
+  invisible(bundle)
+}
+
+test_that("the dataset placeholder fill leaves a blank licence blank", {
+  filled <- .ms_fill_review_placeholders_dataset_meta(.ms_normalize_dataset_meta(
+    tibble::tibble(dataset_id = c("demo-1", "demo-2"), license = c(NA, "CC-BY-4.0"))
+  ))
+  expect_identical(filled$license, c(NA_character_, "CC-BY-4.0"))
+  # The prompts for the fields the schema requires are unchanged.
+  expect_true(all(startsWith(filled$creator, "MISSING METADATA:")))
+  expect_true(all(startsWith(filled$contact_email, "MISSING METADATA:")))
+})
+
+test_that("a package that states no licence passes strict validation under a bundle that makes it optional", {
+  shipped_required <- .ms_required_metadata_fields("dataset.csv")
+  local_licence_optional_schema()
+  # The served bundle differs from the shipped one in the licence and nothing
+  # else. Written so that it still holds once the shipped bundle makes the
+  # licence optional too.
+  expect_identical(
+    .ms_required_metadata_fields("dataset.csv"),
+    setdiff(shipped_required, "license")
+  )
+
+  pkg <- setter_fixture_package()
+  review <- review_metadata(pkg)
+  # Nothing asks for a licence, as a placeholder or as a blank required field.
+  expect_false("license" %in% review$field)
+
+  for (call_text in fill_templates(printed_setter_calls(review))) {
+    suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+  }
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  expect_no_error(suppressMessages(
+    validate_salmon_datapackage(pkg, require_iris = TRUE)
+  ))
+
+  expect_true(is.na(read_meta(pkg, "dataset.csv")$license))
+  descriptor <- jsonlite::read_json(file.path(pkg, "datapackage.json"), simplifyVector = FALSE)
+  expect_false("licenses" %in% names(descriptor))
+})
+
+test_that("a licence placeholder from an earlier package clears to no licence", {
+  # Packages written before this change carry the placeholder. It stays refused
+  # under a bundle that makes the licence optional, because it is still a
+  # placeholder, and `license = NA` is the call that states no licence instead.
+  local_licence_optional_schema()
+  pkg <- setter_fixture_package()
+  mark_metadata_field(
+    pkg, "dataset.csv", "license", 1L,
+    "MISSING METADATA: add dataset license (for example, CC-BY-4.0)."
+  )
+  review <- review_metadata(pkg)
+  expect_identical(review$reason[review$field == "license"], "placeholder")
+
+  suppressMessages(set_sdp_dataset(pkg, license = NA))
+  expect_true(is.na(read_meta(pkg, "dataset.csv")$license))
+  expect_false("license" %in% review_metadata(pkg)$field)
+  descriptor <- jsonlite::read_json(file.path(pkg, "datapackage.json"), simplifyVector = FALSE)
+  expect_false("licenses" %in% names(descriptor))
+})
+
+test_that("a licence placeholder never becomes a licenses entry", {
+  # Refused or left out, never written: the descriptor either omits `licenses`
+  # or the write stops. Which of the two a marker gets is not the property.
+  written_licenses <- function(license) {
+    meta <- .ms_normalize_dataset_meta(tibble::tibble(
+      dataset_id = "demo-1", title = "Demo", description = "Demo.",
+      license = license
+    ))
+    tryCatch(
+      .ms_descriptor_apply_dataset_meta(list(), meta)$licenses,
+      error = function(cnd) NULL
+    )
+  }
+  for (placeholder in c(
+    "MISSING METADATA: add dataset license (for example, CC-BY-4.0).",
+    "MISSING DESCRIPTION: describe the licence.",
+    "REVIEW REQUIRED: confirm the licence.",
+    "REVIEW:CC-BY-4.0",
+    NA_character_
+  )) {
+    expect_null(written_licenses(placeholder), label = placeholder)
+  }
+  # The control: a stated licence is written, so the NULLs above are the
+  # writer's answer and not a probe that can only return NULL.
+  expect_identical(written_licenses("CC-BY-4.0")[[1]]$name, "CC-BY-4.0")
+})
+
+# Q63 excludes embedded LF/FF/VT before the colon. B177 newly visits codes
+# and dataset *_iri fields; B342 requires the same fields to retain strict
+# malformed-IRI ownership when the marker predicate no longer owns a value.
+test_that("Q63-excluded metadata markers reach strict malformed IRI refusal", {
+  pkg <- filled_coded_package("q63-metadata-shape")
+  slots <- list(
+    c("codes.csv", "term_iri"),
+    c("codes.csv", "vocabulary_iri"),
+    c("codes.csv", "custom_thing_iri"),
+    c("dataset.csv", "custom_thing_iri")
+  )
+  for (slot in slots) {
+    file <- slot[[1]]
+    field <- slot[[2]]
+    path <- file.path(pkg, "metadata", file)
+    for (separator in c("\n", "\f", "\v")) {
+      value <- paste0("REVIEW", separator, ":https://example.org/code")
+      original <- mark_metadata_field(pkg, file, field, 1L, value)
+      before <- readBin(path, "raw", file.info(path)$size)
+      label <- paste(file, field, charToRaw(separator))
+      expect_false(.ms_is_review_iri(value), info = label)
+      expect_identical(read_meta(pkg, file)[[field]][[1]], value, info = label)
+      expect_error(
+        suppressWarnings(suppressMessages(
+          validate_salmon_datapackage(pkg, require_iris = TRUE)
+        )),
+        paste0("field ", field, " is not an absolute IRI"),
+        info = label
+      )
+      # Completeness belongs to strict validation; the default mode retains
+      # its existing acceptance and does not normalize or rewrite the value.
+      expect_no_error(suppressWarnings(suppressMessages(
+        validate_salmon_datapackage(pkg, require_iris = FALSE)
+      )))
+      expect_identical(readBin(path, "raw", file.info(path)$size), before,
+                       info = label)
+      writeBin(original, path)
+    }
+  }
+})
+
+test_that("metadata shape ownership preserves marker, blank and valid IRI paths", {
+  pkg <- filled_coded_package("q63-metadata-controls")
+  slots <- list(
+    c("codes.csv", "term_iri"),
+    c("codes.csv", "vocabulary_iri"),
+    c("codes.csv", "custom_thing_iri"),
+    c("dataset.csv", "custom_thing_iri")
+  )
+  for (slot in slots) {
+    file <- slot[[1]]
+    field <- slot[[2]]
+    path <- file.path(pkg, "metadata", file)
+    original <- mark_metadata_field(
+      pkg, file, field, 1L, "rEvIeW\t :https://example.org/code"
+    )
+    expect_true(refuses_review_marker(pkg), info = paste(file, field))
+    non_strict <- suppressWarnings(suppressMessages(
+      validate_salmon_datapackage(pkg, require_iris = FALSE)
+    ))
+    matching <- grepl(paste0("field ", field, " still contains a REVIEW-prefixed IRI"),
+                      non_strict$semantic_validation$issues$message, fixed = TRUE)
+    expect_equal(sum(matching), 1L, info = paste(file, field))
+    writeBin(original, path)
+    for (value in c("https://example.org/code", "urn:example:code", "")) {
+      original <- mark_metadata_field(pkg, file, field, 1L, value)
+      expect_no_error(suppressWarnings(suppressMessages(
+        validate_salmon_datapackage(pkg, require_iris = TRUE)
+      )))
+      writeBin(original, path)
+    }
+  }
 })

@@ -993,6 +993,26 @@ test_that("identifier-like exact duplicate retry query is suppressed before fall
   )
 })
 
+test_that("a CURIE is identifier-like whatever letters it holds, and whitespace ends it (B-380)", {
+  # The local part's class was `[^\\s]`, which R's default TRE engine reads as
+  # "neither a backslash nor the letter s". The backlog's five cases, each
+  # measured the other way round before the fix except abc:S and gcdfo_v2:X.
+  looks <- function(x) metasalmon:::.ms_llm_query_looks_like_identifier(x)
+  expect_true(looks("smn:species"))
+  expect_true(looks("abc:s"))
+  expect_true(looks("abc:S"))
+  expect_false(looks("abc:d e"))
+  expect_true(looks("gcdfo_v2:X"))
+  # A backslash is an ordinary character after the colon, and whitespace the
+  # normalizer collapses ends the CURIE wherever it is.
+  expect_true(looks("abc:\\"))
+  expect_false(looks("abc:d\te"))
+  expect_false(looks("Note: fish"))
+  # The classifier's verdict follows, and so does the ingester's reason.
+  expect_identical(metasalmon:::.ms_llm_classify_retry_query("smn:species", "species")$disposition, "identifier_like")
+  expect_identical(metasalmon:::.ms_llm_classify_retry_query("abc:d e", "x")$disposition, "use_query")
+})
+
 test_that("failed exploration reassessment does not remap old selected indexes onto new ranks", {
   suggestions <- tibble::tibble(
     dataset_id = rep("d1", 3),

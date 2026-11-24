@@ -1,7 +1,7 @@
 id: B-76
 kind: defect
 title: SMN and gcdfo model methods in different styles, and the crosswalk retarget is open
-state: needs_brett
+state: done
 claimable: false
 repo: metasalmon
 venue: claude-science

@@ -26,11 +26,41 @@ assignments are refused because they belong in separate SDP semantic
 artifacts.
 }
 \details{
-Every CURIE prefix must be declared in \code{curie_map} except the SSSOM
+CURIE prefixes in identifier/reference fields must be declared in \code{curie_map}
+except the SSSOM
 built-in prefixes (\code{owl}, \code{rdf}, \code{rdfs}, \code{semapv}, \code{skos}, \code{sssom}, \code{xsd}
 and \code{linkml}), which the SSSOM specification lets a file omit, so a canonical
 SSSOM/TSV file that leaves them out is read. A \code{curie_map} that does declare
 a built-in prefix must give it the expansion the specification fixes for it
 (for example \verb{http://www.w3.org/2004/02/skos/core#} for \code{skos}); any other
 expansion is refused.
+
+\code{predicate_type} uses SSSOM's entity-type enum, excluding the values the
+specification forbids for predicates. \code{subject_category}, \code{object_category}
+and \code{similarity_measure} are text, so their values need no CURIE declaration.
+}
+\examples{
+# Illustrative mapping only; curate real assertions before publication.
+mapping_file <- tempfile(fileext = ".sssom.tsv")
+writeLines(c(
+  '#sssom_version: "1.1"',
+  "#curie_map:",
+  "#  exa: https://example.org/ontology-a/",
+  "#  exb: https://example.org/ontology-b/",
+  "#mapping_set_id: https://example.org/mappings/demo",
+  "#mapping_set_version: 1",
+  "#license: https://creativecommons.org/licenses/by/4.0/",
+  "#subject_source: https://example.org/ontology-a/",
+  "#subject_source_version: 1",
+  "#object_source: https://example.org/ontology-b/",
+  "#object_source_version: 1",
+  paste("subject_id", "subject_label", "predicate_id", "object_id",
+        "object_label", "mapping_justification", sep = "\t"),
+  paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+        "exb:spawner-count", "Spawner count",
+        "semapv:ManualMappingCuration", sep = "\t")
+), mapping_file, useBytes = TRUE)
+mapping_set <- read_sssom_mapping_set(mapping_file)
+mapping_set$metadata$mapping_set_id
+unlink(mapping_file)
 }

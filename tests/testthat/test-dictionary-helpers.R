@@ -44,7 +44,7 @@ test_that("inferred dataset metadata uses the current SDP profile version", {
     seed_verbose = FALSE
   )
 
-  expect_equal(artifacts$dataset_meta$spec_version, "sdp-0.3.0")
+  expect_equal(artifacts$dataset_meta$spec_version, "sdp-0.3.2")
 })
 
 test_that("infer_dictionary marks factor columns as categorical", {
@@ -204,24 +204,29 @@ test_that("infer_dictionary promotes paired value/unit numeric columns into meas
 })
 
 test_that("infer_dictionary recognizes wide numeric and percent metrics without promoting QA or reference fields", {
+  # Construct the accented header as UTF-8. A backtick name containing literal
+  # non-ASCII bytes is escaped by R's parser under LC_CTYPE=C, so it no longer
+  # matches the string used to select the resulting dictionary row.
+  discharge_name <- paste0("Discharge / D", intToUtf8(0x00e9L), "bit (cms)")
   df <- tibble::tibble(
     `Facility Reference Number` = c(1001, 1002),
     `Environmental (%/month)` = c("0.00%", "4.56%"),
     `Water Level / Niveau d'eau (m)` = c(1.2, 1.4),
-    `Discharge / Débit (cms)` = c(10.5, 11.1),
+    discharge = c(10.5, 11.1),
     water_temp_c__temp_eau_c = c(12.3, 12.8),
     width_middle = c(4.2, 4.5),
     depth_1_lower = c(0.5, 0.7),
     `Grade...4` = c(10, 10),
     `QA/QC...6` = c("Approved", "Approved")
   )
+  names(df)[names(df) == "discharge"] <- discharge_name
 
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
 
   expect_equal(dict$column_role[dict$column_name == "Facility Reference Number"], "identifier")
   expect_equal(dict$column_role[dict$column_name == "Environmental (%/month)"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "Water Level / Niveau d'eau (m)"], "measurement")
-  expect_equal(dict$column_role[dict$column_name == "Discharge / Débit (cms)"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == discharge_name], "measurement")
   expect_equal(dict$column_role[dict$column_name == "water_temp_c__temp_eau_c"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "width_middle"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "depth_1_lower"], "measurement")
@@ -370,6 +375,31 @@ test_that("dictionary entry points pass strict sources through to retrieval", {
     logical(1),
     y = "smn"
   )))
+})
+
+test_that("multi-table semantic seeding runs once with the widened shortlist", {
+  withr::local_options(metasalmon.llm_deprecation_quiet = TRUE)
+  suggestion_widths <- integer()
+  fake_suggest <- function(df, dict, max_per_role, ...) {
+    suggestion_widths <<- c(suggestion_widths, max_per_role)
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      infer_dictionary(
+        list(catches = data.frame(count = 1:2), sites = data.frame(site = c("A", "B"))),
+        seed_semantics = TRUE,
+        semantic_max_per_role = 1L,
+        llm_assess = TRUE,
+        llm_top_n = 4L,
+        seed_verbose = FALSE
+      )
+    }
+  )
+
+  expect_identical(suggestion_widths, 4L)
 })
 
 test_that("infer_dictionary single-table semantic seeding preserves seed metadata attributes", {

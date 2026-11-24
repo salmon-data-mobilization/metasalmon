@@ -1133,6 +1133,14 @@ edh_build_hnap_xml <- function(dataset_meta,
 #'
 #' @inheritParams edh_build_hnap_xml
 #' @inherit edh_build_hnap_xml return
+#' @examples
+#' dataset <- readr::read_csv(
+#'   system.file("extdata", "dataset.csv", package = "metasalmon"),
+#'   show_col_types = FALSE
+#' )
+#' # The suppression retires with this deprecated alias; use
+#' # edh_build_hnap_xml() for new code.
+#' suppressWarnings(edh_build_iso19139_xml(dataset))
 #' @export
 edh_build_iso19139_xml <- function(dataset_meta,
                                    output_path = NULL,

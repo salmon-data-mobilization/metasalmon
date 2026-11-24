@@ -23,9 +23,11 @@ A tibble with suggested facet schemes and their member concepts
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
+proposed <- tibble::tibble(
+  term_label = c("Spawner Age 1", "Spawner Age 2", "Spawner Age 3")
+)
 facets <- suggest_facet_schemes(proposed)
-print(facets)
-} # }
+facets$scheme_name
+#>   AgeClassScheme
+#> "AgeClassScheme"
 ```
