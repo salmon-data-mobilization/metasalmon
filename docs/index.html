@@ -217,7 +217,8 @@ concept schemes) while preserving your original data structure.
 <p>Open Government Canada record: <a href="https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6" class="external-link uri">https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6</a></p>
 <p>A smaller <code>nuseds-fraser-coho-sample.csv</code> file is still bundled for tiny smoke tests, but it is no longer the default walkthrough dataset.</p>
 <p>The package also now ships a matching starter dictionary for the fuller example (<code>system.file("extdata", "nuseds-fraser-coho-2023-2024-column_dictionary.csv", package = "metasalmon")</code>), which is useful when you want a ready-made context file for a semantic review packet.</p>
-<p>See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> script that reproduces the 2023-2024 example.</p>
+<p>To see what a finished package looks like, open the gold standard: the same 173 rows as a complete Salmon Data Package, annotated and clean under strict validation (<code>system.file("extdata", "nuseds-fraser-coho-2023-2024-sdp", package = "metasalmon")</code>). <code>data-raw/fraser_coho_gold_standard.R</code> in this repository builds it with the functions above.</p>
+<p>See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> scripts that reproduce the 2023-2024 example and the gold standard.</p>
 <p>To continue:</p>
 <ul>
 <li>

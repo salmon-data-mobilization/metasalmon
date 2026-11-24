@@ -225,7 +225,7 @@ pkg <- create_sdp(
 #> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
 #>   package with `seed_semantics = TRUE` before final validation.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /tmp/RtmpuFZJ3j/fraser-coho-sdp-6155703e7003
+#> ✔ Created Salmon Data Package at /tmp/RtmpWv6aab/fraser-coho-sdp-3b3b625261b2
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can

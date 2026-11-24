@@ -42,7 +42,7 @@ sdp_path <- create_sdp(
 #> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
 #>   package with `seed_semantics = TRUE` before final validation.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /tmp/RtmpuFZJ3j/sdp-61556a181cf1
+#> ✔ Created Salmon Data Package at /tmp/RtmpWv6aab/sdp-3b3b27b8a93
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
@@ -73,10 +73,10 @@ components <- data.frame(
   required_when_observed = c(TRUE, TRUE)
 )
 write_sdp_observation_structures(sdp_path, structures, components)
-#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-61556a181cf1
-#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-61556a181cf1
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpWv6aab/sdp-3b3b27b8a93
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpWv6aab/sdp-3b3b27b8a93
 read_sdp_observation_structures(sdp_path)$structures
-#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/sdp-61556a181cf1
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpWv6aab/sdp-3b3b27b8a93
 #> # A tibble: 1 × 5
 #>   dataset_id table_id observation_structure_id structure_label
 #>   <chr>      <chr>    <chr>                    <chr>

@@ -38,7 +38,7 @@ A list with components:
 # Read the bundled example package without a network call.
 example_path <- system.file("extdata", package = "metasalmon")
 pkg <- read_salmon_datapackage(example_path)
-#> ✔ Loaded Salmon Data Package from /tmp/RtmpuFZJ3j/temp_libpath6155326754a4/metasalmon/extdata
+#> ✔ Loaded Salmon Data Package from /tmp/RtmpWv6aab/temp_libpath3b3b537d313d/metasalmon/extdata
 names(pkg$resources)
 #> [1] "nuseds_fraser_coho"
 ```

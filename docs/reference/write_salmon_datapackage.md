@@ -127,5 +127,5 @@ write_salmon_datapackage(
   path = tempfile("sdp-example-")
 )
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /tmp/RtmpuFZJ3j/sdp-example-61556e9a5935
+#> ✔ Created Salmon Data Package at /tmp/RtmpWv6aab/sdp-example-3b3b56d00699
 ```
