@@ -1996,6 +1996,11 @@ branch:" ;;
       assert 19 "client: two simultaneous claims by one agent against a cap of one leave exactly one claim (rc $cap_rc_a and $cap_rc_b, claim refs $cap_refs)" 1
       note "a: $(head -n 3 "$TMPROOT/client.capa.out" | tr '\n' ' ')"
       note "b: $(head -n 3 "$TMPROOT/client.capb.out" | tr '\n' ' ')"
+      # The client's lock warnings come at the end of its output, below the
+      # three lines above. "not releasing the claim lock" there says both
+      # processes held the lock at once; none says they took it in turn and the
+      # second miscounted. Until hub item B-445 the log could not tell the two.
+      note "lock warnings: $(grep -h 'claim lock' "$TMPROOT/client.capa.out" "$TMPROOT/client.capb.out" | tr '\n' ' ')"
     fi
     : "$cap_ok"
   else
