@@ -61,7 +61,7 @@ create_sdp()                         # public one-shot: infer -> seed -> write -
   └─ infer_salmon_datapackage_artifacts()   # the orchestrator (R/artifact-inference.R)
        ├─ infer_dictionary(seed_semantics = FALSE)   # column dictionary rows
        ├─ infer_*_from_resources()    # table_meta / codes / dataset_meta
-       └─ suggest_semantics()         # deterministic retrieval + optional LLM review
+       └─ suggest_semantics()         # deterministic retrieval; no model call
   └─ write_salmon_datapackage()       # writes dataset.csv/tables.csv/column_dictionary.csv/codes.csv
   └─ write_edh_xml_from_sdp()         # optional Enterprise Data Hub XML
 ```
@@ -77,8 +77,14 @@ return values, and attached attributes are a compatibility surface.
 - **Package assembly:** `write_salmon_datapackage`
 - **Dictionary:** `infer_dictionary`, `validate_dictionary`,
   `apply_salmon_dictionary`, `apply_semantic_suggestions`
-- **Semantics:** `suggest_semantics`, `chat_decomposition`, `find_terms`,
+- **Semantics:** `suggest_semantics`, `find_terms`,
   `sources_for_role`, `benchmark_term_ranking_fixtures`, `deduplicate_proposed_terms`
+  (`chat_decomposition` was removed with the in-package model call, B-329)
+- **Review in R:** `review_semantics`, `accept_suggestion`, `reject_suggestion`,
+  `apply_sdp_semantics`, `review_metadata`, the four `set_sdp_*` setters, and the
+  `semantic_suggestions` / `semantic_llm_assessments` accessors
+- **Harness review (packet and ingest):** `write_semantic_review_packet`,
+  `ingest_semantic_assessments`; the judging runs outside the package
 - **Ontology + validation:** `fetch_salmon_ontology`, `validate_semantics`,
   `suggest_facet_schemes`
 - **Term-request workflow:** `detect_semantic_term_gaps`,
@@ -103,10 +109,13 @@ return values, and attached attributes are a compatibility surface.
 - **ICES vocab:** `ices_code_types`, `ices_codes`, `ices_find_code_types`, `ices_find_codes`
 - **Maintenance:** `check_for_updates`
 
-Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publication`,
+Vignettes (12): `metasalmon`, `setup`, `harness-semantic-review` (which
+replaced `llm-context-review` when B-329 removed the in-package model call),
+`semantic-review`, `data-dictionary-publication`,
 `post-review-package-publication`, `reusing-standards-salmon-data-terms`,
 `github-csv-access`, `faq`, `glossary`, plus S11 slice 2's
-`migrating-to-sdp-0-3-0` and `tidy-data-for-sdp`.
+`migrating-to-sdp-0-3-0` and `tidy-data-for-sdp`. *(Recounted 2026-11-24: this
+said 11 and omitted `semantic-review`.)*
 
 ## Public API names
 
@@ -243,8 +252,9 @@ older API for symmetry alone.
   guard does not mention `role_boost` at all.
 - **`find_terms()` / `term_search`:** the deterministic ontology retrieval engine
   (`R/term_search.R` is ~96KB). `suggest_semantics()` calls it (default
-  `search_fn = find_terms`) to build a per-target candidate shortlist before any
-  LLM review. `sources_for_role()` selects vocab sources per role.
+  `search_fn = find_terms`) to build a per-target candidate shortlist, and
+  `write_semantic_review_packet()` / `ingest_semantic_assessments()` reach it
+  through the same argument. `sources_for_role()` selects vocab sources per role.
 - **EDH (Enterprise Data Hub):** DFO metadata system; the package can emit HNAP /
   ISO 19139 XML from a reviewed SDP.
 - **DwC-DP:** Darwin Core Data Package export path.
@@ -256,20 +266,27 @@ older API for symmetry alone.
 
 ## The semantic-review pipeline (the heart of the package)
 
-`suggest_semantics()` (R/semantics-helpers.R) runs four stages:
+`suggest_semantics()` (R/semantics-helpers.R) runs three stages, and the
+review packet adds a fourth outside the package:
 
 1. **Target discovery** (`.ms_semantic_discover_targets()`): turns dict/codes/table_meta/
    dataset_meta into **semantic target rows** — one row per *empty* semantic slot
-   needing an IRI. Fill-the-gaps, not overwrite. Does NOT call `search_fn` or any
-   LLM; the extraction from `suggest_semantics()` landed in the architecture
-   refactor.
+   needing an IRI. Fill-the-gaps, not overwrite. Does NOT call `search_fn`; the
+   extraction from `suggest_semantics()` landed in the architecture refactor.
 2. **Retrieval:** `.ms_retrieve_semantic_target_candidates()` is the single call
    to `search_fn`. Produces a candidate shortlist per target.
 3. **Role-collision annotation:** adds `role_collision` /
    `role_collision_note` columns (easy to forget when extracting stages).
-4. **LLM review** (optional): `.ms_assess_semantic_suggestions_llm()`.
-   Then results attach as the `semantic_suggestions` (always) and
-   `semantic_llm_assessments` (when `llm_assess`) attributes on the returned dict.
+   Results attach as the `semantic_suggestions` and `semantic_targets`
+   attributes on the returned dict.
+4. **Harness review** (optional, and never in the package):
+   `write_semantic_review_packet()` writes the targets, shortlists, bundles,
+   context excerpts and instructions to `review/semantic-review-packet.json`;
+   the user's harness answers in the 30-column row; and
+   `ingest_semantic_assessments()` validates, escalates, runs the bundle
+   validators, merges, and attaches `semantic_llm_assessments`. Until B-329
+   (2026-11-24) this stage was an in-package model call,
+   `.ms_assess_semantic_suggestions_llm()`, under `llm_assess = TRUE`.
 
 **Semantic target row contract** — canonical 19 columns in
 `.ms_semantic_target_cols()` (R/semantic-suggestions.R:1-23): `dataset_id`,
@@ -282,11 +299,12 @@ older API for symmetry alone.
 with NA rendered literally as `<NA>` (`.ms_semantic_key_df`) — compare keys with
 the same encoding.
 
-## LLM context-file subsystem (R/llm-semantic-helpers.R)
+## Context-file subsystem (R/llm-semantic-helpers.R)
 
-- **Strictly opt-in:** context is parsed and used ONLY when `llm_assess = TRUE`.
-  Supplying `llm_context_files`/`llm_context_text` never enables network calls.
-  This is the contract the 0.1.4 fix (issue #1) hardened.
+- **Read only by the packet builder:** `write_semantic_review_packet(context_files
+  =, context_text =)` is the one caller. *(Until B-329 the inputs were
+  `llm_context_files` / `llm_context_text` and were read only under
+  `llm_assess = TRUE`, the opt-in contract the 0.1.4 fix, issue #1, hardened.)*
 - **Accepted input:** local file *paths* (character) or inline *text*. Passing an
   already-parsed object (tibble/XML/etc.) errors early
   (`.ms_validate_llm_context_files`).
@@ -300,52 +318,43 @@ the same encoding.
   disambiguated with parent-directory context and then a numeric suffix if
   needed. Inline text uses `source = "inline_context"`. Labels propagate to the
   user-visible `llm_context_sources` column and are pinned by tests.
-- **Parse-once invariant:** files are parsed once per assess run. The orchestrator
-  builds one chunk pool and threads it as an explicit `context_chunk_pool`;
-  `.ms_prepare_context_chunks()` no longer silently re-collects from source files.
+- **Parse-once invariant:** files are parsed once per packet. The builder makes
+  one chunk pool and threads it as an explicit `context_chunk_pool`;
+  `.ms_prepare_context_chunks()` never re-collects from source files.
 - **Scoring:** deterministic bag-of-words token overlap (no embeddings).
   Tokens < 3 chars dropped. (A camelCase split is written but never fires:
   `.ms_context_tokens()` lowercases the text before its camelCase pattern runs,
   read 2026-09-25.) Chunk defaults 2200 chars / 200
   overlap.
 
-## LLM review response contract / adapter (R/llm-review-adapter.R)
+## The assessment row and its validation (R/llm-review-adapter.R)
 
-- `.ms_llm_review_validate_assessment` / `.ms_llm_review_response_data` is the
-  **shared response contract** — and it is **already a two-consumer seam**:
-  - semantic review: `.ms_llm_chat_json_request` returns a *bare* parsed-JSON list.
-  - chat decomposition (`.ms_chat`, R/chat-decomposition.R): it returns a
-    *wrapped* `list(content, data, ...)` shape.
-  The adapter has a two-shape normalizer by design. (This matters: the
-  `deepen-architecture` plan's Refactor 4 wrongly assumed a single review path.)
+- The frozen 30-column row is built by `.ms_llm_review_empty_assessment()` and
+  `.ms_llm_review_success_assessment()` and leaves through
+  `.ms_llm_normalize_assessment_rows()`; the ingester is now its only producer.
 - Allowed decisions in `.ms_validate_llm_assessment`: `accept`, `review`,
   `retry_search`, `request_new_term`, `reject_shortlist` (+ `propose_new_term`
   aliases to `request_new_term`). Three auto-downgrades to `review`: accept without
   index, out-of-range index, retry_search without query.
-- Assessment rows already carry `llm_retry_query`, `llm_new_term_label`,
-  `llm_new_term_definition`, and `llm_new_term_namespace`. Direct
-  `request_new_term` responses populate them, and `detect_semantic_term_gaps()`
-  reads the parallel `semantic_llm_assessments` attribute and counts a
-  `request_new_term` assessment as gap evidence (`R/term-request-helpers.R`,
-  read 2026-09-25). So the Theme A4 boundary this line used to call open is
-  closed.
-- **Five distinct LLM review paths:** (1) generic single-target, (2) decomposition
-  single-target (routed by `.ms_llm_should_route_to_decomposition`), (3) batch
-  (two-layer fallback to per-target), (4) query-exploration re-review, (5)
-  interactive chat decomposition. Paths 1–4 use the bare-JSON branch; path 5 uses
-  the wrapped branch.
-- **Provider-wide failure fallback:** if every assessment errors and none has a
-  decision, `.ms_llm_abort_if_provider_wide_failure` falls back to the
-  deterministic shortlist when usable, else aborts (added in 0.1.3).
-- **LLM providers:** `openai`, `openrouter`, `openai_compatible`, `chapi` (DFO's
-  internal Open WebUI; defaults to `ollama2.mistral:7b`). Env overrides:
-  `CHAPI_API_KEY`, `CHAPI_MODEL`, `CHAPI_BASE_URL`.
+- Assessment rows carry `llm_retry_query`, `llm_new_term_label`,
+  `llm_new_term_definition`, and `llm_new_term_namespace`, and
+  `detect_semantic_term_gaps()` reads the `semantic_llm_assessments` attribute
+  and counts a `request_new_term` assessment as gap evidence
+  (`R/term-request-helpers.R`, read 2026-09-25).
+- **What B-329 removed (2026-11-24), kept here so the older plans still read:**
+  the provider presets (`openai`, `openrouter`, `openai_compatible`, `chapi`)
+  and their environment variables, the shared chat request builder and the two
+  request functions, the retry stack, the adapter's two-shape response
+  normalizer (`.ms_llm_review_response_data`), the five in-package review paths
+  (generic, decomposition-routed, batch, exploration re-review, and
+  `chat_decomposition()`), and the provider-wide failure fallback.
 
 ## Known duplication map (drives the deepen-architecture refactors)
 
-**Four of the five are resolved** (re-verified on `main`, 2026-08-17). Kept as a
-map of where the duplication *was*, because the refactor plans still reference
-these numbers:
+**All five are closed: four resolved (re-verified on `main`, 2026-08-17), and
+items 1, 2, 3 and 5 deleted outright with the in-package model call by B-329
+(2026-11-24).** Kept as a map of where the duplication *was*, because the
+refactor plans still reference these numbers:
 
 1. ~~**`llm_requested` 8-clause predicate** duplicated across
    `dictionary-helpers.R` and `package-helpers.R`~~ — **resolved.** One
@@ -375,7 +384,8 @@ these numbers:
    GPT-5 omission and `reasoning_effort` never reach it — hub item **B-128**.
    *(This read "divergent temperature/header handling ... still open" until
    2026-09-23. The headers were duplicated but never divergent; the temperature
-   was, and is.)*
+   was. B-329 deleted both request functions and the builder, so nothing is
+   left to diverge and B-128 is moot.)*
 
 ## Return-value attribute contracts (preserve across refactors)
 
@@ -385,19 +395,22 @@ these numbers:
 - `infer_dictionary` **single-table** path attaches `seed_table_meta`,
   `seed_codes`, `seed_dataset_meta` — only when those args were non-NULL
   The two paths attach **disjoint** attribute sets.
-- `suggest_semantics` attaches `semantic_suggestions` (always),
-  `semantic_llm_assessments` (when `llm_assess`), optionally `dwc_mappings`.
+- `suggest_semantics` attaches `semantic_suggestions` and `semantic_targets`
+  (always), optionally `dwc_mappings`; `ingest_semantic_assessments()` attaches
+  `semantic_llm_assessments` to the dictionary it returns (until B-329,
+  `suggest_semantics(llm_assess = TRUE)` did).
   `semantic_suggestions` is read in `R/term-request-helpers.R`,
-  `R/package-helpers.R` (two sites), `R/chat-decomposition.R`,
+  `R/package-helpers.R` (two sites), `R/review-console.R`,
   **`R/semantics-helpers.R` — `apply_semantic_suggestions()`'s default
   `suggestions` argument, the public re-entry point and arguably the most
   load-bearing reader of the four** — and **11 test files**.
 
 ## Test infrastructure conventions
 
-- **LLM injection hooks:** public `llm_request_fn=` (a `function(messages, config)`)
-  and internal `request_fn=` (to `.ms_llm_resolve_config`). A `stop()`-ing fn is
-  the standard sentinel proving the LLM was not called.
+- **No model hook any more:** `llm_request_fn=` and the internal `request_fn=`
+  went with the model call (B-329). `tests/testthat/test-semantic-review-packet.R`
+  proves the namespace holds no provider entry point and no chat-completions
+  request, and walks the packet functions' call graph.
 - **Retrieval injection:** `search_fn=` directly on `suggest_semantics()`. But
   `create_sdp`/`infer_dictionary` default `search_fn = find_terms`, so those paths
   need `with_mocked_bindings(find_terms = ...)`.
@@ -405,8 +418,9 @@ these numbers:
   capture forwarded args and inject canned `semantic_suggestions` attributes.
 - Results asserted via attributes and written `metadata/*.csv`, almost never via
   internal locals — EXCEPT the parse-once test in tests/testthat/test-llm-semantic-helpers.R
-  which mocks `.ms_context_text_from_file` / `.ms_chunk_context_text` **by name**
-  (a refactor hazard).
+  (now run through `write_semantic_review_packet()`), which mocks
+  `.ms_context_text_from_file` / `.ms_chunk_context_text` **by name** (a
+  refactor hazard).
 - Optional-dep formats gate with `skip_if_not_installed` (openxlsx/readxl/pdftools).
 - `options(metasalmon.sdp_schema_source = "vendored")` (helper-validation.R) keeps
   schema validation offline.
@@ -443,16 +457,15 @@ every release — re-run the count rather than trusting these to the digit.
 | `knb-publication.R` | 3704 | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
 | `eml-export.R` | 3001 | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
 | `term_search.R` | 2790 | Deterministic ontology retrieval (`find_terms`) + ranking; emits the role hints the role contract depends on. |
-| `llm-semantic-helpers.R` | 2236 | LLM context parsing/scoring + review orchestration (single/batch/explore/decomposition routing); owns `.ms_llm_review_plan()`. |
+| `llm-semantic-helpers.R` | 784 (2026-11-24) | Context parsing/scoring, assessment validation, the retry-query classifier and rejection escalation, for the review packet and ingester. Its provider and orchestration code went with B-329. |
 | `dictionary-helpers.R` | 1578 | `infer_dictionary` + `infer_*_from_resources`, `apply_salmon_dictionary`. |
-| `chat-decomposition.R` | 1380 | Interactive I-ADOPT decomposition session (`chat_decomposition`); 2nd consumer of the review contract. |
 | `edh-xml-export.R` | 1293 | EDH HNAP/ISO 19139 XML export. |
 | `term-request-helpers.R` | 1267 | Ontology new-term request rendering + issue submission. |
-| `semantic-suggestions.R` | 1157 | Target discovery, the target/candidate row-shape contract, and LLM-assessment merge. |
+| `semantic-suggestions.R` | 1156 | Target discovery, the target/candidate row-shape contract, and the assessment merge. |
 | `sssom.R` | 1131 | Strict SSSOM 1.1 mapping-set serialization and manifest validation. |
 | `observation-structures.R` | 1093 | Mixed-grain observation structures and `extract_sdp_observations`. |
-| `semantics-helpers.R` | 1014 | `suggest_semantics` (retrieval, role-collision, LLM handoff) and the `role_to_field` map. |
-| `semantic-bundle-review.R` | 936 | Bundle roles, slot fields, and the review prompt — **the role contract's authority**, read by the role-contract guard. |
+| `semantics-helpers.R` | 1183 (2026-11-24) | `suggest_semantics` (retrieval, role-collision) and the `role_to_field` map. |
+| `semantic-bundle-review.R` | 93 (2026-11-24) | Bundle roles and slot fields — **the role contract's authority**, read by the role-contract guard; its review prompt went with B-329, and the vendored review instructions carry the judgement sentence now. |
 | `semantic-bundle-validators.R` | 853 | Deterministic bundle validators, including the role-type veto. |
 | `measurement-decompositions.R` | 849 | Ordered I-ADOPT-style component evidence kept separate from SSSOM mappings. |
 | `github-helpers.R` | 638 | GitHub CSV access + auth setup. |
@@ -460,7 +473,7 @@ every release — re-run the count rather than trusting these to the digit.
 | `reproducibility-manifest.R` | 481 | Reproducibility manifest read/write/validate. |
 | `knb-sdp-archive.R` | 479 | Closed, deterministic ZIP of canonical SDP data, metadata, SSSOM, and ordered decomposition artifacts. |
 | `sdp-extension-helpers.R` | 415 | Shared helpers for the SDP extension artifacts. |
-| `llm-review-adapter.R` | 272 | Shared LLM review response contract (validate / response-data / row construction); frozen ~30-col assessment row. |
+| `llm-review-adapter.R` | 216 (2026-11-24) | The frozen 30-column assessment row: columns, prototypes, normalizer and the two row builders. |
 | `cli-safety.R` | 103 | Escaping/redaction so external text never becomes a cli template (`.ms_cli_escape`, `.ms_cli_bullets`, `.ms_redact_secrets`). |
 | `artifact-inference.R` | 101 | `infer_salmon_datapackage_artifacts()` — calls `infer_dictionary(seed_semantics = FALSE)`. |
 | `provenance.R` | 68 | Single owner of the accepted writer set (`metasalmon::` / `metasalmonpy.`) for dual-provenance validation. Backlog #88. |
@@ -496,7 +509,12 @@ every release — re-run the count rather than trusting these to the digit.
 - `knowledge/plans/2026-06-26-next-behaviours-roadmap.md` — superseded for
   sequencing, still authoritative for the Theme A–E design detail.
 
-## Related planning artifacts (read before LLM-review work)
+## Related planning artifacts (read before semantic-review work)
+
+*(B-329 removed the in-package model call on 2026-11-24, so the two 2026-04-02
+plans below describe a design that no longer exists in the package; they are
+history. The current design is the
+[S16 card](sequences/s16-model-call-leaves-the-packages.md) and its execplan.)*
 
 - `knowledge/plans/2026-06-24-deepen-architecture-refactors.md` — the five
   deep-module refactors (peer-reviewed; see its Peer Review section).
@@ -531,8 +549,8 @@ Guard: `tests/testthat/test-collation-guard.R`.
 **cli message safety.** cli glue-interpolates every element of a condition
 message vector, including named bullet elements — the name only selects the
 glyph. Passing external text through means balanced braces are evaluated as R
-code (a provider error containing `{Sys.getenv("OPENAI_API_KEY")}` prints the
-key) and an unbalanced brace is a parse error (a column named `rate{pct` made
+code (a provider error containing `{Sys.getenv("OPENAI_API_KEY")}` printed the
+key, in the in-package model call B-329 removed) and an unbalanced brace is a parse error (a column named `rate{pct` made
 validation die with `Expecting '}'`). `R/cli-safety.R` holds
 `.ms_cli_escape()`, `.ms_cli_bullets()`, `.ms_redact_secrets()`, and
 `.ms_abort_external()`. Escaping rather than value interpolation, because
@@ -551,7 +569,7 @@ Guard: `tests/testthat/test-cli-safety-guard.R`.
   `package-helpers.R`), so `infer_dictionary`'s own arg-assembly and metadata
   blocks are **dead on that path** and only execute when `infer_dictionary` is
   called directly. ~~which is why the 0.1.4 fix landed only in package-helpers
-  and a parallel gap remains in dictionary-helpers~~ — **that gap is closed:**
-  `.ms_llm_review_plan()` runs `.ms_validate_llm_context_files()` and
-  `.ms_warn_if_llm_semantic_options_ignored()` for *both* entry points, so the
-  opt-in contract and the ignored-options warning are single-sourced.
+  and a parallel gap remains in dictionary-helpers~~ — **that gap closed, and
+  then the code went:** `.ms_llm_review_plan()` single-sourced the opt-in
+  contract for both entry points until B-329 removed the model call and every
+  option it governed.
