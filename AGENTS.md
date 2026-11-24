@@ -143,7 +143,9 @@ The mirror, semantic, guard, security, and release contracts below remain.
   package are `metasalmon-skill` and `sdp-semantic-review`. The ones that
   move with the ontologies, the PSC CV and the commons are `salmon-terms`,
   `controlled-vocabulary`, `psc-vocabulary`, `graph-discovery` and
-  `commons-card`.
+  `commons-card`. These names were read from the plugin's `skills/` directory
+  at `v0.2.0` on 2026-11-24, and that directory is the authority if they
+  differ.
 
   *Retires when:* the plugin's own CI fails on a skill that pins a version
   older than the ecosystem's current release.

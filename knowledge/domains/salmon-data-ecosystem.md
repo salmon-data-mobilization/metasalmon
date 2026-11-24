@@ -1,7 +1,7 @@
 ---
 type: ScientificDataDomain
 title: "Salmon data ecosystem"
-description: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, the salmon knowledge commons, the standards workshop, and the Salmon Science Foundry, coordinated through the metasalmon hub. Nine repositories, one hub; membership follows from this hub sequencing that repository's work (ruled 2026-08-24)."
+description: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, the salmon knowledge commons, the standards workshop, the Salmon Science Foundry, and the smn-sci-plgn skills plugin, coordinated through the metasalmon hub. Ten repositories, one hub; membership follows from this hub sequencing that repository's work (ruled 2026-08-24)."
 status: draft
 tags: [salmon, sdp, ecosystem]
 psc:
@@ -9,8 +9,9 @@ psc:
 ---
 
 The domain this bundle coordinates. The table below is the complete allowlist:
-**nine repositories, one hub** (nine since 2026-09-05, when Brett's Q19 ruling
-admitted `salmon-science-foundry`).
+**ten repositories, one hub** (ten since 2026-11-24, when Brett admitted
+`smn-sci-plgn`; nine from 2026-09-05, when his Q19 ruling admitted
+`salmon-science-foundry`).
 
 **"Complete" was contested until 2026-08-24, and is not any more.** This card
 and the roadmap stated two different membership tests. Brett ruled that
@@ -169,9 +170,10 @@ discarded is what stops it regrowing.
    it. That was the third half-question inside OD-1 and it is answered.
 
 **What moved in the same change:** the allowlist table (eight rows then; **nine
-since 2026-09-05**, when Q19 admitted the Foundry), the
-"eight repositories, one hub" line at the top of this card (**nine** since the
-same date), the roadmap's
+since 2026-09-05**, when Q19 admitted the Foundry; **ten since 2026-11-24**, when
+the plugin was admitted), the
+"eight repositories, one hub" line at the top of this card (**ten** since
+2026-11-24), the roadmap's
 *Domain allowlist* rule (now the sequencing test alone), the roadmap's
 "eight sections for seven members" note, its frontmatter description, the
 [hub-coordination context](../contexts/hub-coordination.md), and the
@@ -182,7 +184,9 @@ Foundry row landed on the Q19 ruling of 2026-09-05: this card, the
 [hub-coordination context](../contexts/hub-coordination.md), the
 [S6 card](../sequences/s6-ecosystem.md), `index.md`, and the roadmap. The count
 has now drifted twice, which is why the walk is written down as a list rather
-than left to whoever remembers.
+than left to whoever remembers. It was walked a third time on 2026-11-24, when
+`smn-sci-plgn` was admitted: the same places, plus `knowledge/index.md`'s
+member list, Q69 in `questions.md`, and the S16 card's paragraph on the plugin.
 
 **The one thing the ruling forces, stated so it is not lost.**
 `salmon-knowledge-commons` was admitted on 2026-08-17 under the test that has

@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "ROADMAP — salmon data ecosystem hub"
-description: "The single sequencing authority for metasalmon and the nine-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
+description: "The single sequencing authority for metasalmon and the ten-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
 status: draft
 tags: [roadmap, sequencing, releases]
 psc:
@@ -81,7 +81,7 @@ Rules that keep this from decaying:
   is correct, so each divergence is a question about which side is right, and
   R changing is a normal answer rather than an exception. See
   [parity-deviations](parity-deviations.md) row 32 for the first application.
-- **Domain allowlist:** the **nine** rows in the
+- **Domain allowlist:** the **ten** rows in the
   [domain card](domains/salmon-data-ecosystem.md) are exhaustive. **The
   membership test, ruled 2026-08-24 (Brett): a repository is a member when this
   hub sequences that repository's work.** That is the domain card's test, and it
@@ -140,7 +140,7 @@ decision, at which point it is deleted rather than maintained.
   released mapping products and decisions remain authoritative in their owning
   semantic-asset repository, not here.
 - This hub retains technical sequencing, mirror coordination, and the release
-  index for the nine-repository ecosystem. The bounded consumer plan is
+  index for the ten-repository ecosystem. The bounded consumer plan is
   [governed mapping products](plans/2026-08-14-governed-mapping-products.md).
 - Brett will coordinate identification of the competent CTC/domain and
   application authorities; that coordination is not their approval. Until
@@ -318,21 +318,24 @@ against their tags, `DESCRIPTION`/`pyproject.toml`, and their GitHub Release
 objects, when both reached **0.4.0**.
 
 **Read every row's tag line, not just its version heading.**
-**Five of the nine** members have `main` ahead of their newest tag
+**Five of the ten** members have `main` ahead of their newest tag
 (metasalmon, metasalmonpy, salmon-domain-ontology, dfo-salmon-ontology,
 smn-data-pkg), PSC's alpha.3 is merged and untagged, neither the commons nor
 the workshop has a tag at all, and the ninth member has no repository yet, so
-it cannot be ahead of anything. Ahead-of-tag is the ecosystem's normal state
+it cannot be ahead of anything. The tenth, `smn-sci-plgn`, had `main` at its
+`v0.2.0` tag when it was admitted (measured 2026-11-24). Ahead-of-tag is the ecosystem's normal state
 rather than an anomaly worth flagging per row, so **cite a commit unless you
 have checked that the thing you mean is inside the tag.**
 
-The index carries **nine sections for nine members**. The mismatch it used to
+The index carries **ten sections for ten members**. The mismatch it used to
 carry ("eight sections for seven members", the workshop recorded here while
 absent from the allowlist) was closed by the 2026-08-24 membership ruling, which
 made the workshop the eighth member, and its section is a member row now rather
 than a courtesy record. The ninth section was added 2026-09-09 in the same
 change as the domain-card row, on Brett's Q19 ruling of 2026-09-05, so the index
-never carried "nine sections for eight members" either.
+never carried "nine sections for eight members" either. The tenth section,
+`smn-sci-plgn`, was added 2026-11-24 in the same change as its domain-card
+row, on Brett's word admitting it.
 
 ### metasalmon (R) — current **0.6.0**
 
@@ -1432,6 +1435,22 @@ metasalmonpy (a release), `sdp-` (a tag), smn (a release), gcdfo (a commit or
 tag), and a commons commit; add a row to the spec-version spread table above the
 moment the first pin exists. *Retires when:* the first tag exists.
 
+### smn-sci-plgn (Salmon Science Research plugin) — current **v0.2.0**
+
+| Version | Date | One line |
+|---|---|---|
+| [`v0.2.0`](https://github.com/salmon-data-mobilization/smn-sci-plgn/releases/tag/v0.2.0) | 2026-10-30 | Pins metasalmon and metasalmonpy `v0.6.0`. Carries `sdp-semantic-review`, the harness skill that judges a review packet, which is the route to model judgement that B-329 waits on. |
+
+The tenth member, admitted 2026-11-24 on Brett's word, so that the skills stay
+current with the tools this hub releases. The rule is in `AGENTS.md`, "The
+`smn-sci-plgn` skills follow the tools". *(Measured 2026-11-24, in `skills/` only: the skills name
+metasalmon or metasalmonpy `v0.6.0` 17 times and no `sdp-` version, so they are
+current with both packages' latest release and need no edit for the spec's
+`sdp-0.3.3`. The eval packets under `evals/` are a different case: they carry
+`sdp-0.3.2`, the version the v0.6.0 packages write, and move when the packages
+re-vendor, through B-443 and B-444. The plugin's `main` was at its `v0.2.0` tag.)* The next move they owe is to the release that removes the
+in-package model call, B-329 and B-330. That is queue item B-442.
+
 ---
 
 ## Open decisions
@@ -1449,20 +1468,6 @@ heading unchanged** — other cards link to these anchors, and an entry that
 disappears on being answered takes every link with it. OD-1 is the first, ruled
 2026-08-24; the full index of decisions and their status is
 [questions.md](questions.md).
-
-### smn-sci-plgn (Salmon Science Research plugin) — current **v0.2.0**
-
-| Version | Date | One line |
-|---|---|---|
-| [`v0.2.0`](https://github.com/salmon-data-mobilization/smn-sci-plgn/releases/tag/v0.2.0) | 2026-10-30 | Pins metasalmon and metasalmonpy `v0.6.0`. Carries `sdp-semantic-review`, the harness skill that judges a review packet, which is the route to model judgement that B-329 waits on. |
-
-The tenth member, admitted 2026-11-24 on Brett's word, so that the skills stay
-current with the tools this hub releases. The rule is in `AGENTS.md`, "The
-`smn-sci-plgn` skills follow the tools". *(Measured 2026-11-24: the skills name
-metasalmon or metasalmonpy `v0.6.0` 17 times and no `sdp-` version, so they are
-current with both packages' latest release and unaffected by the spec's
-`sdp-0.3.3`.)* The next move they owe is to the release that removes the
-in-package model call, B-329 and B-330. That is queue item B-442.
 
 ### OD-1 — Which membership test governs, and is `salmon-data-standards-workshop` the eighth member?
 
@@ -1482,8 +1487,8 @@ Three consequences, all applied in the same change:
 
 - **`salmon-data-standards-workshop` is the eighth member.** Its release-index
   section below is a member row. The allowlist was eight rows when this was
-  ruled and is **nine** now, `salmon-science-foundry` having been admitted
-  2026-09-05 under this same test (Q19); the ordinal here is the workshop's
+  ruled and is **ten** now, `salmon-science-foundry` having been admitted
+  2026-09-05 under this same test (Q19) and `smn-sci-plgn` on 2026-11-24; the ordinal here is the workshop's
   position, not a live count.
 - **`psc-data-transformations` stays external**, as a typed *requirements-driving
   consumer* edge. Its pin on metasalmon 0.1.8 at `886e01d` is a compatibility
@@ -1496,10 +1501,10 @@ Three consequences, all applied in the same change:
   in the ruling — the place to re-examine if any part of it is wrong.
 
 **And "seven repositories" is no longer a count anyone maintains** — it is
-**nine** since 2026-09-05, in the domain card, this card's frontmatter and body,
+**ten** since 2026-11-24 (nine from 2026-09-05), in the domain card, this card's frontmatter and body,
 the hub-coordination context, and the S6 card. That list of places is itself the
 argument for the generated block at the top of this card: the count went seven
-to eight to nine between 2026-08-24 and 2026-09-05, and each move had to be made
+to eight to nine between 2026-08-24 and 2026-09-05, and to ten on 2026-11-24, and each move had to be made
 by hand in every one of those places. *Retires when:* those restatements are
 derived rather than written, and this sentence names one place instead of five.
 

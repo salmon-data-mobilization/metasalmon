@@ -246,8 +246,8 @@ members:
   # relevant skills in smn-sci-plgn repo up to date with the ecosystem of tools
   # you coordinate." The plugin's skills drive metasalmon, metasalmonpy, the SDP
   # spec, the ontologies and the commons, so their releases make its skills stale.
-  # solo: true is proposed with this change, and it is Brett's to rule (HUB.md
-  # class 7). Retires when: Brett confirms or changes the solo key.
+  # solo: true rests on the participation row in HUB.md, measured 2026-11-24.
+  # The change that set it is Brett's to merge (HUB.md class 7).
   - repo: smn-sci-plgn
     org: salmon-data-mobilization
     forge: github
