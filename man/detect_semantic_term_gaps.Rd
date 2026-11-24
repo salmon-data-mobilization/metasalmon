@@ -2,7 +2,7 @@
 % Please edit documentation in R/term-request-helpers.R
 \name{detect_semantic_term_gaps}
 \alias{detect_semantic_term_gaps}
-\title{Detect candidate and LLM-identified semantic term gaps}
+\title{Detect candidate and harness-identified semantic term gaps}
 \usage{
 detect_semantic_term_gaps(
   dict = NULL,
@@ -42,7 +42,8 @@ being coerced or dropped.}
 \value{
 A tibble with one row per unresolved semantic target. The existing
 23-column candidate-gap prefix is preserved, followed by target metadata,
-\code{gap_detection_basis}, LLM decision/rationale, proposed-term fields, and
+\code{gap_detection_basis}, the assessment's decision and rationale (its
+\verb{llm_*} columns), proposed-term fields, and
 \code{llm_escalated_from}. Detection values are \code{candidate_gap},
 \code{llm_request_new_term},
 \code{candidate_gap_and_llm_request_new_term}, or \code{no_candidates} -- the last
@@ -66,13 +67,16 @@ Commons rows use \code{gap_detection_basis = "commons_register"}; their
 \description{
 Given semantic suggestions (typically attached to a dictionary as
 \code{semantic_suggestions}), this function summarizes candidate fields that lack
-a direct SMN match and final LLM \code{request_new_term} decisions. An explicit
-final LLM gap remains a gap even when SMN candidates exist.
+a direct SMN match and final \code{request_new_term} decisions a harness recorded
+through \code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}. An explicit final
+\code{request_new_term} remains a gap even when SMN candidates exist.
 }
 \details{
 It is designed to support a practical workflow:
 \enumerate{
-\item generate semantic suggestions with \code{suggest_semantics()};
+\item generate semantic suggestions with \code{suggest_semantics()}, optionally
+judged by your own harness through \code{\link[=write_semantic_review_packet]{write_semantic_review_packet()}} and
+\code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}};
 \item detect unresolved gaps with \code{detect_semantic_term_gaps()};
 \item render request payloads with \code{render_ontology_term_request()};
 \item optionally submit issues with \code{submit_term_request_issues()}.
@@ -80,7 +84,7 @@ It is designed to support a practical workflow:
 
 Commons input retains every register row in source order, including
 multiple gaps on one concept. The usual gap columns retain their types,
-with dataset, candidate and LLM evidence missing. They are followed by
+with dataset, candidate and assessment evidence missing. They are followed by
 \code{commons_} columns for all fifteen emitted fields and \code{commons_hold_reason}.
 Only open, unheld rows explicitly targeted to SMN or GCDFO can become a
 new request. Proposed/rejected, do-not-mint, blocked, conflicted, contested,

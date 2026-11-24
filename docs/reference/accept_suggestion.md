@@ -65,10 +65,11 @@ reject_suggestion(
   select a column's own slot when codes of that column have slots with
   the same role, as a measurement column's codes do: leaving
   `code_value` out matches those code slots too. A blank never selects a
-  code's slot, even for a `codes.csv` row that leaves `code_value` empty
-  because it supplies `vocabulary_iri`.
+  code's slot. A `codes.csv` row that leaves `code_value` empty because
+  it supplies `vocabulary_iri` has no slot at all: it gets no semantic
+  target, having no code value for a term to represent.
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
-  prints it whenever it is needed.
+  prints `code_value` whenever it is needed.
 
 - iri:
 

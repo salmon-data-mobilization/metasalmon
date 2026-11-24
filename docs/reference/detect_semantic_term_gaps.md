@@ -1,9 +1,12 @@
-# Detect candidate and LLM-identified semantic term gaps
+# Detect candidate and harness-identified semantic term gaps
 
 Given semantic suggestions (typically attached to a dictionary as
 `semantic_suggestions`), this function summarizes candidate fields that
-lack a direct SMN match and final LLM `request_new_term` decisions. An
-explicit final LLM gap remains a gap even when SMN candidates exist.
+lack a direct SMN match and final `request_new_term` decisions a harness
+recorded through
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md).
+An explicit final `request_new_term` remains a gap even when SMN
+candidates exist.
 
 ## Usage
 
@@ -60,13 +63,14 @@ detect_semantic_term_gaps(
 
 A tibble with one row per unresolved semantic target. The existing
 23-column candidate-gap prefix is preserved, followed by target
-metadata, `gap_detection_basis`, LLM decision/rationale, proposed-term
-fields, and `llm_escalated_from`. Detection values are `candidate_gap`,
-`llm_request_new_term`, `candidate_gap_and_llm_request_new_term`, or
-`no_candidates` – the last marks a target whose retrieval returned
-nothing at all (read from the dictionary's `semantic_targets` attribute,
-so it is reported only on the `dict` path), distinguishing "nothing
-found" from "found and rejected". Key columns:
+metadata, `gap_detection_basis`, the assessment's decision and rationale
+(its `llm_*` columns), proposed-term fields, and `llm_escalated_from`.
+Detection values are `candidate_gap`, `llm_request_new_term`,
+`candidate_gap_and_llm_request_new_term`, or `no_candidates` – the last
+marks a target whose retrieval returned nothing at all (read from the
+dictionary's `semantic_targets` attribute, so it is reported only on the
+`dict` path), distinguishing "nothing found" from "found and rejected".
+Key columns:
 
 - `dataset_id`, `table_id`, `column_name`, `target_scope`,
   `target_sdp_file`, `target_sdp_field`, `target_row_key`,
@@ -88,7 +92,11 @@ found" from "found and rejected". Key columns:
 It is designed to support a practical workflow:
 
 1.  generate semantic suggestions with
-    [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md);
+    [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
+    optionally judged by your own harness through
+    [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+    and
+    [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md);
 
 2.  detect unresolved gaps with `detect_semantic_term_gaps()`;
 
@@ -100,8 +108,8 @@ It is designed to support a practical workflow:
 
 Commons input retains every register row in source order, including
 multiple gaps on one concept. The usual gap columns retain their types,
-with dataset, candidate and LLM evidence missing. They are followed by
-`commons_` columns for all fifteen emitted fields and
+with dataset, candidate and assessment evidence missing. They are
+followed by `commons_` columns for all fifteen emitted fields and
 `commons_hold_reason`. Only open, unheld rows explicitly targeted to SMN
 or GCDFO can become a new request. Proposed/rejected, do-not-mint,
 blocked, conflicted, contested, evidence-needed, unsupported-target and

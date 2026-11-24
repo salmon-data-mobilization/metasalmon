@@ -1,6 +1,86 @@
 metasalmon (development version)
 --------------------------------
 
+### Breaking changes
+
+* **metasalmon no longer makes a model call** (hub item B-329, S16 step 3;
+  deprecated since 0.6.0, ruled by Brett on 2026-09-25, hub Q67). The package
+  holds no model client and reads no model-provider credential. Removed, with
+  their tests:
+
+  - `llm_assess` and the other ten `llm_*` arguments (`llm_provider`,
+    `llm_model`, `llm_api_key`, `llm_base_url`, `llm_reasoning_effort`,
+    `llm_top_n`, `llm_context_files`, `llm_context_text`,
+    `llm_timeout_seconds`, `llm_request_fn`) of `suggest_semantics()`,
+    `infer_dictionary()`, `infer_salmon_datapackage_artifacts()` and
+    `create_sdp()`. Passing one is now an error at the call: R's "unused
+    argument" for the first three, and for `create_sdp()` its "Unused
+    argument" abort, which names every one before anything is inferred or
+    written.
+  - the provider presets (`"openai"`, `"openrouter"`, `"openai_compatible"`,
+    `"chapi"`) and the nine environment variables they read:
+    `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `CHAPI_API_KEY`,
+    `METASALMON_LLM_API_KEY`, `METASALMON_LLM_MODEL`, `CHAPI_MODEL`,
+    `METASALMON_LLM_BASE_URL`, `CHAPI_BASE_URL` and
+    `METASALMON_LLM_REASONING_EFFORT`. None of them is read any more, and
+    `?metasalmon_configuration` no longer lists them.
+  - the chat-completions request code and the request builder both paths
+    shared, the retry stack with its `Retry-After` handling, and the batch,
+    exploration and measurement-bundle review that called them.
+  - `chat_decomposition()` and its `chat_*` arguments. Sessions it saved under
+    your user state directory are left in place; nothing reads them now.
+  - the deprecation itself: the `metasalmon_llm_deprecated` warning and the
+    `metasalmon.llm_deprecation_quiet` option.
+
+  What replaces each:
+
+  - **Model judgement of the shortlists**, which `llm_assess = TRUE` ran inside
+    `suggest_semantics()` and its wrappers: write a review packet with
+    `write_semantic_review_packet()`, have your own harness judge it, and read
+    the answers back with `ingest_semantic_assessments()`. Neither function
+    calls a model. The documented harness route is the `sdp-semantic-review`
+    skill of the public
+    [`salmon-data-mobilization/smn-sci-plgn`](https://github.com/salmon-data-mobilization/smn-sci-plgn)
+    plugin, released in v0.2.0, which judges a packet either package wrote.
+    The new article *Semantic Review in Your Harness* walks through both.
+  - **`llm_context_files` and `llm_context_text`**: the `context_files` and
+    `context_text` arguments of `write_semantic_review_packet()`, which read
+    the same file types the same way, under the same path-only contract. A
+    parsed object passed there is refused with an error that now names
+    `context_files`.
+  - **`llm_top_n`**: `write_semantic_review_packet(top_n = )`.
+  - **`create_sdp(llm_assess = TRUE)`**, which wrote accepted model selections
+    into the metadata as `REVIEW:` drafts: create the package, run the packet
+    route on it, and confirm each accepted term in `review_semantics()` before
+    `apply_sdp_semantics()` writes it. The ingester never writes the metadata
+    CSVs.
+  - **`chat_decomposition()`**: the harness skill judges a measurement
+    column's variable, property, entity, unit, constraint and statistical
+    modifier together, as one bundle, and a slot nothing fits becomes a
+    `request_new_term` that `detect_semantic_term_gaps()` and
+    `render_ontology_term_request()` carry on. Write a decided term with
+    `accept_suggestion()` and `apply_sdp_semantics()`, or with
+    `set_sdp_column()`.
+  - **The `semantic_llm_assessments` attribute** that `suggest_semantics()`
+    attached under `llm_assess = TRUE`: `ingest_semantic_assessments()`
+    attaches it to the dictionary it returns, and
+    `semantic_llm_assessments()` reads it from there or from a package path.
+    `infer_salmon_datapackage_artifacts()` keeps its `semantic_llm_assessments`
+    element for one more release, always `NULL`.
+
+  What stays: the context readers, retrieval and ranking, the deterministic
+  bundle validators, the merge into suggestions, gap detection and the term
+  request pipeline, the redaction of secrets in captured text, the 30-column
+  assessment row (its `llm_*` column names included), and
+  `apply_semantic_suggestions(strategy = "llm")`, which applies the candidates
+  an ingest marked `llm_selected`. Its errors now point to
+  `ingest_semantic_assessments()` rather than to `llm_assess = TRUE`. The
+  package website no longer documents the in-package call anywhere but this
+  changelog. metasalmonpy removes the same paths under hub item B-330; until
+  it does, it still carries its in-package call.
+
+### Changed
+
 * **The Fraser coho gold standard ships as a complete Salmon Data Package**
   (hub stream S12). `system.file("extdata", "nuseds-fraser-coho-2023-2024-sdp",
   package = "metasalmon")` is the 173-row NuSEDS example with its own

@@ -8,8 +8,8 @@ One-shot package creation from raw tables
   [`metasalmon`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon.md)
   : metasalmon: Utilities for Salmon Data Packages
 - [`metasalmon_configuration`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_configuration.md)
+  [`metasalmon-options`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_configuration.md)
   : Configure MetaSalmon
-
 - [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   : Create a Salmon Data Package directly from raw tables
 - [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
@@ -62,7 +62,7 @@ the remaining metadata, and write it all back — no spreadsheet required
 - [`semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_suggestions.md)
   : Semantic suggestions attached to a dictionary or package
 - [`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)
-  : Target-level LLM assessments attached to a dictionary
+  : Target-level assessments ingested from a harness
 
 ## Harness Review (packet and ingest)
 
@@ -81,8 +81,6 @@ capabilities
 
 - [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   : Suggest semantic annotations for a dictionary
-- [`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md)
-  : Interactive decomposition review for measurement variables
 - [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   : Find candidate terms across external vocabularies
 - [`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
@@ -111,7 +109,7 @@ Detect missing terms, route SMN, GCDFO, profile, or uncertain requests,
 and draft curator-reviewed GitHub issues
 
 - [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
-  : Detect candidate and LLM-identified semantic term gaps
+  : Detect candidate and harness-identified semantic term gaps
 - [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
   : Render GitHub-ready ontology term request payloads
 - [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)

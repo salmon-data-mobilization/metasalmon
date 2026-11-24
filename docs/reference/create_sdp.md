@@ -21,17 +21,6 @@ create_sdp(
   seed_table_meta = TRUE,
   seed_dataset_meta = TRUE,
   semantic_code_scope = c("factor", "all", "none"),
-  llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-  llm_model = NULL,
-  llm_api_key = NULL,
-  llm_base_url = NULL,
-  llm_reasoning_effort = NULL,
-  llm_top_n = 5L,
-  llm_context_files = NULL,
-  llm_context_text = NULL,
-  llm_timeout_seconds = 60,
-  llm_request_fn = NULL,
   check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
@@ -111,67 +100,6 @@ create_sdp(
   original data frame(s); `"all"` analyzes all inferred or supplied code
   rows; `"none"` skips code-level semantic suggestions.
 
-- llm_assess:
-
-  Logical; if `TRUE`, run the optional LLM shortlist assessment inside
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-  Measurement columns are reviewed as six-slot bundles; other targets
-  keep their existing per-target path.
-
-- llm_provider:
-
-  LLM provider preset forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_model:
-
-  Optional LLM model identifier forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_api_key:
-
-  Optional API key override forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_base_url:
-
-  Optional OpenAI-compatible base URL forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_reasoning_effort:
-
-  Optional reasoning-effort hint forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
-  when using the OpenAI provider.
-
-- llm_top_n:
-
-  Maximum number of retrieved candidates sent to the LLM per target.
-
-- llm_context_files:
-
-  Optional character vector of local context file paths forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
-  when `llm_assess = TRUE`. Pass file paths, not parsed data frames, XML
-  documents, or R Markdown objects. See
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
-  for supported file types, including HTML, DOCX, `.R`, `.Rmd`, `.qmd`,
-  PDF, and Excel context files.
-
-- llm_context_text:
-
-  Optional inline context snippets forwarded to
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
-
-- llm_timeout_seconds:
-
-  Timeout for each LLM request in seconds.
-
-- llm_request_fn:
-
-  Advanced/test hook overriding the low-level OpenAI-compatible request
-  function.
-
 - check_updates:
 
   Logical; if `TRUE`, run a short, non-fatal
@@ -250,22 +178,22 @@ into `metadata/tables.csv` and `metadata/column_dictionary.csv` first;
 use `semantic_suggestions.csv` as a fallback shortlist when you want
 more context or a better match. To keep that review file usable,
 `semantic_suggestions.csv` trims code-level suggestions that do not have
-enough human-readable context to review safely. When
-`llm_assess = TRUE`, the same review file also carries `llm_*` columns
-so the bundled LLM judgments, retry rejections, escalation origins, and
-validator downgrades stay explicit and reviewable. Only accepted
-variable, property, entity, and unit selections are eligible for column
-auto-prefill; constraint and method assessments always remain manual.
-Any auto-applied column/table IRI draft is written back into the
-metadata CSVs as a `REVIEW:`-prefixed value for manual confirmation
-there. Required-field review placeholders are also inserted into the
-inferred metadata files. In interactive use, `create_sdp()` can also
-mention an available package update; set `check_updates = FALSE` to skip
-that network check. The package bundles two Fraser coho examples:
-`nuseds-fraser-coho-sample.csv` (30 rows across 1996-2024) for the
-quickest demo, and `nuseds-fraser-coho-2023-2024.csv` (173 rows from the
-official Open Government Canada Fraser and BC Interior workbook) for a
-fuller multi-year example. The bundled
+enough human-readable context to review safely. To have a model judge
+the shortlists, write a review packet for the package with
+[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md),
+have your own harness answer it, and read the answers back with
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md);
+neither call writes the metadata CSVs. Any auto-applied column/table IRI
+draft is written back into the metadata CSVs as a `REVIEW:`-prefixed
+value for manual confirmation there. Required-field review placeholders
+are also inserted into the inferred metadata files. In interactive use,
+`create_sdp()` can also mention an available package update; set
+`check_updates = FALSE` to skip that network check. The package bundles
+two Fraser coho examples: `nuseds-fraser-coho-sample.csv` (30 rows
+across 1996-2024) for the quickest demo, and
+`nuseds-fraser-coho-2023-2024.csv` (173 rows from the official Open
+Government Canada Fraser and BC Interior workbook) for a fuller
+multi-year example. The bundled
 `system.file("extdata", "example-data-README.md", package = "metasalmon")`
 note points to the upstream record/resource URLs, licensing, and the
 repository `data-raw/` script used to derive the fuller example.
@@ -297,7 +225,7 @@ pkg <- create_sdp(
 #> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
 #>   package with `seed_semantics = TRUE` before final validation.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/fraser-coho-sdp-110112618260e
+#> ✔ Created Salmon Data Package at /tmp/RtmpWv6aab/fraser-coho-sdp-3b3b625261b2
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can

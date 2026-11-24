@@ -69,7 +69,7 @@ What it reports:
 
 - `tables.csv` rows with a blank `observation_unit_iri`.
 
-It never contacts an LLM, and under the default options it never
+It never contacts a model, and under the default options it never
 contacts a network: the SDP schema it reads the required fields from is
 the copy bundled with metasalmon. When the
 `metasalmon.sdp_schema_source` or `metasalmon.sdp_schema_base_url`
@@ -104,7 +104,7 @@ pkg <- create_sdp(
 #> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
 #>   package with `seed_semantics = TRUE` before final validation.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76
+#> ✔ Created Salmon Data Package at /tmp/RtmpWv6aab/sdp-review-3b3b6471d425
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
@@ -131,7 +131,7 @@ review_metadata(pkg)
 #>    contact_email: placeholder text, refused by strict validation
 #>       MISSING METADATA: add primary contact email.
 #>
-#>    set_sdp_dataset("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76",
+#>    set_sdp_dataset("/tmp/RtmpWv6aab/sdp-review-3b3b6471d425",
 #>      description = "<describe the contents and purpose of dataset 'dataset-1'>",
 #>      creator = "<add creator, team, or originating program>",
 #>      contact_name = "<add primary contact name or team>",
@@ -146,7 +146,7 @@ review_metadata(pkg)
 #>       MISSING METADATA: describe the observation unit for table 'table_1'.
 #>    observation_unit_iri: required IRI and not yet decided
 #>
-#>    set_sdp_table("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76", "table_1",
+#>    set_sdp_table("/tmp/RtmpWv6aab/sdp-review-3b3b6471d425", "table_1",
 #>      description = "<describe what each row in table 'table_1' represents>",
 #>      observation_unit = "<describe the observation unit for table 'table_1'>",
 #>      observation_unit_iri = "<IRI for what one row represents>"
@@ -161,7 +161,7 @@ review_metadata(pkg)
 #>    entity_iri: required IRI and not yet decided
 #>    unit_iri: required IRI and not yet decided
 #>
-#>    set_sdp_column("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76", "spawner_count", table = "table_1",
+#>    set_sdp_column("/tmp/RtmpWv6aab/sdp-review-3b3b6471d425", "spawner_count", table = "table_1",
 #>      column_description = "<define what 'spawner_count' means in table 'table_1'>",
 #>      term_iri = "<IRI for term_iri>",
 #>      property_iri = "<IRI for property_iri>",
@@ -173,6 +173,6 @@ review_metadata(pkg)
 #>    12 fields still block strict validation.
 #>    Replace each <...> with the real value, then paste the calls above.
 #>    5 of them are IRIs -- review_semantics() shows candidates for any that have them.
-#>    Then: validate_salmon_datapackage("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-review-1101157331d76", require_iris = TRUE)
+#>    Then: validate_salmon_datapackage("/tmp/RtmpWv6aab/sdp-review-3b3b6471d425", require_iris = TRUE)
 #>
 ```

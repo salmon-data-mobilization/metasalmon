@@ -127,62 +127,6 @@
   .ms_llm_normalize_assessment_rows(tibble::tibble())
 }
 
-.ms_llm_review_response_data <- function(result,
-                                         null_message = "LLM adapter did not return a usable JSON object for review.") {
-  if (is.list(result) && ("data" %in% names(result) || "content" %in% names(result))) {
-    if (!is.null(result$data)) {
-      return(result$data)
-    }
-
-    parsed <- tryCatch(
-      jsonlite::fromJSON(.ms_llm_clean_json_text(result$content), simplifyVector = FALSE),
-      error = function(e) NULL
-    )
-    if (!is.null(parsed)) {
-      return(parsed)
-    }
-
-    snippet <- .ms_llm_review_content_snippet(result$content)
-    message <- null_message
-    if (nzchar(snippet)) {
-      message <- c(message, i = "Response content snippet: {.val {snippet}}")
-    }
-    cli::cli_abort(message)
-  }
-
-  result
-}
-
-.ms_llm_review_content_snippet <- function(content, max_chars = 160L) {
-  text <- as.character(content %||% "")
-  text[is.na(text)] <- ""
-  text <- paste(text, collapse = " ")
-  text <- gsub("[\r\n\t]+", " ", text)
-  text <- trimws(gsub("\\s+", " ", text))
-  if (!nzchar(text)) {
-    return("")
-  }
-  if (nchar(text) > max_chars) {
-    text <- paste0(substr(text, 1L, max_chars), "...")
-  }
-
-  text
-}
-
-.ms_llm_review_validate_assessment <- function(result,
-                                               candidate_rows,
-                                               null_message = "LLM adapter did not return a usable JSON object for review.") {
-  result <- .ms_llm_review_response_data(result, null_message = null_message)
-  .ms_validate_llm_assessment(result, .ms_semantic_candidate_rows(candidate_rows))
-}
-
-.ms_llm_review_request_assessment <- function(messages, candidate_rows, config) {
-  .ms_llm_review_validate_assessment(
-    .ms_llm_request_with_retries(messages = messages, config = config),
-    candidate_rows
-  )
-}
-
 .ms_llm_review_empty_assessment <- function(target_row, config, error = NA_character_) {
   target <- tibble::as_tibble(target_row)[1, , drop = FALSE]
   target <- .ms_semantic_add_missing_cols(

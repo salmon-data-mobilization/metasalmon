@@ -22,8 +22,8 @@
 #
 # It never contacts KNB with credentials and never performs a live deposit. It
 # does reach the network to read the `smn`/`gcdfo` ontologies (deterministic
-# term search only). **It never enables LLM review**: `llm_assess` is left at
-# its `FALSE` default throughout, per the package's opt-in contract.
+# term search only). **It makes no model call**, and since hub item B-329 the
+# package holds no model client to make one.
 #
 # USAGE
 # -----
@@ -80,8 +80,8 @@ if (orcid_is_placeholder) {
 # STAGE 1 -- build the starter package from the shipped 173-row example
 # ---------------------------------------------------------------------------
 # Ordinary `create_sdp()`. `seed_semantics = TRUE` runs deterministic ontology
-# search over smn/gcdfo/ols/nvs; `llm_assess` stays FALSE (its default), so no
-# LLM call is made. This is exactly what a user gets on day one.
+# search over smn/gcdfo/ols/nvs, and no model call is made. This is exactly what
+# a user gets on day one.
 
 say("STAGE 1: create_sdp() from the shipped example")
 
@@ -432,8 +432,7 @@ yaml::write_yaml(mapping, file.path(pkg_path, "metadata", "eml-mapping.yml"))
 #
 # Everything else -- label, definition, source, ontology, resource_kind,
 # type_iris -- the producer reads back out of smn/gcdfo with `find_terms()`, so
-# the evidence is resolved rather than transcribed. `llm_assess` is not involved:
-# there is no such argument on this path.
+# the evidence is resolved rather than transcribed. No model is involved.
 
 say("STAGE 6: build the reviewed closure (vocabulary + ledger)")
 

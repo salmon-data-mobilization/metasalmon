@@ -19,8 +19,8 @@
 #
 # It loads the package from this checkout with pkgload, so the package is
 # built by the code it ships with. It is deterministic and offline: it reads
-# the shipped CSV and never the network, and it never calls an LLM
-# (`llm_assess` stays at its FALSE default).
+# the shipped CSV and never the network, and it never calls a model (the
+# package holds no model client since hub item B-329).
 #
 # HOW IT IS BUILT: THE PACKAGE'S OWN FLOW, WITH THE SEARCH STUBBED
 # ----------------------------------------------------------------

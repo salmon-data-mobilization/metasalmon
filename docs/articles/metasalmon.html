@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="5-Minute Quickstart">
 </head>
@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,7 +40,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
-    <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
+    <li><a class="dropdown-item" href="../articles/harness-semantic-review.html">Semantic Review in Your Harness</a></li>
     <li><a class="dropdown-item" href="../articles/tidy-data-for-sdp.html">Tidy Data for Salmon Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/semantic-review.html">Semantic Review in R</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
@@ -85,15 +85,14 @@
 </h2>
 <p>Complete the one-time <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup
 and Credentials</a> guide first if you want to make sure GitHub installs
-work cleanly and any optional LLM provider is configured before you
-begin.</p>
+work cleanly before you begin.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"salmon-data-mobilization/metasalmon"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"salmon-data-mobilization/metasalmon"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="one-shot-workflow">One-shot Workflow<a class="anchor" aria-label="anchor" href="#one-shot-workflow"></a>
@@ -131,8 +130,7 @@ BC Interior workbook.</p>
 <code>extdata</code> folder for provenance and licensing. The package
 also ships a matching starter dictionary at
 <code>nuseds-fraser-coho-2023-2024-column_dictionary.csv</code> if you
-want a ready-made context file for the package-native LLM review
-path.</p>
+want a ready-made context file for a semantic review packet.</p>
 <p>If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use
 the one-shot path:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -156,18 +154,18 @@ an already finalized <code>dataset.csv</code> row instead of a one-shot
 package build, call <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> directly.</p>
 </div>
 <div class="section level2">
-<h2 id="optional-llm-review-later">Optional LLM Review Later<a class="anchor" aria-label="anchor" href="#optional-llm-review-later"></a>
+<h2 id="optional-model-review-later">Optional Model Review Later<a class="anchor" aria-label="anchor" href="#optional-model-review-later"></a>
 </h2>
-<p>The base quickstart does <strong>not</strong> require an API key. If
-you want <code>llm_assess = TRUE</code>, finish the one-time <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup
-and Credentials</a> guide first, then rerun the
-<code><a href="../reference/create_sdp.html">create_sdp()</a></code> call with your chosen provider.</p>
-<p>When you want the LLM to use supporting README notes, CSV
-dictionaries, Excel workbooks, or PDF reports as context, continue
-with:</p>
+<p>The quickstart needs no API key, and <code>metasalmon</code> never
+calls a model. If you want a model to judge the candidates
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> found, write a review packet for the package
+and have your own harness judge it, for example with the
+<code>sdp-semantic-review</code> skill of the <a href="https://github.com/salmon-data-mobilization/smn-sci-plgn" class="external-link">smn-sci-plgn</a>
+plugin. The packet can quote supporting README notes, CSV dictionaries,
+Excel workbooks or PDF reports. Continue with:</p>
 <ul>
-<li><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html">LLM
-Review With Context Files</a></li>
+<li><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.html">Semantic
+Review in Your Harness</a></li>
 </ul>
 </div>
 <div class="section level2">
@@ -240,11 +238,10 @@ for one reason: a spreadsheet edit leaves no record of
 valuable thing the review produces. <code>README-review.txt</code> in
 the package folder carries the same checklist.</p>
 <p>The path to <code>metadata/column_dictionary.csv</code> is also a
-reasonable <code>llm_context_files</code> input when you want the LLM
-review step to reason from the package itself instead of a separate
-methods note. Pass the path string, not a tibble created by reading the
-CSV, and set <code>llm_assess = TRUE</code>; context alone does not
-enable an LLM call.</p>
+reasonable <code>context_files</code> input to
+<code><a href="../reference/write_semantic_review_packet.html">write_semantic_review_packet()</a></code> when you want a harness’s
+review to reason from the package itself instead of a separate methods
+note. Pass the path string, not a tibble created by reading the CSV.</p>
 <p><code><a href="../reference/create_sdp.html">create_sdp()</a></code> seeds semantic suggestions by default and
 auto-fills top-ranked compatible drafts directly into blank semantic
 fields in the metadata CSVs. That includes variable, property, entity,
@@ -254,22 +251,23 @@ using <code>observation_unit</code>/<code>description</code> when
 available and otherwise falling back to
 <code>table_label</code>/<code>table_id</code>. Constraint and
 statistical-modifier candidates are held back unless the column’s own
-name, label, or description carries the evidence for them, and under LLM
-review (<code>llm_assess = TRUE</code>) they are never auto-filled at
-all. Any auto-applied semantic IRI draft is written back as
+name, label, or description carries the evidence for them. Any
+auto-applied semantic IRI draft is written back as
 <code>REVIEW: &lt;iri&gt;</code> so you still confirm it manually. It
 does not overwrite existing non-empty semantic values. Code-level
 suggestions default to factor and low-cardinality character source
 columns; use <code>semantic_code_scope = "all"</code> if you want
 broader code-level seeding.</p>
-<p>When LLM review is enabled, the six measurement roles — variable,
-property, entity, unit, constraint, and statistical modifier — are
-judged together and then checked by deterministic validators. A
-validator can downgrade an unsupported acceptance to manual review, but
-it never substitutes or invents a term. Omit
-<code>semantic_sources</code> for role-aware defaults; an explicitly
-supplied vector is a strict allowlist through the single retry
-round.</p>
+<p>When a harness judges a review packet, the six measurement roles —
+variable, property, entity, unit, constraint, and statistical modifier —
+are judged together, and <code><a href="../reference/ingest_semantic_assessments.html">ingest_semantic_assessments()</a></code>
+checks the answers with deterministic validators. A validator can
+downgrade an unsupported acceptance to manual review, but it never
+substitutes or invents a term. Omit <code>semantic_sources</code> for
+role-aware defaults; an explicitly supplied vector is a strict
+allowlist. <code><a href="../reference/write_semantic_review_packet.html">write_semantic_review_packet()</a></code> takes its own
+<code>sources</code> the same way, and it binds a harness’s single retry
+round too.</p>
 <p>The inferred metadata includes <code>MISSING DESCRIPTION:</code> and
 <code>MISSING METADATA:</code> placeholders for required fields, so the
 package tells you what it is still missing.

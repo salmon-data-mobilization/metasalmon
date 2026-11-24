@@ -601,29 +601,6 @@ test_that("the gap table is accepted by render_ontology_term_request()", {
   expect_true("request_scope" %in% names(requests))
 })
 
-test_that("no LLM request is constructed on the closure path", {
-  path <- withr::local_tempdir()
-  make_eml_test_sdp(path)
-  closure_clear(path)
-
-  # A stop()ing binding on the one function that performs the provider call is
-  # the sentinel: if anything on this path reached the LLM, this test fails.
-  testthat::with_mocked_bindings(
-    {
-      closure <- write_sdp_semantic_closure(
-        path,
-        evidence = closure_reviewed_evidence(),
-        search_fn = closure_search_stub(),
-        quiet = TRUE
-      )
-      expect_identical(nrow(closure$vocabulary), 4L)
-    },
-    .ms_llm_chat_json_request = function(...) {
-      stop("LLM review must never run on the closure path.")
-    }
-  )
-})
-
 test_that("fully hand-supplied evidence runs no search at all", {
   path <- withr::local_tempdir()
   make_eml_test_sdp(path)

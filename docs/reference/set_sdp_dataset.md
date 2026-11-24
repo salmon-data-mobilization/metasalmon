@@ -168,7 +168,7 @@ pkg <- create_sdp(
 #> ℹ If you want candidate IRIs later, run `suggest_semantics()` or recreate the
 #>   package with `seed_semantics = TRUE` before final validation.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3
+#> ✔ Created Salmon Data Package at /tmp/RtmpWv6aab/sdp-setter-3b3b64c1eee9
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
@@ -197,7 +197,7 @@ review_metadata(pkg)
 #>       MISSING DESCRIPTION: describe the contents and purpose of dataset
 #>       'dataset-1'.
 #>
-#>    set_sdp_dataset("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3",
+#>    set_sdp_dataset("/tmp/RtmpWv6aab/sdp-setter-3b3b64c1eee9",
 #>      description = "<describe the contents and purpose of dataset 'dataset-1'>"
 #>    )
 #>
@@ -209,7 +209,7 @@ review_metadata(pkg)
 #>       MISSING METADATA: describe the observation unit for table 'table_1'.
 #>    observation_unit_iri: required IRI and not yet decided
 #>
-#>    set_sdp_table("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3", "table_1",
+#>    set_sdp_table("/tmp/RtmpWv6aab/sdp-setter-3b3b64c1eee9", "table_1",
 #>      description = "<describe what each row in table 'table_1' represents>",
 #>      observation_unit = "<describe the observation unit for table 'table_1'>",
 #>      observation_unit_iri = "<IRI for what one row represents>"
@@ -224,7 +224,7 @@ review_metadata(pkg)
 #>    entity_iri: required IRI and not yet decided
 #>    unit_iri: required IRI and not yet decided
 #>
-#>    set_sdp_column("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3", "spawner_count", table = "table_1",
+#>    set_sdp_column("/tmp/RtmpWv6aab/sdp-setter-3b3b64c1eee9", "spawner_count", table = "table_1",
 #>      column_description = "<define what 'spawner_count' means in table 'table_1'>",
 #>      term_iri = "<IRI for term_iri>",
 #>      property_iri = "<IRI for property_iri>",
@@ -236,6 +236,6 @@ review_metadata(pkg)
 #>    9 fields still block strict validation.
 #>    Replace each <...> with the real value, then paste the calls above.
 #>    5 of them are IRIs -- review_semantics() shows candidates for any that have them.
-#>    Then: validate_salmon_datapackage("/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-setter-11011203e8d3", require_iris = TRUE)
+#>    Then: validate_salmon_datapackage("/tmp/RtmpWv6aab/sdp-setter-3b3b64c1eee9", require_iris = TRUE)
 #>
 ```

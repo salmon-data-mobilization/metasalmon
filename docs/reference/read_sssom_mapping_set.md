@@ -32,14 +32,19 @@ A `metasalmon_sssom_mapping_set` list containing `metadata`, a
 
 ## Details
 
-Every CURIE prefix must be declared in `curie_map` except the SSSOM
-built-in prefixes (`owl`, `rdf`, `rdfs`, `semapv`, `skos`, `sssom`,
-`xsd` and `linkml`), which the SSSOM specification lets a file omit, so
-a canonical SSSOM/TSV file that leaves them out is read. A `curie_map`
-that does declare a built-in prefix must give it the expansion the
-specification fixes for it (for example
-`http://www.w3.org/2004/02/skos/core#` for `skos`); any other expansion
-is refused.
+CURIE prefixes in identifier/reference fields must be declared in
+`curie_map` except the SSSOM built-in prefixes (`owl`, `rdf`, `rdfs`,
+`semapv`, `skos`, `sssom`, `xsd` and `linkml`), which the SSSOM
+specification lets a file omit, so a canonical SSSOM/TSV file that
+leaves them out is read. A `curie_map` that does declare a built-in
+prefix must give it the expansion the specification fixes for it (for
+example `http://www.w3.org/2004/02/skos/core#` for `skos`); any other
+expansion is refused.
+
+`predicate_type` uses SSSOM's entity-type enum, excluding the values the
+specification forbids for predicates. `subject_category`,
+`object_category` and `similarity_measure` are text, so their values
+need no CURIE declaration.
 
 ## Examples
 

@@ -19,18 +19,7 @@ suggest_semantics(
   search_fn = find_terms,
   codes = NULL,
   table_meta = NULL,
-  dataset_meta = NULL,
-  llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-  llm_model = NULL,
-  llm_api_key = NULL,
-  llm_base_url = NULL,
-  llm_reasoning_effort = NULL,
-  llm_top_n = 5L,
-  llm_context_files = NULL,
-  llm_context_text = NULL,
-  llm_timeout_seconds = 60,
-  llm_request_fn = NULL
+  dataset_meta = NULL
 )
 ```
 
@@ -72,9 +61,7 @@ suggest_semantics(
 
   Maximum number of suggestions to keep per semantic role (variable,
   property, entity, unit, constraint, statistical_modifier; plus method
-  for code values) per column. Default is 3. When `llm_assess = TRUE`,
-  at least `llm_top_n` are kept, because the LLM can only be shown the
-  candidates retrieval kept.
+  for code values) per column. Default is 3.
 
 - search_fn:
 
@@ -98,84 +85,6 @@ suggest_semantics(
   generated for missing `dataset.csv$keywords` as candidate semantic
   keywords (IRIs intended for keyword curation).
 
-- llm_assess:
-
-  Logical; if `TRUE`, assess the top semantic candidates per target with
-  an LLM after deterministic retrieval. When the first shortlist looks
-  weak, the LLM may request at most one bounded alternate-query pass
-  before a single reassessment. Measurement-column roles are reviewed as
-  one six-slot bundle; generic, code, table, and dataset targets retain
-  per-target review. Default is `FALSE`.
-
-- llm_provider:
-
-  LLM provider preset. One of `"openai"`, `"openrouter"`,
-  `"openai_compatible"`, or `"chapi"`.
-
-- llm_model:
-
-  Character model identifier. Required when `llm_assess = TRUE` unless
-  supplied via `METASALMON_LLM_MODEL`. When
-  `llm_provider = "openrouter"` and no model is supplied, the package
-  defaults to `"openrouter/free"`. Any valid OpenRouter model ID may be
-  supplied here (for example `"openai/gpt-5.4-mini"`). When
-  `llm_provider = "chapi"` and no model is supplied, the package
-  defaults to `"ollama2.mistral:7b"` and also checks `CHAPI_MODEL`.
-
-- llm_api_key:
-
-  Optional API key override. If omitted, provider-specific environment
-  variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
-  `CHAPI_API_KEY`, or `METASALMON_LLM_API_KEY`).
-
-- llm_base_url:
-
-  Optional base URL override for the OpenAI-compatible chat endpoint.
-  Required for `llm_provider = "openai_compatible"` when not set via
-  `METASALMON_LLM_BASE_URL`. For `llm_provider = "chapi"`, the package
-  defaults to `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`
-  and also checks `CHAPI_BASE_URL`.
-
-- llm_reasoning_effort:
-
-  Optional reasoning-effort hint forwarded to the OpenAI
-  chat-completions request body when `llm_provider = "openai"`.
-
-- llm_top_n:
-
-  Maximum number of retrieved candidates to send to the LLM per target
-  for each assessment round. Default is `5`. Retrieval keeps at least
-  this many per role when `llm_assess = TRUE`, whatever `max_per_role`
-  says.
-
-- llm_context_files:
-
-  Optional character vector of local context files (for example
-  README/markdown notes, CSV dictionaries, HTML exports, DOCX files,
-  source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
-  workbooks, or PDF reports) used to provide extra domain context to the
-  LLM when `llm_assess = TRUE`. Pass file paths, not parsed data frames,
-  XML documents, or R Markdown objects. Supplying context does not
-  enable LLM review; without `llm_assess = TRUE`, it is ignored with a
-  warning. PDF support uses the optional `pdftools` package; Excel
-  support uses the optional `readxl` package.
-
-- llm_context_text:
-
-  Optional character vector of extra inline context snippets passed
-  alongside `llm_context_files`.
-
-- llm_timeout_seconds:
-
-  Timeout for each LLM request in seconds. `chapi` models matching
-  `gpt-oss` are automatically given at least 120 seconds because the
-  internal endpoint can be slow to warm up.
-
-- llm_request_fn:
-
-  Advanced/test hook overriding the low-level OpenAI-compatible request
-  function.
-
 ## Value
 
 The dictionary tibble (unchanged) with a `semantic_suggestions`
@@ -193,15 +102,9 @@ for downstream filtering. For non-column targets, the tibble also
 includes explicit destination context (`target_row_key`, `target_label`,
 `target_description`, `code_value`, `code_label`, `code_description`) so
 table-, dataset-, and code-level rows are inspectable without extra
-joins. When `llm_assess = TRUE`, the suggestions also include `llm_*`
-review columns such as `llm_decision`, `llm_confidence`, `llm_selected`,
-`llm_candidate_rank`, and bounded exploration metadata, and the
-dictionary gains a parallel `semantic_llm_assessments` attribute with
-one row per assessed target. Its 30-column schema preserves the legacy
-28-column prefix and appends `llm_escalated_from` and
-`llm_retry_query_rejection_reason`. The dictionary also carries a
-`semantic_targets` attribute with the discovered search targets (one row
-per unfilled semantic field, in the `.ms_semantic_target_cols()` shape).
+joins. The dictionary also carries a `semantic_targets` attribute with
+the discovered search targets (one row per unfilled semantic field, in
+the `.ms_semantic_target_cols()` shape).
 [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
 reads it to report targets whose retrieval returned zero candidates,
 which by construction have no suggestion rows at all.
@@ -224,33 +127,11 @@ additional target rows are generated for `codes.csv`, `tables.csv`, and
 review placeholders such as `MISSING METADATA:` and fall back to real
 table metadata context instead.
 
-When `llm_assess = TRUE`, the LLM only judges deterministically
-retrieved candidates; it does not mint new IRIs. Measurement columns are
-reviewed as one bundle spanning variable, property, entity, unit,
-constraint, and statistical modifier (method appears only for code
-values), including empty slots. The public output still contains one
-assessment row per target and positional candidate indexes. If the first
-shortlist looks weak, the package gathers valid retry requests, runs at
-most one retrieval round, de-dupes the merged shortlist, and reassesses
-once. An exact duplicate retry query is retained as `retry_search`,
-records `llm_retry_query_rejection_reason = "duplicate_original_query"`,
-and does not spend another search or reassessment for that slot. If the
-model rejects the entire shortlist (`reject_shortlist`) and that bounded
-retry still surfaces no acceptable candidate, the assessment is
-escalated to `request_new_term` so a likely ontology gap shows up in
-`llm_decision` instead of a dead-end rejection. Local context files are
-read on disk, chunked, and lexically trimmed down before prompt assembly
-so large README/report/workbook files do not get dumped wholesale into
-the model call. Plain-text/CSV context with invalid UTF-8 is retried as
-Windows-1252/Latin-1, and colliding file base names are disambiguated in
-`llm_context_sources`. If a batched provider response has malformed,
-missing, or duplicate target items, valid siblings are retained and only
-affected targets fall back to individual review. Deterministic
-validators can downgrade an unsupported `accept` to `review` for missing
-statistical-modifier/constraint evidence, known role/type or dimensional
-incompatibility, or a curated redundancy rule. A downgrade clears the
-selection, preserves model confidence as provenance, and never
-substitutes a term or creates an ontology gap.
+Retrieval is deterministic and judges nothing. To have a model judge the
+shortlists, write them to a review packet with
+[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md),
+have your own harness answer it, and read the answers back with
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md).
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a
@@ -278,7 +159,9 @@ for creating starter dictionaries,
 [`apply_semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.md)
 for explicitly filling selected IRI fields,
 [`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md)
-for checking dictionary completeness.
+for checking dictionary completeness,
+[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+for having your own harness judge the shortlists.
 
 ## Examples
 

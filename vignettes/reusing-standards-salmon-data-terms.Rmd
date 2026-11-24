@@ -70,14 +70,14 @@ The shared **Salmon Domain Ontology** is queried first for salmon-domain roles. 
 
 When `sources` is omitted from `suggest_semantics()`, these role-aware defaults
 are selected separately for each target. An explicitly supplied vector is a
-strict allowlist for both the first search and any LLM-requested retry:
+strict allowlist for the search, and `write_semantic_review_packet(sources = )`
+makes it one for a harness-requested retry too:
 
 ```{r, purl=FALSE}
 smn_only <- suggest_semantics(
   df,
   dict,
-  sources = "smn",
-  llm_assess = FALSE
+  sources = "smn"
 )
 ```
 
@@ -155,8 +155,9 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 
 - If a column is purely administrative or custom to your survey, it is fine to leave `term_iri` blank and rely on your own `column_description`.
 - If you cannot find a fitting term, use a metadata-first proposed-terms workflow (for example a local `proposed_terms.csv`) or the new gap detection tools in metasalmon:
-  - `detect_semantic_term_gaps()` combines candidate gaps with final LLM
-    `request_new_term` assessments and records which evidence detected each gap.
+  - `detect_semantic_term_gaps()` combines candidate gaps with the final
+    `request_new_term` assessments your harness recorded and records which
+    evidence detected each gap.
   - `render_ontology_term_request()` routes reviewed proposals to shared SMN,
     DFO-specific GCDFO, or a local profile and renders the active
     repository-specific issue body without submitting it.
@@ -192,4 +193,4 @@ Treat the suggestions as a starting point, not gospel. The helper above is just 
 - See the "How It Fits Together" section in the README for context on how the dictionary, ontology, and package-native review workflow fit together.
 - Follow [After Excel Review: Finalize and Publish Your Package](post-review-package-publication.html) when you are continuing from a reviewed package and need the concrete post-review publication path.
 - Follow the [Publishing Data Packages](data-dictionary-publication.html) guide when you are assembling metadata tables manually before publishing.
-- For AI-assisted drafting and package-native review, see the [optional LLM semantic review workflow](../index.html#package-native-llm-semantic-review-optional) on the package home page when you want help reviewing shortlisted terms.
+- For model-assisted review of the shortlisted terms in your own harness, see [Semantic Review in Your Harness](harness-semantic-review.html).

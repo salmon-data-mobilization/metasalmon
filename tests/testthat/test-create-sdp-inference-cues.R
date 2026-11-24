@@ -111,7 +111,6 @@ test_that("a compound unit is not read from its last token", {
 })
 
 test_that("create_sdp() seeds millimetre, gram and metre from unit suffixes, not COUNT", {
-  withr::local_options(metasalmon.llm_deprecation_quiet = TRUE)
   qudt <- c(count = "COUNT", millimeter = "MilliM", gram = "GM", meter = "M")
   labels <- c(count = "Count", millimeter = "Millimetre", gram = "Gram", meter = "Metre")
   fake_find_terms <- function(query, role, sources, ...) {

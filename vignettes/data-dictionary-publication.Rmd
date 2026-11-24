@@ -242,4 +242,4 @@ Terms from Wikidata are flagged with `alignment_only = TRUE` and ranked lower.
 - See the "How It Fits Together" section in the README for a visual map of how the components interact.
 - If you are continuing from a reviewed `create_sdp()` package, follow [After Excel Review: Finalize and Publish Your Package](post-review-package-publication.html).
 - Read the [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) guide when you want to align your dictionary with published vocabularies.
-- For AI-assisted drafting and package-native review, see the [optional LLM semantic review workflow](../index.html#package-native-llm-semantic-review-optional) on the package home page.
+- For model-assisted review of the shortlisted terms in your own harness, see [Semantic Review in Your Harness](harness-semantic-review.html).

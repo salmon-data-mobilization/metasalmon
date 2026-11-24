@@ -51,7 +51,10 @@ write_sdp_semantic_closure(
 - sources:
 
   Vocabulary sources to search. Defaults to `c("smn", "gcdfo")`, the two
-  this package resolves deterministically.
+  this package resolves deterministically. Names are read as
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  reads them: each trimmed and lower-cased, with missing, empty and
+  repeated names dropped. A list with no name left is an error.
 
 - quiet:
 

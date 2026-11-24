@@ -124,13 +124,13 @@ It answers the question: “What exactly did you measure?”
 
 I-ADOPT defines observable properties using five components:
 
-| Component | Question it answers | Example |
-|----|----|----|
-| **Variable** | What compound concept? | “Sea surface temperature” (the full term) |
-| **Property** | What characteristic? | Temperature or abundance |
-| **Entity** | Of what thing? | Sea surface (water at ocean surface) |
-| **Constraint** | Any qualifiers or limits? | Wild-origin only, female, spawner stage |
-| **Statistical modifier** | What aggregation or summary? | Mean, maximum, total, peak |
+| Component                | Question it answers          | Example                                   |
+|--------------------------|------------------------------|-------------------------------------------|
+| **Variable**             | What compound concept?       | “Sea surface temperature” (the full term) |
+| **Property**             | What characteristic?         | Temperature or abundance                  |
+| **Entity**               | Of what thing?               | Sea surface (water at ocean surface)      |
+| **Constraint**           | Any qualifiers or limits?    | Wild-origin only, female, spawner stage   |
+| **Statistical modifier** | What aggregation or summary? | Mean, maximum, total, peak                |
 
 **Why this matters**: Two researchers might both measure “temperature”
 but mean different things (air vs. water, surface vs. depth). I-ADOPT
@@ -189,33 +189,33 @@ packages, which means:
 
 ## Quick Reference
 
-| Term | One-line definition |
-|----|----|
-| Data Package | Folder with data + documentation |
-| Data Dictionary | Table describing your columns |
-| Column Role | What type of information a column contains |
-| Code List | Definitions for categorical codes |
-| IRI | Web address pointing to a definition |
-| Ontology | Shared vocabulary with relationships |
-| SKOS | System for organizing term lists |
-| OWL | System for classification hierarchies |
-| Semantic | Data that carries its meaning with it |
-| I-ADOPT | Framework for describing observable properties (variable, property, entity, constraint, statistical modifier) |
-| Statistical modifier | The aggregation that is part of a variable’s identity (mean, maximum, total, peak); `statistical_modifier_iri` |
-| Method placement | Where a method lives since sdp-0.3.0: `tables.csv` `method_iri`, a `protocol_iri`/`protocol_citation` citation, or a code column resolved through `codes.csv` |
-| Frictionless | International data package standard |
-| DwC-DP | Darwin Core Data Package profile (Frictionless-based) |
-| Assertion (DwC-DP) | MeasurementOrFact pattern: assertionType/value/unit |
-| ZOOMA | EBI text-to-ontology annotator with confidence tiers |
-| NVS SPARQL | NERC Vocabulary Server SPARQL endpoint (P01/P06) |
-| QUDT | Quantities, Units, Dimensions and Types ontology (preferred for units) |
-| GBIF | Global Biodiversity Information Facility (taxon backbone) |
-| WoRMS | World Register of Marine Species (marine taxa resolver) |
-| Query expansion | Automatic expansion of search terms based on role context |
-| Cross-source agreement | Boost for terms appearing in multiple vocabulary sources |
-| Diagnostics attribute | Per-source search status/timing attached to [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md) results |
-| `alignment_only` | Flag for Wikidata terms (useful for crosswalks, not canonical IRIs) |
-| `include_dwc` | Parameter to include optional DwC-DP mappings in suggestions |
+| Term                   | One-line definition                                                                                                                                           |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Data Package           | Folder with data + documentation                                                                                                                              |
+| Data Dictionary        | Table describing your columns                                                                                                                                 |
+| Column Role            | What type of information a column contains                                                                                                                    |
+| Code List              | Definitions for categorical codes                                                                                                                             |
+| IRI                    | Web address pointing to a definition                                                                                                                          |
+| Ontology               | Shared vocabulary with relationships                                                                                                                          |
+| SKOS                   | System for organizing term lists                                                                                                                              |
+| OWL                    | System for classification hierarchies                                                                                                                         |
+| Semantic               | Data that carries its meaning with it                                                                                                                         |
+| I-ADOPT                | Framework for describing observable properties (variable, property, entity, constraint, statistical modifier)                                                 |
+| Statistical modifier   | The aggregation that is part of a variable’s identity (mean, maximum, total, peak); `statistical_modifier_iri`                                                |
+| Method placement       | Where a method lives since sdp-0.3.0: `tables.csv` `method_iri`, a `protocol_iri`/`protocol_citation` citation, or a code column resolved through `codes.csv` |
+| Frictionless           | International data package standard                                                                                                                           |
+| DwC-DP                 | Darwin Core Data Package profile (Frictionless-based)                                                                                                         |
+| Assertion (DwC-DP)     | MeasurementOrFact pattern: assertionType/value/unit                                                                                                           |
+| ZOOMA                  | EBI text-to-ontology annotator with confidence tiers                                                                                                          |
+| NVS SPARQL             | NERC Vocabulary Server SPARQL endpoint (P01/P06)                                                                                                              |
+| QUDT                   | Quantities, Units, Dimensions and Types ontology (preferred for units)                                                                                        |
+| GBIF                   | Global Biodiversity Information Facility (taxon backbone)                                                                                                     |
+| WoRMS                  | World Register of Marine Species (marine taxa resolver)                                                                                                       |
+| Query expansion        | Automatic expansion of search terms based on role context                                                                                                     |
+| Cross-source agreement | Boost for terms appearing in multiple vocabulary sources                                                                                                      |
+| Diagnostics attribute  | Per-source search status/timing attached to [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md) results           |
+| `alignment_only`       | Flag for Wikidata terms (useful for crosswalks, not canonical IRIs)                                                                                           |
+| `include_dwc`          | Parameter to include optional DwC-DP mappings in suggestions                                                                                                  |
 
 ## Still Confused?
 

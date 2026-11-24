@@ -42,13 +42,13 @@ feature: paste it into a script and the decision becomes reproducible,
 which the spreadsheet workflow this replaces never was.
 }
 \details{
-\strong{This never contacts a network or an LLM.} It reads the
+\strong{This never contacts a network or a model.} It reads the
 \code{semantic_suggestions} attribute (or \code{semantic_suggestions.csv}) that
 \code{suggest_semantics()} / \code{create_sdp()} already produced. When those
-suggestions carry a model's assessment -- ingested from your own harness by
-\code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}, or made by the deprecated
-\code{llm_assess = TRUE} -- this shows it, an accept under the candidate it chose
-and any other decision once per slot and role; it never generates one.
+suggestions carry a model's assessment, ingested from your own harness by
+\code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}, this shows it, an accept under the
+candidate it chose and any other decision once per slot and role; it never
+generates one.
 }
 \examples{
 dict <- tibble::tibble(

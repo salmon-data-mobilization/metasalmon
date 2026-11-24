@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="favicon.ico">
 <link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="metasalmon: Salmon Data Package Utilities">
 <meta name="description" content="Create portable, ontology-aware Salmon Data Packages from your analysis-ready
@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,8 +49,9 @@ concept schemes) while preserving your original data structure.
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/setup.html">Setup and Credentials</a></li>
-    <li><a class="dropdown-item" href="articles/llm-context-review.html">LLM Review With Context Files</a></li>
+    <li><a class="dropdown-item" href="articles/harness-semantic-review.html">Semantic Review in Your Harness</a></li>
     <li><a class="dropdown-item" href="articles/tidy-data-for-sdp.html">Tidy Data for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="articles/semantic-review.html">Semantic Review in R</a></li>
     <li><a class="dropdown-item" href="articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -94,7 +95,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="the-solution">The Solution<a class="anchor" aria-label="anchor" href="#the-solution"></a>
 </h2>
-<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. The preferred review workflow now happens <strong>inside the R package</strong>: <code>metasalmon</code> can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package metadata, and then hand you back a package you finish reviewing <strong>in R</strong>: <code><a href="reference/review_semantics.html">review_semantics()</a></code> prints each candidate with its definition and the exact call that accepts it, and <code><a href="reference/review_metadata.html">review_metadata()</a></code> prints the call that fills every remaining required field.</p>
+<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. The preferred review workflow now happens <strong>inside the R package</strong>: <code>metasalmon</code> can retrieve candidate terms, optionally hand them to your own harness for a model to review, write draft REVIEW-prefixed IRIs into the package metadata, and then hand you back a package you finish reviewing <strong>in R</strong>: <code><a href="reference/review_semantics.html">review_semantics()</a></code> prints each candidate with its definition and the exact call that accepts it, and <code><a href="reference/review_metadata.html">review_metadata()</a></code> prints the call that fills every remaining required field.</p>
 <p><strong>Integration context:</strong> See the Salmon Data Integration System overview page (<a href="https://br-johnson.github.io/salmon-data-integration-system/" class="external-link uri">https://br-johnson.github.io/salmon-data-integration-system/</a>) and walkthrough video (<a href="https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH" class="external-link uri">https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH</a>).</p>
 <p><strong>Think of it like adding a detailed legend to your spreadsheet that never gets lost.</strong></p>
 </div>
@@ -107,23 +108,23 @@ concept schemes) while preserving your original data structure.
 <col width="29%">
 <col width="39%">
 </colgroup>
-<thead><tr>
+<thead><tr class="header">
 <th>Your Data</th>
 <th>+ metasalmon</th>
 <th>= Data Package</th>
 </tr></thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td>Raw CSV files</td>
 <td>Data dictionary</td>
 <td>Self-documenting dataset</td>
 </tr>
-<tr>
+<tr class="even">
 <td>Cryptic column names</td>
 <td>Clear descriptions</td>
 <td>Anyone can understand it</td>
 </tr>
-<tr>
+<tr class="odd">
 <td>Inconsistent codes</td>
 <td>Linked to standards</td>
 <td>Works with other datasets</td>
@@ -134,7 +135,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="quick-example">Quick Example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
 </h2>
-<p>Before you start, do the one-time <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup and Credentials</a> check so GitHub installs work cleanly and any optional LLM provider is ready in advance.</p>
+<p>Before you start, do the one-time <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup and Credentials</a> check so GitHub installs work cleanly.</p>
 <p>Install, run one function on the bundled Fraser Coho 2023-2024 example (173 rows), then finish the review in R.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub (recommended)</span></span>
@@ -198,12 +199,12 @@ concept schemes) while preserving your original data structure.
 <span><span class="co">#&gt; ── dataset.csv ────────────────────────────────────────────────────────</span></span>
 <span><span class="co">#&gt;    creator: placeholder text, refused by strict validation</span></span>
 <span><span class="co">#&gt;       MISSING METADATA: add creator, team, or originating program.</span></span>
-<span><span class="co">#&gt;    license: placeholder text, refused by strict validation</span></span>
-<span><span class="co">#&gt;       MISSING METADATA: add dataset license (for example, CC-BY-4.0).</span></span>
+<span><span class="co">#&gt;    contact_email: placeholder text, refused by strict validation</span></span>
+<span><span class="co">#&gt;       MISSING METADATA: add primary contact email.</span></span>
 <span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt;    set_sdp_dataset(pkg_path,</span></span>
 <span><span class="co">#&gt;      creator = "&lt;add creator, team, or originating program&gt;",</span></span>
-<span><span class="co">#&gt;      license = "&lt;add dataset license (for example, CC-BY-4.0)&gt;"</span></span>
+<span><span class="co">#&gt;      contact_email = "&lt;add primary contact email&gt;"</span></span>
 <span><span class="co">#&gt;    )</span></span></code></pre></div>
 <p>Replace each <code>&lt;…&gt;</code> with the real value and paste. Pasting one unedited is refused, because a package whose <code>creator</code> reads <code>&lt;add creator…&gt;</code> would pass strict validation while saying nothing. The setters are <code><a href="reference/set_sdp_dataset.html">set_sdp_dataset()</a></code>, <code><a href="reference/set_sdp_dataset.html">set_sdp_table()</a></code>, <code><a href="reference/set_sdp_dataset.html">set_sdp_column()</a></code> and <code><a href="reference/set_sdp_dataset.html">set_sdp_code()</a></code>; each keeps <code>datapackage.json</code> in step in the same transactional write.</p>
 <p>When <code><a href="reference/review_metadata.html">review_metadata()</a></code> reports nothing, <code>require_iris = TRUE</code> passes — so a package created by <code><a href="reference/create_sdp.html">create_sdp()</a></code> can be taken all the way to strict validation <strong>without opening a spreadsheet at any point</strong>.</p>
@@ -215,12 +216,13 @@ concept schemes) while preserving your original data structure.
 <p>The default quickstart and get-started flow use <code>nuseds-fraser-coho-2023-2024.csv</code>, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.</p>
 <p>Open Government Canada record: <a href="https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6" class="external-link uri">https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6</a></p>
 <p>A smaller <code>nuseds-fraser-coho-sample.csv</code> file is still bundled for tiny smoke tests, but it is no longer the default walkthrough dataset.</p>
-<p>The package also now ships a matching starter dictionary for the fuller example (<code>system.file("extdata", "nuseds-fraser-coho-2023-2024-column_dictionary.csv", package = "metasalmon")</code>), which is useful when you want a ready-made context file for the package-native LLM review path.</p>
-<p>See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> script that reproduces the 2023-2024 example.</p>
+<p>The package also now ships a matching starter dictionary for the fuller example (<code>system.file("extdata", "nuseds-fraser-coho-2023-2024-column_dictionary.csv", package = "metasalmon")</code>), which is useful when you want a ready-made context file for a semantic review packet.</p>
+<p>To see what a finished package looks like, open the gold standard: the same 173 rows as a complete Salmon Data Package, annotated and clean under strict validation (<code>system.file("extdata", "nuseds-fraser-coho-2023-2024-sdp", package = "metasalmon")</code>). <code>data-raw/fraser_coho_gold_standard.R</code> in this repository builds it with the functions above.</p>
+<p>See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> scripts that reproduce the 2023-2024 example and the gold standard.</p>
 <p>To continue:</p>
 <ul>
 <li>
-<a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup and Credentials</a> — one-time GitHub credential setup for installs plus optional LLM provider setup.</li>
+<a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup and Credentials</a> — one-time GitHub credential setup for installs, and what model review in your own harness needs.</li>
 <li>
 <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html">5-Minute Quickstart</a> — create the full package with metadata and export it.</li>
 <li>
@@ -230,12 +232,12 @@ concept schemes) while preserving your original data structure.
 <li>
 <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a> — pick <code>term_iri</code>, <code>property_iri</code>, and <code>entity_iri</code> with confidence.</li>
 </ul>
-<p>Need the full context-file workflow? See <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html">LLM Review With Context Files</a>.</p>
+<p>Want a model to judge the shortlists, with your methods notes as context? See <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.html">Semantic Review in Your Harness</a>.</p>
 </div>
 <div class="section level2">
-<h2 id="package-native-llm-semantic-review-optional">Package-native LLM semantic review (optional)<a class="anchor" aria-label="anchor" href="#package-native-llm-semantic-review-optional"></a>
+<h2 id="model-review-in-your-own-harness-optional">Model review in your own harness (optional)<a class="anchor" aria-label="anchor" href="#model-review-in-your-own-harness-optional"></a>
 </h2>
-<p>If you want an LLM to judge the shortlisted semantic matches directly from R, keep the deterministic search path and add an opt-in review pass:</p>
+<p><code>metasalmon</code> makes no model call and needs no API key. If you want a model to judge the shortlisted semantic matches, the package writes them to a review packet, your own harness judges it, and the package reads the answers back:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"column_dictionary.csv"</span><span class="op">)</span>,</span>
@@ -244,43 +246,17 @@ concept schemes) while preserving your original data structure.
 <span>  <span class="st">"methods-report.pdf"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
-<span>  df <span class="op">=</span> <span class="va">fraser_coho</span>,</span>
-<span>  dict <span class="op">=</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">fraser_coho</span>, dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>, table_id <span class="op">=</span> <span class="st">"escapement"</span><span class="op">)</span>,</span>
-<span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  llm_provider <span class="op">=</span> <span class="st">"openrouter"</span>,</span>
-<span>  llm_context_files <span class="op">=</span> <span class="va">context_files</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
-<span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_llm_assessments"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># In create_sdp(...), any auto-applied semantic IRI drafts are written back</span></span>
-<span><span class="co"># into the package metadata as REVIEW-prefixed values for manual cleanup,</span></span>
-<span><span class="co"># including table-level observation-unit selections in metadata/tables.csv.</span></span></code></pre></div>
-<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. For each measurement column, the LLM reviews the variable, property, entity, unit, constraint, and method shortlists together. Generic column, code, table, and dataset targets keep their existing per-target review path. Deterministic validators can downgrade an unsupported <code>accept</code> to <code>review</code>; the original model confidence remains in the assessment as provenance.</p>
-<p>Only accepted variable, property, entity, and unit candidates can be written back automatically. Drafts are stored as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel rather than treating them as final. Constraint and method assessments always remain manual, as do dataset keywords and code-level suggestions. Compatible table-level observation-unit matches can still be written into <code>metadata/tables.csv</code>.</p>
-<p>Omitting <code>sources</code> (or <code>semantic_sources</code> on the package-creation helpers) uses role-aware defaults. Supplying sources explicitly creates a strict allowlist for both initial retrieval and the single retry round. For example, <code>sources = "smn"</code> cannot introduce a QUDT unit candidate.</p>
-<p>The target-level <code>semantic_llm_assessments</code> table has a stable 30-column schema. Its final two fields record whether a term request was escalated from <code>reject_shortlist</code> and why a retry query was rejected. An exact retry duplicate, after case and whitespace normalization, remains a <code>retry_search</code> decision with <code>llm_retry_query_rejection_reason = "duplicate_original_query"</code> and does not trigger another query-generation, search, or reassessment call.</p>
-<p><code>llm_context_files</code> must be a character vector of existing local <strong>file paths</strong>. Do not pass a tibble returned by <code><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">readr::read_csv()</a></code>, an <code>xml2</code> document returned by <code>read_html()</code>, or another parsed object; those inputs now fail early instead of being silently ineffective. Supplying context also never enables an LLM call: set <code>llm_assess = TRUE</code> explicitly, or the package warns that the context will be ignored and continues with deterministic retrieval only. Use <code>llm_context_text</code> for inline text that is not stored in a file.</p>
-<p>Supported paths include text and notes (<code>.md</code>, <code>.txt</code>, <code>.rst</code>), delimited/data files (<code>.csv</code>, <code>.tsv</code>, <code>.json</code>, <code>.yaml</code>, <code>.yml</code>), source and notebook-style files (<code>.R</code>, <code>.Rmd</code>, <code>.qmd</code>), HTML (<code>.htm</code>, <code>.html</code>), DOCX (<code>.docx</code>), Excel workbooks (<code>.xls</code>, <code>.xlsx</code>, <code>.xlsm</code> via <code>readxl</code>), and PDF reports (<code>.pdf</code> via <code>pdftools</code>). Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> defaults to <code>openrouter/free</code>.</p>
-<p>For the full workflow across <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, <code>codes.csv</code>, and the post-review EDH rebuild, use the <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html">LLM Review With Context Files</a> guide.</p>
-<p>The quickstart path does not require an API key. Only set up one of these providers when you want <code>create_sdp(..., llm_assess = TRUE)</code> or <code>suggest_semantics(..., llm_assess = TRUE)</code>.</p>
-<p>For DFO internal users on the internal network or VPN, open <a href="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/" class="external-link uri">https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/</a>, click the user icon in the bottom left, open <strong>Settings</strong>, click <strong>Show</strong> next to <strong>API Keys</strong>, and copy the key value. Then run:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
-<span><span class="va">CHAPI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
-<p><code>chapi</code> defaults to <code>ollama2.mistral:7b</code> and <code>https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api</code>. Optional overrides are <code>CHAPI_MODEL</code> and <code>CHAPI_BASE_URL</code>. <code>gpt-oss:latest</code> is also supported, but it can be slower to warm up and now gets a longer automatic timeout.</p>
-<p>For external users, OpenRouter is the easiest free option:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
-<span><span class="va">OPENROUTER_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
-<p><code>llm_provider = "openrouter"</code> defaults to <code>openrouter/free</code>.</p>
-<p>If you already have OpenAI API credits, use:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
-<span><span class="va">OPENAI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
-<p>Then pass an OpenAI model explicitly, for example <code>llm_model = "gpt-4.1-mini"</code>.</p>
+<span><span class="va">packet</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/write_semantic_review_packet.html">write_semantic_review_packet</a></span><span class="op">(</span><span class="va">pkg_path</span>, context_files <span class="op">=</span> <span class="va">context_files</span><span class="op">)</span></span>
+<span><span class="co"># ... your harness judges packet$path and writes</span></span>
+<span><span class="co"># review/semantic-assessments-pass-1.csv beside it ...</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ingest_semantic_assessments.html">ingest_semantic_assessments</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
+<span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/semantic_llm_assessments.html">semantic_llm_assessments</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<p>The ready-made harness is the <code>sdp-semantic-review</code> skill of the public <a href="https://github.com/salmon-data-mobilization/smn-sci-plgn" class="external-link">smn-sci-plgn</a> plugin (release v0.2.0 or later), for Claude Code and Codex. The packet carries each slot’s shortlist from <code><a href="reference/find_terms.html">find_terms()</a></code>, which stays the canonical candidate generator, the scored excerpts from your context files, and the review instructions. For each measurement column the judge reviews the variable, property, entity, unit, constraint, and statistical-modifier shortlists together.</p>
+<p>The ingester refuses an IRI the packet did not offer, escalates a final <code>reject_shortlist</code> to <code>request_new_term</code> so an ontology gap is filed, and runs the deterministic validators, which can downgrade an unsupported <code>accept</code> to <code>review</code> while keeping the judge’s confidence as provenance. It never writes the metadata CSVs: confirm each answer in <code>review_semantics(pkg_path)</code> and write your decisions with <code><a href="reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code>.</p>
+<p>Omitting <code>sources</code> uses role-aware defaults. Supplying sources explicitly creates a strict allowlist for both the packet’s shortlists and the single retry round a judge can ask for. For example, <code>sources = "smn"</code> cannot introduce a QUDT unit candidate.</p>
+<p>The assessment record has a stable 30-column schema, kept in <code>review/semantic-llm-assessments.csv</code>. Its final two fields record whether a term request was escalated from <code>reject_shortlist</code> and why a retry query was rejected.</p>
+<p><code>context_files</code> must be a character vector of existing local <strong>file paths</strong>. Do not pass a tibble returned by <code><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">readr::read_csv()</a></code>, an <code>xml2</code> document returned by <code>read_html()</code>, or another parsed object; those are refused with an error. Use <code>context_text</code> for inline text that is not stored in a file. Supported paths include text and notes (<code>.md</code>, <code>.txt</code>, <code>.rst</code>), delimited/data files (<code>.csv</code>, <code>.tsv</code>, <code>.json</code>, <code>.yaml</code>, <code>.yml</code>), source and notebook-style files (<code>.R</code>, <code>.Rmd</code>, <code>.qmd</code>), HTML (<code>.htm</code>, <code>.html</code>), DOCX (<code>.docx</code>), Excel workbooks (<code>.xls</code>, <code>.xlsx</code>, <code>.xlsm</code> via <code>readxl</code>), and PDF reports (<code>.pdf</code> via <code>pdftools</code>).</p>
+<p>For the full workflow, use the <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.html">Semantic Review in Your Harness</a> guide.</p>
 </div>
 <div class="section level2">
 <h2 id="recommended-workflow">Recommended workflow<a class="anchor" aria-label="anchor" href="#recommended-workflow"></a>
@@ -288,7 +264,7 @@ concept schemes) while preserving your original data structure.
 <p>For the current package-native review path, use this order:</p>
 <ol style="list-style-type: decimal">
 <li>Run <code>create_sdp(...)</code> to create the Salmon Data Package.</li>
-<li>If you want semantic review, set <code>llm_assess = TRUE</code>.</li>
+<li>If you want a model to judge the shortlists, write a review packet with <code>write_semantic_review_packet(pkg_path)</code>, have your harness answer it, and read the answers back with <code>ingest_semantic_assessments(pkg_path)</code>.</li>
 <li>Review the seeded IRIs. Preferred: <code>review_semantics(pkg_path)</code> in the console, then paste the printed <code><a href="reference/accept_suggestion.html">accept_suggestion()</a></code> / <code><a href="reference/accept_suggestion.html">reject_suggestion()</a></code> calls into a script and finish with <code>apply_sdp_semantics(pkg_path, review)</code>. Alternative: open <code>README-review.txt</code> and edit <code>metadata/column_dictionary.csv</code> and <code>metadata/tables.csv</code> in a spreadsheet.</li>
 <li>For any prefilled or <code>REVIEW:</code>-prefixed IRI, click through and read the term definition before keeping it.</li>
 <li>Run <code>review_metadata(pkg_path)</code> for the free-text fields and for any required IRI nothing was suggested for, and paste the <code>set_sdp_*()</code> calls it prints. Steps 3 and 5 together are what make step 9 reachable without a spreadsheet.</li>
@@ -304,7 +280,7 @@ concept schemes) while preserving your original data structure.
 <li>Follow the <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html">After Excel Review</a> guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term-request plan.</li>
 <li>If you are preparing EDH metadata, regenerate the XML from the reviewed package with <code>write_edh_xml_from_sdp(pkg_path)</code> (the reviewed-package wrapper around the canonical <code><a href="reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> builder). It now refuses to rebuild while <code>REVIEW:</code> markers or unresolved dataset/table placeholder text remain.</li>
 <li>Re-run validation with <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code>.</li>
-<li>For KNB, add the reviewed <code>metadata/eml-mapping.yml</code> sidecar, generate schema-valid EML 2.2.0 with <code>write_eml_from_sdp(pkg_path)</code>, and inspect the credential-free restricted-review plan with <code>publish_sdp_to_knb(pkg_path, public = FALSE, dry_run = TRUE, representation = "expanded")</code>. A live private review still creates persistent production objects; it verifies authenticated exact readback and anonymous non-disclosure, and explicitly disables DataONE peer replication so the restricted bytes remain KNB-only. The plan contains the original data files plus each validated canonical SDP artifact as a named object with its package-relative path. No ZIP is required, and the KNB-specific EML mapping and publication receipts remain local. KNB has no separate server-side draft state, and metasalmon does not mint a DOI. DOI minting and public release are a later, per-metadata-version decision in KNB. Referenced vocabulary rows labelled as review candidates are blocked; the transformation workflow must separately pin and verify the governed vocabulary release. Corrections use a new sidecar <code>revision_key</code> and the preceding verified manifest, preserving the KNB series instead of overwriting immutable objects.</li>
+<li>For KNB, add the reviewed <code>metadata/eml-mapping.yml</code> sidecar, generate schema-valid EML 2.2.0 with <code>write_eml_from_sdp(pkg_path)</code>, and inspect the credential-free restricted-review plan with <code>publish_sdp_to_knb(pkg_path, public = FALSE, dry_run = TRUE,     representation = "expanded")</code>. A live private review still creates persistent production objects; it verifies authenticated exact readback and anonymous non-disclosure, and explicitly disables DataONE peer replication so the restricted bytes remain KNB-only. The plan contains the original data files plus each validated canonical SDP artifact as a named object with its package-relative path. No ZIP is required, and the KNB-specific EML mapping and publication receipts remain local. KNB has no separate server-side draft state, and metasalmon does not mint a DOI. DOI minting and public release are a later, per-metadata-version decision in KNB. Referenced vocabulary rows labelled as review candidates are blocked; the transformation workflow must separately pin and verify the governed vocabulary release. Corrections use a new sidecar <code>revision_key</code> and the preceding verified manifest, preserving the KNB series instead of overwriting immutable objects.</li>
 <li>Publish/share only after the <code>REVIEW:</code> markers are gone and validation passes; send the whole package folder, not individual files.</li>
 </ol>
 <p>In other words: <strong>create -&gt; decide the IRIs -&gt; fill the remaining metadata -&gt; check gaps -&gt; validate -&gt; build the required export -&gt; dry-run -&gt; publish</strong>. All of it from R; the spreadsheet is the fallback, not the route.</p>
@@ -317,28 +293,28 @@ concept schemes) while preserving your original data structure.
 <col width="24%">
 <col width="75%">
 </colgroup>
-<thead><tr>
+<thead><tr class="header">
 <th>If you are…</th>
 <th>Start here</th>
 </tr></thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td>A biologist who wants to share data</td>
 <td><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html">5-Minute Quickstart</a></td>
 </tr>
-<tr>
+<tr class="even">
 <td>Finished Excel review and need to publish</td>
 <td><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html">After Excel Review</a></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>Curious how it works</td>
 <td><a href="#how-it-fits-together">How It Fits Together</a></td>
 </tr>
-<tr>
+<tr class="even">
 <td>A data steward standardizing datasets</td>
 <td><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html">Data Dictionary &amp; Publication</a></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>Reading CSVs from private GitHub repos</td>
 <td><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/github-csv-access.html">GitHub CSV Access</a></td>
 </tr>
@@ -353,10 +329,10 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"salmon-data-mobilization/metasalmon"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"salmon-data-mobilization/metasalmon"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="whats-in-a-data-package">What’s In a Data Package?<a class="anchor" aria-label="anchor" href="#whats-in-a-data-package"></a>
@@ -364,7 +340,7 @@ concept schemes) while preserving your original data structure.
 <p>When you create a package, you get a folder containing:</p>
 <pre><code>my-data-package/
   +-- README-review.txt         # Step-by-step review checklist for manual Excel cleanup
-  +-- semantic_suggestions.csv  # Detailed semantic evidence + LLM review trail (when present)
+  +-- semantic_suggestions.csv  # Detailed semantic evidence + harness review trail (when present)
   +-- datapackage.json          # Machine-readable export
   +-- metadata/
   |   +-- dataset.csv           # Dataset-level metadata (canonical)
@@ -405,8 +381,8 @@ concept schemes) while preserving your original data structure.
 </li>
 <li>Per-source diagnostics, scoring, and optional rerank explain why <code><a href="reference/find_terms.html">find_terms()</a></code> matches rank where they do and expose failures, so you can tune role-aware queries with confidence.</li>
 <li>End-to-end semantic QA loop with <code><a href="reference/fetch_salmon_ontology.html">fetch_salmon_ontology()</a></code> + <code><a href="reference/validate_semantics.html">validate_semantics()</a></code>, plus <code><a href="reference/deduplicate_proposed_terms.html">deduplicate_proposed_terms()</a></code> to prevent term proliferation before opening ontology issues.</li>
-<li>Optional package-native LLM review for semantic suggestions: <code>suggest_semantics(..., llm_assess = TRUE)</code> reviews all six measurement roles as one bundle, keeps explicit source lists strict across retries, and uses deterministic validators to downgrade unsupported acceptances.</li>
-<li>Structured ontology-gap handling combines deterministic candidate gaps with final LLM <code>request_new_term</code> decisions, preserves escalation evidence, and renders curator-reviewable request bodies for shared SMN, DFO-specific GCDFO, or local profile governance.</li>
+<li>Optional model review of semantic suggestions in your own harness: <code><a href="reference/write_semantic_review_packet.html">write_semantic_review_packet()</a></code> hands all six measurement roles to the judge as one bundle, keeps explicit source lists strict across its retry, and <code><a href="reference/ingest_semantic_assessments.html">ingest_semantic_assessments()</a></code> uses deterministic validators to downgrade unsupported acceptances. The package itself makes no model call.</li>
+<li>Structured ontology-gap handling combines deterministic candidate gaps with final <code>request_new_term</code> decisions, preserves escalation evidence, and renders curator-reviewable request bodies for shared SMN, DFO-specific GCDFO, or local profile governance.</li>
 <li>NuSEDS method crosswalk helpers: <code><a href="reference/nuseds_enumeration_method_crosswalk.html">nuseds_enumeration_method_crosswalk()</a></code> and <code><a href="reference/nuseds_estimate_method_crosswalk.html">nuseds_estimate_method_crosswalk()</a></code> for mapping legacy values to canonical method families.</li>
 </ul>
 </div>
@@ -425,7 +401,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="how-it-fits-together">How It Fits Together<a class="anchor" aria-label="anchor" href="#how-it-fits-together"></a>
 </h2>
-<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional in-package LLM review, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you into a separate prompt-export side path.</p>
+<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional model review in your own harness, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you into a separate prompt-export side path.</p>
 <p>The high-level flow is:</p>
 <ul>
 <li>
@@ -490,7 +466,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -498,15 +474,15 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="ex">Rscript</span> scripts/build-pkgdown.R</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="ex">Rscript</span> scripts/build-pkgdown.R</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>
@@ -529,11 +505,13 @@ Development setup and package structure
 </h3>
 <ul>
 <li>
-<code>R/semantic-suggestions.R</code> owns the internal semantic-suggestion row interface: target keys, candidate row normalization, column-term filtering, and LLM assessment merge rules.</li>
+<code>R/semantic-suggestions.R</code> owns the internal semantic-suggestion row interface: target keys, candidate row normalization, and the merge of assessments into suggestions.</li>
 <li>
-<code>R/llm-review-adapter.R</code> owns shared LLM/chat review parsing, validation, and assessment row construction.</li>
+<code>R/llm-review-adapter.R</code> owns the 30-column assessment row: its columns, types and the two row builders.</li>
 <li>
-<code>R/semantics-helpers.R</code>, <code>R/llm-semantic-helpers.R</code>, and <code>R/chat-decomposition.R</code> keep the public workflows while delegating shared row and review behavior to those internal modules.</li>
+<code>R/semantic-review-packet.R</code> and <code>R/semantic-review-ingest.R</code> are the harness seam: the review packet and the ingester that reads a harness’s answers back.</li>
+<li>
+<code>R/semantics-helpers.R</code> and <code>R/llm-semantic-helpers.R</code> keep the public workflows and the context readers, assessment validation and escalation the ingester uses.</li>
 </ul>
 </div>
 <div class="section level3">

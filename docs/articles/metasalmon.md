@@ -4,13 +4,12 @@
 
 Complete the one-time [Setup and
 Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
-guide first if you want to make sure GitHub installs work cleanly and
-any optional LLM provider is configured before you begin.
+guide first if you want to make sure GitHub installs work cleanly before
+you begin.
 
 ## Installation
 
 ``` r
-
 install.packages("remotes")
 remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
@@ -21,7 +20,6 @@ Load the built-in Fraser Coho 2023-2024 example (173 rows) and create a
 review-ready Salmon Data Package in one call.
 
 ``` r
-
 library(metasalmon)
 
 data_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
@@ -57,14 +55,12 @@ Open Government Canada record:
 See `example-data-README.md` in the bundled `extdata` folder for
 provenance and licensing. The package also ships a matching starter
 dictionary at `nuseds-fraser-coho-2023-2024-column_dictionary.csv` if
-you want a ready-made context file for the package-native LLM review
-path.
+you want a ready-made context file for a semantic review packet.
 
 If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use the
 one-shot path:
 
 ``` r
-
 pkg_path <- create_sdp(
   fraser_coho,
   path = "fraser-coho-2023-2024-sdp",
@@ -88,25 +84,26 @@ call
 [`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 directly.
 
-## Optional LLM Review Later
+## Optional Model Review Later
 
-The base quickstart does **not** require an API key. If you want
-`llm_assess = TRUE`, finish the one-time [Setup and
-Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
-guide first, then rerun the
+The quickstart needs no API key, and `metasalmon` never calls a model.
+If you want a model to judge the candidates
 [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
-call with your chosen provider.
+found, write a review packet for the package and have your own harness
+judge it, for example with the `sdp-semantic-review` skill of the
+[smn-sci-plgn](https://github.com/salmon-data-mobilization/smn-sci-plgn)
+plugin. The packet can quote supporting README notes, CSV dictionaries,
+Excel workbooks or PDF reports. Continue with:
 
-When you want the LLM to use supporting README notes, CSV dictionaries,
-Excel workbooks, or PDF reports as context, continue with:
-
-- [LLM Review With Context
-  Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
+- [Semantic Review in Your
+  Harness](https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.html)
 
 ## Review In R
 
-The [Semantic Review in R](semantic-review.html) walkthrough shows the queue,
-decisions and all four metadata setters in more detail.
+The [Semantic Review in
+R](https://salmon-data-mobilization.github.io/metasalmon/articles/semantic-review.md)
+walkthrough shows the queue, decisions and all four metadata setters in
+more detail.
 
 [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 gives you a package that is **review-ready, not finished**. Two calls
@@ -120,7 +117,6 @@ queues every unfilled slot with its ranked candidates and their
 definitions:
 
 ``` r
-
 review <- review_semantics(pkg_path)
 review
 ```
@@ -140,7 +136,6 @@ written into the package, so the next reader can see why. Then write the
 decisions back:
 
 ``` r
-
 review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
 apply_sdp_semantics(pkg_path, review)
 ```
@@ -160,7 +155,6 @@ structurally cannot: a required field that **no candidate was ever found
 for**.
 
 ``` r
-
 review_metadata(pkg_path)
 ```
 
@@ -187,7 +181,6 @@ When
 reports nothing, strict validation passes:
 
 ``` r
-
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 ```
 
@@ -198,10 +191,11 @@ chosen, and that record is the most valuable thing the review produces.
 `README-review.txt` in the package folder carries the same checklist.
 
 The path to `metadata/column_dictionary.csv` is also a reasonable
-`llm_context_files` input when you want the LLM review step to reason
-from the package itself instead of a separate methods note. Pass the
-path string, not a tibble created by reading the CSV, and set
-`llm_assess = TRUE`; context alone does not enable an LLM call.
+`context_files` input to
+[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+when you want a harness’s review to reason from the package itself
+instead of a separate methods note. Pass the path string, not a tibble
+created by reading the CSV.
 
 [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 seeds semantic suggestions by default and auto-fills top-ranked
@@ -212,21 +206,24 @@ observation-unit drafts in `metadata/tables.csv`, using
 `observation_unit`/`description` when available and otherwise falling
 back to `table_label`/`table_id`. Constraint and statistical-modifier
 candidates are held back unless the column’s own name, label, or
-description carries the evidence for them, and under LLM review
-(`llm_assess = TRUE`) they are never auto-filled at all. Any
-auto-applied semantic IRI draft is written back as `REVIEW: <iri>` so
-you still confirm it manually. It does not overwrite existing non-empty
-semantic values. Code-level suggestions default to factor and
-low-cardinality character source columns; use
-`semantic_code_scope = "all"` if you want broader code-level seeding.
+description carries the evidence for them. Any auto-applied semantic IRI
+draft is written back as `REVIEW: <iri>` so you still confirm it
+manually. It does not overwrite existing non-empty semantic values.
+Code-level suggestions default to factor and low-cardinality character
+source columns; use `semantic_code_scope = "all"` if you want broader
+code-level seeding.
 
-When LLM review is enabled, the six measurement roles — variable,
-property, entity, unit, constraint, and statistical modifier — are
-judged together and then checked by deterministic validators. A
-validator can downgrade an unsupported acceptance to manual review, but
-it never substitutes or invents a term. Omit `semantic_sources` for
-role-aware defaults; an explicitly supplied vector is a strict allowlist
-through the single retry round.
+When a harness judges a review packet, the six measurement roles —
+variable, property, entity, unit, constraint, and statistical modifier —
+are judged together, and
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+checks the answers with deterministic validators. A validator can
+downgrade an unsupported acceptance to manual review, but it never
+substitutes or invents a term. Omit `semantic_sources` for role-aware
+defaults; an explicitly supplied vector is a strict allowlist.
+[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+takes its own `sources` the same way, and it binds a harness’s single
+retry round too.
 
 The inferred metadata includes `MISSING DESCRIPTION:` and
 `MISSING METADATA:` placeholders for required fields, so the package
@@ -280,7 +277,6 @@ is nothing to save or reload. If you did edit the CSVs in a spreadsheet,
 save them back as CSV and reload:
 
 ``` r
-
 pkg <- read_salmon_datapackage(pkg_path)
 validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 ```

@@ -107,17 +107,16 @@ documentation](https://framework.frictionlessdata.io/) for more details.
 
 Here are the most common errors and how to fix them:
 
-| Error | Meaning | Fix |
-|----|----|----|
+| Error                     | Meaning                                      | Fix                                                                                           |
+|---------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------|
 | “Missing required column” | Your dictionary is missing a required column | Check the template: `system.file("extdata", "column_dictionary.csv", package = "metasalmon")` |
-| “Invalid value_type” | You used a type that doesn’t exist | Use one of: `string`, `integer`, `number`, `boolean`, `date`, `datetime` |
-| “Invalid column_role” | You used a role that doesn’t exist | Use one of: `identifier`, `attribute`, `measurement`, `temporal`, `categorical` |
-| “Duplicate column names” | Two rows have the same `column_name` | Remove or rename the duplicate |
+| “Invalid value_type”      | You used a type that doesn’t exist           | Use one of: `string`, `integer`, `number`, `boolean`, `date`, `datetime`                      |
+| “Invalid column_role”     | You used a role that doesn’t exist           | Use one of: `identifier`, `attribute`, `measurement`, `temporal`, `categorical`               |
+| “Duplicate column names”  | Two rows have the same `column_name`         | Remove or rename the duplicate                                                                |
 
 **Example fix**:
 
 ``` r
-
 # See what the error message says, then fix it:
 dict$value_type[dict$column_name == "PROBLEM_COLUMN"] <- "string"
 dict$column_role[dict$column_name == "ANOTHER_COLUMN"] <- "attribute"
@@ -149,9 +148,9 @@ characters (accents, non-English letters):
 3.  If using base R, specify encoding:
     `read.csv("file.csv", encoding = "UTF-8")`
 
-For LLM context, plain-text and CSV files with invalid UTF-8 are retried
-as Windows-1252/Latin-1. R Markdown and HTML context files are still
-expected to be UTF-8.
+For the context files a review packet quotes, plain-text and CSV files
+with invalid UTF-8 are retried as Windows-1252/Latin-1. R Markdown and
+HTML context files are still expected to be UTF-8.
 
 ### Can I use this with data in formats other than CSV?
 
@@ -159,7 +158,6 @@ metasalmon works with data frames in R. You can read data from any
 format into R first:
 
 ``` r
-
 # From Excel
 library(readxl)
 df <- read_excel("your-data.xlsx")
@@ -179,16 +177,15 @@ dict <- infer_dictionary(df, dataset_id = "my-data", table_id = "main")
 
 ### What’s the difference between dataset_id and table_id?
 
-| Field | Scope | Example |
-|----|----|----|
-| `dataset_id` | The overall dataset (may contain multiple tables) | `"fraser-coho-monitoring-2024"` |
-| `table_id` | A specific table within the dataset | `"escapement"`, `"age-composition"`, `"catch"` |
+| Field        | Scope                                             | Example                                        |
+|--------------|---------------------------------------------------|------------------------------------------------|
+| `dataset_id` | The overall dataset (may contain multiple tables) | `"fraser-coho-monitoring-2024"`                |
+| `table_id`   | A specific table within the dataset               | `"escapement"`, `"age-composition"`, `"catch"` |
 
 If you have a single table, use the same approach but with descriptive
 IDs:
 
 ``` r
-
 # Single table dataset
 dict <- infer_dictionary(df,
   dataset_id = "fraser-coho-2024",
@@ -199,7 +196,6 @@ dict <- infer_dictionary(df,
 If you have multiple related tables:
 
 ``` r
-
 # Multi-table dataset
 dict_esc <- infer_dictionary(df_escapement,
   dataset_id = "fraser-coho-2024",
@@ -225,7 +221,6 @@ you can add a code list:
   `semantic_code_scope = "all"`.
 
 ``` r
-
 codes <- tibble::tibble(
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
@@ -255,7 +250,6 @@ can take that same named list of data frames when you want table-aware
 semantic review across a multi-table package:
 
 ``` r
-
 resources <- list(
   escapement = df_escapement,
   age_composition = df_age,
@@ -291,25 +285,26 @@ pkg_path <- write_salmon_datapackage(
 
 ## Workflow Questions
 
-### Why did `llm_context_files` not change my output?
+### How do I give a model my methods notes when it reviews the shortlists?
 
-The two most common causes are input type and opt-in state:
+`metasalmon` makes no model call itself. Pass your notes to
+[`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+as `context_files`, and the packet carries the best-scoring excerpts
+from them beside each target, for your harness to read while it judges.
+Two things to check:
 
-- `llm_context_files` must contain local path strings such as
+- `context_files` must contain local path strings such as
   `"./00_data/data-dictionary.csv"`; do not pass the tibble from
   [`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
   or the XML object from
-  [`xml2::read_html()`](http://xml2.r-lib.org/reference/read_xml.md).
-- Context never enables LLM review by itself. Set `llm_assess = TRUE`
-  and choose a configured provider. Without that flag, `metasalmon`
-  warns and continues with deterministic semantic retrieval, so similar
-  output is expected.
+  [`xml2::read_html()`](http://xml2.r-lib.org/reference/read_xml.md),
+  which is refused with an error.
+- Use `context_text` instead when the context is already a character
+  string rather than a file.
 
-When using
-[`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
-directly, also set `seed_semantics = TRUE`. Use `llm_context_text`
-instead when the context is already a character string rather than a
-file.
+[Semantic Review in Your
+Harness](https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.md)
+has the whole route.
 
 ### Why did semantic review ignore or omit a vocabulary?
 
@@ -317,23 +312,28 @@ Source selection distinguishes an omitted argument from an explicit
 value:
 
 - omit `sources` in
-  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  or
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
   or `semantic_sources` in
-  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md),
   to use role-aware defaults;
 - supply a vector to make it a strict allowlist for initial and retry
-  retrieval.
+  retrieval. Names are matched whatever their case or surrounding
+  whitespace, so `"SMN"` and `" smn "` both mean smn.
 
 For example, `sources = "smn"` deliberately excludes QUDT even for a
 unit slot. Use `sources_for_role("unit")` when you want the normal unit
 vocabulary set.
 
-For measurement columns, the LLM reviews variable, property, entity,
-unit, constraint, and statistical-modifier candidates together. Only
-variable, property, entity, and unit acceptances can become `REVIEW:`
-prefills. Constraint and statistical-modifier decisions always require
-manual application, and deterministic validators can downgrade
-unsupported model acceptances to `review`.
+For measurement columns, a harness judging a review packet reviews
+variable, property, entity, unit, constraint, and statistical-modifier
+candidates together, and the ingester’s deterministic validators can
+downgrade an unsupported acceptance to `review`. Nothing a harness
+answers is written into the metadata until you accept it with
+[`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
+and write your decisions with
+[`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md).
 
 A method is not among them: since sdp-0.3.0 a method is never a
 dictionary column. See [Migrating to SDP
@@ -355,9 +355,9 @@ for where it lives now.
 Aim for descriptions that would help a colleague (or your future self)
 understand the data without asking questions:
 
-| Too brief | Good | Too detailed |
-|----|----|----|
-| “Count” | “Estimated count of naturally spawning adult coho salmon” | “This field contains the estimated count of naturally spawning adult coho salmon as determined by visual surveys conducted during peak spawning season (typically October-November) using standard area-under-the-curve methodology…” |
+| Too brief | Good                                                      | Too detailed                                                                                                                                                                                                                          |
+|-----------|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| “Count”   | “Estimated count of naturally spawning adult coho salmon” | “This field contains the estimated count of naturally spawning adult coho salmon as determined by visual surveys conducted during peak spawning season (typically October-November) using standard area-under-the-curve methodology…” |
 
 A good rule of thumb: one sentence that answers “What is this and how
 was it measured?”
@@ -388,14 +388,14 @@ Use the GitHub issues page:
 
 Yes! Here are the key resources:
 
-| Resource | Best for |
-|----|----|
-| [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md) | Getting started fast |
-| [Publishing Data Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.md) | Detailed control over metadata and publishing |
-| [Linking to Standard Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md) | Connecting data to scientific standards |
-| [Accessing Data from GitHub](https://salmon-data-mobilization.github.io/metasalmon/articles/github-csv-access.md) | Reading CSVs from private repositories |
-| [Glossary of Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/glossary.md) | Understanding technical terms |
-| [Function Reference](https://salmon-data-mobilization.github.io/metasalmon/reference/index.md) | Looking up specific functions |
+| Resource                                                                                                                                  | Best for                                      |
+|-------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
+| [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md)                                       | Getting started fast                          |
+| [Publishing Data Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.md)                 | Detailed control over metadata and publishing |
+| [Linking to Standard Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md) | Connecting data to scientific standards       |
+| [Accessing Data from GitHub](https://salmon-data-mobilization.github.io/metasalmon/articles/github-csv-access.md)                         | Reading CSVs from private repositories        |
+| [Glossary of Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/glossary.md)                                           | Understanding technical terms                 |
+| [Function Reference](https://salmon-data-mobilization.github.io/metasalmon/reference/index.md)                                            | Looking up specific functions                 |
 
 ### Can I contribute to metasalmon?
 

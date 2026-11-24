@@ -13,18 +13,7 @@ suggest_semantics(
   search_fn = find_terms,
   codes = NULL,
   table_meta = NULL,
-  dataset_meta = NULL,
-  llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-  llm_model = NULL,
-  llm_api_key = NULL,
-  llm_base_url = NULL,
-  llm_reasoning_effort = NULL,
-  llm_top_n = 5L,
-  llm_context_files = NULL,
-  llm_context_text = NULL,
-  llm_timeout_seconds = 60,
-  llm_request_fn = NULL
+  dataset_meta = NULL
 )
 }
 \arguments{
@@ -50,8 +39,7 @@ Default is \code{FALSE} to keep the UI simple for non-DwC users.}
 \item{max_per_role}{Maximum number of suggestions to keep per semantic role
 (variable, property, entity, unit, constraint, statistical_modifier;
 plus method for code values) per column. Default
-is 3. When \code{llm_assess = TRUE}, at least \code{llm_top_n} are kept, because
-the LLM can only be shown the candidates retrieval kept.}
+is 3.}
 
 \item{search_fn}{Function used to search terms. Defaults to \code{find_terms()}.
 Can be replaced for testing or custom search strategies.}
@@ -65,62 +53,6 @@ suggestions are generated for missing \code{tables.csv$observation_unit_iri}.}
 \item{dataset_meta}{Optional \code{dataset.csv}-like tibble. When provided,
 suggestions are generated for missing \code{dataset.csv$keywords} as candidate
 semantic keywords (IRIs intended for keyword curation).}
-
-\item{llm_assess}{Logical; if \code{TRUE}, assess the top semantic candidates per
-target with an LLM after deterministic retrieval. When the first shortlist
-looks weak, the LLM may request at most one bounded alternate-query pass
-before a single reassessment. Measurement-column roles are reviewed as one
-six-slot bundle; generic, code, table, and dataset targets retain
-per-target review. Default is \code{FALSE}.}
-
-\item{llm_provider}{LLM provider preset. One of \code{"openai"},
-\code{"openrouter"}, \code{"openai_compatible"}, or \code{"chapi"}.}
-
-\item{llm_model}{Character model identifier. Required when
-\code{llm_assess = TRUE} unless supplied via \code{METASALMON_LLM_MODEL}. When
-\code{llm_provider = "openrouter"} and no model is supplied, the package
-defaults to \code{"openrouter/free"}. Any valid OpenRouter model ID may be
-supplied here (for example \code{"openai/gpt-5.4-mini"}). When
-\code{llm_provider = "chapi"} and no model is supplied, the package defaults
-to \code{"ollama2.mistral:7b"} and also checks \code{CHAPI_MODEL}.}
-
-\item{llm_api_key}{Optional API key override. If omitted, provider-specific
-environment variables are used (\code{OPENAI_API_KEY}, \code{OPENROUTER_API_KEY},
-\code{CHAPI_API_KEY}, or \code{METASALMON_LLM_API_KEY}).}
-
-\item{llm_base_url}{Optional base URL override for the OpenAI-compatible
-chat endpoint. Required for \code{llm_provider = "openai_compatible"} when not
-set via \code{METASALMON_LLM_BASE_URL}. For \code{llm_provider = "chapi"}, the
-package defaults to \verb{https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api}
-and also checks \code{CHAPI_BASE_URL}.}
-
-\item{llm_reasoning_effort}{Optional reasoning-effort hint forwarded to the
-OpenAI chat-completions request body when \code{llm_provider = "openai"}.}
-
-\item{llm_top_n}{Maximum number of retrieved candidates to send to the LLM
-per target for each assessment round. Default is \code{5}. Retrieval keeps at
-least this many per role when \code{llm_assess = TRUE}, whatever
-\code{max_per_role} says.}
-
-\item{llm_context_files}{Optional character vector of local context files
-(for example README/markdown notes, CSV dictionaries, HTML exports,
-DOCX files, source/notebook files such as \code{.R}, \code{.Rmd}, or \code{.qmd}, Excel
-workbooks, or PDF reports) used to provide extra domain context to the
-LLM when \code{llm_assess = TRUE}. Pass file paths, not parsed data frames, XML
-documents, or R Markdown objects. Supplying context does not enable LLM
-review; without \code{llm_assess = TRUE}, it is ignored with a warning. PDF
-support uses the optional \code{pdftools} package; Excel support uses the
-optional \code{readxl} package.}
-
-\item{llm_context_text}{Optional character vector of extra inline context
-snippets passed alongside \code{llm_context_files}.}
-
-\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.
-\code{chapi} models matching \code{gpt-oss} are automatically given at least 120
-seconds because the internal endpoint can be slow to warm up.}
-
-\item{llm_request_fn}{Advanced/test hook overriding the low-level
-OpenAI-compatible request function.}
 }
 \value{
 The dictionary tibble (unchanged) with a \code{semantic_suggestions}
@@ -138,14 +70,7 @@ column, it is preserved for downstream filtering.
 For non-column targets, the tibble also includes explicit destination
 context (\code{target_row_key}, \code{target_label}, \code{target_description},
 \code{code_value}, \code{code_label}, \code{code_description}) so table-, dataset-, and
-code-level rows are inspectable without extra joins. When
-\code{llm_assess = TRUE}, the suggestions also include \verb{llm_*} review columns
-such as \code{llm_decision}, \code{llm_confidence}, \code{llm_selected},
-\code{llm_candidate_rank}, and bounded exploration metadata, and the
-dictionary gains a parallel \code{semantic_llm_assessments} attribute with one
-row per assessed target. Its 30-column schema preserves the legacy
-28-column prefix and appends \code{llm_escalated_from} and
-\code{llm_retry_query_rejection_reason}.
+code-level rows are inspectable without extra joins.
 The dictionary also carries a \code{semantic_targets} attribute with the
 discovered search targets (one row per unfilled semantic field, in the
 \code{.ms_semantic_target_cols()} shape). \code{\link[=detect_semantic_term_gaps]{detect_semantic_term_gaps()}} reads
@@ -175,32 +100,10 @@ generated for \code{codes.csv}, \code{tables.csv}, and \code{dataset.csv} respec
 Table-level observation-unit queries ignore review placeholders such as
 \verb{MISSING METADATA:} and fall back to real table metadata context instead.
 
-When \code{llm_assess = TRUE}, the LLM only judges deterministically retrieved
-candidates; it does not mint new IRIs. Measurement columns are reviewed as
-one bundle spanning variable, property, entity, unit, constraint, and
-statistical modifier (method appears only for code values),
-including empty slots. The public output still contains one assessment row
-per target and positional candidate indexes. If the first shortlist looks
-weak, the package gathers valid retry requests, runs at most one retrieval
-round, de-dupes the merged shortlist, and reassesses once. An exact duplicate
-retry query is retained as \code{retry_search}, records
-\code{llm_retry_query_rejection_reason = "duplicate_original_query"}, and does not
-spend another search or reassessment for that slot. If the model rejects the entire
-shortlist (\code{reject_shortlist}) and that bounded retry still surfaces no
-acceptable candidate, the assessment is escalated to \code{request_new_term} so a
-likely ontology gap shows up in \code{llm_decision} instead of a dead-end
-rejection. Local context files are read on disk, chunked, and lexically
-trimmed down before prompt assembly so large README/report/workbook files do
-not get dumped wholesale into the model call. Plain-text/CSV context with
-invalid UTF-8 is retried as Windows-1252/Latin-1, and colliding file base
-names are disambiguated in \code{llm_context_sources}. If a batched provider
-response has malformed, missing, or duplicate target items, valid siblings
-are retained and only affected targets fall back to individual review.
-Deterministic validators can downgrade an unsupported \code{accept} to \code{review}
-for missing statistical-modifier/constraint evidence, known role/type or dimensional
-incompatibility, or a curated redundancy rule. A downgrade clears the
-selection, preserves model confidence as provenance, and never substitutes
-a term or creates an ontology gap.
+Retrieval is deterministic and judges nothing. To have a model judge the
+shortlists, write them to a review packet with
+\code{\link[=write_semantic_review_packet]{write_semantic_review_packet()}}, have your own harness answer it, and read
+the answers back with \code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}}.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).
@@ -242,5 +145,6 @@ dict <- apply_semantic_suggestions(dict_with_suggestions, columns = "SPAWNER_COU
 \code{\link[=find_terms]{find_terms()}} for direct vocabulary searches, \code{\link[=infer_dictionary]{infer_dictionary()}}
 for creating starter dictionaries, \code{\link[=apply_semantic_suggestions]{apply_semantic_suggestions()}} for
 explicitly filling selected IRI fields, \code{\link[=validate_dictionary]{validate_dictionary()}} for
-checking dictionary completeness.
+checking dictionary completeness, \code{\link[=write_semantic_review_packet]{write_semantic_review_packet()}} for
+having your own harness judge the shortlists.
 }

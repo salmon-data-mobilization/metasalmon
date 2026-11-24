@@ -42,17 +42,12 @@ formatting_fns <- c("format", "strftime", "format.Date", "format.POSIXct")
 
 # Functions permitted to keep a raw `%Y`. An entry is a claim that you checked
 # it; do not add one to silence a failure you have not read.
-year_format_allowlist <- c(
-  # `format(Sys.time(), "%Y%m%d%H%M%S")` -- a session-id stamp built from the
-  # current time only. `Sys.time()` has had a four-digit year since long before
-  # this package existed and will until the year 10000, so the unpadded branch
-  # is unreachable. It is also not a canonical key: the id is a random-suffixed
-  # session directory name, compared to nothing and hashed into nothing.
-  # *Retires when:* this function takes a caller-supplied time, at which point
-  # the year stops being guaranteed four digits and it must move to
-  # `.ms_iso_stamp()`.
-  ".ms_chat_new_session_id"
-)
+#
+# Empty since hub item B-329: its one entry was `.ms_chat_new_session_id()`, a
+# session-id stamp from `format(Sys.time(), "%Y%m%d%H%M%S")`, which was deleted
+# with `chat_decomposition()`. The entry retired with its function rather than
+# by the condition it named.
+year_format_allowlist <- character()
 
 # Walk a body for `format()`/`strftime()` calls carrying a `%Y` or `%F` literal.
 find_year_formats <- function(node, acc = character()) {
@@ -136,11 +131,12 @@ test_that("the allowlist has no stale entries", {
   # its cause: it reads as "checked and safe" while protecting nothing, and the
   # next person to add a `%Y` to that function gets a free pass.
   ns <- asNamespace("metasalmon")
-  for (name in year_format_allowlist) {
-    expect_true(
-      exists(name, envir = ns, inherits = FALSE),
-      info = paste0("allowlisted function no longer exists: ", name)
-    )
+  present <- vapply(year_format_allowlist, exists, logical(1), envir = ns, inherits = FALSE)
+  expect_true(
+    all(present),
+    info = paste0("allowlisted function no longer exists: ", paste(year_format_allowlist[!present], collapse = ", "))
+  )
+  for (name in year_format_allowlist[present]) {
     expect_gt(length(find_year_formats(body(get(name, envir = ns)))), 0L)
   }
 })

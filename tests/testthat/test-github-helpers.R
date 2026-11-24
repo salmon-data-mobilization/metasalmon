@@ -192,9 +192,9 @@ skip_unless_github_api_serves <- function(repo, path, ref, token, request = gh::
 
 # The pins below answer requests with httr2::local_mocked_responses()
 # (httr2 1.0.0) and read them back with httr2::req_get_headers() (1.2.0).
-# DESCRIPTION pins neither, so they skip on an older install, as
-# test-llm-chat-request.R does. Retires when DESCRIPTION's Imports requires
-# httr2 (>= 1.2.0).
+# DESCRIPTION pins neither, so they skip on an older install, as the
+# chat-request tests did before B-329 removed them. Retires when
+# DESCRIPTION's Imports requires httr2 (>= 1.2.0).
 test_that("the raw-host guard sends the request read_github_csv() sends", {
   skip_if_not_installed("httr2", "1.2.0")
   seen <- list()

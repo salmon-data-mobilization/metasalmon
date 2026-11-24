@@ -37,7 +37,6 @@ gate the *Salmon Data Package* has; it is not the last gate before a
 ### 1) Reload the reviewed package
 
 ``` r
-
 library(metasalmon)
 
 pkg_path <- "fraser-coho-2023-2024-sdp"
@@ -56,7 +55,6 @@ are checking the same metadata you just reviewed in Excel.
 Start with the package-level validator in **non-strict** mode:
 
 ``` r
-
 review_check <- validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 ```
 
@@ -71,7 +69,6 @@ If you also want the semantic details separated out, inspect the
 reloaded package directly:
 
 ``` r
-
 review_semantics <- validate_semantics(pkg$dictionary, require_iris = FALSE)
 
 review_semantics$issues
@@ -101,7 +98,6 @@ against the **current** package state so you only inspect what is still
 unresolved.
 
 ``` r
-
 reviewed_dict <- suggest_semantics(
   df = pkg$resources,
   dict = pkg$dictionary,
@@ -135,7 +131,6 @@ Now detect the places where `metasalmon` still cannot find a shared SMN
 match, but did find useful fallback candidates elsewhere:
 
 ``` r
-
 gaps <- detect_semantic_term_gaps(reviewed_dict)
 
 gaps |>
@@ -161,17 +156,19 @@ This is the key post-review gap table:
 - rows here are still unresolved;
 - `top_non_smn_*` columns show the best non-SMN evidence the package
   found;
-- `gap_detection_basis` distinguishes candidate evidence, a final LLM
-  term-gap decision, or both; and
+- `gap_detection_basis` distinguishes candidate evidence, a final
+  `request_new_term` decision your harness recorded, or both; and
 - `placement_recommendation` gives a first-pass routing guess.
 
 When `suggestions` is omitted,
 [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
 reads both the `semantic_suggestions` and `semantic_llm_assessments`
-dictionary attributes. Final `request_new_term` decisions are therefore
-included automatically, even when candidate rows contain an SMN match.
-An unresolved `reject_shortlist` escalation remains traceable through
-`llm_escalated_from`.
+dictionary attributes, the second attached by
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+when your harness has judged a review packet. Final `request_new_term`
+decisions are therefore included automatically, even when candidate rows
+contain an SMN match. An unresolved `reject_shortlist` escalation
+remains traceable through `llm_escalated_from`.
 
 If you pass `suggestions` explicitly, only candidate evidence and the
 embedded `llm_*` columns in that table are used. The dictionary’s
@@ -180,7 +177,6 @@ assessment attribute is intentionally ignored in that form.
 If you only want a narrower slice, filter by role or scope:
 
 ``` r
-
 gaps |>
   dplyr::filter(dictionary_role %in% c("variable", "property", "entity"))
 ```
@@ -198,7 +194,6 @@ uv run --with pyyaml,jsonschema scripts/okf-check.py . --gaps > gaps.json
 Then use the exported file in R:
 
 ``` r
-
 commons_gaps <- detect_semantic_term_gaps(commons_gaps = "gaps.json")
 commons_requests <- render_ontology_term_request(commons_gaps, ask = FALSE)
 commons_preview <- submit_term_request_issues(commons_requests, dry_run = TRUE)
@@ -269,7 +264,6 @@ becomes `skip`; interactive use asks for a routing decision.
 First render a dry, non-interactive plan and inspect every route:
 
 ``` r
-
 requests <- render_ontology_term_request(
   gaps,
   scope = "auto",
@@ -309,7 +303,6 @@ To apply reviewed row-by-row decisions, pass an override vector. Edit
 `skip`:
 
 ``` r
-
 reviewed_scopes <- request_plan$request_scope
 # reviewed_scopes[2] <- "gcdfo"
 
@@ -340,7 +333,6 @@ submits an issue.
 Preview both SMN and GCDFO payloads before any submission:
 
 ``` r
-
 issue_preview <- requests |>
   dplyr::filter(request_scope %in% c("smn", "gcdfo")) |>
   submit_term_request_issues(dry_run = TRUE)
@@ -362,7 +354,6 @@ vocabulary. Do not put property/entity/unit decomposition columns into
 SSSOM.
 
 ``` r
-
 write_sdp_sssom(
   pkg_path,
   mapping_sets = reviewed_sssom_paths
@@ -375,7 +366,6 @@ and unit evidence in the separate SDP measurement-decomposition
 artifact:
 
 ``` r
-
 write_sdp_measurement_decompositions(
   pkg_path,
   decompositions = reviewed_components
@@ -396,7 +386,6 @@ Once the metadata is final and every surviving IRI is deliberate,
 regenerate EDH XML if your publication path needs it:
 
 ``` r
-
 write_edh_xml_from_sdp(pkg_path)
 ```
 
@@ -417,7 +406,6 @@ not block a rebuild; only a `REVIEW:`-prefixed value does.
 When the package is genuinely ready, switch to strict validation:
 
 ``` r
-
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 ```
 
@@ -448,11 +436,11 @@ Three files carry it.
 writes the first two and pins the digests the third one carries**; the
 reviewed EML facts in the third are yours (step 11):
 
-| File | What it must contain | Written by |
-|----|----|----|
+| File                               | What it must contain                                                                   | Written by                                                                                                                      |
+|------------------------------------|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
 | `metadata/semantic_vocabulary.csv` | One evidence row per canonical measurement IRI — exactly that set, no more and no less | [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md) |
-| `reviewed_semantic_selections.csv` | Exactly one `accepted` row per canonical review target | [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md) |
-| `metadata/eml-mapping.yml` | The reviewed EML facts, plus the SHA-256 of each of the two files above | you, except the two SHA-256 values |
+| `reviewed_semantic_selections.csv` | Exactly one `accepted` row per canonical review target                                 | [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md) |
+| `metadata/eml-mapping.yml`         | The reviewed EML facts, plus the SHA-256 of each of the two files above                | you, except the two SHA-256 values                                                                                              |
 
 **The canonical measurement IRI set** is every non-empty value across
 `term_iri`, `property_iri`, `entity_iri`, `constraint_iri`,
@@ -531,7 +519,6 @@ Two kinds of value it cannot derive, and both go in `evidence`:
   one. Replace those before publishing.
 
 ``` r
-
 # Your judgement on each accepted IRI. The term evidence is resolved for you.
 judgements <- tibble::tribble(
   ~iri, ~confidence, ~review_rationale,
@@ -574,7 +561,6 @@ run it again once the sidecar exists.
 returns, so it feeds the request pipeline directly:
 
 ``` r
-
 if (nrow(closure$gaps) > 0) {
   requests <- render_ontology_term_request(closure$gaps, ask = FALSE)
   submit_term_request_issues(requests, dry_run = TRUE)
@@ -635,7 +621,6 @@ ORCID, so the placeholder in the shipped template will pass a rehearsal
 and be refused by the live call.
 
 ``` r
-
 # Copy once, then replace every example value and checksum with reviewed facts.
 file.copy(
   system.file(
@@ -648,7 +633,6 @@ file.copy(
 ```
 
 ``` r
-
 write_eml_from_sdp(pkg_path)
 ```
 
@@ -662,7 +646,6 @@ access decision, and OAI-ORE relationships without reading credentials
 or making a network request:
 
 ``` r
-
 publish_sdp_to_knb(
   pkg_path,
   public = FALSE,
@@ -687,7 +670,6 @@ planned separately, with production credentials, and mints its own
 identifiers.
 
 ``` r
-
 publish_sdp_to_knb(
   pkg_path,
   public = FALSE,
@@ -719,7 +701,6 @@ it into the current R process only and clear it immediately after the
 live call:
 
 ``` r
-
 # `dataone_token` is the production credential; the test node reads
 # `dataone_test_token` instead.
 options(dataone_token = rstudioapi::askForPassword("Short-lived DataONE JWT"))
@@ -785,7 +766,6 @@ publication:
 ```
 
 ``` r
-
 publish_sdp_to_knb(
   revised_pkg_path,
   public = FALSE,

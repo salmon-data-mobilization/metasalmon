@@ -5,10 +5,9 @@ Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metas
 
 It covers three things:
 
-1.  GitHub credentials so
-    [`remotes::install_github()`](https://remotes.r-lib.org/reference/install_github.html)
-    works reliably.
-2.  Optional LLM provider setup if you want `llm_assess = TRUE` later.
+1.  GitHub credentials so `remotes::install_github()` works reliably.
+2.  Optional setup for having a model review the semantic shortlists in
+    your own harness.
 3.  Short-lived DataONE credentials for an explicit live KNB deposit.
 
 ## 1) GitHub setup for installs and updates
@@ -30,14 +29,12 @@ can access those repositories too.
 ### Store it in `~/.Renviron`
 
 ``` r
-
 file.edit("~/.Renviron")
 ```
 
 Add:
 
 ``` r
-
 GITHUB_PAT="paste token here"
 ```
 
@@ -46,7 +43,6 @@ Restart R after saving.
 ### Install `metasalmon`
 
 ``` r
-
 install.packages("remotes")
 remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
@@ -61,91 +57,38 @@ When you later want to use
 against a private repository, run:
 
 ``` r
-
 ms_setup_github(repo = "your-org/your-private-repo")
 ```
 
 That verifies private GitHub access for the repository you actually
 intend to read.
 
-## 2) Optional LLM provider setup
+## 2) Optional: model review in your own harness
 
-The base quick example and quickstart do **not** require an API key.
+The base quick example and quickstart need no API key, and neither does
+the package at any point: `metasalmon` makes no model call. When you
+want a model to judge the ontology candidates the package found, the
+judgement runs in your own harness (for example Claude Code or Codex),
+against a review packet the package writes and reads back. That needs:
 
-Only do this setup now if you want to run:
-
-- `create_sdp(..., llm_assess = TRUE)`, or
-- `suggest_semantics(..., llm_assess = TRUE)`
-
-If you also plan to pass PDF or Excel files through `llm_context_files`,
-install the optional readers once. HTML, DOCX, `.R`, `.Rmd`, and `.qmd`
-inputs work without extra reader packages:
+- the `sdp-semantic-review` skill from the public
+  [smn-sci-plgn](https://github.com/salmon-data-mobilization/smn-sci-plgn)
+  plugin (release v0.2.0 or later), installed in your harness as the
+  plugin’s README describes, or a harness of your own that follows the
+  packet’s instructions;
+- nothing in R beyond `metasalmon` itself. HTML, DOCX, `.R`, `.Rmd` and
+  `.qmd` context files need no extra package; for the packet to quote
+  your PDF or Excel files, install the optional readers once:
 
 ``` r
-
 install.packages(c("pdftools", "readxl"))
 ```
 
-### DFO internal: `chapi`
-
-If you are on the DFO internal network or VPN, open:
-
-- <https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/>
-
-Then:
-
-1.  click the user icon in the bottom left,
-2.  open **Settings**,
-3.  click **Show** next to **API Keys**,
-4.  copy the key value.
-
-Store it in `~/.Renviron`:
-
-``` r
-
-file.edit("~/.Renviron")
-CHAPI_API_KEY="paste key here"
-```
-
-Optional overrides:
-
-``` r
-
-CHAPI_MODEL="ollama2.mistral:7b"
-CHAPI_BASE_URL="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"
-```
-
-### External users: OpenRouter
-
-``` r
-
-file.edit("~/.Renviron")
-OPENROUTER_API_KEY="paste key here"
-```
-
-`llm_provider = "openrouter"` defaults to `openrouter/free`.
-
-### External users: OpenAI
-
-``` r
-
-file.edit("~/.Renviron")
-OPENAI_API_KEY="paste key here"
-```
-
-Then choose an explicit OpenAI model when you call the LLM review path,
-for example:
-
-``` r
-
-suggested <- suggest_semantics(
-  df = your_data,
-  dict = your_dict,
-  llm_assess = TRUE,
-  llm_provider = "openai",
-  llm_model = "gpt-4.1-mini"
-)
-```
+Any credential your harness uses for its model is the harness’s own
+configuration, not something `metasalmon` reads. [Semantic Review in
+Your
+Harness](https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.html)
+walks through the whole route.
 
 ## 3) Optional DataONE/KNB live-deposit credential
 
@@ -154,13 +97,12 @@ dry-run manifest. For a live deposit, sign in to DataONE with the same
 ORCID recorded as the single EML metadata provider and obtain a
 short-lived DataONE JWT.
 
-Treat this token differently from an install PAT or optional LLM key. Do
-not put it in `.Renviron`, a script, a command argument, an EML sidecar,
-a publication manifest, or a transformation record. Enter it only into
-the current R process and clear it immediately afterward:
+Treat this token differently from an install PAT. Do not put it in
+`.Renviron`, a script, a command argument, an EML sidecar, a publication
+manifest, or a transformation record. Enter it only into the current R
+process and clear it immediately afterward:
 
 ``` r
-
 options(dataone_token = rstudioapi::askForPassword("Short-lived DataONE JWT"))
 on.exit(options(dataone_token = NULL), add = TRUE)
 ```
@@ -177,8 +119,8 @@ After this setup is done, go back to:
   example](https://salmon-data-mobilization.github.io/metasalmon/)
 - [5-Minute
   Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)
-- [LLM Review With Context
-  Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
+- [Semantic Review in Your
+  Harness](https://salmon-data-mobilization.github.io/metasalmon/articles/harness-semantic-review.html)
 
 If you are continuing from a reviewed package later, use:
 

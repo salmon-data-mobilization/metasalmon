@@ -377,8 +377,7 @@ test_that("dictionary entry points pass strict sources through to retrieval", {
   )))
 })
 
-test_that("multi-table semantic seeding runs once with the widened shortlist", {
-  withr::local_options(metasalmon.llm_deprecation_quiet = TRUE)
+test_that("multi-table semantic seeding runs once with semantic_max_per_role", {
   suggestion_widths <- integer()
   fake_suggest <- function(df, dict, max_per_role, ...) {
     suggestion_widths <<- c(suggestion_widths, max_per_role)
@@ -391,9 +390,7 @@ test_that("multi-table semantic seeding runs once with the widened shortlist", {
       infer_dictionary(
         list(catches = data.frame(count = 1:2), sites = data.frame(site = c("A", "B"))),
         seed_semantics = TRUE,
-        semantic_max_per_role = 1L,
-        llm_assess = TRUE,
-        llm_top_n = 4L,
+        semantic_max_per_role = 4,
         seed_verbose = FALSE
       )
     }
@@ -460,97 +457,6 @@ test_that("infer_dictionary single-table semantic seeding preserves seed metadat
   expect_null(attr(dict, "inferred_table_meta", exact = TRUE))
   expect_null(attr(dict, "inferred_dataset_meta", exact = TRUE))
   expect_null(attr(dict, "inferred_resources", exact = TRUE))
-})
-
-test_that("infer_dictionary falls back to deterministic suggestions when LLM assessment fails", {
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
-
-  failing_request <- function(messages, config) {
-    stop("HTTP 402 Payment Required.")
-  }
-
-  dict <- with_mocked_bindings(
-    find_terms = fake_search,
-    {
-      out <- NULL
-      expect_warning(
-        out <- infer_dictionary(
-          data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
-          dataset_id = "dataset-1",
-          table_id = "table-1",
-          seed_semantics = TRUE,
-          semantic_sources = "smn",
-          semantic_max_per_role = 2,
-          seed_verbose = FALSE,
-          llm_assess = TRUE,
-          llm_provider = "openrouter",
-          llm_model = "openai/gpt-5.4-mini",
-          llm_api_key = "dummy-key",
-          llm_top_n = 2,
-          llm_request_fn = failing_request
-        ),
-        "falling back to deterministic semantic suggestions only"
-      )
-      out
-    }
-  )
-
-  suggestions <- attr(dict, "semantic_suggestions")
-  assessments <- attr(dict, "semantic_llm_assessments")
-
-  expect_s3_class(dict, "tbl_df")
-  expect_gt(nrow(suggestions), 0)
-  expect_false(any(startsWith(names(suggestions), "llm_")))
-  expect_true(any(suggestions$iri == "https://example.org/variable/best"))
-  expect_true(all(!is.na(assessments$llm_error) & nzchar(assessments$llm_error)))
-})
-
-test_that("infer_dictionary warns once when LLM options are ignored with semantic seeding disabled", {
-  resources <- list(
-    catches = data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
-    sites = data.frame(site_id = c("A", "B"), temperature = c(10.1, 10.5))
-  )
-  failing_request <- function(messages, config) {
-    stop("LLM request should not be called")
-  }
-
-  warnings <- character()
-  dict <- withCallingHandlers(
-    infer_dictionary(
-      resources,
-      seed_semantics = FALSE,
-      llm_assess = TRUE,
-      llm_model = "test-model",
-      llm_request_fn = failing_request
-    ),
-    warning = function(w) {
-      warnings <<- c(warnings, conditionMessage(w))
-      invokeRestart("muffleWarning")
-    }
-  )
-
-  expect_s3_class(dict, "tbl_df")
-  expect_setequal(unique(dict$table_id), c("catches", "sites"))
-  expect_length(grep("seed_semantics = FALSE", warnings, fixed = TRUE), 1)
-  expect_match(
-    warnings[[1]],
-    "Enable `seed_semantics = TRUE` to generate semantic suggestions",
-    fixed = TRUE
-  )
 })
 
 test_that("infer_dictionary accepts named resource lists and can seed metadata-aware suggestions", {

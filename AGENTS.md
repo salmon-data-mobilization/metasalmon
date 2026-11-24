@@ -149,25 +149,33 @@ The mirror, semantic, guard, security, and release contracts below remain.
 
   *Retires when:* the plugin's own CI fails on a skill that pins a version
   older than the ecosystem's current release.
-- **LLM review is strictly opt-in.** Supplying `llm_context_files` /
-  `llm_context_text` must NEVER trigger a network/LLM call. LLM review runs only
-  when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
-  This is the contract behind the 0.1.4 fix; supplying options that will be ignored
-  should warn, not silently no-op.
-  **Ruled 2026-09-25 (Brett, hub Q67): the model call leaves both packages.**
-  This contract governs every release that still carries the in-package call.
-  The additive release (hub item B-326) deprecates that call, and the removal
-  release (B-329) deletes it, at which point this becomes the stronger contract
-  that the packages make no model call at all. Until then, work that only
-  improves the provider path has at most the releases before the removal to
-  matter in. The order, and what stays, is the
-  [S16 card](knowledge/sequences/s16-model-call-leaves-the-packages.md).
-  **The in-package model call is deprecated
-  (2026-09-25, hub Q67, stream S16):** `llm_assess = TRUE`, the eleven `llm_*`
-  arguments and `chat_decomposition()` warn once per top-level call (class
-  `metasalmon_llm_deprecated`; silenced suite-wide by the option
-  `metasalmon.llm_deprecation_quiet`) and are removed in 0.7.0. Judgement now
-  runs in the user's harness against a file: `write_semantic_review_packet()`
+- **The packages make no model call.** metasalmon holds no model client: no
+  provider configuration, no read of a provider key, no chat-completions
+  request, no retry stack, no `llm_request_fn`, no `llm_*` or `chat_*`
+  arguments and no `chat_decomposition()`. Model judgement runs in the user's
+  harness (the `sdp-semantic-review` skill of the public
+  `salmon-data-mobilization/smn-sci-plgn` plugin is the documented route), and
+  the package reaches the network for semantic work only through `search_fn`
+  (retrieval, which is not a model call). Do not add a model call back: a
+  change that wants judgement inside the package goes to Brett as a design
+  question, because it reverses Q67.
+  *(History, kept because it explains the shape of what is left. Until hub
+  item B-329 this bullet was "**LLM review is strictly opt-in**": supplying
+  `llm_context_files` / `llm_context_text` must never trigger a network or
+  model call, review ran only when `llm_assess = TRUE` (and, for
+  `infer_dictionary()`, `seed_semantics = TRUE`), and options that would be
+  ignored warned rather than silently no-op, the contract behind the 0.1.4
+  fix. Brett ruled 2026-09-25 (hub Q67) that the model call leaves both
+  packages. The additive release, 0.6.0 (B-326), deprecated the call:
+  `llm_assess = TRUE`, the eleven `llm_*` arguments and `chat_decomposition()`
+  warned once per top-level call, class `metasalmon_llm_deprecated`, silenced
+  by the option `metasalmon.llm_deprecation_quiet`. B-329 deleted all of it,
+  with the deprecation, and this became the stronger contract the ruling
+  named. metasalmonpy's half is B-330; until it lands, metasalmonpy still holds
+  its in-package call, which is a port owed rather than a registered
+  difference. The order is the
+  [S16 card](knowledge/sequences/s16-model-call-leaves-the-packages.md).)*
+  **Judgement runs in the user's harness against a file:** `write_semantic_review_packet()`
   writes `review/semantic-review-packet.json` and `ingest_semantic_assessments()`
   reads `review/semantic-assessments-pass-<n>.csv` back. **The file contract:**
   the packet's `packet_id` is the SHA-256 of its canonical bytes minus
@@ -189,21 +197,30 @@ The mirror, semantic, guard, security, and release contracts below remain.
   compares the two trees. A change to any of them is a change to the contract
   and needs the same change there.
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
-  a tibble/XML/data frame to `llm_context_files` must error early.
+  a tibble/XML/data frame to `write_semantic_review_packet(context_files = )`
+  must error early. *(Until B-329 the argument this named was
+  `llm_context_files`, removed with the in-package model call; the context
+  readers and the contract moved to the packet unchanged.)*
 - **Preserve public signatures and return-value attributes.** Exported:
   `create_sdp()`, `infer_salmon_datapackage_artifacts()`, `infer_dictionary()`,
   `suggest_semantics()`, etc. `infer_dictionary()` attaches `inferred_*`
   (multi-table) / `seed_*` (single-table) attributes; `suggest_semantics()`
-  attaches `semantic_suggestions` (+ `semantic_llm_assessments` when `llm_assess`).
-  These are read by other modules and many tests.
+  attaches `semantic_suggestions` and `semantic_targets`, and
+  `ingest_semantic_assessments()` attaches `semantic_llm_assessments` to the
+  dictionary it returns. These are read by other modules and many tests.
+  *(B-329 removed `suggest_semantics()`'s `semantic_llm_assessments`
+  attribute, which only `llm_assess = TRUE` attached, under the ruled S16
+  execplan (section 9); `infer_salmon_datapackage_artifacts()` keeps its
+  `semantic_llm_assessments` list element as `NULL` for one release,
+  decision 19.)*
 - **Frozen column contracts:** the 19-col semantic target row
   (`.ms_semantic_target_cols()`) and the 30-col LLM assessment row
   (`R/llm-review-adapter.R`). The adapter's row builders read target columns
   positionally — a rename/reorder breaks them. Empty and success assessment rows
   must keep identical column sets. **The assessment row outlives the provider
-  code** (hub Q67, 2026-09-25): it becomes the contract a harness writes and the
-  package's assessment ingester reads, so it stays frozen after the model call
-  is gone.
+  code** (hub Q67, 2026-09-25): it is the contract a harness writes and the
+  package's assessment ingester reads, so it stayed frozen when B-329 removed
+  the model call, `llm_*` column names included.
   Since S16 step 1 (B-326) the packet's `output.columns` names each column's
   owner and requiredness, `review/semantic-llm-assessments.csv` persists the
   row, every row still comes from the two builders and leaves through the one
@@ -215,7 +232,9 @@ The mirror, semantic, guard, security, and release contracts below remain.
   `statistical_modifier`; plus `method` for code values only) means touching
   all of: **(1)** the target/role maps (`semantic-suggestions.R`,
   `semantics-helpers.R` `role_to_field`), **(2)** the bundle roles and slot
-  fields (`semantic-bundle-review.R`, including the review prompt), **(3) the
+  fields (`semantic-bundle-review.R`, and the judgement sentence of the vendored
+  review instructions, `inst/extdata/semantic-review/`, which replaced the
+  in-package review prompt when B-329 deleted it), **(3) the
   role-hint vocabulary** (`.smn_role_flags` + the emitter in
   `term_search_smn.R`, and the RDF/XML hint builder in `term_search.R`),
   **(4)** the retrieval filters (`sources_for_role()` and
@@ -345,16 +364,17 @@ The mirror, semantic, guard, security, and release contracts below remain.
   third renderer, name its baseline before you choose. Pinned in
   `tests/testthat/test-canonical-date-render.R`, which asserts the two disagree
   about a `POSIXct` on purpose.
-- **External text is never a cli template.** Text from an LLM provider, an HTTP
-  response, an ontology label, or a user's CSV must be wrapped in
+- **External text is never a cli template.** Text from a harness's assessment
+  file, an HTTP response, an ontology label, or a user's CSV must be wrapped in
   `.ms_cli_escape()` / `.ms_cli_bullets()` (`R/cli-safety.R`) before it reaches
   `cli_abort`/`cli_warn`/`cli_inform`. cli interpolates every element of a
   message vector, so unescaped braces are evaluated as code — and an unbalanced
   brace replaces the message with a parse error. Redact secrets where external
   text is *captured*, not where it is displayed. Enforced by
   `tests/testthat/test-cli-safety-guard.R`.
-- LLM review decisions: `accept`, `review`, `retry_search`, `request_new_term`,
-  `reject_shortlist`. An unresolved `reject_shortlist` escalates to
+- Review decisions (a harness's `llm_decision`): `accept`, `review`,
+  `retry_search`, `request_new_term`, `reject_shortlist`. An unresolved
+  `reject_shortlist` escalates to
   `request_new_term` (surfaces an ontology gap) — keep that distinction. **Any
   final `reject_shortlist` escalates, whatever the decision before a retry was**
   (B-361, ruled 2026-09-25); in the review-packet contract a rejection earns
@@ -442,16 +462,20 @@ network (`w3id.org`) — don't read a green offline run as full coverage.
 
 - Tidyverse style; native pipe where it reads well. Internal helpers are
   `.ms_`-prefixed and live in topic files under `R/`.
-- Core files are large (`package-helpers.R` ~3.8k lines, `knb-publication.R`
-  ~3.7k, `eml-export.R` ~3.0k, `term_search.R` ~2.8k, `llm-semantic-helpers.R`
-  ~2.2k; counts recounted 2026-08-17) — delegate broad
-  reads.
+- Core files are large (`package-helpers.R` ~4.2k lines, `knb-publication.R`
+  ~3.8k, `eml-export.R` ~3.1k, `term_search.R` ~3.1k; counts recounted
+  2026-11-24, when B-329 cut `llm-semantic-helpers.R` from ~2.4k to under 800)
+  — delegate broad reads.
 - On the `create_sdp()` path, `infer_dictionary()` is called with
-  `seed_semantics = FALSE`, so its own LLM/option blocks are dead there and only
-  run when `infer_dictionary()` is called directly.
-- Test hooks: inject `search_fn` / `llm_request_fn` (a `stop()`ing fn is the
-  sentinel proving the LLM was not called); mock `find_terms` via
-  `with_mocked_bindings` on the `create_sdp`/`infer_dictionary` paths.
+  `seed_semantics = FALSE`, so its own seeding block is dead there and only
+  runs when `infer_dictionary()` is called directly.
+- Test hooks: inject `search_fn` (a `stop()`ing fn is the sentinel proving no
+  search ran); mock `find_terms` via `with_mocked_bindings` on the
+  `create_sdp`/`infer_dictionary` paths. *(Until B-329 the second hook was
+  `llm_request_fn`, whose `stop()`ing stand-in proved the model was not
+  called; it went with the model call, and
+  `tests/testthat/test-semantic-review-packet.R` now proves the package holds
+  no model client at all.)*
 
 ## Planning artifacts — the `knowledge/` OKF bundle (read before related work)
 

@@ -78,7 +78,6 @@ reference:
     desc: "Semantic suggestion, vocabulary search, and ranking benchmark capabilities"
     contents:
       - suggest_semantics
-      - chat_decomposition
       - find_terms
       - sources_for_role
       - benchmark_term_ranking_fixtures
@@ -181,7 +180,7 @@ articles:
     contents:
       - setup
       - metasalmon
-      - llm-context-review
+      - harness-semantic-review
 
   - title: "Guides"
     navbar: ~

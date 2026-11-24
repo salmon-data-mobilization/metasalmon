@@ -45,8 +45,14 @@ write_semantic_review_packet(
 - context_files:
 
   Optional character vector of local file paths whose text is chunked
-  and scored against each unit, under the same path-only contract as
-  `llm_context_files`: a parsed object is refused.
+  and scored against each unit. Pass file paths, not parsed data frames,
+  XML documents or R Markdown objects: a parsed object is refused.
+  Supported types are Markdown and text notes (`.md`, `.txt`, `.rst`),
+  delimited and structured text (`.csv`, `.tsv`, `.json`, `.yaml`,
+  `.yml`), source and notebook files (`.R`, `.Rmd`, `.qmd`), HTML
+  (`.htm`, `.html`), Word (`.docx`), PDF (`.pdf`, with the optional
+  `pdftools` package) and Excel workbooks (`.xls`, `.xlsx`, `.xlsm`,
+  with the optional `readxl` package).
 
 - context_text:
 

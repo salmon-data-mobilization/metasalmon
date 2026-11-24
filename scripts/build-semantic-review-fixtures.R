@@ -29,7 +29,6 @@ suppressPackageStartupMessages({
   library(testthat)
 })
 source(file.path("tests", "testthat", "helper-semantic-review.R"))
-options(metasalmon.llm_deprecation_quiet = TRUE)
 
 root <- file.path("tests", "testthat", "fixtures", "semantic-review", "v1")
 # Every case is a directory directly under `root`; the previous run's cases

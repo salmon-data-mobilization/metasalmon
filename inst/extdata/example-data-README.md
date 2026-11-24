@@ -133,7 +133,8 @@ to see what a finished package looks like.
 
 The fuller example also ships a starter dictionary,
 `nuseds-fraser-coho-2023-2024-column_dictionary.csv`, which you can pass
-directly as an LLM context file or use as a seed for manual review. Its labels,
+directly as a context file to `write_semantic_review_packet()` or use as a seed
+for manual review. Its labels,
 descriptions, roles and types are the gold standard's; its IRIs are the state
 before semantic review:
 

@@ -1,11 +1,12 @@
-# Target-level LLM assessments attached to a dictionary
+# Target-level assessments ingested from a harness
 
 The companion accessor to
 [`semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_suggestions.md),
 for the `semantic_llm_assessments` attribute that
-`suggest_semantics(llm_assess = TRUE)` attaches. Reading LLM review is
-never itself an LLM call: this only reports assessments that already
-exist.
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+attaches to the dictionary it returns. The package makes no model call:
+this only reports assessments your harness already wrote and the
+ingester read back.
 
 ## Usage
 
@@ -27,8 +28,13 @@ semantic_llm_assessments(x)
 ## Value
 
 A tibble of target-level assessment rows, or `NULL` when none are
-attached. A package path always returns `NULL` — assessments are not
-written into the package, so a package on disk cannot carry them.
+attached. For a package path, the record
+[`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+persisted in `review/semantic-llm-assessments.csv`, typed as the
+30-column assessment row and carrying the validator findings as its
+`semantic_validator_findings` attribute, or `NULL` when no record has
+been ingested. A `review/` directory or record that is a symbolic link
+is refused rather than followed.
 
 ## Examples
 

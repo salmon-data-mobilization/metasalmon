@@ -714,6 +714,16 @@ showed the gaps, and metasalmonpy shares all three today; this is an owed
 port, with no deliberate difference to register.
 **This one is closed:** `B-441` **landed 2026-11-24 as metasalmonpy #120**, `ee05cc956666ab1ca3810a9425f3b852ac633809`.
 
+**The removal of the in-package model call owes a mirror port:** the
+provider configuration and presets, every read of a provider key, the request
+and retry code, the injected request function, the `llm_*` and `chat_*`
+arguments and `chat_decomposition()`, with the deprecation that warned about
+them. The R/Python pair is **B-329** and **B-330**, specified in the
+corresponding port passage of [`parity-deviations.md`](parity-deviations.md).
+The Python half is deferred to B-330, which the S16 card sequences in the
+same removal train; this is an owed port, with no deliberate difference to
+register. Register rows 44 and 63 are retired on the R side only.
+
 **The REVIEW-marker ruling is mirrored:** R **B-177** landed in metasalmon
 #225, and **B-230** **landed 2026-10-05 as metasalmonpy #103**, `6e26d614`.
 Strict/default marker findings, the EDH gate and the schema-declared metadata
@@ -953,7 +963,9 @@ fixes owe metasalmonpy nothing, which was measured: its `find_terms()` has no
 parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is `B-302`, **landed 2026-10-10 as
-metasalmonpy #80** (`27e37de`).
+metasalmonpy #80** (`27e37de`). *(2026-11-24: B-329 removed the `llm_top_n`
+widening from R with the rest of the in-package model call, so the shortlist
+half of this port no longer describes R; metasalmonpy's copy goes with B-330.)*
 
 **The development version after 0.5.0 changes what the mirror owes on row 51
 (2026-09-25): one shared ownership sentinel, `.sdp-package` holding

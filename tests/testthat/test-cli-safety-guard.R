@@ -46,10 +46,6 @@ cli_template_allowlist <- c(
   # of the wrappers themselves are exempt, because they legitimately forward a
   # caller-supplied template.
   ".ms_sssom_abort_body_exempt",
-  # `null_message` defaults to a literal and every call site passes one
-  # (R/chat-decomposition.R, R/semantic-bundle-review.R); the snippet it appends
-  # is value-interpolated inside a literal template.
-  ".ms_llm_review_response_data",
   # (b) locally assembled all-literal templates
   ".ms_create_sdp_seed_note",
   ".ms_create_sdp_update_note"

@@ -24,39 +24,12 @@
 #'   `suggest_semantics()` when `seed_semantics = TRUE`.
 #' @param seed_dataset_meta Optional `dataset.csv`-style tibble forwarded to
 #'   `suggest_semantics()` when `seed_semantics = TRUE`.
-#' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
-#'   assessment inside `suggest_semantics()`. The LLM and context options below
-#'   take effect only when `seed_semantics = TRUE`; supplying them with
-#'   `seed_semantics = FALSE` emits a warning and is otherwise ignored.
-#' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
-#' @param llm_model Optional LLM model identifier forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_api_key Optional API key override forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_base_url Optional OpenAI-compatible base URL forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to
-#'   `suggest_semantics()` when using the OpenAI provider.
-#' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
-#'   target.
-#' @param llm_context_files Optional character vector of local context file
-#'   paths forwarded to `suggest_semantics()` when `llm_assess = TRUE`. Pass
-#'   file paths, not parsed data frames, XML documents, or R Markdown objects.
-#'   See `suggest_semantics()` for supported file types, including HTML, DOCX,
-#'   `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
-#' @param llm_context_text Optional inline context snippets forwarded to
-#'   `suggest_semantics()`.
-#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
-#' @param llm_request_fn Advanced/test hook overriding the low-level
-#'   OpenAI-compatible request function.
-#'
 #' @return A tibble with dictionary schema columns in canonical Salmon Data
 #'   Package order: `dataset_id`, `table_id`, `column_name`, `column_label`,
 #'   `column_description`, `term_iri`, `property_iri`, `entity_iri`,
 #'   `constraint_iri`, `statistical_modifier_iri`, `unit_label`, `unit_iri`, `term_type`,
 #'   `value_type`, `column_role`, `required`. With semantic seeding, suggestions
-#'   are attached as `semantic_suggestions`; with explicit LLM review, the
-#'   30-column target summaries are attached as `semantic_llm_assessments`.
+#'   are attached as `semantic_suggestions`.
 #'
 #' @export
 #'
@@ -83,47 +56,12 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             seed_verbose = TRUE,
                             seed_codes = NULL,
                             seed_table_meta = NULL,
-                            seed_dataset_meta = NULL,
-                            llm_assess = FALSE,
-                            llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-                            llm_model = NULL,
-                            llm_api_key = NULL,
-                            llm_base_url = NULL,
-                            llm_reasoning_effort = NULL,
-                            llm_top_n = 5L,
-                            llm_context_files = NULL,
-                            llm_context_text = NULL,
-                            llm_timeout_seconds = 60,
-                            llm_request_fn = NULL) {
-  # The in-package model call is deprecated (S16 step 1); one warning per
-  # top-level call, after the opt-in warnings, and one even when
-  # `seed_semantics = FALSE` leaves the options unused. See
-  # R/semantic-review-deprecation.R.
-  llm_deprecation_depth <- .ms_llm_deprecation_enter()
-  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
-  on.exit(
-    .ms_llm_deprecation_exit(llm_deprecation_depth, "infer_dictionary", llm_deprecation_triggered),
-    add = TRUE
-  )
+                            seed_dataset_meta = NULL) {
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)
   )
-  llm_review <- .ms_llm_review_plan(
-    seed_semantics = seed_semantics,
-    semantic_max_per_role = semantic_max_per_role,
-    llm_assess = llm_assess,
-    llm_provider = llm_provider,
-    llm_model = llm_model,
-    llm_api_key = llm_api_key,
-    llm_base_url = llm_base_url,
-    llm_reasoning_effort = llm_reasoning_effort,
-    llm_top_n = llm_top_n,
-    llm_context_files = llm_context_files,
-    llm_context_text = llm_context_text,
-    llm_timeout_seconds = llm_timeout_seconds,
-    llm_request_fn = llm_request_fn
-  )
+  semantic_max_per_role <- .ms_semantic_shortlist_size(semantic_max_per_role)
 
   if (is.list(df) && !inherits(df, "data.frame")) {
     resources <- df
@@ -150,8 +88,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       guess_types = guess_types,
       dataset_id = dataset_id,
       semantic_sources = semantic_sources,
-      # Preserve the widened shortlist if child seeding is ever enabled.
-      semantic_max_per_role = llm_review$semantic_max_per_role,
+      semantic_max_per_role = semantic_max_per_role,
       seed_verbose = seed_verbose
     )
 
@@ -175,12 +112,11 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = resources,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = llm_review$semantic_max_per_role,
+        max_per_role = semantic_max_per_role,
         codes = codes,
         table_meta = table_meta,
         dataset_meta = dataset_meta
       )
-      suggest_args <- c(suggest_args, llm_review$suggest_args)
       dict <- do.call(suggest_semantics, suggest_args)
       attr(dict, "inferred_table_meta") <- artifact_context$inferred_table_meta
       attr(dict, "inferred_codes") <- artifact_context$inferred_codes
@@ -237,12 +173,11 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = df,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = llm_review$semantic_max_per_role,
+        max_per_role = semantic_max_per_role,
         codes = seed_codes,
         table_meta = seed_table_meta,
         dataset_meta = seed_dataset_meta
       )
-      suggest_args <- c(suggest_args, llm_review$suggest_args)
       dict <- do.call(suggest_semantics, suggest_args)
       if (!is.null(seed_table_meta)) {
         attr(dict, "seed_table_meta") <- seed_table_meta

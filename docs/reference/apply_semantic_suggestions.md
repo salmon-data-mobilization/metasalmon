@@ -40,12 +40,15 @@ apply_semantic_suggestions(
   Selection strategy per column-role pair. `"top"` keeps the original
   lexical ranking. `"reviewed"` applies only rows whose `decision` is
   `"accepted"` (or the equivalent `"accept"`). `"llm"` applies only
-  candidates marked with `llm_selected = TRUE` by
-  `suggest_semantics(..., llm_assess = TRUE)`. When reviewed or
-  LLM-reviewed selections contain multiple constraints for one
-  measurement, their IRIs are deduplicated in first-occurrence order and
-  written to `constraint_iri` as the SDP-compatible semicolon-separated
-  value. Other roles continue to select one value per column-role pair.
+  candidates marked `llm_selected = TRUE`, which
+  [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+  sets on the candidate your harness accepted for a review packet; when
+  the frame carries `llm_decision`, the row must also record an
+  `accept`. When reviewed or harness-reviewed selections contain
+  multiple constraints for one measurement, their IRIs are deduplicated
+  in first-occurrence order and written to `constraint_iri` as the
+  SDP-compatible semicolon-separated value. Other roles continue to
+  select one value per column-role pair.
 
 - columns:
 
