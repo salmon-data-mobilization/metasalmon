@@ -116,6 +116,16 @@
 #   Staged, unstaged, committed-ahead and local-only queue shapes are paired
 #   with canonical shared, unrelated-dirt and ordinary branch-handoff controls.
 #
+#   49 came from hub item B-445, on 2026-11-24. From 2026-10-23, when the
+#   hosted runner image became ubuntu-26.04, 19 failed on about a third of
+#   runs as "rc 0 and 0, claim refs 2", under git 2.55.0, 2.56.0 and 2.56.1
+#   alike, and on none before. That image's mkdir is the Rust coreutils, which
+#   up to 0.10.0 reports success when it loses the race to create a directory,
+#   and both the claim lock and the break lock were taken by mkdir. 49 has
+#   mkdir report success for each lock in turn while somebody else holds it,
+#   and the waiter must still wait. It was run RED against the client before
+#   B-445, the same way, and it names the machine's own mkdir in a note.
+#
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
 #   time assertions are appended. It was 16 until 16 to 20 arrived and 21 until
@@ -520,6 +530,39 @@ lock_refused_scenario() {
     printf 'rc=%s exists=%s holder=%s\n' "$rc" \
       "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
   )
+}
+
+# lock_liar_scenario NAME HOLDER_PID WHICH - one scenario of assertion 49.
+# Stands up a claim lock that records HOLDER_PID, and for WHICH=break a break
+# lock beside it as well, then runs the client's own cap_lock_acquire with a
+# two second wait and with mkdir replaced, for the one path WHICH names, by a
+# mkdir that makes the directory if it can and reports success either way. A
+# real one does that only when it loses a race microseconds wide (the Rust
+# coreutils mkdir up to 0.10.0, hub item B-445); saying it every time makes the
+# scenario deterministic. Writes "rc=N exists=yes|no holder=PID" to
+# $TMPROOT/lock.liar-NAME.out, after whatever the client said on the way.
+lock_liar_scenario() {
+  local name="$1" holder="$2" which="$3"
+  ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-liar-$name"
+    HUB_LIB=1
+    . "$SOURCE_CLIENT" || exit 99
+    CAP_LOCK_WAIT_SECONDS=2
+    mkdir -p "$CACHE_DIR"
+    dg=$(key_digest "lock-test-liar-$name") || exit 99
+    d="$CACHE_DIR/cap-$dg.lock"
+    mkdir -p "$d"; printf '%s\n' "$holder" > "$d/pid"
+    [ "$which" = "break" ] && : >"$d.break"
+    mkdir() {
+      case "$which:${1:-}" in
+        lock:"$d"|break:"$d.break") command mkdir "$@" 2>/dev/null; return 0 ;;
+      esac
+      command mkdir "$@"
+    }
+    cap_lock_acquire "lock-test-liar-$name"; rc=$?
+    unset -f mkdir
+    printf 'rc=%s exists=%s holder=%s\n' "$rc" \
+      "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
+  ) >"$TMPROOT/lock.liar-$name.out" 2>&1
 }
 
 # --------------------------------------------------------------- fixture ----
@@ -2485,9 +2528,10 @@ branch:" ;;
     # The break is serialized. A waiter that has decided a holder is dead must
     # not act on that decision while another breaker holds the break lock: it
     # waits out its budget and reports (2) with the lock untouched, and breaks
-    # once the break lock is gone. The break lock is a bare directory beside
-    # the lock, held for a few syscalls, so "held by a live process" here is
-    # simply that it exists.
+    # once the break lock is gone. The break lock sits beside the lock, held
+    # for a few syscalls, and anything at its path holds it (a file since hub
+    # item B-445, a directory before), so "held by a live process" here is
+    # simply that a bare directory is there.
     ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-break"
       HUB_LIB=1
       . "$SOURCE_CLIENT" || exit 99
@@ -2587,6 +2631,41 @@ branch:" ;;
       assert 34 "client: a refused rename returns within the budget (watchdog rc $refused_rc, wanted 'rc=2 exists=yes holder=$dead_pid', got '${got:-nothing}'; $(grep -c breaking "$TMPROOT/lock.refused.err") break messages)" 1
     fi
 
+    # -- 49 -----------------------------------------------------------------
+    # Neither lock may take mkdir's word that this process created the
+    # directory (hub item B-445). From 2026-10-23, when the hosted runners
+    # moved to the ubuntu-26.04 image, 19 failed as "rc 0 and 0, claim refs 2"
+    # on about a third of runs, under three git versions, and on none before.
+    # That image's mkdir is the Rust coreutils, which up to 0.10.0 reports
+    # success when it loses the race to create a directory, so two claims
+    # released together could both take the claim lock, and two breakers the
+    # break lock. That window is microseconds wide, which is why 19 caught it
+    # only sometimes and why this does not wait for it: each scenario has mkdir
+    # report success for the one lock path it names, and a lock somebody else
+    # holds must still be waited on.
+    #   lock   the claim lock records a live holder: the waiter waits out its
+    #          allowance and reports it (2), and the lock still names the holder
+    #   break  the claim lock's holder is dead and the break lock is held: the
+    #          waiter breaks nothing, waits and reports (2)
+    # The note after it names this machine's own mkdir, so that a run log says
+    # which one the real race in 19 ran against.
+    # RETIRES WHEN: the lock leaves the local filesystem, which retires the
+    # mutex and this with it.
+    local liar_lock liar_break mkdir_id
+    lock_liar_scenario lock "$live_pid" lock
+    lock_liar_scenario break "$dead_pid" break
+    liar_lock=$(grep '^rc=' "$TMPROOT/lock.liar-lock.out")
+    liar_break=$(grep '^rc=' "$TMPROOT/lock.liar-break.out")
+    if [ "$liar_lock" = "rc=2 exists=yes holder=$live_pid" ] &&
+       [ "$liar_break" = "rc=2 exists=yes holder=$dead_pid" ]; then
+      assert 49 "client: a mkdir that reports success for a directory it did not create takes neither the claim lock from a live holder nor the break lock from another breaker" 0
+    else
+      assert 49 "client: neither lock trusts mkdir's exit status (lock: '${liar_lock:-nothing}', wanted 'rc=2 exists=yes holder=$live_pid'; break: '${liar_break:-nothing}', wanted 'rc=2 exists=yes holder=$dead_pid')" 1
+      note "$(grep -hv '^rc=' "$TMPROOT/lock.liar-lock.out" "$TMPROOT/lock.liar-break.out" | head -n 2 | tr '\n' ' ')"
+    fi
+    mkdir_id=$(mkdir --version 2>/dev/null | head -n 1)
+    note "this machine's mkdir: ${mkdir_id:-one that does not answer --version}"
+
     kill "$live_pid" >/dev/null 2>&1
     wait "$live_pid" >/dev/null 2>&1
   else
@@ -2603,6 +2682,8 @@ branch:" ;;
     skip 33 "client: a failed pid write leaves no lock behind"
     note "$CLIENT_SKIP_REASON"
     skip 34 "client: a refused rename returns within the budget"
+    note "$CLIENT_SKIP_REASON"
+    skip 49 "client: neither lock trusts mkdir's exit status"
     note "$CLIENT_SKIP_REASON"
   fi
 
