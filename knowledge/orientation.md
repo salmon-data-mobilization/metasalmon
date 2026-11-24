@@ -379,7 +379,7 @@ refactor plans still reference these numbers:
    `.ms_chat_http_request()` (`R/chat-decomposition.R`) each built the whole
    httr2 request, headers and all (backlog **#3**). Both now go through one
    builder, `.ms_llm_chat_request()` (hub item B-3), and a guard in
-   `tests/testthat/test-llm-chat-request.R` fails if a second one appears. What
+   `tests/testthat/test-llm-chat-request.R` failed if a second one appeared. What
    still diverges is the body: the chat path sends a fixed temperature, so the
    GPT-5 omission and `reasoning_effort` never reach it — hub item **B-128**.
    *(This read "divergent temperature/header handling ... still open" until

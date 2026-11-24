@@ -710,6 +710,16 @@ because the R fix was asked for on its own, after a contractor's R output
 showed the gaps, and metasalmonpy shares all three today; this is an owed
 port, with no deliberate difference to register.
 
+**The removal of the in-package model call owes a mirror port:** the
+provider configuration and presets, every read of a provider key, the request
+and retry code, the injected request function, the `llm_*` and `chat_*`
+arguments and `chat_decomposition()`, with the deprecation that warned about
+them. The R/Python pair is **B-329** and **B-330**, specified in the
+corresponding port passage of [`parity-deviations.md`](parity-deviations.md).
+The Python half is deferred to B-330, which the S16 card sequences in the
+same removal train; this is an owed port, with no deliberate difference to
+register. Register rows 44 and 63 are retired on the R side only.
+
 **The REVIEW-marker ruling is mirrored:** R **B-177** landed in metasalmon
 #225, and **B-230** **landed 2026-10-05 as metasalmonpy #103**, `6e26d614`.
 Strict/default marker findings, the EDH gate and the schema-declared metadata
