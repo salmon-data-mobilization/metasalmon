@@ -1234,10 +1234,11 @@ re-cut before release. The fix — a CI check comparing
 current version so older snapshots stay free to diverge — is logged in that
 repo's `docs/tech-debt.md` with its retirement condition.
 
-### smn-data-pkg (SDP spec) — current **sdp-0.3.2**
+### smn-data-pkg (SDP spec) — current **sdp-0.3.3**
 
 | Version | Date | One line |
 |---|---|---|
+| sdp-0.3.3 | 2026-11-24; tag and release the same day, on `466d3e8` | The methods prose states the ruled `skos:broader` path to a `sosa:Procedure` (B-167); the minimal example's placeholder IRIs become released `gcdfo:SpawnerAbundance` and `smn:NaturalOrigin` (B-99). No rule or schema constraint changes. **Neither package is current with it yet:** both pin and vendor sdp-0.3.2 until B-443 (metasalmon) and B-444 (metasalmonpy) land |
 | sdp-0.3.2 | 2026-09-26; tag and release 2026-09-27, on `6806319` | The dataset licence is recommended, not required; a method term qualifies through a `skos:broader` path to a `sosa:Procedure`; descriptor field entries may carry the dictionary's semantic keys; `temporal_start`/`temporal_end` accept an ISO 8601 UTC instant; the release workflow. `sdp-0.3.1` was filed but never tagged, and its entries ship here |
 | sdp-0.3.0 | 2026-08-14 | **Breaking:** methods leave the column dictionary (three placements, no registry); `statistical_modifier_iri` added; frozen-profile versioning (v0.3 URL) |
 | sdp-0.2.0 | tag cut 2026-08-14; **no changelog heading of its own** — see below | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |
