@@ -1,0 +1,2 @@
+dataset_id,table_id,file_name,table_label,description,observation_unit,observation_unit_iri,primary_key,protocol_iri,protocol_citation,method_iri
+fraser-coho-2023-2024,escapement,data/escapement.csv,Coho escapement estimates,"One row per NuSEDS escapement record: a coho population, the waterbody that bounds it and an analysis year, with the natural adult spawner estimate and the method, classification, stage and inspection window behind it.",Escapement estimate,https://w3id.org/smn/EscapementEstimate,"POP_ID,ANALYSIS_YR,WATERBODY",,,

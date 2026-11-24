@@ -11,7 +11,11 @@
     "column_dictionary.csv",
     "codes.csv",
     "tables.csv",
-    "nuseds-fraser-coho-2023-2024-column_dictionary.csv"
+    "nuseds-fraser-coho-2023-2024-column_dictionary.csv",
+    # The Fraser coho gold standard (data-raw/fraser_coho_gold_standard.R).
+    "nuseds-fraser-coho-2023-2024-sdp/metadata/column_dictionary.csv",
+    "nuseds-fraser-coho-2023-2024-sdp/metadata/codes.csv",
+    "nuseds-fraser-coho-2023-2024-sdp/metadata/tables.csv"
   )
   iris <- character()
   for (file in files) {

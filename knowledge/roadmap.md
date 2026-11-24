@@ -709,6 +709,7 @@ of [`parity-deviations.md`](parity-deviations.md). The Python half is deferred
 because the R fix was asked for on its own, after a contractor's R output
 showed the gaps, and metasalmonpy shares all three today; this is an owed
 port, with no deliberate difference to register.
+**This one is closed:** `B-441` **landed 2026-11-24 as metasalmonpy #120**, `ee05cc956666ab1ca3810a9425f3b852ac633809`.
 
 **The removal of the in-package model call owes a mirror port:** the
 provider configuration and presets, every read of a provider key, the request
@@ -1008,6 +1009,22 @@ owes the mirror* in `parity-deviations.md`. **Why not in the same stream:** a
 hub claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-277`, which **landed 2026-09-26 as metasalmonpy #69**, `5b03724`.
 
+**The development version after 0.6.0 adds to what the port owes (2026-09-26,
+restated 2026-11-24 when the branch took in `main`): the Fraser coho example
+data.** Pull request #204 (stream S12) ships the gold standard as
+`inst/extdata/nuseds-fraser-coho-2023-2024-sdp/` and gives the 173-row starter
+dictionary the gold standard's column text, roles and types, including the
+NuSEDS definition of `AREA` as the sub-district. No R behaviour changed, so what
+is owed is data. metasalmonpy ships only the 30-row sample, and that half owes
+nothing: B-401 corrected the sample's `AREA` row on `main` while #204 was
+open, #204 leaves that row as it is, and metasalmonpy's `data/column_dictionary.csv`
+matched this package's byte for byte on 2026-11-24 (metasalmonpy `main`
+`2530d07`). What metasalmonpy lacks is the starter dictionary and the gold
+standard, which is parity-deviations row 46, whose open half is one shared
+derivation script or one per repository. **Why not in the same stream:** the
+stream's pull request was scoped to this repository, and it left the register's
+port section and the queue to the hub.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
@@ -1246,10 +1263,11 @@ re-cut before release. The fix — a CI check comparing
 current version so older snapshots stay free to diverge — is logged in that
 repo's `docs/tech-debt.md` with its retirement condition.
 
-### smn-data-pkg (SDP spec) — current **sdp-0.3.2**
+### smn-data-pkg (SDP spec) — current **sdp-0.3.3**
 
 | Version | Date | One line |
 |---|---|---|
+| sdp-0.3.3 | 2026-11-24; tag and release the same day, on `466d3e8` | The methods prose states the ruled `skos:broader` path to a `sosa:Procedure` (B-167); the minimal example's placeholder IRIs become released `gcdfo:SpawnerAbundance` and `smn:NaturalOrigin` (B-99). No rule or schema constraint changes. **Neither package is current with it yet:** both pin and vendor sdp-0.3.2 until B-443 (metasalmon) and B-444 (metasalmonpy) land |
 | sdp-0.3.2 | 2026-09-26; tag and release 2026-09-27, on `6806319` | The dataset licence is recommended, not required; a method term qualifies through a `skos:broader` path to a `sosa:Procedure`; descriptor field entries may carry the dictionary's semantic keys; `temporal_start`/`temporal_end` accept an ISO 8601 UTC instant; the release workflow. `sdp-0.3.1` was filed but never tagged, and its entries ship here |
 | sdp-0.3.0 | 2026-08-14 | **Breaking:** methods leave the column dictionary (three placements, no registry); `statistical_modifier_iri` added; frozen-profile versioning (v0.3 URL) |
 | sdp-0.2.0 | tag cut 2026-08-14; **no changelog heading of its own** — see below | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |

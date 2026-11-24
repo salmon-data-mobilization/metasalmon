@@ -1,0 +1,13 @@
+id: B-446
+kind: defect
+title: 'metasalmonpy never had R''s measurement-header unit readers, so suggest_semantics() forms different queries for header shapes R has read since its first commit'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'IN METASALMONPY, the measurement-header readers metasalmon has carried since its initial commit either exist with the same behaviour, or each remaining difference has a register row in knowledge/parity-deviations.md here and PARITY.md there. A register row is Brett''s, and so is the direction, because a divergence opens the question of which side is right rather than settling it. The readers are normalize_measurement_header_query(), the parenthesised, whole-header and "in <unit>" unit readers, and paired_unit_query_from_data(). FOUND 2026-11-24 by the B-441 port (metasalmonpy pull request 120), which compared the targets both packages form. Over 20 header shapes beyond B-440''s test frames there were 5 remaining differences. One is new with that port: length_in_metres searches "length in", where R searches "length" and metasalmonpy before the port searched "length in metres"; the unit, meter, now agrees. TWO SMALLER DIFFERENCES FROM THE SAME COMPARISON belong here too. spatial_extent is written as 60.0 where R writes 60. A measurement description beginning REVIEW REQUIRED: is used in the base query here, where R ignores it. Close each the same way, by a port or a row. The probes that measured all of this are in metasalmonpy at .hub/evidence/ on the B-441 branch (one Python script, one R), and running both is the check that this item is done.'
