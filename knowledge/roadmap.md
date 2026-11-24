@@ -1813,12 +1813,15 @@ core-model ontology stream was drafted for that number on 2026-09-05 and
 withdrawn on 2026-09-09 (Brett, R11): *"I don't think I want the PSC Ontology
 as part of this hub anymore."* No repository was admitted, no card was written,
 and the number was not consumed, so the next stream this hub sequenced took it.
-That was [S16](sequences/s16-model-call-leaves-the-packages.md). It admits no
-repository. Every queue item it files is in a member repository. The plugin's
-harness skill is recorded as an external dependency and not as a step, so this
-hub sequences none of the plugin's work and the membership test
-[Q10](questions.md) adopted does not reach it. Admitting the plugin would be
-Brett's ruling.
+That was [S16](sequences/s16-model-call-leaves-the-packages.md). It admitted no
+repository when it was ruled, and every queue item it files is in a member
+repository. Until 2026-11-24 the plugin's harness skill was an external
+dependency, not a step, and this hub sequenced none of the plugin's work. On
+2026-11-24 Brett admitted `smn-sci-plgn` as the tenth member, so that its skills
+stay current with the tools ([Q69](questions.md), *Membership*). S16 now
+sequences the skills' upkeep against this hub's releases, starting with B-442.
+The skill's own design and releases are still the plugin's and are not
+sequenced here, and whether they ever become S16 steps stays Brett's.
 
 **S12 and S13 are new streams for work that was already a stated top priority
 and had no card.** Before 2026-08-21 the phrase "gold standard" appeared
