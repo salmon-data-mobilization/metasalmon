@@ -34,7 +34,9 @@ own `AGENTS.md` adoption. The contracts below still apply to a batch.
     when the difference itself is fine.
   - **Functionality and release numbers stay in lockstep**: metasalmonpy's
     version is a parity claim, bumped only when the mirrored behaviour lands.
-    When either version moves, read the other package's `AGENTS.md` in the
+    **Measured 2026-11-25: both packages read 0.6.0 on `main`** (metasalmon's
+    `DESCRIPTION`, metasalmonpy's `pyproject.toml`), so no catch-up window is
+    open. When either version moves, read the other package's `AGENTS.md` in the
     same change; the roadmap's release index is the third copy and must agree
     with both. A sentence describing the copies is a dated measurement, never a
     substitute for reading them. Both `AGENTS.md` files carry this contract and
@@ -157,7 +159,7 @@ own `AGENTS.md` adoption. The contracts below still apply to a batch.
   `.ms_canonical_character()` (`R/platform-time.R`), whose per-type dispatch is
   load-bearing: character is never re-rendered. No static guard sees a
   violation, so ask of any canonical emitter: *is the thing I sorted the thing I
-  wrote?* It pads a `POSIXct`;
+  wrote?* `.ms_canonical_character()` pads a `POSIXct`;
   `.ms_iso_date_columns()`, on the `readr::write_csv()` path, deliberately does
   not, because the baseline decides, not the type. Name a new renderer's
   baseline first; `tests/testthat/test-canonical-date-render.R` pins the

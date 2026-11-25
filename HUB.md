@@ -1192,7 +1192,9 @@ Four conditions, all of them, before an agent merges one:
   2026-11-24, on the retro of the hub's process, replacing the review caps of
   2026-09-24):
   - **A pull request that changes no code** gets one automated reviewer,
-    `claude-review`, which runs on every pull request. No Codex review is
+    `claude-review`, which runs on every pull request (on later pushes only
+    while its last verdict found something, and at most five rounds, per
+    `scripts/check-claude-review-rounds.py`). No Codex review is
     required or requested for it, and it merges on CI green with every
     `claude-review` finding fixed or answered.
   - **A pull request that changes code** gets one Codex review and

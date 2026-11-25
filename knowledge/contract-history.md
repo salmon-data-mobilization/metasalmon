@@ -50,11 +50,13 @@ pointer at `HUB.md` § *Coherent batches*, whose rules it restated:
 
 ## Mirror contract: metasalmonpy mirrors this package
 
-**The version state last recorded in `AGENTS.md`, measured 2026-10-15:** both
-packages read 0.6.0 on `main`, so no catch-up window was open. 0.6.0 (S16 step
-1) was ruled a joint release, so both numbers moved together and no window
-opened; the `v0.6.0` tags are Brett's to make on the two bump merges. The
-current numbers are in the roadmap's release index, not here.
+**The version state `AGENTS.md` recorded before 2026-11-24, measured
+2026-10-15:** both packages read 0.6.0 on `main`, so no catch-up window was
+open. 0.6.0 (S16 step 1) was ruled a joint release, so both numbers moved
+together and no window opened; the `v0.6.0` tags are Brett's to make on the two
+bump merges. `AGENTS.md` keeps one dated measurement line of its own, because
+metasalmonpy's `AGENTS.md` counts it as one of the three copies of the number;
+the history of earlier measurements is here.
 
 **The 0.4.0 to 0.5.0 window.** The `0.4.0→0.5.0` window that metasalmon's
 `v0.5.0` opened on 2026-08-25 (roadmap stream S5 — nine new exported functions:
