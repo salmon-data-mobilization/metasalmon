@@ -105,8 +105,9 @@ source of the member count and the member list (Brett, 2026-11-24, after
 admitting one member took three review rounds because the count and the list
 were written by hand in about ten places). Membership is a ruling, not a piece
 of work, so it has no item file; it has one list instead, and every prose copy
-of it is generated from that list. `lint` also fails on a member count written
-by hand in the bundle; see `validate_member_count_in_prose`.
+of it is generated from that list. `lint` also fails on the shapes a
+hand-written member count has taken in the bundle; see
+`validate_member_count_in_prose` for those shapes and for what it does not see.
 
 `items:` params are field filters (`state=ready`, `kind=defect`,
 `state=ready|claimed` for alternatives, `stream=S1`, `severity=P0|P1`) plus four
@@ -1695,7 +1696,8 @@ def read_config_members(path: Path) -> list[str]:
     return [row.repo for row in read_config_member_rows(path)]
 
 
-def read_card_allowlist(path: Path) -> list[str]:
+def read_card_role_table(path: Path) -> list[str]:
+    """The repositories named in the domain card's `| Repo | Role |` table."""
     repos: list[str] = []
     inside = False
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -1731,7 +1733,7 @@ def validate_members(root: Path) -> list[Problem]:
         ]
 
     config_members = read_config_members(config_path)
-    card_members = read_card_allowlist(card_path)
+    card_members = read_card_role_table(card_path)
     problems: list[Problem] = []
     if not config_members:
         problems.append(

@@ -11,9 +11,11 @@ psc:
 The domain this bundle coordinates. The member list below is the complete
 allowlist, and it is generated: **`members:` in `queue/config.yaml` is the
 single source of the member count and the member list** (Brett, 2026-11-24), so
-a hand edit to either block fails `hub_queue.py check`, and `hub_queue.py lint`
-fails on a member count written by hand anywhere in this bundle. Point at this
-list rather than restating it. Brett admitted `smn-sci-plgn` on 2026-11-24, and
+a hand edit to either block fails `hub_queue.py check`. `hub_queue.py lint`
+(rule `member-count-in-prose`) fails on the shapes a hand-written member count
+has taken in this bundle's undated files; its comment in `scripts/hub_queue.py`
+lists what it does not see, such as other wordings, ordinals and dated records.
+Point at this list rather than restating it. Brett admitted `smn-sci-plgn` on 2026-11-24, and
 `salmon-science-foundry` on his Q19 ruling of 2026-09-05.
 
 <!-- hub:generated:member-count -->
@@ -219,9 +221,9 @@ and every important finding was a copy the walk had missed.
 **There is no walk any more** (Brett, 2026-11-24). The count and the list are
 generated from `members:` in `queue/config.yaml` into the blocks at the top of
 this card, the copies the walk visited state no number and point here, and
-`hub_queue.py lint` fails on a member count written by hand in the bundle. Only
-the role table above is still written by hand, and lint compares it with the
-configuration.
+lint's `member-count-in-prose` rule catches the shapes those copies took, within
+the scope stated above. Only the role table above is still written by hand, and
+lint compares it with the configuration.
 
 **The one thing the ruling forces, stated so it is not lost.**
 `salmon-knowledge-commons` was admitted on 2026-08-17 under the test that has

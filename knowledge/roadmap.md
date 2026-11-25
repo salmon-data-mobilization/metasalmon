@@ -21,7 +21,8 @@ block stood here from 2026-09-09 as the proof of the mechanism, beside prose
 that still restated the count by hand. It retired on 2026-11-24, as its own
 condition said it would, when no prose in this bundle restated the count any
 more: the count and the list now render together in the domain card, and
-`hub_queue.py lint` fails on a member count written by hand.)*
+lint's `member-count-in-prose` rule catches the shapes a hand-written count has
+taken, within the scope the domain card states.)*
 
 It answers *what order, what blocks what, and what is the current state*, and it
 carries the cross-repo **release index**. It deliberately does **not** carry
@@ -1515,8 +1516,8 @@ went seven to eight to nine between 2026-08-24 and 2026-09-05, and to ten on
 2026-11-24, and each move was made by hand in the domain card, this card's
 frontmatter and body, the hub-coordination context, and the S6 card. Since
 2026-11-24 the count and the list are generated from `queue/config.yaml` into
-the domain card, which is the one place, and `hub_queue.py lint` fails on a
-member count written by hand in this bundle. That met this paragraph's
+the domain card, which is the one place, and lint's `member-count-in-prose`
+rule catches the shapes those copies took. That met this paragraph's
 retirement condition (the restatements derived rather than written, and one
 place named instead of five); it stays as the record of why the count is
 generated.

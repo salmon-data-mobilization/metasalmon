@@ -2332,7 +2332,7 @@ ROADMAP_TAIL = ").\n\n### salmon-domain-ontology (smn) -- current **0.0.3**\n\nN
 
 
 class TestMemberCountInProse(QueueTestCase):
-    """A member count written by hand in the bundle fails lint.
+    """A member count written by hand in the bundle fails lint, in the shapes it took.
 
     THE POSITIVE CONTROL is the set of copies the bundle actually carried on
     2026-11-24, quoted verbatim from `origin/main` at `c63d99e`: every one of them

@@ -158,8 +158,9 @@ max_concurrent_claims: 1
 # copy was always left stale. So the bundle no longer states them:
 # `hub_queue.py render` writes the `member-count` and `member-list` blocks from
 # this list into `knowledge/domains/salmon-data-ecosystem.md`, `check` fails
-# when they are stale, and `lint` fails on a member count written by hand in the
-# bundle. Until that day the card's table was the source and this a copy; the
+# when they are stale, and `lint` fails on the shapes a hand-written member
+# count has taken in the bundle (`member-count-in-prose`, whose comment states
+# what it does not see). Until that day the card's table was the source and this a copy; the
 # direction was reversed because the client needs a list it can read without
 # parsing prose, and a list two files each own is two lists.
 #
