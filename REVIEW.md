@@ -23,7 +23,10 @@ Important is anything that should stop a merge:
 - a claim in a PR body, `NEWS.md` entry or `knowledge/` card that the diff
   shows is false, including a NEWS entry filed under a version it did not
   ship in;
-- an observable behaviour change with no `NEWS.md` entry.
+- an observable behaviour change with no `NEWS.md` entry;
+- on a PR that changes no code, where this is the only automated review
+  (`HUB.md` § *Delegated*), a rule the diff adds or changes that contradicts
+  a rule it leaves in place.
 
 Everything else is a Nit at most: wording, naming, style, structure,
 optional refactors, test-coverage wishes, and documentation that is merely

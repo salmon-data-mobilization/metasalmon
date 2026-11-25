@@ -763,6 +763,22 @@ the shape this section generalises.
    grant took setting it to `true`, for the items meeting that row's test, out
    of this class; setting it to `false` stayed.)*
 
+**Narrowed 2026-11-24 (Brett, on the retro of the hub's process: "Do all of
+this. This is the priority.").** The retro counted 31 queue items waiting on
+Brett and nearly every pull request routed to him for merge. Two classes were
+narrowed:
+
+- Class 1 read: "**It chooses, changes, or removes an ontology term IRI, or
+  changes what a term means.** The failure class code review structurally
+  cannot catch." That day metasalmonpy #120 was routed to Brett as "class 1 by
+  effect" because its code changed which candidate got drafted behind a
+  `REVIEW:` marker, a draft strict validation already refuses until a person
+  reviews it. The class now covers an IRI committed as final.
+- Class 7 read: "**It changes `HUB.md`, `queue/config.yaml`, or this
+  register.** Policy does not self-amend." Every edit to those files was his,
+  including typos and generated blocks. The class now covers edits to the
+  places that hold an agent's authority, tested by location in the diff.
+
 ### Delegated: merges on green CI and a completed Codex review (history)
 
 - **CI green on the head being merged**, read off the checks rather than inferred
@@ -782,6 +798,47 @@ the shape this section generalises.
   the head and resolve it**, which is both the fix and the thing that starts CI.
   An agent that reports a conflicted pull request as "CI not run" has reported
   the symptom and left the cause.
+
+- **The review caps, 2026-09-24 to 2026-11-24.** Replaced on 2026-11-24 (Brett,
+  on the retro of the hub's process) by one automated reviewer, `claude-review`,
+  on a pull request that changes no code, and one Codex review plus
+  `claude-review` on one that does. The retro measured that Codex reviewed six
+  pull requests that day and found nothing, its last real finding having come
+  days earlier on a code pull request, and that `claude-review` found only prose
+  drift between copies of one fact. The condition as it read before, verbatim:
+
+  > **The Codex review has completed**, with every finding either fixed in a push
+  > or answered on its thread with the evidence that it is not a defect.
+  > **"Completed" means the last review the agent asked for, not a review of the
+  > final head, and the asking is capped** (Brett, 2026-09-24: *"If there's a way
+  > to get 80% of the value and stop at that point I think we should do that since
+  > the last 20% is probably disproportionately expensive"*). Counting the review
+  > Codex runs when a pull request opens, a pull request that changes code gets at
+  > most three reviews and any other pull request (queue items, cards, prose,
+  > ontology files) at most two; the agent fixes or answers what the last one found,
+  > pushes, and does not post `@codex review` again. **Code** here means executable
+  > source, tests, scripts or workflows; a pull request that mixes code with other
+  > files, or whose kind is unclear, counts as code. The count is a trade, and
+  > the evidence it rests on cuts both ways. On the code pull requests of
+  > 2026-09-24 Codex's findings were real behaviour defects: #153 and #157 needed
+  > one round, but #152 needed four, and its third round's fix introduced a
+  > regression that only the fourth caught, so a cap of three would have merged
+  > that regression. The prose pull requests are where the cost was: hub pull
+  > request 150 and commons pull request 16 took 18 and 15 rounds for 36 and 34
+  > findings, most of them about text the previous round's fix had just written.
+  > The cap accepts that a late round on code can still find something, because
+  > the alternative has no ceiling at all; a fix pushed after the last permitted
+  > review is the agent's to test the harder for it. **The cap is a guard, so it
+  > says what moves it.** A defect that reaches `main` from a pull request merged
+  > under the cap, and that a further review would plausibly have caught, is filed
+  > as a queue item citing this paragraph; the second such item on a code pull
+  > request sends the numbers back to Brett to raise. The cap retires when he
+  > replaces the numbers or removes it. Two habits fed that loop and are not part of a
+  > fix: writing the review's history into the files it reviews, and adding new
+  > work to a pull request under review. A fix changes what the finding names; a
+  > problem found beside it goes to the next sweep unless it was already a
+  > separately claimed, predeclared constituent of the coherent batch. A new
+  > discovery does not widen a pull request under review.
 
 ### What keeps this honest (history)
 

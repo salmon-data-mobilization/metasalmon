@@ -2010,6 +2010,53 @@ cmd_claim() {
   return $rc
 }
 
+# confirm_ready_after_claim ID CLAIM_SHA LEASE ATTEMPT -> 0 keep the claim;
+# 4 the queue moved the item while the claim was being pushed, and the claim
+# was released; 3 that could not be told, or the release failed.
+#
+# An orchestrating session claims for its workers by committing `state:
+# claimed` to origin's default branch instead of pushing here, and then reads
+# this repository (HUB.md, "Orchestrated work"). This is the other half. A
+# claim that read the item as ready before that commit landed, and pushed after
+# the orchestrator had looked here, would otherwise hold an item a worker is
+# already on, and neither side would be told. So a claim whose own write has
+# landed asks origin for the item's state again. Each side writes its own store
+# first and reads the other's second, so they cannot both miss each other: at
+# most one goes on, and at worst both back off.
+#
+# Only for claim and reclaim. A renewal extends what this agent already holds,
+# and an orchestrator reading this repository sees that claim's tip and backs
+# off.
+#
+# A question origin cannot answer is a failure here as everywhere else in this
+# client, so the claim is released then too, rather than kept unverified.
+#
+# Retires when: orchestrated claims are recorded in the locks repository, or
+# the client reads the queue from origin's default branch at the push, which
+# makes the two reads one.
+confirm_ready_after_claim() {
+  local id=$1 sha=$2 lease=$3 attempt=$4 rc state why rsha
+  FRESH_REPO_RC=""
+  repo_freshness; rc=$?
+  if [ "$rc" -le 1 ]; then
+    state=$(git -C "$REPO_ROOT" show "$FRESH_TIP:queue/items/$id.yaml" 2>/dev/null | yaml_scalar_stream state)
+    [ "$state" = "ready" ] && return 0
+    why="origin/$FRESH_BRANCH moved $id to state '${state:-none}' while this claim was being pushed, which is how an orchestrating session records a dispatch (HUB.md: \"Orchestrated work\")"
+    rc=$EX_RACE
+  else
+    why="cannot ask origin whether $id is still ready after the claim push: $FRESH_WHY"
+    rc=$EX_FAIL
+  fi
+  rsha=$(write_claim_commit "$id" release "$lease" "$attempt" "$sha" "" "queue state moved during the claim") \
+    || { warn "$why. The release commit could not be built, so $id is still held by this agent: run 'hub release $id'"; return "$EX_FAIL"; }
+  if push_ref "$rsha" "$(claim_ref "$id")"; then
+    warn "$why. The claim was released."
+    return "$rc"
+  fi
+  warn "$why. The release push failed, so $id is still held by this agent: run 'hub release $id'. $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"
+  return "$EX_FAIL"
+}
+
 # The body of a claim, from counting this agent's live claims to pushing the
 # record. Its own function for one reason: the caller holds a lock across it, so
 # there must be exactly one place the lock is released, and a `return` buried in
@@ -2055,6 +2102,10 @@ claim_count_and_push() { # id action attempt parent token
   push_ref "$sha" "$(claim_ref "$id")"; rc=$?
   case $rc in
     0)
+      case $act in
+        claim|reclaim)
+          confirm_ready_after_claim "$id" "$sha" "$lease" "$attempt" || return $? ;;
+      esac
       case $act in
         beat) say "renewed this agent's expired claim on $id until $lease" ;;
         *)    say "claimed $id as $token until $lease (${act})" ;;
@@ -2573,7 +2624,9 @@ hub - the queue client for the salmon ecosystem hub
                                  succeeds and changes nothing; claiming what you
                                  hold on an expired one renews the lease against
                                  the ref, and exits 4 if somebody reclaimed it
-                                 first
+                                 first. After a claim lands it asks origin
+                                 again, and releases it and exits 4 if the item
+                                 left ready meanwhile (an orchestrated dispatch)
                                  Also print member-worktree and workpad setup
                                  hints; no worktree or report is created. Under
                                  adopted batching in a solo member, later

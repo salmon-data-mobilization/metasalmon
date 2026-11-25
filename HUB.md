@@ -33,7 +33,11 @@ states:
       only state a claim may be taken from.
   - name: claimed
     claimable: false
-    means: A live claim ref exists. Another agent must leave it alone until the ref says otherwise.
+    means: >-
+      An orchestrating session dispatched it to a worker inside itself, under
+      "Orchestrated work". An item claimed under the full protocol keeps
+      state ready and is held by its live claim ref instead. Either way,
+      another agent leaves it alone until the queue or the ref says otherwise.
   - name: needs_brett
     claimable: false
     means: Blocked on a decision Brett makes or a credential he holds.
@@ -210,7 +214,7 @@ writes:
         request. Opened as a draft, and never a second one for any item.
         It stays a draft and unmerged when the change falls in a class
         "Which pull requests need Brett" reserves to him; there the agent
-        replies to each Codex finding to say how it was fixed, or why it is not
+        replies to each review finding to say how it was fixed, or why it is not
         a defect, and leaves resolving the thread to him. For the delegated
         classes the ready, reply and approved-merge rows
         below apply.
@@ -246,8 +250,8 @@ writes:
     - operation: merge a pull request in this repository
       target: >-
         a pull request in this repository (metasalmon), and only one whose
-        checks have all finished green and whose Codex review has completed
-        with every finding fixed or answered.
+        checks have all finished green and whose reviews have completed as
+        "Delegated" requires, with every finding fixed or answered.
       shape: >-
         an ordinary merge. Never a merge over a failing, pending or skipped
         required check, never an administrative override of one, and not, under
@@ -260,7 +264,7 @@ writes:
         does not need to see.
       max: no limit
       enforced_by: >-
-        nothing mechanical. Green and the review's completion are read off the
+        nothing mechanical. Green and the reviews' completion are read off the
         pull request before the merge, not assumed from a clean local run.
       granted: >-
         2026-09-10 (ruling R15), under the global rule that an agent may merge a
@@ -271,7 +275,7 @@ writes:
         a pull request an agent opened under this protocol, in a member
         repository nobody but Brett has contributed to.
       shape: >-
-        the draft-to-ready conversion and nothing else. It starts the Codex
+        the draft-to-ready conversion and nothing else. It can start a Codex
         review, and a merge is impossible without it, because GitHub refuses to
         merge a draft. Never on a pull request an agent did not open, and never
         as a way to request a person's attention.
@@ -302,13 +306,14 @@ writes:
       target: >-
         a pull request in a member repository whose solo key in
         queue/config.yaml is true, whose checks have all finished green, and
-        whose Codex review has completed with every finding fixed or answered.
+        whose reviews have completed as "Delegated" requires, with every
+        finding fixed or answered.
       shape: >-
         an ordinary merge, after the two conditions above are read rather than
         assumed.
       excludes: >-
         every class "Which pull requests need Brett" lists. A pull request that
-        touches one of them is his even when CI is green, the Codex review has
+        touches one of them is his even when CI is green, the reviews have
         completed, and he
         has said the word on a different pull request in the same batch.
       max: no limit
@@ -338,28 +343,26 @@ writes:
         2026-09-23, in Brett's instruction "Add a row to the registers for your
         own upkeep as needed", given with the reinstatement recorded under
         reinstated_2026_09_23.
-    - operation: ask Codex to review a pull request again
+    - operation: ask Codex to review a pull request
       target: >-
         a pull request an agent opened, in a member repository whose solo key
-        in queue/config.yaml is true
+        in queue/config.yaml is true, that changes code as "Delegated" defines
+        it
       shape: >-
-        one issue comment whose text is "@codex review", optionally followed by
-        one sentence naming what changed since the last round, then the
-        attribution footer. It is a trigger, not a conversation: anything that
-        answers a finding belongs on that finding's thread, under the reply
-        row.
+        one issue comment whose text is "@codex review", then the attribution
+        footer. It is a trigger, not a conversation: anything that answers a
+        finding belongs on that finding's thread, under the reply row.
       max: >-
-        one per pushed round of fixes, posted after the push, and at most two
-        on a pull request that changes code, as the Delegated section defines
-        it, and one on any other, because the
-        review Codex runs on opening counts toward the cap the Delegated
-        section sets. Never to re-roll a round that found something, and never
-        while the previous round is still running, which the reviewer signals
-        with an eyes reaction.
+        one per pull request, and none when Codex has already reviewed it,
+        because a review Codex runs on its own when the pull request opens or
+        is marked ready is that pull request's one review. Never on a pull
+        request that changes no code, and never after the fixes for its one
+        review are pushed.
       enforced_by: nothing mechanical.
-      granted: 2026-09-23, with the row above and in the same words. The cap
-        was added on 2026-09-24 on Brett's instruction to stop at the valuable
-        80% of review.
+      granted: 2026-09-23, with the row above, as a re-request. Capped
+        2026-09-24 on Brett's instruction to stop at the valuable 80% of
+        review, and narrowed to one review of a code pull request on
+        2026-11-24 (Brett, on the retro of the hub's process).
     - operation: re-run the failed jobs of one workflow run
       target: >-
         a workflow run on a pull request an agent opened, in a member
@@ -431,7 +434,7 @@ writes:
         queue state on an item file that already exists, a generated block, a
         typo, ignoring a stray file. A new item file and a correction to a card
         go through a pull request, as anything substantive does, because that
-        is what Codex reviews. A port's landed record, which lint requires in the
+        is where review happens. A port's landed record, which lint requires in the
         same change as the item's done mark, is part of that queue-state change
         and goes with it.
       max: no limit
@@ -489,19 +492,21 @@ writes:
   denied:
     - >-
       any issue, release, or assignee; and any comment or review except a reply
-      to a Codex review thread under the permitted list's reply row, and the one
-      issue comment the permitted list names, "@codex review" on a pull request
-      an agent opened. Any other issue comment, a review of somebody else's pull
-      request, and a reply to a person's review are all still denied.
+      to a Codex or claude-review thread under the permitted list's reply row,
+      and the one issue comment the permitted list names, "@codex review" on a
+      pull request an agent opened. Any other issue comment, a review of
+      somebody else's pull request, and a reply to a person's review are all
+      still denied.
     - >-
       any pull request operation other than the eight the permitted list names,
       which are opening one draft per handed-back item (or its adopted batch
       under "Coherent batches"), merging a pull
       request in this repository, marking ready for review, replying to and
-      resolving a Codex review thread (on one reserved to Brett, replying only),
-      merging an approved pull request in a solo member repository, and, on a
-      pull request an agent opened, correcting its description, asking Codex
-      to review it again, and re-running a failed job. Never a second draft for
+      resolving a Codex or claude-review thread (on one reserved to Brett,
+      replying only), merging an approved pull request in a solo member
+      repository, and, on a pull request an agent opened, correcting its
+      description, asking Codex for its one review, and re-running a failed
+      job. Never a second draft for
       the same item, never an approval, and never marking ready a pull request
       an agent did not open.
     - >-
@@ -534,11 +539,11 @@ writes:
       pull request for a handed-back item or its adopted batch under "Coherent
       batches", merging a
       pull request in this repository, marking such a pull request ready for
-      review, replying to and resolving a Codex review thread on it (on one
-      reserved to Brett, replying only, since he resolves it), merging an
-      approved pull request in
+      review, replying to and resolving a Codex or claude-review thread on it
+      (on one reserved to Brett, replying only, since he resolves it), merging
+      an approved pull request in
       a solo member repository, and, on a pull request an agent opened,
-      correcting its description, asking Codex to review it again, and
+      correcting its description, asking Codex for its one review, and
       re-running a failed job.
   denied_note: >-
     This list is closed and it is the operative one, so an exception granted
@@ -633,6 +638,11 @@ is not a statement that it is easy, and it is not permission to widen scope
 once you are inside.
 
 ## The seven steps
+
+These are the steps of an **independent session**, one that claims for itself.
+When one orchestrating session dispatches workers inside itself, the dispatch
+is the claim: *Orchestrated work* below replaces steps 3, 5's heartbeat and 7's
+`handoff`, and the rest stands.
 
 **1. Poll.** Fetch the queue directory and the claim refs. Read item files, not
 prose. Prose that restates a state fact is a generated block with a freshness
@@ -825,6 +835,62 @@ reclaim. `hub claim` counts the reclaim records already in the ref's own history
 and exits 3 at the limit. An item that keeps being reclaimed is an item that
 keeps defeating agents: report it rather than taking it again.
 
+## Orchestrated work: the dispatch is the claim
+
+When one orchestrating session dispatches workers inside itself, the
+orchestrator claims for them and **the workers run no claim protocol**: no
+`hub claim`, no heartbeat, no `hub done`. Everything else in this file binds
+them as it binds any agent. An independent session, which cannot see this
+session's workers, keeps the full protocol above. (Brett, 2026-11-24, on the
+retro of the hub's process.)
+
+The orchestrator, from a current checkout:
+
+1. **Selects** items `hub ready` lists whose `hub status` reads `claim:
+   absent` or a `release` tip, no more than it has workers to run at once.
+2. **Records the dispatch** as `state: claimed` on each item's file, in one
+   queue-state commit pushed to `main` under the register's small-push row.
+   The message names the orchestrator's agent token, which `hub doctor`
+   prints, and this section. A push refused because `main` moved is redone on
+   the new tip after the items are read again, never forced.
+3. **Reads the locks repository after the push**: `hub status ID` for each
+   item. `claim: absent` or a `release` tip means the item is the
+   orchestrator's. Any other answer, `claim: unknown` included, means an
+   independent session may have claimed it first, so that item goes back to
+   `ready`, as step 5 says, and is not dispatched.
+4. **Dispatches** each worker with its item, its branch
+   `agent/<queue-id>/<token>` using the orchestrator's token, and
+   `.hub/agent-brief.md`.
+5. **Sets the next state when the work lands**: `done` when the pull request
+   merges and the item's `retires_when` is met, `review` while one waits on
+   Brett, and `ready` if the work is abandoned. Moving an item back to `ready`
+   restores the promotion it already had, so that commit names the
+   authorization its earlier promotion cited, as any promotion must, and the
+   dispatch commit it reverses.
+
+**Why an independent session cannot take a dispatched item.** `hub ready` lists
+and `hub claim` accepts only `state: ready`, and `hub claim` refuses from a
+checkout that lacks `origin`'s tip, so once the dispatch is on `main` no current
+client claims the item. That leaves a rival that read `main` before the push and
+claims after it. Both sides close that window by writing to their own store
+first and reading the other's second: the orchestrator reads the locks
+repository after its push (step 3), and `hub claim` asks `origin` for the item's
+state again after its own push lands, releasing the claim and exiting with the
+lost-the-race code if the item has left `ready`. Two writers that each read the
+other's store after writing their own cannot both miss each other, so at most
+one goes on and at worst both back off. `scripts/tests/test_hub_claim.sh`
+assertions 49 and 50 measure the client's half.
+
+**An orchestrated claim has no lease**, so nothing frees it but a commit. The
+orchestrator moves every item it dispatched to its next state before it ends.
+An item left `claimed` by a session that has ended goes back to `ready` by that
+session or on Brett's word, because no other session can tell that a session
+has ended, which is the question a lease answers and this mode does without.
+
+*Retires when:* claims stop living on git refs, or orchestrated claims are
+recorded in the locks repository. Either makes the queue state and the claim
+one store again.
+
 ## Isolation
 
 An individual claim or an adopted same-owner batch gets a dedicated git
@@ -983,7 +1049,10 @@ is incomplete.
 Hand-back appends a `handoff` commit to the claim ref. **It does not release
 the claim.** The item stays unclaimable until the work merges, by Brett or under
 the delegation rule the `done` state names, so finished work never looks free
-again while he is away, and no second agent redoes it. For a coherent batch,
+again while he is away, and no second agent redoes it. Under *Orchestrated
+work* there is no claim ref and no `handoff` commit: the item stays `claimed`
+until the orchestrator sets its next state, which holds it the same way. For a
+coherent batch,
 neither a same-owner handoff alias nor a different owner's branch merge closes
 its claim: the lead pull request must merge, and that item's own
 `retires_when` must be verified and recorded before its queue item is done.
@@ -1005,10 +1074,11 @@ pull request unpushed until Brett authorizes them.
 **Whether it stays a draft depends on which list it falls into.** For a pull
 request in a class "Which pull requests need Brett" reserves to him it stays
 draft and unmerged, because hand-back is where he looks; the agent still replies
-to each Codex finding there, saying how it was fixed or why it is not a defect,
+to each review finding there, saying how it was fixed or why it is not a defect,
 and leaves resolving the thread to him (Brett, 2026-09-25). For a pull request
-in the delegated classes, ruling R16 moved the looking to Codex: mark it ready,
-answer what Codex finds, and merge it on the four conditions that section lists.
+in the delegated classes, ruling R16 moved the looking to automated review:
+mark it ready, answer what the reviews find, and merge it on the four
+conditions that section lists.
 An agent that cannot tell which list its own pull request is in leaves it a
 draft and says so.
 
@@ -1036,7 +1106,7 @@ Granted 2026-09-16 (ruling R16): *"I don't want me having to review the merge
 requests to be the bottleneck. We need a system where only consequential or
 impactful MRs require my review."*
 
-**The principle.** CI and Codex can check whether a change is correct. Neither
+**The principle.** CI and automated review can check whether a change is correct. Neither
 can check whether it was the right change to make. So the boundary is not
 severity, size, or confidence: it is whether the change contains a judgement
 that a passing test would not catch. `AGENTS.md` already names the archetype:
@@ -1048,8 +1118,15 @@ else, justified by nothing except that strict validation then passed.
 A pull request is his if **any** of these is true of any constituent. Not most,
 not the worst one. Any.
 
-1. **It chooses, changes, or removes an ontology term IRI, or changes what a
-   term means.** The failure class code review structurally cannot catch.
+1. **It commits a term IRI as final, or changes what a term means.** A pull
+   request commits an IRI as final when it adds, changes or removes a value
+   without the `REVIEW:` prefix in any file the package ships, writes as
+   final, or vendors; an ontology or vocabulary file is what its repository
+   ships. A code change that only alters which candidate gets drafted behind a
+   `REVIEW:` marker is not class 1, because strict validation refuses those
+   drafts until a person reviews them. The failure class code review
+   structurally cannot catch. (Narrowed 2026-11-24, Brett, on the retro of the
+   hub's process.)
 2. **It changes a public signature, a return-value attribute, or a frozen column
    contract**: the 19-column semantic target row, the LLM assessment row, the
    `inferred_*` / `seed_*` / `semantic_suggestions` attributes.
@@ -1064,8 +1141,23 @@ not the worst one. Any.
    validator.** Adding one is delegated; weakening one is not. A guard whose
    scope shrinks looks identical in a diff to one whose scope was always that
    size.
-7. **It changes `HUB.md`, `queue/config.yaml`, or this register.** Policy does
-   not self-amend.
+7. **It widens an agent's authority through `HUB.md`, `queue/config.yaml` or
+   this register.** Policy does not self-amend. Apply it to the diff line by
+   line, without judging direction: the pull request is Brett's when any added
+   or removed line is
+   - inside the front matter's `writes:` key, which holds `writes.permitted`,
+     `writes.denied`, `self_suspends` and every `reinstated` entry;
+   - inside a standing grant: the block quote under "The standing
+     authorization", or a verdict in its participation table's `Grant
+     applies` column;
+   - in the numbered list of this subsection, a condition of "Delegated", or
+     "What you must never do";
+   - a `solo:` key in `queue/config.yaml` that reads `true` after the change,
+     or a raised `max_concurrent_claims` or `max_reclaims_per_item_per_day`.
+
+   Every other edit to those files grants nothing and is delegated: a new
+   member with `solo: false`, a clarification, a typo, a generated block.
+   (Narrowed 2026-11-24, Brett, on the retro of the hub's process.)
 8. **It promotes a queue item to `ready` outside the standing grant on the
    register's promotion row, or changes `claimable` outside the grant on the
    register's claimable row.** Already his, and unchanged by this section.
@@ -1075,7 +1167,7 @@ not the worst one. Any.
     Brett" section in a workpad is self-declaring, and an agent that writes one
     has already decided this question.
 
-### Delegated: merges on green CI and a completed Codex review
+### Delegated: merges on green CI and a completed automated review
 
 Everything else, of which the common cases are a defect fix carrying a
 reproduced failing-before and a test; a queue or backlog change; documentation,
@@ -1093,38 +1185,33 @@ Four conditions, all of them, before an agent merges one:
   compute. Never wait, and never ask for a hand re-run: **merge the base branch
   into the head and resolve it**, which is both the fix and the thing that
   starts CI.
-- **The Codex review has completed**, with every finding either fixed in a push
-  or answered on its thread with the evidence that it is not a defect.
-  **"Completed" means the last review the agent asked for, not a review of the
-  final head, and the asking is capped** (Brett, 2026-09-24: *"If there's a way
-  to get 80% of the value and stop at that point I think we should do that since
-  the last 20% is probably disproportionately expensive"*). Counting the review
-  Codex runs when a pull request opens, a pull request that changes code gets at
-  most three reviews and any other pull request (queue items, cards, prose,
-  ontology files) at most two; the agent fixes or answers what the last one found,
-  pushes, and does not post `@codex review` again. **Code** here means executable
-  source, tests, scripts or workflows; a pull request that mixes code with other
-  files, or whose kind is unclear, counts as code. The count is a trade, and
-  the evidence it rests on cuts both ways. On the code pull requests of
-  2026-09-24 Codex's findings were real behaviour defects: #153 and #157 needed
-  one round, but #152 needed four, and its third round's fix introduced a
-  regression that only the fourth caught, so a cap of three would have merged
-  that regression. The prose pull requests are where the cost was: hub pull
-  request 150 and commons pull request 16 took 18 and 15 rounds for 36 and 34
-  findings, most of them about text the previous round's fix had just written.
-  The cap accepts that a late round on code can still find something, because
-  the alternative has no ceiling at all; a fix pushed after the last permitted
-  review is the agent's to test the harder for it. **The cap is a guard, so it
-  says what moves it.** A defect that reaches `main` from a pull request merged
-  under the cap, and that a further review would plausibly have caught, is filed
-  as a queue item citing this paragraph; the second such item on a code pull
-  request sends the numbers back to Brett to raise. The cap retires when he
-  replaces the numbers or removes it. Two habits fed that loop and are not part of a
-  fix: writing the review's history into the files it reviews, and adding new
-  work to a pull request under review. A fix changes what the finding names; a
-  problem found beside it goes to the next sweep unless it was already a
-  separately claimed, predeclared constituent of the coherent batch. A new
-  discovery does not widen a pull request under review.
+- **Its automated review has completed, with every finding either fixed in a
+  push or answered on its thread** with the evidence that it is not a defect.
+  Which review that is turns on whether the pull request changes code (Brett,
+  2026-11-24, on the retro of the hub's process, replacing the review caps of
+  2026-09-24):
+  - **A pull request that changes no code** gets one automated reviewer,
+    `claude-review`, which runs on every pull request. No Codex review is
+    required or requested for it, and it merges on CI green with every
+    `claude-review` finding fixed or answered.
+  - **A pull request that changes code** gets one Codex review and
+    `claude-review`. The agent fixes or answers what they find, pushes, and
+    requests neither again. "Completed" means that one Codex review, not a
+    review of the final head.
+
+  **Code** here means executable source, tests, scripts or workflows; a pull
+  request that mixes code with other files, or whose kind is unclear, counts as
+  code. Queue items, cards, prose, `HUB.md`, `AGENTS.md` and comments in
+  configuration are not code. If Codex reviews a pull request that changes no
+  code anyway, because marking it ready can start one, its findings are fixed or
+  answered like any other, and the merge does not wait for it. Two habits are
+  not part of a fix: writing the review's history into the files it reviews,
+  and adding new work to a pull request under review. A fix changes what the
+  finding names; a problem found beside it goes to the next sweep unless it was
+  already a separately claimed, predeclared constituent of the coherent batch.
+  A new discovery does not widen a pull request under review.
+  *Retires when:* a queue item citing this paragraph records a merged defect
+  that the review it skipped would plausibly have caught, and Brett resets it.
 - **No review thread from a person is waiting.** A human comment moves the pull
   request into the previous list until it is answered.
 - **The agent is not unsure.** Uncertainty about which list a change belongs to
@@ -1284,9 +1371,9 @@ three arrive on their own. Each statement below is narrower than the global one
 it comes from:
 
 - **Merging a pull request here needs no separate ask** once every check has
-  finished green and its Codex review has completed with every finding fixed or
-  answered. Narrower than the global permission, which asks only for green: it
-  also asks for that review, it reaches only this repository, and it never
+  finished green and its reviews have completed as "Delegated" requires, with
+  every finding fixed or answered. Narrower than the global permission, which
+  asks only for green: it also asks for that review, it reaches only this repository, and it never
   reaches the agent's own hand-back draft. A merge in another solo member
   repository, or of a hand-back draft in a delegated class, is the
   approved-merge row's, on that row's conditions.
@@ -1304,7 +1391,7 @@ Nothing here is a widening, including the locks repository's README: that row's
 them exercisable: a permission announced only in this prose would suspend the
 authorization the first time an agent used it.
 
-**A Codex review is an opinion, not an instruction.** Weigh it against the
+**An automated review is an opinion, not an instruction.** Weigh it against the
 evidence, and where it conflicts with something Brett has already decided, his
 decision wins and the reply says so rather than quietly complying.
 
@@ -1351,14 +1438,14 @@ with the register.
   draft the register permits under *Coherent batches*, in a member repository
   nobody but Brett has ever contributed to. On that pull request the
   only further writes are the ones the GitHub API entry of `writes.denied`
-  enumerates; resolving a Codex thread is one of them, except on a pull request
-  in a class reserved to him, where he
+  enumerates; resolving a Codex or claude-review thread is one of them, except
+  on a pull request in a class reserved to him, where he
   resolves it. A reply to a *person's* review is still never, and so is any
   comment on a pull request an agent did not open.
 - Never merge a pull request **except** in a member repository whose `solo` key
   in `queue/config.yaml` is true, and there only when every check has finished
-  green, the Codex review has completed with every finding fixed or answered,
-  and the change falls in a delegated class rather than one "Which pull requests
+  green, its reviews have completed as "Delegated" requires with every finding
+  fixed or answered, and the change falls in a delegated class rather than one "Which pull requests
   need Brett" reserves to him.
 - Never push to `main` or any default branch **except** the small mechanical
   changes enumerated for this repository above (queue state on an existing
