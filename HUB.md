@@ -434,9 +434,9 @@ writes:
         queue state on an item file that already exists, a generated block, a
         typo, ignoring a stray file. A new item file and a correction to a card
         go through a pull request, as anything substantive does, because that
-        is where review happens. A port's landed record, which lint requires in the
-        same change as the item's done mark, is part of that queue-state change
-        and goes with it.
+        is where review happens. A port's landed record, which lint requires
+        in the same change as the item's done mark, is part of that
+        queue-state change and goes with it.
       max: no limit
       enforced_by: >-
         nothing mechanical. Whether a change is small and mechanical is a
@@ -883,9 +883,10 @@ assertions 50 and 51 measure the client's half.
 
 **An orchestrated claim has no lease**, so nothing frees it but a commit. The
 orchestrator moves every item it dispatched to its next state before it ends.
-An item left `claimed` by a session that has ended goes back to `ready` by that
-session or on Brett's word, because no other session can tell that a session
-has ended, which is the question a lease answers and this mode does without.
+An item a session left `claimed` when it ended goes back to `ready` only on
+Brett's word, or by that session if it resumes, because no other session can
+tell that a session has ended, which is the question a lease answers and this
+mode does without.
 
 *Retires when:* claims stop living on git refs, or orchestrated claims are
 recorded in the locks repository. Either makes the queue state and the claim
@@ -1106,10 +1107,10 @@ Granted 2026-09-16 (ruling R16): *"I don't want me having to review the merge
 requests to be the bottleneck. We need a system where only consequential or
 impactful MRs require my review."*
 
-**The principle.** CI and automated review can check whether a change is correct. Neither
-can check whether it was the right change to make. So the boundary is not
-severity, size, or confidence: it is whether the change contains a judgement
-that a passing test would not catch. `AGENTS.md` already names the archetype:
+**The principle.** CI and automated review can check whether a change is
+correct. Neither can check whether it was the right change to make. So the
+boundary is not severity, size, or confidence: it is whether the change
+contains a judgement that a passing test would not catch. `AGENTS.md` already names the archetype:
 a term IRI chosen as a by-product of a change whose stated subject was something
 else, justified by nothing except that strict validation then passed.
 
@@ -1373,7 +1374,8 @@ it comes from:
 - **Merging a pull request here needs no separate ask** once every check has
   finished green and its reviews have completed as "Delegated" requires, with
   every finding fixed or answered. Narrower than the global permission, which
-  asks only for green: it also asks for that review, it reaches only this repository, and it never
+  asks only for green: it also asks for those reviews, it reaches only this
+  repository, and it never
   reaches the agent's own hand-back draft. A merge in another solo member
   repository, or of a hand-back draft in a delegated class, is the
   approved-merge row's, on that row's conditions.
@@ -1445,8 +1447,8 @@ with the register.
 - Never merge a pull request **except** in a member repository whose `solo` key
   in `queue/config.yaml` is true, and there only when every check has finished
   green, its reviews have completed as "Delegated" requires with every finding
-  fixed or answered, and the change falls in a delegated class rather than one "Which pull requests
-  need Brett" reserves to him.
+  fixed or answered, and the change falls in a delegated class rather than one
+  "Which pull requests need Brett" reserves to him.
 - Never push to `main` or any default branch **except** the small mechanical
   changes enumerated for this repository above (queue state on an existing
   item file, a generated block, a typo, ignoring a stray file) and the locks
