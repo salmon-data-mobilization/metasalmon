@@ -116,14 +116,24 @@
 #   Staged, unstaged, committed-ahead and local-only queue shapes are paired
 #   with canonical shared, unrelated-dirt and ordinary branch-handoff controls.
 #
-#   49 and 50 came from Brett's retro of the hub's process, 2026-11-24, which
+#   49 came from hub item B-445, on 2026-11-24. From 2026-10-23, when the
+#   hosted runner image became ubuntu-26.04, 19 failed on about a third of
+#   runs as "rc 0 and 0, claim refs 2", under git 2.55.0, 2.56.0 and 2.56.1
+#   alike, and on none before. That image's mkdir is the Rust coreutils, which
+#   up to 0.10.0 reports success when it loses the race to create a directory,
+#   and both the claim lock and the break lock were taken by mkdir. 49 has
+#   mkdir report success for each lock in turn while somebody else holds it,
+#   and the waiter must still wait. It was run RED against the client before
+#   B-445, the same way, and it names the machine's own mkdir in a note.
+#
+#   50 and 51 came from Brett's retro of the hub's process, 2026-11-24, which
 #   lets an orchestrating session claim for its workers by committing `state:
 #   claimed` to origin's default branch (HUB.md, "Orchestrated work"). The
-#   orchestrator reads the locks repository after that commit lands; 49 is the
+#   orchestrator reads the locks repository after that commit lands; 50 is the
 #   client's half, a claim that asks origin again after its own push and
-#   releases what it took if the item left ready in between. 50 is its control:
+#   releases what it took if the item left ready in between. 51 is its control:
 #   origin moves at the same moment and the item stays ready, so the claim
-#   stands. 49 was run RED against the client before the change.
+#   stands. 50 was run RED against the client before the change.
 #
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
@@ -299,12 +309,12 @@ ROUTE_TOKEN="routetest-caller"
 ROUTE_OLD_PREFIX="refs/heads/claim/"
 ROUTE_NEW_PREFIX="refs/heads/claim-moved/"
 
-# The fixture of assertions 49 and 50: a current checkout with a locks
+# The fixture of assertions 50 and 51: a current checkout with a locks
 # repository of its own, whose post-receive hook lands one commit on the
 # checkout's origin the first time a claim on either item arrives. That is the
 # moment an orchestrator's dispatch commit can land unseen: after the client
-# read the item as ready, and once its claim push is in. For 49 the commit
-# moves the item to claimed; for 50 it touches another file.
+# read the item as ready, and once its claim push is in. For 50 the commit
+# moves the item to claimed; for 51 it touches another file.
 ORCH_ID="O-01"
 ORCH_CTRL_ID="O-02"
 ORCH_TOKEN="orchtest-caller"
@@ -539,6 +549,39 @@ lock_refused_scenario() {
     printf 'rc=%s exists=%s holder=%s\n' "$rc" \
       "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
   )
+}
+
+# lock_liar_scenario NAME HOLDER_PID WHICH - one scenario of assertion 49.
+# Stands up a claim lock that records HOLDER_PID, and for WHICH=break a break
+# lock beside it as well, then runs the client's own cap_lock_acquire with a
+# two second wait and with mkdir replaced, for the one path WHICH names, by a
+# mkdir that makes the directory if it can and reports success either way. A
+# real one does that only when it loses a race microseconds wide (the Rust
+# coreutils mkdir up to 0.10.0, hub item B-445); saying it every time makes the
+# scenario deterministic. Writes "rc=N exists=yes|no holder=PID" to
+# $TMPROOT/lock.liar-NAME.out, after whatever the client said on the way.
+lock_liar_scenario() {
+  local name="$1" holder="$2" which="$3"
+  ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-liar-$name"
+    HUB_LIB=1
+    . "$SOURCE_CLIENT" || exit 99
+    CAP_LOCK_WAIT_SECONDS=2
+    mkdir -p "$CACHE_DIR"
+    dg=$(key_digest "lock-test-liar-$name") || exit 99
+    d="$CACHE_DIR/cap-$dg.lock"
+    mkdir -p "$d"; printf '%s\n' "$holder" > "$d/pid"
+    [ "$which" = "break" ] && : >"$d.break"
+    mkdir() {
+      case "$which:${1:-}" in
+        lock:"$d"|break:"$d.break") command mkdir "$@" 2>/dev/null; return 0 ;;
+      esac
+      command mkdir "$@"
+    }
+    cap_lock_acquire "lock-test-liar-$name"; rc=$?
+    unset -f mkdir
+    printf 'rc=%s exists=%s holder=%s\n' "$rc" \
+      "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
+  ) >"$TMPROOT/lock.liar-$name.out" 2>&1
 }
 
 # --------------------------------------------------------------- fixture ----
@@ -1184,14 +1227,14 @@ write_route_fixture() {
     mv "$ROUTE_EDITED/queue/config.yaml.new" "$ROUTE_EDITED/queue/config.yaml"
 }
 
-# The fixture of assertions 49 and 50. Its locks repository is its own, because
+# The fixture of assertions 50 and 51. Its locks repository is its own, because
 # the hook fires on every push it receives, and the hook commits through a
 # clone of the checkout's origin, so the checkout itself is never touched. The
 # client strips the GIT_CONFIG_* family before it pushes, and the hook inherits
 # that environment, so the hook sets its own configuration and identity rather
 # than reading the machine's.
 #
-# RETIRES WHEN: confirm_ready_after_claim retires in the client, with 49 and 50.
+# RETIRES WHEN: confirm_ready_after_claim retires in the client, with 50 and 51.
 write_orch_fixture() {
   local items="$ORCH_REPO/queue/items" hook
   mkdir -p "$items" "$ORCH_REPO/scripts"
@@ -1207,8 +1250,8 @@ write_orch_fixture() {
   hook="$ORCH_LOCKS/hooks/post-receive"
   cat >"$hook" <<HOOK
 #!/bin/sh
-# Stands in for an orchestrating session's dispatch commit (assertion 49) and
-# for an unrelated merge (assertion 50), each landed once.
+# Stands in for an orchestrating session's dispatch commit (assertion 50) and
+# for an unrelated merge (assertion 51), each landed once.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \\
   GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_QUARANTINE_PATH
 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
@@ -2032,6 +2075,11 @@ branch:" ;;
       assert 19 "client: two simultaneous claims by one agent against a cap of one leave exactly one claim (rc $cap_rc_a and $cap_rc_b, claim refs $cap_refs)" 1
       note "a: $(head -n 3 "$TMPROOT/client.capa.out" | tr '\n' ' ')"
       note "b: $(head -n 3 "$TMPROOT/client.capb.out" | tr '\n' ' ')"
+      # The client's lock warnings come at the end of its output, below the
+      # three lines above. "not releasing the claim lock" there says both
+      # processes held the lock at once; none says they took it in turn and the
+      # second miscounted. Until hub item B-445 the log could not tell the two.
+      note "lock warnings: $(grep -h 'claim lock' "$TMPROOT/client.capa.out" "$TMPROOT/client.capb.out" | tr '\n' ' ')"
     fi
     : "$cap_ok"
   else
@@ -2564,9 +2612,10 @@ branch:" ;;
     # The break is serialized. A waiter that has decided a holder is dead must
     # not act on that decision while another breaker holds the break lock: it
     # waits out its budget and reports (2) with the lock untouched, and breaks
-    # once the break lock is gone. The break lock is a bare directory beside
-    # the lock, held for a few syscalls, so "held by a live process" here is
-    # simply that it exists.
+    # once the break lock is gone. The break lock sits beside the lock, held
+    # for a few syscalls, and anything at its path holds it (a file since hub
+    # item B-445, a directory before), so "held by a live process" here is
+    # simply that a bare directory is there.
     ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-break"
       HUB_LIB=1
       . "$SOURCE_CLIENT" || exit 99
@@ -2666,6 +2715,41 @@ branch:" ;;
       assert 34 "client: a refused rename returns within the budget (watchdog rc $refused_rc, wanted 'rc=2 exists=yes holder=$dead_pid', got '${got:-nothing}'; $(grep -c breaking "$TMPROOT/lock.refused.err") break messages)" 1
     fi
 
+    # -- 49 -----------------------------------------------------------------
+    # Neither lock may take mkdir's word that this process created the
+    # directory (hub item B-445). From 2026-10-23, when the hosted runners
+    # moved to the ubuntu-26.04 image, 19 failed as "rc 0 and 0, claim refs 2"
+    # on about a third of runs, under three git versions, and on none before.
+    # That image's mkdir is the Rust coreutils, which up to 0.10.0 reports
+    # success when it loses the race to create a directory, so two claims
+    # released together could both take the claim lock, and two breakers the
+    # break lock. That window is microseconds wide, which is why 19 caught it
+    # only sometimes and why this does not wait for it: each scenario has mkdir
+    # report success for the one lock path it names, and a lock somebody else
+    # holds must still be waited on.
+    #   lock   the claim lock records a live holder: the waiter waits out its
+    #          allowance and reports it (2), and the lock still names the holder
+    #   break  the claim lock's holder is dead and the break lock is held: the
+    #          waiter breaks nothing, waits and reports (2)
+    # The note after it names this machine's own mkdir, so that a run log says
+    # which one the real race in 19 ran against.
+    # RETIRES WHEN: the lock leaves the local filesystem, which retires the
+    # mutex and this with it.
+    local liar_lock liar_break mkdir_id
+    lock_liar_scenario lock "$live_pid" lock
+    lock_liar_scenario break "$dead_pid" break
+    liar_lock=$(grep '^rc=' "$TMPROOT/lock.liar-lock.out")
+    liar_break=$(grep '^rc=' "$TMPROOT/lock.liar-break.out")
+    if [ "$liar_lock" = "rc=2 exists=yes holder=$live_pid" ] &&
+       [ "$liar_break" = "rc=2 exists=yes holder=$dead_pid" ]; then
+      assert 49 "client: a mkdir that reports success for a directory it did not create takes neither the claim lock from a live holder nor the break lock from another breaker" 0
+    else
+      assert 49 "client: neither lock trusts mkdir's exit status (lock: '${liar_lock:-nothing}', wanted 'rc=2 exists=yes holder=$live_pid'; break: '${liar_break:-nothing}', wanted 'rc=2 exists=yes holder=$dead_pid')" 1
+      note "$(grep -hv '^rc=' "$TMPROOT/lock.liar-lock.out" "$TMPROOT/lock.liar-break.out" | head -n 2 | tr '\n' ' ')"
+    fi
+    mkdir_id=$(mkdir --version 2>/dev/null | head -n 1)
+    note "this machine's mkdir: ${mkdir_id:-one that does not answer --version}"
+
     kill "$live_pid" >/dev/null 2>&1
     wait "$live_pid" >/dev/null 2>&1
   else
@@ -2682,6 +2766,8 @@ branch:" ;;
     skip 33 "client: a failed pid write leaves no lock behind"
     note "$CLIENT_SKIP_REASON"
     skip 34 "client: a refused rename returns within the budget"
+    note "$CLIENT_SKIP_REASON"
+    skip 49 "client: neither lock trusts mkdir's exit status"
     note "$CLIENT_SKIP_REASON"
   fi
 
@@ -2941,7 +3027,7 @@ branch:" ;;
     note "$CLIENT_SKIP_REASON"
   fi
 
-  # -- 49 and 50 ------------------------------------------------------------
+  # -- 50 and 51 ------------------------------------------------------------
   # An orchestrating session claims for its workers by committing `state:
   # claimed` to origin's default branch, then reading the locks repository
   # (HUB.md, "Orchestrated work"). A claim that read the item as ready before
@@ -2949,13 +3035,13 @@ branch:" ;;
   # item a worker is on, so the client asks origin again once its own claim is
   # in. The fixture's hook lands the commit at exactly that moment.
   #
-  # 49: the commit moves the item to claimed. The claim must exit as a lost
+  # 50: the commit moves the item to claimed. The claim must exit as a lost
   # race, say why, and leave a release record on top of its own claim, so the
-  # item is not held. 50: origin moves at the same moment with a commit that
+  # item is not held. 51: origin moves at the same moment with a commit that
   # leaves the item ready, and the claim must stand; a client that released on
-  # any movement of origin passes 49 and fails here.
+  # any movement of origin passes 50 and fails here.
   #
-  # 49 was run RED against the client before this change, with HUB_CLIENT
+  # 50 was run RED against the client before this change, with HUB_CLIENT
   # pointing this file at a copy of it: it exited 0 and kept the claim.
   #
   # RETIRES WHEN: confirm_ready_after_claim retires in the client.
@@ -2974,9 +3060,9 @@ branch:" ;;
     [ "$or_act" = "release" ] || or_ok=1
     [ "$or_parent" = "claim" ] || or_ok=1
     if [ "$or_ok" = "0" ]; then
-      assert 49 "client: a claim whose item origin moves to claimed between its read and its push is released on top of itself and exits as a lost race, naming the state" 0
+      assert 50 "client: a claim whose item origin moves to claimed between its read and its push is released on top of itself and exits as a lost race, naming the state" 0
     else
-      assert 49 "client: a claim the queue overtook during its push is released (rc $or_rc wanted $EX_RACE; tip ${or_act:-none} on ${or_parent:-none}; hook ran $([ -e "$TMPROOT/orch-hook.dispatch" ] && echo yes || echo no))" 1
+      assert 50 "client: a claim the queue overtook during its push is released (rc $or_rc wanted $EX_RACE; tip ${or_act:-none} on ${or_parent:-none}; hook ran $([ -e "$TMPROOT/orch-hook.dispatch" ] && echo yes || echo no))" 1
       note "$(grep -v '^locks repository\|^ *source:' "$or_out" | head -n 3 | tr '\n' ' ')"
     fi
 
@@ -2993,15 +3079,15 @@ branch:" ;;
     [ "$or_act" = "claim" ] || or_ok=1
     grep -Fq "The claim was released." "$or_out" && or_ok=1
     if [ "$or_ok" = "0" ]; then
-      assert 50 "client: a claim during which origin moves and the item stays ready is kept" 0
+      assert 51 "client: a claim during which origin moves and the item stays ready is kept" 0
     else
-      assert 50 "client: a claim during an unrelated move of origin is kept (rc $or_rc wanted 0; tip ${or_act:-none}; hook ran $([ -e "$TMPROOT/orch-hook.unrelated" ] && echo yes || echo no))" 1
+      assert 51 "client: a claim during an unrelated move of origin is kept (rc $or_rc wanted 0; tip ${or_act:-none}; hook ran $([ -e "$TMPROOT/orch-hook.unrelated" ] && echo yes || echo no))" 1
       note "$(grep -v '^locks repository\|^ *source:' "$or_out" | head -n 3 | tr '\n' ' ')"
     fi
   else
-    skip 49 "client: a claim the queue overtook during its push is released"
+    skip 50 "client: a claim the queue overtook during its push is released"
     note "$CLIENT_SKIP_REASON"
-    skip 50 "client: a claim during an unrelated move of origin is kept"
+    skip 51 "client: a claim during an unrelated move of origin is kept"
     note "$CLIENT_SKIP_REASON"
   fi
 

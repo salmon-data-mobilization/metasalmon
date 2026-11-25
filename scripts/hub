@@ -595,10 +595,11 @@ lg() { git --git-dir="$LOCKS_DIR" "$@"; }
 # set to 1: two claims, two refs, one agent, and nothing anywhere saying so
 # (assertion 19 in scripts/tests/test_hub_claim.sh).
 #
-# So the read-count-push window is serialized locally, with an atomic mkdir in
-# the cache directory that records the holder's pid. What that covers and what
-# it does not, stated plainly, because a lock whose reach is assumed is worse
-# than no lock:
+# So the read-count-push window is serialized locally, with a lock directory in
+# the cache directory whose pid file names the holder. What makes it exclusive
+# is the shell's own O_EXCL create of that pid file, not mkdir(1); the paragraph
+# before cap_lock_acquire says why. What the lock covers and what it does not,
+# stated plainly, because a lock whose reach is assumed is worse than no lock:
 #
 #   covered      two hub processes that share this cache directory. That is
 #                every pair that also shares an agent identity by the ladder
@@ -622,7 +623,7 @@ lg() { git --git-dir="$LOCKS_DIR" "$@"; }
 
 CAP_LOCK_DIR=""
 CAP_LOCK_HELD=0
-CAP_BREAK_DIR=""
+CAP_BREAK_LOCK=""
 CAP_BREAK_HELD=0
 CAP_LOCK_WAIT_SECONDS=20
 # Read only for a lock that records no holder; the no-pid branch below says why.
@@ -658,6 +659,38 @@ cap_lock_holder() { # -> pid on stdout, or nothing
   case ${p:-} in ''|*[!0-9]*) : ;; *) printf '%s' "$p" ;; esac
 }
 
+# Creates PATH as an empty file, and succeeds only when this call is the one
+# that created it. The shell does it itself: with noclobber set, bash opens an
+# absent path with O_CREAT|O_EXCL, so of any number of processes racing for one
+# path the kernel lets exactly one through, and every other fails, whether a
+# file or a directory is there by then. It is the same open the agent token
+# cache above relies on, and assertion 20 measures it.
+#
+# Why this and not mkdir(1), which is what the lock trusted until hub item
+# B-445. A lock is only as exclusive as the evidence that its taker created it,
+# and mkdir's exit status stopped being that evidence on the ubuntu-26.04 runner
+# image. Ubuntu 26.04's /usr/bin/mkdir is the Rust coreutils (uutils): 0.8.0 at
+# release, 0.10.0 in resolute-updates. That mkdir refuses a path it finds there
+# (path.exists()), then calls mkdir(2), and answers a FAILED mkdir(2) with
+# success whenever the path is a directory by then, with or without -p
+# ("Err(_) if path.is_dir() => Ok(())" in uu_mkdir's create_single_dir, which
+# 0.11.0 narrowed to -p). So two processes that both find the lock absent and
+# both call mkdir both exit 0, both believe they hold the lock, both count zero
+# live claims and both push: assertion 19 in scripts/tests/test_hub_claim.sh
+# failing as "rc 0 and 0, claim refs 2", in about half a second rather than the
+# 1.35 s a refused second claim takes, because neither ever waited. It failed on
+# about a third of hosted runs from that image's arrival on 2026-10-23, under
+# git 2.55.0, 2.56.0 and 2.56.1 alike, and on none before it on ubuntu-24.04,
+# whose mkdir is GNU's; assertion 49 keeps the measurement.
+#
+# Retires when: the lock leaves the local filesystem, with the rest of this
+# mutex. Not when uutils is fixed: the point is that exclusivity comes from an
+# open(2) this client makes rather than from an exit status another program
+# reports, and a mkdir that changed once can change again.
+excl_create() { # path -> 0 created by this call, non-zero otherwise
+  ( set -C; : > "$1" ) 2>/dev/null
+}
+
 # 0 held, 2 another process held it for longer than the wait, 1 the lock could
 # not be attempted at all. The caller turns 1 and 2 into a 3 with different
 # words, because "somebody else is claiming right now" and "this machine cannot
@@ -668,28 +701,36 @@ cap_lock_acquire() { # token -> 0, 1 or 2
   # separate caps and must not queue behind each other.
   dg=$(key_digest "$token") || return 1
   CAP_LOCK_DIR="$CACHE_DIR/cap-$dg.lock"
-  CAP_BREAK_DIR="$CAP_LOCK_DIR.break"
+  CAP_BREAK_LOCK="$CAP_LOCK_DIR.break"
   mkdir -p "$CACHE_DIR" 2>/dev/null || return 1
-  # The trap is set before either directory is, and covers both. `fail` exits
+  # The trap is set before either lock is, and covers both. `fail` exits
   # the process from inside a helper, and a lock nobody releases would stop
   # every later claim on this machine; a break lock nobody releases would stop
   # every later break. Cleared again on every return that holds nothing.
   trap 'cap_lock_release' EXIT
   while :; do
-    if mkdir "$CAP_LOCK_DIR" 2>/dev/null; then
+    # The directory's mkdir only makes room; the pid file inside it is the lock.
+    # A mkdir that says it created the directory may be one of two that both
+    # say so (excl_create says which mkdir), so the lock is held only by the
+    # process whose excl_create made the pid file, and every other one falls
+    # through to the waiting below exactly as if its mkdir had failed. The
+    # mkdir still has to succeed first, so a directory that is already there
+    # keeps meaning "held" to this client and to one older than it, and a
+    # directory whose holder died before writing its pid is still left to the
+    # age rule below rather than taken over.
+    if mkdir "$CAP_LOCK_DIR" 2>/dev/null && excl_create "$CAP_LOCK_DIR/pid"; then
       # The holder's pid goes in before the lock counts as held. It is what a
       # waiter reads to tell an abandoned lock from a slow one, and what the
       # release below reads to be sure the lock it removes is still its own. A
       # lock with no holder recorded can be neither waited on correctly nor
       # released safely, so failing to write it is failing to take the lock.
       if ! printf '%s\n' "$$" > "$CAP_LOCK_DIR/pid" 2>/dev/null; then
-        # rm -rf and not rmdir: the shell creates the file for the redirection
-        # before anything is written, and a full disk fails the write and not
-        # the create (mkdir needs only an inode), so rmdir fails on the file
-        # it left behind and a lock with an empty pid survives, which every
+        # rm -rf and not rmdir: the create above needs only an inode, and a
+        # full disk fails the write and not the create, so rmdir fails on the
+        # empty pid file and a lock with an empty pid survives, which every
         # later process waits out and blames on a holder that does not exist.
-        # This process's mkdir created the directory a moment ago, so nobody
-        # else can hold it.
+        # This process created the pid file, so the lock is its own, and any
+        # other process whose mkdir also reported success is waiting below.
         rm -rf "$CAP_LOCK_DIR" 2>/dev/null || true
         trap - EXIT
         return 1
@@ -715,12 +756,13 @@ cap_lock_acquire() { # token -> 0, 1 or 2
       fi
       cap_lock_break "$holder" ""; rc=$?
     else
-      # No pid recorded: the holder crashed between the mkdir and the write, or
-      # is between them right now. Age is the only evidence left and it is
-      # weak, so it is the secondary signal and applies only in this branch.
-      # Retires when: the pid is recorded atomically with the lock, which mkdir
-      # cannot do; a lock file created with O_EXCL and carrying the pid as its
-      # content would retire this branch and path_age_seconds with it.
+      # No pid recorded: the holder crashed between its mkdir and its pid
+      # write, or is between them right now. Age is the only evidence left and
+      # it is weak, so it is the secondary signal and applies only in this
+      # branch. Retires when: the pid is recorded atomically with the lock,
+      # which neither mkdir nor excl_create can do, since the file the latter
+      # creates is empty until the write after it; a lock created already
+      # carrying the pid would retire this branch and path_age_seconds with it.
       age=$(path_age_seconds "$CAP_LOCK_DIR") || age=""
       if [ -z "$age" ] || [ "$age" -le "$CAP_LOCK_STALE_SECONDS" ]; then
         [ "$waited" -lt "$CAP_LOCK_WAIT_SECONDS" ] || { trap - EXIT; return 2; }
@@ -729,7 +771,7 @@ cap_lock_acquire() { # token -> 0, 1 or 2
       cap_lock_break "" "$age"; rc=$?
     fi
     case $rc in
-      0) continue ;;               # moved aside; the next mkdir is this one's to win or lose
+      0) continue ;;               # moved aside; the next pid file is this one's to win or lose
       1) trap - EXIT; return 1 ;;  # fail closed; cap_lock_break said why
       *)
         # The break lock was somebody else's, the lock changed under the
@@ -756,16 +798,21 @@ cap_lock_acquire() { # token -> 0, 1 or 2
 # pid_alive costs for a dead pid; assertion 32 in scripts/tests/test_hub_claim.sh
 # keeps that measurement.
 #
-# So the break is serialized by a second exclusive mkdir, and the decision is
-# made again under it. The invariant is this: between that re-read and the
-# rename nothing can replace the lock, because a live holder only ever removes
-# its own lock and never replaces it, a new holder can appear only through
-# mkdir, which fails while the lock exists, and every other breaker is waiting
-# on this mkdir. The rename therefore moves exactly the lock that was re-read,
-# and the pid found in the grave afterwards is the proof. A different pid means
-# the invariant did not hold -- a client without this lock, a hand, a recycled
-# pid -- and this process may have moved a live holder's lock, so it stops
-# rather than claims, says where the lock went, and leaves it there.
+# So the break is serialized by a second lock, a file beside the lock directory
+# that excl_create makes (a directory made by mkdir until hub item B-445, which
+# is why excl_create says what was wrong with that), and the decision is made
+# again under it. The invariant is this: between that re-read and the rename
+# nothing can replace the lock, because a live holder only ever removes its own
+# lock and never replaces it, a new holder can appear only by a mkdir of the
+# lock directory followed by an excl_create of its pid file, and the mkdir fails
+# while the directory is there (the Rust mkdir too: it reports a success it did
+# not have only for a directory that appeared after it looked), and every other
+# breaker is waiting on the break lock. The rename therefore moves exactly the
+# lock that was re-read, and the pid found in the grave afterwards is the
+# proof. A different pid means the invariant did not hold -- a client without
+# this lock, a hand, a recycled pid -- and this process may have moved a live
+# holder's lock, so it stops rather than claims, says where the lock went, and
+# leaves it there.
 #
 # The break lock itself is never broken. It is held for a handful of syscalls
 # and no git call, so one left behind means a breaker was killed inside them;
@@ -773,15 +820,15 @@ cap_lock_acquire() { # token -> 0, 1 or 2
 # human removes it. Breaking it by age would put a stopped breaker back into
 # the middle of a rename it decided long ago, which is this defect again.
 #
-# 0 the lock was moved aside and the caller may try mkdir; 2 the break lock is
-# somebody else's, the lock changed under the re-read, or the rename was
-# refused, so wait and read again; 1 fail closed, the grave holds a pid this
-# process did not decide on.
+# 0 the lock was moved aside and the caller may try to take it; 2 the break
+# lock is somebody else's, the lock changed under the re-read, or the rename
+# was refused, so wait and read again; 1 fail closed, the grave holds a pid
+# this process did not decide on.
 # Retires when: the cap leaves this directory mutex for a per-agent ref in the
 # locks repository, which retires the mutex, the break lock and this function.
 cap_lock_break() { # dead_pid age -> 0 moved aside, 1 fail closed, 2 read again
   local dead=$1 age=$2 holder now_age grave gpid
-  mkdir "$CAP_BREAK_DIR" 2>/dev/null || return 2
+  excl_create "$CAP_BREAK_LOCK" || return 2
   CAP_BREAK_HELD=1
   # Decide again, under the break lock, because the decision that brought this
   # process here was made without it and may be stale by now.
@@ -819,7 +866,7 @@ cap_lock_break() { # dead_pid age -> 0 moved aside, 1 fail closed, 2 read again
 cap_break_release() {
   [ "$CAP_BREAK_HELD" -eq 1 ] || return 0
   CAP_BREAK_HELD=0
-  rmdir "$CAP_BREAK_DIR" 2>/dev/null || true
+  rm -f "$CAP_BREAK_LOCK" 2>/dev/null || true
 }
 
 # Removes the lock only while its recorded holder is this process. A lock whose
@@ -2000,7 +2047,7 @@ cmd_claim() {
   cap_lock_acquire "$token"; rc=$?
   case $rc in
     0) : ;;
-    2) warn "another hub process for this agent, pid $(h=$(cap_lock_holder); printf '%s' "${h:-unrecorded}"), has held the claim lock at $CAP_LOCK_DIR for more than $CAP_LOCK_WAIT_SECONDS seconds, or the lock could not be broken or taken over in that time, so max_concurrent_claims could not be enforced without racing it. An unverifiable precondition is a failure and not a silent allowance. If that pid is not a hub process the lock is a leftover, and if $CAP_BREAK_DIR exists with no hub process running a breaker died holding it; either can be removed by hand"
+    2) warn "another hub process for this agent, pid $(h=$(cap_lock_holder); printf '%s' "${h:-unrecorded}"), has held the claim lock at $CAP_LOCK_DIR for more than $CAP_LOCK_WAIT_SECONDS seconds, or the lock could not be broken or taken over in that time, so max_concurrent_claims could not be enforced without racing it. An unverifiable precondition is a failure and not a silent allowance. If that pid is not a hub process the lock is a leftover, and if $CAP_BREAK_LOCK exists with no hub process running a breaker died holding it; either can be removed by hand"
        return "$EX_FAIL" ;;
     *) warn "cannot take the local claim lock under $CACHE_DIR, so max_concurrent_claims could not be enforced. An unverifiable precondition is a failure and not a silent allowance"
        return "$EX_FAIL" ;;

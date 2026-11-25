@@ -879,7 +879,7 @@ state again after its own push lands, releasing the claim and exiting with the
 lost-the-race code if the item has left `ready`. Two writers that each read the
 other's store after writing their own cannot both miss each other, so at most
 one goes on and at worst both back off. `scripts/tests/test_hub_claim.sh`
-assertions 49 and 50 measure the client's half.
+assertions 50 and 51 measure the client's half.
 
 **An orchestrated claim has no lease**, so nothing frees it but a commit. The
 orchestrator moves every item it dispatched to its next state before it ends.

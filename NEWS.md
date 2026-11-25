@@ -100,6 +100,26 @@ metasalmon (development version)
   readers and writers. Unknown justifications remain invalid; this does not
   accept or review a mapping. Mirrored with metasalmonpy.
 
+* The hub client's concurrency cap holds again where `mkdir` is the Rust
+  coreutils, as on Ubuntu 26.04 and the hosted CI runners built from it (hub
+  item B-445). Up to version 0.10.0 that `mkdir` reports success when it loses
+  a race to create a directory. So two `hub claim` calls made at the same
+  moment by one agent could both take the local claim lock, and both claims
+  landed against a `max_concurrent_claims` of one. The lock now belongs to the
+  process that creates its pid file, which the shell does with an exclusive
+  open, and the break lock is such a file too. What `mkdir` reports no longer
+  decides who holds either lock. This changes only the client in `scripts/`,
+  not the package.
+
+* `hub claim` asks `origin` for the item's state again once its claim push has
+  landed, and releases the claim and exits with the lost-the-race code if the
+  item has left `ready` in the meantime. That is the client's half of
+  `HUB.md` § *Orchestrated work*, where a session dispatching workers inside
+  itself claims for them by committing `state: claimed` to `main` and then
+  reads the locks repository, so an independent session's claim can no longer
+  slip between the two. This changes only the client in `scripts/`, not the
+  package.
+
 metasalmon 0.6.0
 ----------------
 
