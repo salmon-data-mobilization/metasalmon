@@ -126,6 +126,15 @@
 #   and the waiter must still wait. It was run RED against the client before
 #   B-445, the same way, and it names the machine's own mkdir in a note.
 #
+#   50 and 51 came from Brett's retro of the hub's process, 2026-11-24, which
+#   lets an orchestrating session claim for its workers by committing `state:
+#   claimed` to origin's default branch (HUB.md, "Orchestrated work"). The
+#   orchestrator reads the locks repository after that commit lands; 50 is the
+#   client's half, a claim that asks origin again after its own push and
+#   releases what it took if the item left ready in between. 51 is its control:
+#   origin moves at the same moment and the item stays ready, so the claim
+#   stands. 50 was run RED against the client before the change.
+#
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
 #   time assertions are appended. It was 16 until 16 to 20 arrived and 21 until
@@ -299,6 +308,16 @@ ROUTE_ID="R-01"
 ROUTE_TOKEN="routetest-caller"
 ROUTE_OLD_PREFIX="refs/heads/claim/"
 ROUTE_NEW_PREFIX="refs/heads/claim-moved/"
+
+# The fixture of assertions 50 and 51: a current checkout with a locks
+# repository of its own, whose post-receive hook lands one commit on the
+# checkout's origin the first time a claim on either item arrives. That is the
+# moment an orchestrator's dispatch commit can land unseen: after the client
+# read the item as ready, and once its claim push is in. For 50 the commit
+# moves the item to claimed; for 51 it touches another file.
+ORCH_ID="O-01"
+ORCH_CTRL_ID="O-02"
+ORCH_TOKEN="orchtest-caller"
 
 n_pass=0
 n_fail=0
@@ -1208,6 +1227,60 @@ write_route_fixture() {
     mv "$ROUTE_EDITED/queue/config.yaml.new" "$ROUTE_EDITED/queue/config.yaml"
 }
 
+# The fixture of assertions 50 and 51. Its locks repository is its own, because
+# the hook fires on every push it receives, and the hook commits through a
+# clone of the checkout's origin, so the checkout itself is never touched. The
+# client strips the GIT_CONFIG_* family before it pushes, and the hook inherits
+# that environment, so the hook sets its own configuration and identity rather
+# than reading the machine's.
+#
+# RETIRES WHEN: confirm_ready_after_claim retires in the client, with 50 and 51.
+write_orch_fixture() {
+  local items="$ORCH_REPO/queue/items" hook
+  mkdir -p "$items" "$ORCH_REPO/scripts"
+  cp -p "$SOURCE_CLIENT" "$ORCH_CLIENT" 2>/dev/null || cp "$SOURCE_CLIENT" "$ORCH_CLIENT"
+  write_queue_config "$ORCH_REPO" orchestrated-test-fixture
+  write_stale_item "$items" "$ORCH_ID" ready
+  write_stale_item "$items" "$ORCH_CTRL_ID" ready
+  make_checkout "$ORCH_REPO" || return 1
+  g git clone -q "$ORCH_REPO.origin.git" "$ORCH_UP" >/dev/null 2>&1 || return 1
+  g git init --bare -q --initial-branch=main "$ORCH_LOCKS" >/dev/null 2>&1 || return 1
+  git -C "$ORCH_LOCKS" config receive.denyNonFastForwards true
+  git -C "$ORCH_LOCKS" config receive.denyDeletes true
+  hook="$ORCH_LOCKS/hooks/post-receive"
+  cat >"$hook" <<HOOK
+#!/bin/sh
+# Stands in for an orchestrating session's dispatch commit (assertion 50) and
+# for an unrelated merge (assertion 51), each landed once.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \\
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_QUARANTINE_PATH
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
+GIT_AUTHOR_NAME="hub claim test" GIT_AUTHOR_EMAIL="hub-claim-test@invalid"
+GIT_COMMITTER_NAME="hub claim test" GIT_COMMITTER_EMAIL="hub-claim-test@invalid"
+export GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL \\
+  GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+while read -r old new ref; do
+  case "\$ref" in
+    refs/heads/claim/$ORCH_ID) what=dispatch ;;
+    refs/heads/claim/$ORCH_CTRL_ID) what=unrelated ;;
+    *) continue ;;
+  esac
+  [ -e "$TMPROOT/orch-hook.\$what" ] && continue
+  : >"$TMPROOT/orch-hook.\$what"
+  cd "$ORCH_UP" || exit 0
+  if [ "\$what" = dispatch ]; then
+    sed 's/^state: ready\$/state: claimed/' "queue/items/$ORCH_ID.yaml" >"queue/items/$ORCH_ID.yaml.new" &&
+      mv "queue/items/$ORCH_ID.yaml.new" "queue/items/$ORCH_ID.yaml"
+  else
+    printf 'an unrelated merge\n' >>unrelated.txt
+  fi
+  git add -A && git commit -q -m "\$what" && git push -q origin main >/dev/null 2>&1
+done
+exit 0
+HOOK
+  chmod +x "$hook"
+}
+
 setup() {
   require_git_version
 
@@ -1238,6 +1311,11 @@ setup() {
   ROUTE_CLIENT="$ROUTE_REPO/scripts/hub"
   ROUTE_EDITED="$TMPROOT/route-edited-checkout"
   ROUTE_CACHE="$TMPROOT/route-cache"
+  ORCH_REPO="$TMPROOT/orchestrated-fixture-repo"
+  ORCH_CLIENT="$ORCH_REPO/scripts/hub"
+  ORCH_CACHE="$TMPROOT/orchestrated-cache"
+  ORCH_LOCKS="$TMPROOT/orchestrated-locks.git"
+  ORCH_UP="$TMPROOT/orchestrated-dispatcher"
 
   # No user, system or inherited git configuration reaches the fixture, and no
   # terminal prompt can block an unattended run.
@@ -1277,6 +1355,7 @@ setup() {
     write_predates_fixture || die "could not build the predates fixture"
     write_nogit_fixture
     write_route_fixture || die "could not build the routing fixture"
+    write_orch_fixture || die "could not build the orchestrated-dispatch fixture"
     # The client names its own exit codes; read them from it rather than
     # keeping a second copy of two numbers here.
     local v
@@ -2945,6 +3024,70 @@ branch:" ;;
     skip 40 "client: an uncomparable queue refuses a claim and lists with a warning"
     note "$CLIENT_SKIP_REASON"
     skip 41 "client: every command that pushes refuses when its routing is not origin's"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 50 and 51 ------------------------------------------------------------
+  # An orchestrating session claims for its workers by committing `state:
+  # claimed` to origin's default branch, then reading the locks repository
+  # (HUB.md, "Orchestrated work"). A claim that read the item as ready before
+  # that commit landed and pushed after the orchestrator looked would hold an
+  # item a worker is on, so the client asks origin again once its own claim is
+  # in. The fixture's hook lands the commit at exactly that moment.
+  #
+  # 50: the commit moves the item to claimed. The claim must exit as a lost
+  # race, say why, and leave a release record on top of its own claim, so the
+  # item is not held. 51: origin moves at the same moment with a commit that
+  # leaves the item ready, and the claim must stand; a client that released on
+  # any movement of origin passes 50 and fails here.
+  #
+  # 50 was run RED against the client before this change, with HUB_CLIENT
+  # pointing this file at a copy of it: it exited 0 and kept the claim.
+  #
+  # RETIRES WHEN: confirm_ready_after_claim retires in the client.
+  if [ "$probe_ok" = "0" ]; then
+    local or_out or_rc or_ok or_act or_parent
+    or_out="$TMPROOT/client.orch.dispatch.out"; or_ok=0
+    ( export HUB_LOCKS_URL="$ORCH_LOCKS"
+      fixture_hub "$ORCH_CLIENT" "$ORCH_CACHE" "$ORCH_TOKEN" claim "$ORCH_ID" ) >"$or_out" 2>&1
+    or_rc=$?
+    or_act=$(git -C "$ORCH_LOCKS" show "refs/heads/claim/$ORCH_ID:claim.yaml" 2>/dev/null | awk -F': ' '$1 == "action" { print $2 }')
+    or_parent=$(git -C "$ORCH_LOCKS" show "refs/heads/claim/$ORCH_ID^:claim.yaml" 2>/dev/null | awk -F': ' '$1 == "action" { print $2 }')
+    [ "$or_rc" = "$EX_RACE" ] || or_ok=1
+    [ -e "$TMPROOT/orch-hook.dispatch" ] || or_ok=1
+    grep -Fq "moved $ORCH_ID to state 'claimed' while this claim was being pushed" "$or_out" || or_ok=1
+    grep -Fq "The claim was released." "$or_out" || or_ok=1
+    [ "$or_act" = "release" ] || or_ok=1
+    [ "$or_parent" = "claim" ] || or_ok=1
+    if [ "$or_ok" = "0" ]; then
+      assert 50 "client: a claim whose item origin moves to claimed between its read and its push is released on top of itself and exits as a lost race, naming the state" 0
+    else
+      assert 50 "client: a claim the queue overtook during its push is released (rc $or_rc wanted $EX_RACE; tip ${or_act:-none} on ${or_parent:-none}; hook ran $([ -e "$TMPROOT/orch-hook.dispatch" ] && echo yes || echo no))" 1
+      note "$(grep -v '^locks repository\|^ *source:' "$or_out" | head -n 3 | tr '\n' ' ')"
+    fi
+
+    # The checkout has to contain origin's new tip again before the control,
+    # or the control would measure the staleness refusal instead.
+    g git -C "$ORCH_REPO" pull -q --ff-only origin main >/dev/null 2>&1
+    or_out="$TMPROOT/client.orch.control.out"; or_ok=0
+    ( export HUB_LOCKS_URL="$ORCH_LOCKS"
+      fixture_hub "$ORCH_CLIENT" "$ORCH_CACHE" "$ORCH_TOKEN" claim "$ORCH_CTRL_ID" ) >"$or_out" 2>&1
+    or_rc=$?
+    or_act=$(git -C "$ORCH_LOCKS" show "refs/heads/claim/$ORCH_CTRL_ID:claim.yaml" 2>/dev/null | awk -F': ' '$1 == "action" { print $2 }')
+    [ "$or_rc" = "0" ] || or_ok=1
+    [ -e "$TMPROOT/orch-hook.unrelated" ] || or_ok=1
+    [ "$or_act" = "claim" ] || or_ok=1
+    grep -Fq "The claim was released." "$or_out" && or_ok=1
+    if [ "$or_ok" = "0" ]; then
+      assert 51 "client: a claim during which origin moves and the item stays ready is kept" 0
+    else
+      assert 51 "client: a claim during an unrelated move of origin is kept (rc $or_rc wanted 0; tip ${or_act:-none}; hook ran $([ -e "$TMPROOT/orch-hook.unrelated" ] && echo yes || echo no))" 1
+      note "$(grep -v '^locks repository\|^ *source:' "$or_out" | head -n 3 | tr '\n' ' ')"
+    fi
+  else
+    skip 50 "client: a claim the queue overtook during its push is released"
+    note "$CLIENT_SKIP_REASON"
+    skip 51 "client: a claim during an unrelated move of origin is kept"
     note "$CLIENT_SKIP_REASON"
   fi
 

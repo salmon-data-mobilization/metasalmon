@@ -111,6 +111,15 @@ metasalmon (development version)
   decides who holds either lock. This changes only the client in `scripts/`,
   not the package.
 
+* `hub claim` asks `origin` for the item's state again once its claim push has
+  landed, and releases the claim and exits with the lost-the-race code if the
+  item has left `ready` in the meantime. That is the client's half of
+  `HUB.md` § *Orchestrated work*, where a session dispatching workers inside
+  itself claims for them by committing `state: claimed` to `main` and then
+  reads the locks repository, so an independent session's claim can no longer
+  slip between the two. This changes only the client in `scripts/`, not the
+  package.
+
 metasalmon 0.6.0
 ----------------
 

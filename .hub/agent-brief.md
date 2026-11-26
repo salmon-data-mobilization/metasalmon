@@ -33,6 +33,15 @@ So when you add a row, **open the target and confirm the thing is there**, and
 prefer pointing at a section heading or a named key over a file, because those
 fail loudly when they move.
 
+## Which mode you are in
+
+**If the session that dispatched you says it claimed your item for you, you are
+an orchestrated worker: do not run `hub claim`, `hub beat` or `hub done`.**
+Work on the branch it named, report and hand back as `HUB.md` says, and tell it
+when the work lands or stops, because it sets the item's state
+(`HUB.md` § *Orchestrated work*). **Otherwise you are an independent session**,
+and you run the full protocol in `HUB.md` § *The seven steps*, claim first.
+
 ## Read, in this order
 
 1. **[`HUB.md`](../HUB.md)** — in full, before you write anything. The claim
@@ -53,6 +62,7 @@ fail loudly when they move.
 |---|---|
 | running several agents at once without tripping the concurrency cap | the cap is `max_concurrent_claims` in `queue/config.yaml`; it applies per agent identity, and the identity is set by `HUB_SESSION_KEY`, documented by `./scripts/hub help` |
 | claiming, and what a rejected claim push means | `HUB.md` § *Claiming* |
+| when the orchestrator claims for you, and what it does instead of a claim ref | `HUB.md` § *Orchestrated work* |
 | which worktree to work in, including a same-owner batch, and when one may be removed | `HUB.md` § *Isolation* and § *Coherent batches* |
 | which checkout to run `hub` from, what a "STALE CHECKOUT" refusal means, and the check an orchestrator runs on a checkout before a brief names it | `HUB.md` § *Which checkout the queue is read from* |
 | where your report goes and what it must carry | `HUB.md` § *Reporting* |
@@ -75,12 +85,13 @@ with no item is a candidate, not part of this claim.
 
 Delegate broad reads and independent slices; the core R files run to thousands of
 lines. Pass them this file's path. They inherit everything `HUB.md` says,
-including every never. You remain accountable for the claim, the heartbeat and
-the hand-back.
+including every never. You remain accountable for the hand-back, and in the
+full protocol for the claim and the heartbeat.
 
 ## Reporting back to the orchestrator
 
-Short and load-bearing: whether you got the claim (if not, stop there); what you
+Short and load-bearing: in the full protocol, whether you got the claim (if not,
+stop there); what you
 changed, in a paragraph; the pull request URL, or the worktree path where the
 diff waits; test evidence, before and after, with real command output; anything
 needing Brett, as a question with your recommendation; anything that is not your
