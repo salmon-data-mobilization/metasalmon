@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "ROADMAP — salmon data ecosystem hub"
-description: "The single sequencing authority for metasalmon and the ten-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
+description: "The single sequencing authority for metasalmon and the salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
 status: draft
 tags: [roadmap, sequencing, releases]
 psc:
@@ -13,24 +13,16 @@ psc:
 
 **This is the single sequencing document for metasalmon and the salmon-data
 ecosystem around it** — the coordinating hub for the repos in the
-[domain card](domains/salmon-data-ecosystem.md).
+[domain card](domains/salmon-data-ecosystem.md), whose member count and member
+list are generated from `members:` in `queue/config.yaml`, their single source.
 
-<!-- hub:generated:member-count -->
-<!-- Generated from the hub queue. Edit the queue file, not this block; regenerate with `python3 scripts/hub_queue.py render`. -->
-
-The salmon data ecosystem has **ten** member repositories.
-<!-- /hub:generated:member-count -->
-
-The membership test was ruled 2026-08-24 (Brett) and the count was an open
-decision here until then; the ninth member, `salmon-science-foundry`, was
-admitted 2026-09-05 on Brett's Q19 ruling. **That is the one generated block in
-this card, and it is the proof of the mechanism rather than the whole of it.**
-The count is derived from the allowlist in the domain card, so a hand edit here
-fails the freshness check instead of waiting for a reader to notice, which is
-exactly how the count drifted before. The remaining restated state facts follow
-in a later change, one block at a time. *Retires when:* the membership count
-stops being restated in prose anywhere in this bundle, at which point the block
-and this paragraph go together.
+The membership test was ruled 2026-08-24 (Brett). *(A generated member-count
+block stood here from 2026-09-09 as the proof of the mechanism, beside prose
+that still restated the count by hand. It retired on 2026-11-24, as its own
+condition said it would, when no prose in this bundle restated the count any
+more: the count and the list now render together in the domain card, and
+lint's `member-count-in-prose` rule catches the shapes a hand-written count has
+taken, within the scope the domain card states.)*
 
 It answers *what order, what blocks what, and what is the current state*, and it
 carries the cross-repo **release index**. It deliberately does **not** carry
@@ -81,8 +73,9 @@ Rules that keep this from decaying:
   is correct, so each divergence is a question about which side is right, and
   R changing is a normal answer rather than an exception. See
   [parity-deviations](parity-deviations.md) row 32 for the first application.
-- **Domain allowlist:** the **ten** rows in the
-  [domain card](domains/salmon-data-ecosystem.md) are exhaustive. **The
+- **Domain allowlist:** the generated member list in the
+  [domain card](domains/salmon-data-ecosystem.md) is exhaustive, and its source
+  is `members:` in `queue/config.yaml`. **The
   membership test, ruled 2026-08-24 (Brett): a repository is a member when this
   hub sequences that repository's work.** That is the domain card's test, and it
   is now the only one — the competing *input* test this card used to state ("a
@@ -140,7 +133,7 @@ decision, at which point it is deleted rather than maintained.
   released mapping products and decisions remain authoritative in their owning
   semantic-asset repository, not here.
 - This hub retains technical sequencing, mirror coordination, and the release
-  index for the ten-repository ecosystem. The bounded consumer plan is
+  index for the ecosystem's member repositories. The bounded consumer plan is
   [governed mapping products](plans/2026-08-14-governed-mapping-products.md).
 - Brett will coordinate identification of the competent CTC/domain and
   application authorities; that coordination is not their approval. Until
@@ -318,20 +311,20 @@ against their tags, `DESCRIPTION`/`pyproject.toml`, and their GitHub Release
 objects, when both reached **0.4.0**.
 
 **Read every row's tag line, not just its version heading.**
-**Five of the ten** members have `main` ahead of their newest tag
-(metasalmon, metasalmonpy, salmon-domain-ontology, dfo-salmon-ontology,
-smn-data-pkg), PSC's alpha.3 is merged and untagged, neither the commons nor
-the workshop has a tag at all, and the ninth member has no repository yet, so
-it cannot be ahead of anything. The tenth, `smn-sci-plgn`, had `main` at its
-`v0.2.0` tag when it was admitted (measured 2026-11-24). Ahead-of-tag is the ecosystem's normal state
-rather than an anomaly worth flagging per row, so **cite a commit unless you
-have checked that the thing you mean is inside the tag.**
+`main` is ahead of the newest tag in metasalmon, metasalmonpy,
+salmon-domain-ontology, dfo-salmon-ontology and smn-data-pkg, PSC's alpha.3 is
+merged and untagged, neither the commons nor the workshop has a tag at all, and
+the Foundry has no repository yet, so it cannot be ahead of anything.
+`smn-sci-plgn` had `main` at its `v0.2.0` tag when it was admitted (measured
+2026-11-24). Ahead-of-tag is the ecosystem's normal state rather than an anomaly
+worth flagging per row, so **cite a commit unless you have checked that the
+thing you mean is inside the tag.**
 
-The index carries **ten sections for ten members**. The mismatch it used to
-carry ("eight sections for seven members", the workshop recorded here while
-absent from the allowlist) was closed by the 2026-08-24 membership ruling, which
-made the workshop the eighth member, and its section is a member row now rather
-than a courtesy record. The ninth section was added 2026-09-09 in the same
+The index carries one section per member of the domain card's generated list.
+The mismatch it used to carry ("eight sections for seven members", the workshop
+recorded here while absent from the allowlist) was closed by the 2026-08-24
+membership ruling, which made the workshop the eighth member, and its section is
+a member row now rather than a courtesy record. The ninth section was added 2026-09-09 in the same
 change as the domain-card row, on Brett's Q19 ruling of 2026-09-05, so the index
 never carried "nine sections for eight members" either. The tenth section,
 `smn-sci-plgn`, was added 2026-11-24 in the same change as its domain-card
@@ -1504,9 +1497,10 @@ Three consequences, all applied in the same change:
 
 - **`salmon-data-standards-workshop` is the eighth member.** Its release-index
   section below is a member row. The allowlist was eight rows when this was
-  ruled and is **ten** now, `salmon-science-foundry` having been admitted
-  2026-09-05 under this same test (Q19) and `smn-sci-plgn` on 2026-11-24; the ordinal here is the workshop's
-  position, not a live count.
+  ruled; `salmon-science-foundry` was admitted 2026-09-05 under this same test
+  (Q19) and `smn-sci-plgn` on 2026-11-24, and the live list is the generated
+  one in the domain card. The ordinal here is the workshop's position, not a
+  live count.
 - **`psc-data-transformations` stays external**, as a typed *requirements-driving
   consumer* edge. Its pin on metasalmon 0.1.8 at `886e01d` is a compatibility
   constraint this package should know about — **not an obligation on it** — and
@@ -1517,13 +1511,16 @@ Three consequences, all applied in the same change:
   Option B said that restatement would be required, and it is the weakest link
   in the ruling — the place to re-examine if any part of it is wrong.
 
-**And "seven repositories" is no longer a count anyone maintains** — it is
-**ten** since 2026-11-24 (nine from 2026-09-05), in the domain card, this card's frontmatter and body,
-the hub-coordination context, and the S6 card. That list of places is itself the
-argument for the generated block at the top of this card: the count went seven
-to eight to nine between 2026-08-24 and 2026-09-05, and to ten on 2026-11-24, and each move had to be made
-by hand in every one of those places. *Retires when:* those restatements are
-derived rather than written, and this sentence names one place instead of five.
+**And "seven repositories" is no longer a count anyone maintains.** The count
+went seven to eight to nine between 2026-08-24 and 2026-09-05, and to ten on
+2026-11-24, and each move was made by hand in the domain card, this card's
+frontmatter and body, the hub-coordination context, and the S6 card. Since
+2026-11-24 the count and the list are generated from `queue/config.yaml` into
+the domain card, which is the one place, and lint's `member-count-in-prose`
+rule catches the shapes those copies took. That met this paragraph's
+retirement condition (the restatements derived rather than written, and one
+place named instead of five); it stays as the record of why the count is
+generated.
 
 The original four candidate rulings, and what each one
 would have cost, are in this file's history; they are not reproduced here,

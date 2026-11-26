@@ -157,7 +157,8 @@ class QueueTestCase(unittest.TestCase):
     RED assertion then passes for the wrong reason.
 
     Every fixture also gets a retirement-debt baseline file, because the client
-    has no built-in default and refuses to guess one, and the evidence files the
+    has no built-in default and refuses to guess one, an empty `retires_when`
+    length baseline for the same reason, and the evidence files the
     base fixtures point at, because `evidence` must resolve from the repository
     root. Creating them here rather than inside `write_item` is deliberate: a
     fixture that conjured its own evidence file would make the dangling-pointer
@@ -180,6 +181,8 @@ class QueueTestCase(unittest.TestCase):
         self.queue.mkdir(parents=True)
         self.baseline_path = self.root / hub_queue.RETIREMENT_DEBT_BASELINE_FILE
         self.write_baseline(0)
+        self.length_baseline_path = self.root / hub_queue.RETIRES_WHEN_BASELINE_FILE
+        self.write_length_baseline([])
         for relpath in self.BASE_EVIDENCE:
             self.write_evidence(relpath)
         self.addCleanup(self._tmp.cleanup)
@@ -190,6 +193,13 @@ class QueueTestCase(unittest.TestCase):
         self.baseline_path.parent.mkdir(parents=True, exist_ok=True)
         self.baseline_path.write_text(f"{text}\n", encoding="utf-8")
         return self.baseline_path
+
+    def write_length_baseline(self, lines) -> Path:
+        """Write the `retires_when` length baseline: a comment, then `lines`."""
+        path = self.length_baseline_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# fixture\n" + "".join(f"{line}\n" for line in lines), encoding="utf-8")
+        return path
 
     def write_item(self, base, filename=None, **overrides) -> Path:
         text = item_text(base, **overrides)
@@ -1142,12 +1152,13 @@ class TestNamedBlocks(QueueTestCase):
 
 
 class TestMembersCrossCheck(QueueTestCase):
-    """The queue configuration keeps a copy of the eight-row allowlist.
+    """The domain card's role table must name exactly the configured members.
 
-    Its own comment says the copy "is safe only because the render-and-check
-    guard compares the two and fails when they disagree". This is that
-    comparison, and these are its RED demonstrations. Without them the comment
-    is a claim about a guard that does not exist.
+    `members:` in the queue configuration is the single source of the member
+    list (2026-11-24); the card renders it and keeps a hand-written role table,
+    the one hand-written list of members left. This comparison is what keeps
+    that table from becoming a stale copy, and these are its RED
+    demonstrations.
     """
 
     CARD = (
@@ -1182,21 +1193,25 @@ class TestMembersCrossCheck(QueueTestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text if text is not None else self.CARD, encoding="utf-8")
 
-    def test_extra_member_in_the_configuration(self):
+    def test_a_configured_member_with_no_role_row(self):
+        # The admission shape: an entry added to the source with no role row.
         self.write_item(BASE_DEFECT)
         self.write_card()
         self.write_config(["metasalmon", "smn-data-pkg", "invented-repo"])
         output = self.assert_rejects("members-drift")
         self.assertIn("'invented-repo'", output)
+        self.assertIn("the configuration is the source of membership", output)
+        self.assertIn("add the row", output)
         self.write_config(["metasalmon", "smn-data-pkg"])
         self.assert_accepts()
 
-    def test_member_missing_from_the_configuration(self):
+    def test_a_role_row_for_a_repository_that_is_not_a_member(self):
         self.write_item(BASE_DEFECT)
         self.write_card()
         self.write_config(["metasalmon"])
         output = self.assert_rejects("members-drift")
         self.assertIn("'smn-data-pkg'", output)
+        self.assertIn("delete the row", output)
         self.write_config(["metasalmon", "smn-data-pkg"])
         self.assert_accepts()
 
@@ -1215,7 +1230,7 @@ class TestMembersCrossCheck(QueueTestCase):
     def test_a_missing_card_fails(self):
         self.write_item(BASE_DEFECT)
         self.write_config(["metasalmon"])
-        self.assert_rejects("members-source-missing")
+        self.assert_rejects("members-card-missing")
         self.write_card()
         self.write_config(["metasalmon", "smn-data-pkg"])
         self.assert_accepts()
@@ -1552,69 +1567,213 @@ class TestMemberDuplicateFields(QueueTestCase):
         self.assertIn("members-duplicate-field", output)
 
 
-class TestMemberCountBlock(QueueTestCase):
-    """The member count is the one generated block sourced from the domain card.
+def member_config(members, blocks=()) -> str:
+    """A queue configuration whose `members:` block lists `members`.
 
-    It exists because that number is one that actually drifted: the bundle said
-    eight after the ninth member was admitted on 2026-09-05, and the sentence
-    looked exactly as right as it had the week before.
+    Each entry is a repository name, or a `(repo, org, forge)` tuple when the
+    organization or forge matters to the test (`None` leaves the key out).
+    Every member reads `solo: false`, which needs no participation row.
+    `blocks` are `(block, target)` pairs for `generated_blocks:`.
+    """
+    lines = ["# configuration", "members:"]
+    for member in members:
+        repo, org, forge = (
+            member if isinstance(member, tuple) else (member, "salmon-data-mobilization", "github")
+        )
+        lines.append(f"  - repo: {repo}")
+        if org is not None:
+            lines.append(f"    org: {org}")
+        if forge is not None:
+            lines.append(f"    forge: {forge}")
+        lines.append("    solo: false")
+    if blocks:
+        lines += ["", "generated_blocks:"]
+        for block, target in blocks:
+            lines += [f"  - block: {block}", f"    target: {target}"]
+    return "\n".join(lines) + "\n"
 
-    RETIRES WHEN: no prose restates the member count, or the allowlist stops
-    living in a Markdown table.
+
+class MemberBlockCase(QueueTestCase):
+    """Shared fixture for the two member blocks.
+
+    `write_world` writes everything `check` reads besides the block itself -- the
+    configuration declaring the block, the domain card's role table naming the
+    same members, and `HUB.md` -- so that `check` fails only for the drift a
+    test introduces and not for a missing neighbour.
     """
 
-    def write_card(self, repos):
-        rows = "".join(f"| `{repo}` | A role |\n" for repo in repos)
-        path = self.root / "knowledge" / "domains" / "salmon-data-ecosystem.md"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            "# The salmon data ecosystem\n\n| Repo | Role |\n|---|---|\n" + rows,
-            encoding="utf-8",
-        )
+    BLOCK = ""
+    TARGET = ""
 
-    def render_count(self):
-        path = self.write_prose(
-            "knowledge/roadmap.md",
-            "<!-- hub:generated:member-count -->\n<!-- /hub:generated:member-count -->\n",
-        )
+    def markers(self) -> str:
+        return f"<!-- hub:generated:{self.BLOCK} -->\n<!-- /hub:generated:{self.BLOCK} -->\n"
+
+    def write_config(self, members):
+        path = self.root / hub_queue.QUEUE_CONFIG_FILE
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(member_config(members, [(self.BLOCK, self.TARGET)]), encoding="utf-8")
+
+    def write_world(self, members):
+        self.write_config(members)
+        repos = [m[0] if isinstance(m, tuple) else m for m in members]
+        table = "| Repo | Role |\n|---|---|\n" + "".join(f"| `{r}` | A role |\n" for r in repos)
+        if self.TARGET == hub_queue.DOMAIN_CARD_FILE:
+            self.write_prose(self.TARGET, self.markers() + "\n" + table)
+        else:
+            self.write_prose(hub_queue.DOMAIN_CARD_FILE, table)
+            self.write_prose(self.TARGET, self.markers())
+        self.write_policy({repo: False for repo in repos})
+
+    def render(self) -> str:
         code, output = self.run_hub("render")
         self.assertEqual(code, 0, output)
-        return path.read_text(encoding="utf-8")
+        return (self.root / self.TARGET).read_text(encoding="utf-8")
 
-    def test_the_count_is_spelled_out_and_comes_from_the_card(self):
+
+class TestMemberCountBlock(MemberBlockCase):
+    """The member count is generated from `members:` in the queue configuration.
+
+    It exists because that number is one that actually drifted: the bundle said
+    eight after the ninth member was admitted on 2026-09-05, and on 2026-11-24
+    the tenth admission left a hand-written copy stale through three review
+    rounds. Until that day this block counted the domain card's table; the
+    configuration became the single source then.
+
+    RETIRES WHEN: membership stops being a list in `queue/config.yaml`.
+    """
+
+    BLOCK = "member-count"
+    TARGET = "knowledge/roadmap.md"
+
+    def test_the_count_is_spelled_out_and_comes_from_the_configuration(self):
         self.write_item(BASE_DEFECT)
-        self.write_card([f"repo-{n}" for n in range(9)])
-        self.assertIn("has **nine** member repositories", self.render_count())
+        self.write_world([f"repo-{n}" for n in range(9)])
+        self.assertIn("has **nine** member repositories", self.render())
+
+    def test_the_domain_card_table_is_not_what_is_counted(self):
+        # The source moved on 2026-11-24. A card with more rows than the
+        # configuration has members must not change the count.
+        self.write_item(BASE_DEFECT)
+        self.write_world([f"repo-{n}" for n in range(7)])
+        self.write_config(["repo-0", "repo-1"])
+        self.assertIn("has **two** member repositories", self.render())
 
     def test_admitting_a_member_changes_the_rendered_sentence(self):
-        # RED for the drift itself: the card gains a row and the prose must move
-        # with it, which is the whole reason the sentence is generated.
+        # RED for the drift itself: the configuration gains a member and the
+        # prose must move with it, which is the whole reason it is generated.
         self.write_item(BASE_DEFECT)
-        self.write_card([f"repo-{n}" for n in range(8)])
-        self.assertIn("**eight**", self.render_count())
-        self.assertEqual(self.run_hub("check")[0], 0)
-        self.write_card([f"repo-{n}" for n in range(9)])
+        self.write_world([f"repo-{n}" for n in range(8)])
+        self.assertIn("**eight**", self.render())
+        code, output = self.run_hub("check")
+        self.assertEqual(code, 0, output)
+        self.write_world([f"repo-{n}" for n in range(9)])
+        self.write_prose(self.TARGET, (self.root / self.TARGET).read_text(encoding="utf-8"))
         code, output = self.run_hub("check")
         self.assertEqual(code, 1, output)
-        self.assertIn("member-count", output)
+        self.assertIn("`hub:generated:member-count`", output)
+        self.assertIn("`members:` in queue/config.yaml is the source", output)
 
     def test_one_member_is_singular(self):
         self.write_item(BASE_DEFECT)
-        self.write_card(["metasalmon"])
-        self.assertIn("has **one** member repository.", self.render_count())
+        self.write_world(["metasalmon"])
+        self.assertIn("has **one** member repository.", self.render())
 
-    def test_a_card_that_cannot_be_counted_fails_rather_than_rendering_zero(self):
+    def test_a_configuration_that_cannot_be_counted_fails_rather_than_rendering_zero(self):
         self.write_item(BASE_DEFECT)
-        path = self.root / "knowledge" / "domains" / "salmon-data-ecosystem.md"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("# The salmon data ecosystem\n\nNo table at all.\n", encoding="utf-8")
-        self.write_prose(
-            "knowledge/roadmap.md",
-            "<!-- hub:generated:member-count -->\n<!-- /hub:generated:member-count -->\n",
+        self.write_world(["metasalmon"])
+        (self.root / hub_queue.QUEUE_CONFIG_FILE).write_text(
+            "# configuration\nlocks_repo: x\n", encoding="utf-8"
         )
         code, output = self.run_hub("render")
         self.assertEqual(code, 2, output)
-        self.assertIn("no allowlist rows", output)
+        self.assertIn("no `members:` entries", output)
+
+    def test_a_missing_configuration_fails_rather_than_rendering_zero(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose(self.TARGET, self.markers())
+        code, output = self.run_hub("render")
+        self.assertEqual(code, 2, output)
+        self.assertIn("is not present", output)
+
+
+class TestMemberListBlock(MemberBlockCase):
+    """The member list is generated from `members:` too, with org and forge.
+
+    It replaces the hand-written lists the bundle carried on 2026-11-24 (the
+    domain card's header and `knowledge/index.md`'s opening sentence), each of
+    which had to be edited by hand at every admission.
+
+    RETIRES WHEN: membership stops being a list in `queue/config.yaml`.
+    """
+
+    BLOCK = "member-list"
+    TARGET = hub_queue.DOMAIN_CARD_FILE
+
+    def test_each_member_renders_with_its_organization_and_forge_in_order(self):
+        self.write_item(BASE_DEFECT)
+        self.write_world(
+            [
+                "metasalmon",
+                ("psc-salmon-vocabularies", "pacific-salmon-commission/psc-data-systems", "gitlab"),
+                ("dfo-salmon-ontology", "dfo-pacific-science", "github"),
+            ]
+        )
+        text = self.render()
+        self.assertIn("| Repository | Organization | Forge |", text)
+        rows = [line for line in text.splitlines() if line.startswith("| [")]
+        self.assertEqual(
+            rows,
+            [
+                "| [`metasalmon`](https://github.com/salmon-data-mobilization/metasalmon) "
+                "| `salmon-data-mobilization` | GitHub |",
+                "| [`psc-salmon-vocabularies`](https://gitlab.com/pacific-salmon-commission/"
+                "psc-data-systems/psc-salmon-vocabularies) "
+                "| `pacific-salmon-commission/psc-data-systems` | GitLab |",
+                "| [`dfo-salmon-ontology`](https://github.com/dfo-pacific-science/"
+                "dfo-salmon-ontology) | `dfo-pacific-science` | GitHub |",
+            ],
+        )
+        # The role table outside the block is left exactly as it was.
+        self.assertIn("| `metasalmon` | A role |", text)
+        self.assertEqual(self.run_hub("check")[0], 0)
+
+    def test_a_placeholder_organization_is_named_as_missing_and_not_linked(self):
+        self.write_item(BASE_DEFECT)
+        self.write_world(
+            [("salmon-science-foundry", "PLACEHOLDER-institute-organization-not-yet-created", "github")]
+        )
+        text = self.render()
+        self.assertIn("| `salmon-science-foundry` | *not yet created* | GitHub |", text)
+        self.assertNotIn("PLACEHOLDER", text)
+
+    def test_an_unknown_forge_renders_by_name_without_a_link(self):
+        self.write_item(BASE_DEFECT)
+        self.write_world([("somewhere", "an-org", "codeberg")])
+        self.assertIn("| `somewhere` | `an-org` | codeberg |", self.render())
+
+    def test_a_member_with_no_forge_stops_the_render(self):
+        self.write_item(BASE_DEFECT)
+        self.write_world([("metasalmon", "salmon-data-mobilization", None)])
+        code, output = self.run_hub("render")
+        self.assertEqual(code, 2, output)
+        self.assertIn("no single `forge:` value", output)
+
+    def test_a_new_member_makes_the_rendered_list_stale(self):
+        self.write_item(BASE_DEFECT)
+        self.write_world(["metasalmon"])
+        self.render()
+        code, output = self.run_hub("check")
+        self.assertEqual(code, 0, output)
+        rendered = (self.root / self.TARGET).read_text(encoding="utf-8")
+        self.write_config(["metasalmon", "smn-sci-plgn"])
+        self.write_prose(
+            self.TARGET, rendered.replace("| `metasalmon` | A role |\n",
+                                          "| `metasalmon` | A role |\n| `smn-sci-plgn` | A role |\n")
+        )
+        code, output = self.run_hub("check")
+        self.assertEqual(code, 1, output)
+        self.assertIn("`hub:generated:member-list`", output)
+        self.assertIn("`members:` in queue/config.yaml is the source", output)
 
 
 class TestConfiguredBlocksExist(QueueTestCase):
@@ -2170,6 +2329,238 @@ ROADMAP_HEAD = (
 ROADMAP_OWED = "validation (**B-124**, blocked by B-49"
 ROADMAP_LANDED = " -- **landed 2026-09-16 as metasalmonpy\n#29**, `1e9245c`"
 ROADMAP_TAIL = ").\n\n### salmon-domain-ontology (smn) -- current **0.0.3**\n\nNo ports.\n"
+
+
+class TestMemberCountInProse(QueueTestCase):
+    """A member count written by hand in the bundle fails lint, in the shapes it took.
+
+    THE POSITIVE CONTROL is the set of copies the bundle actually carried on
+    2026-11-24, quoted verbatim from `origin/main` at `c63d99e`: every one of them
+    must be caught, or the rule cannot see the defect it was written for. On the
+    real tree at that commit the rule reported twelve, all present-tense counts,
+    and after the copies were removed it reports none.
+
+    RETIRES WHEN: membership stops being a list in `queue/config.yaml`, or the
+    bundle's prose is generated rather than hand-written.
+    """
+
+    # (file, text): the copies as they stood at `c63d99e`, the lines verbatim and
+    # each labelled with where it was. Front matter is taken through its closing
+    # `---`, because the quote exemption starts there.
+    COPIES = (
+        # knowledge/contexts/hub-coordination.md, lines 1-9
+        ('knowledge/contexts/hub-coordination.md',
+         '---\ntype: Context\ntitle: "Hub coordination"\ndescription: "The standing coordination context: metasalmon\'s bundle is the sequencing and release-index authority for the ten-repo salmon data ecosystem, refreshed as work proceeds and as releases by other agents are discovered."\nstatus: draft\ntags: [coordination, roadmap]\npsc:\n  id: metasalmon:context:hub-coordination\n---\n'),
+        # knowledge/domains/salmon-data-ecosystem.md, lines 1-9
+        ('knowledge/domains/salmon-data-ecosystem.md',
+         '---\ntype: ScientificDataDomain\ntitle: "Salmon data ecosystem"\ndescription: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, the salmon knowledge commons, the standards workshop, the Salmon Science Foundry, and the smn-sci-plgn skills plugin, coordinated through the metasalmon hub. Ten repositories, one hub; membership follows from this hub sequencing that repository\'s work (ruled 2026-08-24)."\nstatus: draft\ntags: [salmon, sdp, ecosystem]\npsc:\n  id: metasalmon:domain:salmon-data-ecosystem\n---\n'),
+        # knowledge/domains/salmon-data-ecosystem.md, lines 11-14
+        ('knowledge/domains/salmon-data-ecosystem.md',
+         'The domain this bundle coordinates. The table below is the complete allowlist:\n**ten repositories, one hub** (ten since 2026-11-24, when Brett admitted\n`smn-sci-plgn`; nine from 2026-09-05, when his Q19 ruling admitted\n`salmon-science-foundry`).\n'),
+        # knowledge/domains/salmon-data-ecosystem.md, lines 130-133
+        ('knowledge/domains/salmon-data-ecosystem.md',
+         "work**, not from who owns it and not from what it produces. Membership does not\nrequire sharing an organization either, and there are now two members that do\nnot: `psc-salmon-vocabularies` lives on PSC's GitLab, and\n`salmon-science-foundry` belongs to the institute rather than to\n"),
+        # knowledge/roadmap.md, lines 1-10
+        ('knowledge/roadmap.md',
+         '---\ntype: InformationObject\ntitle: "ROADMAP — salmon data ecosystem hub"\ndescription: "The single sequencing authority for metasalmon and the ten-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."\nstatus: draft\ntags: [roadmap, sequencing, releases]\npsc:\n  id: metasalmon:roadmap\n  contexts: [metasalmon:context:hub-coordination]\n---\n'),
+        # knowledge/roadmap.md, lines 84-85
+        ('knowledge/roadmap.md',
+         '- **Domain allowlist:** the **ten** rows in the\n  [domain card](domains/salmon-data-ecosystem.md) are exhaustive. **The\n'),
+        # knowledge/roadmap.md, lines 142-144
+        ('knowledge/roadmap.md',
+         '- This hub retains technical sequencing, mirror coordination, and the release\n  index for the ten-repository ecosystem. The bounded consumer plan is\n  [governed mapping products](plans/2026-08-14-governed-mapping-products.md).\n'),
+        # knowledge/roadmap.md, lines 320-322
+        ('knowledge/roadmap.md',
+         "**Read every row's tag line, not just its version heading.**\n**Five of the ten** members have `main` ahead of their newest tag\n(metasalmon, metasalmonpy, salmon-domain-ontology, dfo-salmon-ontology,\n"),
+        # knowledge/roadmap.md, lines 330-330
+        ('knowledge/roadmap.md',
+         'The index carries **ten sections for ten members**. The mismatch it used to\n'),
+        # knowledge/sequences/s6-ecosystem.md, lines 179-179
+        ('knowledge/sequences/s6-ecosystem.md',
+         "The **ten** repositories in the ecosystem domain card are an allowlist (eight since 2026-08-24, when Brett ruled that membership follows from this hub sequencing a repository's work and admitted `salmon-data-standards-workshop` as the eighth; nine since 2026-09-05, when Q19 admitted `salmon-science-foundry` as the ninth under the same test; ten since 2026-11-24, when Brett admitted `smn-sci-plgn` so that its skills stay current with the tools this hub releases). The\n"),
+        # knowledge/questions.md, lines 1162-1164
+        ('knowledge/questions.md',
+         "stands unamended: *a repository is a member when this hub sequences that\nrepository's work.* The eight members are unchanged and the Foundry's admission\nunder Q19 is the ninth.\n"),
+        # knowledge/questions.md, lines 1217-1219
+        ('knowledge/questions.md',
+         '**Two consequences a reader of Q37 would otherwise carry away wrong.** The\nscope test is **participation, not ownership**: three member repositories have\nhad other contributors and the grant does not reach them, so an agent working\n'),
+    )
+
+    def test_every_copy_the_bundle_carried_is_caught(self):
+        self.write_item(BASE_DEFECT)
+        for relpath, text in self.COPIES:
+            with self.subTest(copy=text):
+                self.write_prose(relpath, text)
+                output = self.assert_rejects("member-count-in-prose")
+                self.assertIn(f"{relpath}:", output)
+                self.assertIn("queue/config.yaml", output)
+                self.write_prose(
+                    relpath,
+                    "The member list is generated in the "
+                    "[domain card](domains/salmon-data-ecosystem.md).\n",
+                )
+                self.assert_accepts()
+
+    def test_a_count_in_digits_is_caught_too(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose("knowledge/card.md", "The salmon data ecosystem has **10** member repositories.\n")
+        self.assert_rejects("member-count-in-prose")
+        self.write_prose("knowledge/card.md", "The salmon data ecosystem's member repositories.\n")
+        self.assert_accepts()
+
+    def test_the_reported_line_is_the_line_of_the_count(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose("knowledge/card.md", "One.\n\nTwo.\n\nThe nine member repositories.\n")
+        output = self.assert_rejects("member-count-in-prose")
+        self.assertIn("knowledge/card.md:5:", output)
+        self.write_prose("knowledge/card.md", "One.\n\nTwo.\n\nThe member repositories.\n")
+        self.assert_accepts()
+
+    def test_history_quotation_ordinals_and_other_counts_pass(self):
+        # Each of these is in the real bundle and none is a present-tense count.
+        self.write_item(BASE_DEFECT)
+        passing = (
+            # an ordinal records admission order, which does not change
+            "The tenth member, admitted 2026-11-24 on Brett's word.\n",
+            "`salmon-science-foundry` is the ninth member.\n",
+            # a former sentence, quoted when a correction is recorded
+            'The mismatch it used to carry ("eight sections for seven members") was closed.\n',
+            "the\n\"eight repositories, one hub\" line at the top of this card\n",
+            "never carried “nine sections for eight members” either.\n",
+            # counts of other things
+            "the same commit landed in four other repos the same day.\n",
+            "None appears in any branch of any of the four repositories.\n",
+            "One item cannot finish work in two repositories.\n",
+            "the nine highest-priority defects\n",
+            # a dated count in another wording, which this rule does not claim
+            "the allowlist table (eight rows then)\n",
+            # inside a generated block, which has its own freshness check
+            "<!-- hub:generated:member-count -->\nThe salmon data ecosystem has **ten** "
+            "member repositories.\n<!-- /hub:generated:member-count -->\n",
+            # inside a fenced example
+            "```text\nthe ten-repo salmon data ecosystem\n```\n",
+        )
+        body = "\n".join(passing)
+        self.write_prose("knowledge/card.md", body + "\nThe hub has ten members.\n")
+        self.assert_rejects("member-count-in-prose")
+        self.write_prose("knowledge/card.md", body)
+        self.assert_accepts()
+
+    def test_a_dated_record_and_files_outside_the_bundle_are_not_read(self):
+        self.write_item(BASE_DEFECT)
+        count = "The eight members are unchanged.\n"
+        self.write_prose("knowledge/card.md", count)
+        self.assert_rejects("member-count-in-prose")
+        self.write_prose("knowledge/card.md", "No count.\n")
+        self.write_prose("knowledge/plans/2026-09-04-a-plan.md", count)
+        self.write_prose("knowledge/evidence-2026-09-08.md", count)
+        self.write_prose("AGENTS.md", count)
+        self.write_prose("queue/README.md", count)
+        self.assert_accepts()
+
+    def test_front_matter_quotes_are_yaml_and_are_still_read(self):
+        # The quote exemption must not swallow a front-matter description, which
+        # YAML wraps in double quotes: two of the 2026-11-24 copies were there.
+        self.write_item(BASE_DEFECT)
+        self.write_prose(
+            "knowledge/card.md",
+            '---\ndescription: "For the ten-repo salmon data ecosystem."\n---\n\n"Quoted ten members."\n',
+        )
+        output = self.assert_rejects("member-count-in-prose")
+        self.assertIn("knowledge/card.md:2:", output)
+        self.assertNotIn("knowledge/card.md:5:", output)
+        self.write_prose(
+            "knowledge/card.md",
+            '---\ndescription: "For the salmon data ecosystem."\n---\n\n"Quoted ten members."\n',
+        )
+        self.assert_accepts()
+
+
+class TestRetiresWhenLength(QueueTestCase):
+    """`retires_when` is capped at 120 words, with a baseline that only shrinks.
+
+    Brett, 2026-11-24: new conditions "about 100 words". The items already over
+    the cap that day are listed in the baseline file and pass; any other item
+    over it fails, and so does a baseline line that no longer exempts anything.
+
+    RETIRES WHEN: the baseline is empty and deleted; the cap then stays, and
+    these tests lose their baseline halves.
+    """
+
+    @staticmethod
+    def words(n: int) -> str:
+        return " ".join(["word"] * n)
+
+    def test_an_item_over_the_cap_fails_and_one_at_the_cap_passes(self):
+        cap = hub_queue.RETIRES_WHEN_WORD_CAP
+        self.write_item(BASE_DEFECT, retires_when=self.words(cap + 1))
+        output = self.assert_rejects("retires-when-too-long")
+        self.assertIn(f"retires_when is {cap + 1} words", output)
+        self.assertIn("queue/items/B-53.yaml:", output)
+        self.write_item(BASE_DEFECT, retires_when=self.words(cap))
+        self.assert_accepts()
+
+    def test_every_kind_is_capped_not_only_defects(self):
+        self.write_item(BASE_DEFECT)
+        self.write_item(BASE_QUESTION, retires_when=self.words(hub_queue.RETIRES_WHEN_WORD_CAP + 5))
+        output = self.assert_rejects("retires-when-too-long")
+        self.assertIn("Q-21", output)
+        self.write_length_baseline(["Q-21"])
+        self.assert_accepts()
+
+    def test_a_listed_item_may_stay_over_the_cap(self):
+        self.write_item(BASE_DEFECT, retires_when=self.words(400))
+        self.write_length_baseline([])
+        self.assert_rejects("retires-when-too-long")
+        self.write_length_baseline(["# measured 2026-11-24", "", "B-53"])
+        self.assert_accepts()
+
+    def test_a_listed_item_back_within_the_cap_fails_until_its_line_goes(self):
+        self.write_item(BASE_DEFECT, retires_when=self.words(30))
+        self.write_length_baseline(["B-53"])
+        output = self.assert_rejects("retires-when-baseline-stale")
+        self.assertIn("within the cap", output)
+        self.assertIn(f"{hub_queue.RETIRES_WHEN_BASELINE_FILE}:2:", output)
+        self.write_length_baseline([])
+        self.assert_accepts()
+
+    def test_a_listed_id_that_names_no_item_fails(self):
+        self.write_item(BASE_DEFECT)
+        self.write_length_baseline(["B-9999"])
+        output = self.assert_rejects("retires-when-baseline-stale")
+        self.assertIn("no such item", output)
+        self.write_length_baseline([])
+        self.assert_accepts()
+
+    def test_an_id_listed_twice_fails(self):
+        self.write_item(BASE_DEFECT, retires_when=self.words(200))
+        self.write_length_baseline(["B-53", "B-53"])
+        output = self.assert_rejects("retires-when-baseline-stale")
+        self.assertIn("listed 2 times", output)
+        self.write_length_baseline(["B-53"])
+        self.assert_accepts()
+
+    def test_a_missing_or_malformed_baseline_fails_rather_than_exempting_nothing(self):
+        self.write_item(BASE_DEFECT, retires_when=self.words(200))
+        self.length_baseline_path.unlink()
+        output = self.assert_rejects("retires-when-baseline-unreadable")
+        self.assertIn("missing", output)
+        self.write_length_baseline(["B-53  # 200 words"])
+        output = self.assert_rejects("retires-when-baseline-unreadable")
+        self.assertIn("is not an item id", output)
+        # An unreadable baseline reports itself, not every long item on top.
+        self.assertNotIn("[retires-when-too-long]", output)
+        self.write_length_baseline(["B-53"])
+        self.assert_accepts()
+
+    def test_the_real_baseline_lists_only_items_still_over_the_cap(self):
+        # The committed file against the committed queue: the same check lint
+        # runs, asserted here so that a red run names this file.
+        root = REPO_ROOT
+        if not (root / hub_queue.RETIRES_WHEN_BASELINE_FILE).is_file():
+            self.skipTest("the real baseline is not in this checkout")
+        items, _ = hub_queue.load_queue(root, root / hub_queue.DEFAULT_QUEUE_DIR)
+        self.assertEqual(hub_queue.validate_retires_when_length(root, items), [])
 
 
 class TestPortRecords(QueueTestCase):

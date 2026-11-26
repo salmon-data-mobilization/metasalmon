@@ -150,24 +150,34 @@ max_reclaims_per_item_per_day: 1
 max_concurrent_claims: 1
 
 # ---------------------------------------------------------------------------
-# Members. The eight hub member repositories, from the ruled allowlist in
-# `knowledge/domains/salmon-data-ecosystem.md`.
+# Members. The hub member repositories.
 #
-# That card is the home of this fact and this list is a machine-readable copy
-# of it, which is exactly the shape of restatement this design exists to
-# remove. It is here because the client needs the list without parsing prose,
-# and it is safe only because the render-and-check guard compares the two and
-# fails when they disagree. When they disagree, the card wins and this list is
-# the copy that is wrong. Membership follows from this hub sequencing that
-# repository's work (Brett, ruled 2026-08-24); it is not decided here.
+# THIS LIST IS THE SINGLE SOURCE of the member count and the member list (Brett,
+# 2026-11-24). Admitting the tenth member that day took three review rounds,
+# because the count and the list were written by hand in about ten places and a
+# copy was always left stale. So the bundle no longer states them:
+# `hub_queue.py render` writes the `member-count` and `member-list` blocks from
+# this list into `knowledge/domains/salmon-data-ecosystem.md`, `check` fails
+# when they are stale, and `lint` fails on the shapes a hand-written member
+# count has taken in the bundle (`member-count-in-prose`, whose comment states
+# what it does not see). Until that day the card's table was the source and this a copy; the
+# direction was reversed because the client needs a list it can read without
+# parsing prose, and a list two files each own is two lists.
 #
-# Retires when: the client reads the allowlist from the card directly and this
-# block can be deleted without the client losing anything.
+# What stays in the card is the membership TEST, ruled 2026-08-24 (a repository
+# is a member when this hub sequences its work), and a role table saying what
+# each member is for. `lint` fails when that table names a repository this list
+# does not, or misses one, so an entry added here needs its role row there in
+# the same change. Changing this list is a membership ruling, and the change
+# that makes it is Brett's to merge.
+#
+# Retires when: nothing short of membership moving to another single home. One
+# home is the end state, not a step toward one.
 #
 # `forge` is load-bearing, not decoration. The standing authorization in
 # section 9.5 covers pushes to these repositories on GitHub and to the locks
-# repository. It covers nothing on GitLab, so the one GitLab member is a read
-# for agents and every write there stays Brett's.
+# repository. It covers nothing on GitLab, so a GitLab member is a read for
+# agents and every write there stays Brett's.
 #
 # `solo` is load-bearing in exactly the same way, and it is the one fact the
 # whole standing grant turns on. It answers a single question: has anybody
@@ -179,9 +189,8 @@ max_concurrent_claims: 1
 # base permission is `write` and every member inherits access to everything, so
 # the collaborator list would say `true` nowhere and make this field empty. Ask
 # who has ever participated instead. Ownership fails the other way: Brett owns
-# or administers every member repository that exists, and three of them still
-# read `false` here for who has participated. A fourth, salmon-science-foundry,
-# reads `false` because its repository does not exist yet.
+# or administers every member repository that exists, and some of them still
+# read `false` here for who has participated.
 #
 # What it gates: the standing authorization in `HUB.md` covers pushing a work
 # branch and opening one draft pull request only where this reads `true`. Where
@@ -199,7 +208,8 @@ max_concurrent_claims: 1
 #
 # `HUB.md` governs. Its participation table under the standing authorization is
 # the measured record, dated 2026-09-10, and this column is the machine-readable
-# copy of it, exactly as the repository list above is a copy of the domain card.
+# copy of it. (The repository list runs the other way: it is the source, and
+# the domain card renders it.)
 # `hub_queue.py lint` compares the two and fails when they disagree; when they
 # disagree the table is right and this file is the copy that is wrong. A
 # repository reading `true` here and absent from that table fails too, because
@@ -273,24 +283,29 @@ members:
 # which is the whole point: the five stale copies measured in section 9.1 were
 # each readable for days without looking wrong.
 #
-# Every block listed here derives from the item files under
-# `queue/items/`. Facts that do not derive from an item file are
-# deliberately absent: the release index and the mirror window are not queue
-# state, they are release facts whose home is the roadmap, and inventing a
-# block for them would put a second answer where the design just removed one.
+# Every block listed here derives from this directory: the item files under
+# `queue/items/`, or the `members:` list above. Facts that derive from neither
+# are deliberately absent: the release index and the mirror window are not
+# queue state, they are release facts whose home is the roadmap, and inventing
+# a block for them would put a second answer where the design just removed one.
 # ---------------------------------------------------------------------------
 # Prose blocks regenerated from the queue, each guarded by `hub_queue.py check`
 # so a stale copy fails the build instead of waiting for a reader to notice.
 #
-# There is exactly ONE, on purpose. It is the proof that the mechanism works,
-# and the plan's section 9.7 makes replacing the remaining twelve state facts a
-# later step with its own review. Four blocks were declared here before any
-# marker existed, which made `check` pass while guarding nothing; declaring a
-# block whose markers are absent is now an error rather than a skip.
+# The member count and the member list, both from `members:` above, rendered
+# together at the top of the domain card (2026-11-24). The member count stood
+# alone in the roadmap from 2026-09-09 as the proof that the mechanism works;
+# it retired there when no prose restated the count any more. The plan's
+# section 9.7 makes replacing the remaining state facts a later step with its
+# own review. Four blocks were once declared here before any marker existed,
+# which made `check` pass while guarding nothing; declaring a block whose
+# markers are absent is now an error rather than a skip.
 #
 # Retires when: every state fact in the bundle is either generated or deleted,
-# at which point this list stops growing and the roadmap carries no
+# at which point this list stops growing and the bundle carries no
 # hand-maintained state.
 generated_blocks:
   - block: member-count
-    target: knowledge/roadmap.md
+    target: knowledge/domains/salmon-data-ecosystem.md
+  - block: member-list
+    target: knowledge/domains/salmon-data-ecosystem.md

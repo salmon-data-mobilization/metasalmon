@@ -71,7 +71,9 @@ the supply of `ready`, which only Brett produces.
 with its configuration and its item files, the client, the render-and-check
 guard and its unit tests under `scripts/`, the continuous-integration workflow
 that runs them, and the first generated block, the member count at the top of
-the [roadmap](../roadmap.md). `queue/README.md` explains what an item file
+the [roadmap](../roadmap.md) (moved on 2026-11-24 to the
+[domain card](../domains/salmon-data-ecosystem.md), beside a generated member
+list). `queue/README.md` explains what an item file
 means; neither it nor `HUB.md` is linked from this bundle, because the bundle
 check reports a Markdown link whose target sits outside the bundle and this
 bundle is held at zero warnings.

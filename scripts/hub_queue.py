@@ -93,18 +93,21 @@ touched. The names are:
   * `queue-summary`     counts by state and by kind
   * `retirement-debt`   the ratchet number and what it means
   * `member-count`      how many repositories the hub coordinates
+  * `member-list`       each member repository with its organization and forge
   * `items:<params>`    a filtered view, params as `key=value` separated by `,`
 
-The first four are the names `queue/config.yaml` declares, and each is
-an alias for an `items:` query rather than a separate generator, so a reader can
-see exactly which items a named block stands for.
+The first four are aliases for an `items:` query rather than separate
+generators, so a reader can see exactly which items a named block stands for.
 
-`member-count` is the one block whose source is not an item file: it counts the
-allowlist rows in `knowledge/domains/salmon-data-ecosystem.md`. That is a
-deliberate exception rather than the start of a habit. Blocks derive from the
-queue because the queue is where planning state lives; the member count lives in
-the domain card because membership is a ruling and not a piece of work, and the
-count drifted anyway when the ninth member was admitted on 2026-09-05.
+`member-count` and `member-list` are the two blocks whose source is not an item
+file: both read the `members:` list in `queue/config.yaml`, which is the single
+source of the member count and the member list (Brett, 2026-11-24, after
+admitting one member took three review rounds because the count and the list
+were written by hand in about ten places). Membership is a ruling, not a piece
+of work, so it has no item file; it has one list instead, and every prose copy
+of it is generated from that list. `lint` also fails on the shapes a
+hand-written member count has taken in the bundle; see
+`validate_member_count_in_prose` for those shapes and for what it does not see.
 
 `items:` params are field filters (`state=ready`, `kind=defect`,
 `state=ready|claimed` for alternatives, `stream=S1`, `severity=P0|P1`) plus four
@@ -122,15 +125,16 @@ CROSS-CHECKS BEYOND THE ITEMS
 being raised, because a number that counts a list is a copy of the list.)
 
 `lint` and `check` compare the `members:` list in `queue/config.yaml` against
-the allowlist table in `knowledge/domains/salmon-data-ecosystem.md`. The
-configuration says in its own comment that its copy is safe only because this
-guard compares the two, and a claim like that has to be true or deleted.
+the role table in `knowledge/domains/salmon-data-ecosystem.md`. The
+configuration is the source; the table carries what each member is for, which
+the configuration does not, and the comparison keeps it naming exactly the
+configured members, no more and no fewer.
 
 `lint` and `check` also compare each member's `solo:` flag against the
 participation table in `HUB.md`. `solo` is the one fact the standing write
-authorization turns on, so it gets the same treatment as the membership list:
-`HUB.md` governs, the configuration is the machine-readable copy, and a
-disagreement fails.
+authorization turns on, so it is cross-checked too, in the other direction from
+the member list: for `solo`, `HUB.md` governs, the configuration is the
+machine-readable copy, and a disagreement fails.
 
 A key stated twice inside one member entry, with or without a value the second
 time, fails before that comparison runs,
@@ -152,6 +156,11 @@ while a passage naming it has no landed record, or when a passage records a
 landing for an item that is not done (hub item B-202). See
 `validate_port_records` for what counts as a port, a passage and a record, and
 for what it does not check.
+
+`lint` caps an item's `retires_when` at `RETIRES_WHEN_WORD_CAP` words, with the
+items already over it on 2026-11-24 listed in
+`scripts/hub-retires-when-length-baseline.txt` so that the list can only
+shrink. See `validate_retires_when_length`.
 """
 
 from __future__ import annotations
@@ -236,6 +245,25 @@ ABS_PATH_RE = re.compile(
 # for `kind: defect` and this ratchet, the `--retirement-debt-baseline` flag,
 # the `retirement-debt` block and the baseline file are all deleted together.
 RETIREMENT_DEBT_BASELINE_FILE = "scripts/hub-retirement-debt-baseline.txt"
+
+# The length cap on `retires_when` (Brett, 2026-11-24: new ones "about 100
+# words"; 120 is that with a margin). Measured the same day over 342 items, the
+# median was about 140 words, the 90th percentile 360 and the longest 1,658, and
+# 200 items were over 120. A condition that long has absorbed its own evidence,
+# which `queue/README.md` corollary 3 says belongs in the evidence file. Words
+# are whitespace-separated tokens of the parsed value, so a reader can check a
+# count with `wc -w`.
+#
+# The items over the cap that day are listed by id in the baseline file, one per
+# line, so that existing items do not fail. Lint fails on an item over the cap that the file does not
+# list, on a listed item that is back within the cap, and on a listed id that
+# names no item, so the list can only shrink.
+#
+# RETIRES WHEN: the cap's baseline file is empty, at which point the file and
+# its exemption are deleted and the cap stays as a plain rule. The cap itself
+# goes only if `retires_when` stops being free text.
+RETIRES_WHEN_WORD_CAP = 120
+RETIRES_WHEN_BASELINE_FILE = "scripts/hub-retires-when-length-baseline.txt"
 
 DEFAULT_QUEUE_DIR = "queue/items"
 
@@ -1141,6 +1169,116 @@ def read_baseline(root: Path, override: int | None) -> tuple[int, str]:
     )
 
 
+def retires_when_words(item: Item) -> int:
+    """Whitespace-separated words in the parsed `retires_when`, 0 when absent."""
+    value = item.raw.get("retires_when")
+    return len(value.split()) if isinstance(value, str) else 0
+
+
+def read_retires_when_baseline(root: Path) -> tuple[dict | None, list[Problem]]:
+    """Return ({id: [line, ...]}, problems) from the length-cap baseline file.
+
+    The mapping is None when the file is missing or a line is not an id, because
+    a baseline that cannot be read exempts nothing reliably, and reporting every
+    long item on top of that would bury the one problem that matters.
+    """
+    path = root / RETIRES_WHEN_BASELINE_FILE
+    if not path.is_file():
+        return None, [
+            Problem(
+                RETIRES_WHEN_BASELINE_FILE,
+                0,
+                "retires-when-baseline-unreadable",
+                "the file is missing, so the retires_when length cap has no list of "
+                "the items allowed over it. Restore it; there is deliberately no "
+                "default, because a default exempts items nobody listed",
+            )
+        ]
+    listed: dict[str, list[int]] = {}
+    problems: list[Problem] = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        text = line.strip()
+        if not text or text.startswith("#"):
+            continue
+        if not ID_RE.fullmatch(text):
+            problems.append(
+                Problem(
+                    RETIRES_WHEN_BASELINE_FILE,
+                    number,
+                    "retires-when-baseline-unreadable",
+                    f"{text!r} is not an item id; each line that is neither blank nor a "
+                    "`#` comment is one id and nothing else",
+                )
+            )
+            continue
+        listed.setdefault(text, []).append(number)
+    return (None if problems else listed), problems
+
+
+def validate_retires_when_length(root: Path, items: list[Item]) -> list[Problem]:
+    """Cap `retires_when` at `RETIRES_WHEN_WORD_CAP` words; see that constant.
+
+    Fails on an item over the cap that the baseline does not list, on a listed
+    item that is now within the cap, on a listed id that names no item, and on an
+    id listed twice. The last three keep the baseline from rotting: an entry that
+    exempts nothing is slack the next long condition could hide behind.
+    """
+    listed, problems = read_retires_when_baseline(root)
+    if listed is None:
+        return problems
+    by_id = {item.id: item for item in items if item.id}
+    for item in items:
+        words = retires_when_words(item)
+        if words > RETIRES_WHEN_WORD_CAP and item.id not in listed:
+            problems.append(
+                Problem(
+                    item.path,
+                    item.lines.get("retires_when", 0),
+                    "retires-when-too-long",
+                    f"retires_when is {words} words and the cap is "
+                    f"{RETIRES_WHEN_WORD_CAP}. State what has to be true for the item "
+                    "to stop existing, and move the measurements and the history to "
+                    "the evidence file (queue/README.md, corollary 3). Only the items "
+                    f"in {RETIRES_WHEN_BASELINE_FILE} may stay over the cap, and that "
+                    "list only shrinks",
+                )
+            )
+    for item_id, lines in listed.items():
+        if len(lines) > 1:
+            where = ", ".join(str(n) for n in lines)
+            problems.append(
+                Problem(
+                    RETIRES_WHEN_BASELINE_FILE,
+                    lines[-1],
+                    "retires-when-baseline-stale",
+                    f"{item_id} is listed {len(lines)} times, at lines {where}; keep one",
+                )
+            )
+        item = by_id.get(item_id)
+        if item is None:
+            problems.append(
+                Problem(
+                    RETIRES_WHEN_BASELINE_FILE,
+                    lines[0],
+                    "retires-when-baseline-stale",
+                    f"{item_id} is listed but there is no such item in the queue; "
+                    "delete the line",
+                )
+            )
+        elif retires_when_words(item) <= RETIRES_WHEN_WORD_CAP:
+            problems.append(
+                Problem(
+                    RETIRES_WHEN_BASELINE_FILE,
+                    lines[0],
+                    "retires-when-baseline-stale",
+                    f"{item_id} is listed but its retires_when is now "
+                    f"{retires_when_words(item)} words, within the cap of "
+                    f"{RETIRES_WHEN_WORD_CAP}; delete the line, so the list only shrinks",
+                )
+            )
+    return problems
+
+
 # --------------------------------------------------------------------------
 # Block rendering
 # --------------------------------------------------------------------------
@@ -1326,35 +1464,92 @@ NUMBER_WORDS = (
 )
 
 
-def render_member_count_block(root: Path) -> list[str]:
-    """How many repositories the hub coordinates, counted from the domain card.
+def configured_members(root: Path, what: str) -> list[MemberRow]:
+    """The `members:` rows a member block renders from, or `BlockError`.
 
-    This is the one generated block whose source is the card rather than an item
-    file. It is here because the count is the fact that actually drifted: the
-    bundle said eight after `salmon-science-foundry` was admitted on 2026-09-05,
-    and the sentence looked exactly as right as it had the week before. Counting
-    the allowlist rows at render time means a hand edit fails the build.
-
-    RETIRES WHEN: no prose restates the member count, or the allowlist stops
-    living in a Markdown table that can be counted.
+    One reader for both member blocks, and it is the same parser the cross-checks
+    use, so a block can never count a list the checks read differently.
     """
-    card_path = root / DOMAIN_CARD_FILE
-    if not card_path.is_file():
+    config_path = root / QUEUE_CONFIG_FILE
+    if not config_path.is_file():
         raise BlockError(
-            f"the member count is derived from {DOMAIN_CARD_FILE}, which is not "
-            "present, so the block cannot be rendered"
+            f"the {what} is derived from `members:` in {QUEUE_CONFIG_FILE}, which "
+            "is not present, so the block cannot be rendered"
         )
-    repos = read_card_allowlist(card_path)
-    if not repos:
+    rows = read_config_member_rows(config_path)
+    if not rows:
         raise BlockError(
-            f"no allowlist rows could be read from {DOMAIN_CARD_FILE}, so the "
-            "member count would render as zero and read as a fact rather than as "
-            "a parse failure"
+            f"no `members:` entries could be read from {QUEUE_CONFIG_FILE}, so the "
+            f"{what} would render empty and read as a fact rather than as a parse "
+            "failure"
         )
-    count = len(repos)
+    return rows
+
+
+def render_member_count_block(root: Path) -> list[str]:
+    """How many repositories the hub coordinates, counted from `members:`.
+
+    The count is the fact that drifted most: the bundle said eight after
+    `salmon-science-foundry` was admitted on 2026-09-05, and on 2026-11-24 the
+    tenth admission left a copy stale in a pull request that took three review
+    rounds. Counting the configured members at render time means a hand edit
+    fails the build. Until 2026-11-24 this counted the domain card's table; the
+    configuration became the single source that day.
+
+    RETIRES WHEN: membership stops being a list in `queue/config.yaml`.
+    """
+    count = len(configured_members(root, "member count"))
     word = NUMBER_WORDS[count] if count < len(NUMBER_WORDS) else str(count)
     noun = "member repository" if count == 1 else "member repositories"
     return [f"The salmon data ecosystem has **{word}** {noun}."]
+
+
+# How the member list names a forge, and where a member's repository lives on
+# it. A forge missing here renders under its configured name with no link,
+# rather than failing, because the forge is still a fact worth showing.
+FORGE_NAMES = {"github": "GitHub", "gitlab": "GitLab"}
+FORGE_HOSTS = {"github": "https://github.com", "gitlab": "https://gitlab.com"}
+
+# The client refuses to act on a value with this prefix, and the list says why
+# rather than printing the placeholder or linking to a repository that does
+# not exist.
+PLACEHOLDER_PREFIX = "PLACEHOLDER"
+
+
+def render_member_list_block(root: Path) -> list[str]:
+    """Every member repository, with its organization and forge, from `members:`.
+
+    In configuration order, which is the order the source was written in and is
+    identical on every machine. A member whose `org` or `forge` cannot be read
+    as one value stops the render: `validate_member_fields` names the duplicate,
+    and a table cell guessed here would be a second reading of the same bytes.
+
+    RETIRES WHEN: membership stops being a list in `queue/config.yaml`.
+    """
+    out = ["| Repository | Organization | Forge |", "|---|---|---|"]
+    for row in configured_members(root, "member list"):
+        values = {}
+        for key in ("org", "forge"):
+            if key not in row.fields or not row.fields[key][0]:
+                raise BlockError(
+                    f"member {row.repo!r} (line {row.line} of {QUEUE_CONFIG_FILE}) "
+                    f"has no single `{key}:` value, so its row of the member list "
+                    "cannot be rendered; run `python3 scripts/hub_queue.py lint`"
+                )
+            values[key] = row.fields[key][0]
+        org, forge = values["org"], values["forge"]
+        if org.startswith(PLACEHOLDER_PREFIX):
+            repo_cell = f"`{row.repo}`"
+            org_cell = "*not yet created*"
+        else:
+            host = FORGE_HOSTS.get(forge)
+            repo_cell = f"[`{row.repo}`]({host}/{org}/{row.repo})" if host else f"`{row.repo}`"
+            org_cell = f"`{org}`"
+        forge_cell = FORGE_NAMES.get(forge, forge)
+        out.append(
+            "| " + " | ".join(escape_cell(cell) for cell in (repo_cell, org_cell, forge_cell)) + " |"
+        )
+    return out
 
 
 def render_block(name: str, items: list[Item], baseline: int, source: str, root: Path) -> list[str]:
@@ -1370,35 +1565,52 @@ def render_block(name: str, items: list[Item], baseline: int, source: str, root:
         return render_debt_block(items, baseline, source)
     if head == "member-count":
         return render_member_count_block(root)
+    if head == "member-list":
+        return render_member_list_block(root)
     raise BlockError(
         f"unknown block name {name!r}; known blocks are "
         + ", ".join(sorted(BLOCK_ALIASES))
-        + ", queue-summary, retirement-debt, member-count and items:<key=value,...>"
+        + ", queue-summary, retirement-debt, member-count, member-list and "
+        "items:<key=value,...>"
     )
+
+
+# The blocks whose source is the configuration's `members:` list rather than an
+# item file, so `check` can name the right file to edit when one drifts.
+MEMBER_BLOCKS = ("member-count", "member-list")
+
+
+def block_source(name: str) -> str:
+    """Where a drifted block's content comes from, for the `check` message."""
+    if parse_block_name(name)[0] in MEMBER_BLOCKS:
+        return f"`members:` in {QUEUE_CONFIG_FILE}"
+    return "the queue file under queue/items/"
 
 
 # --------------------------------------------------------------------------
 # The members cross-check
 # --------------------------------------------------------------------------
 #
-# `queue/config.yaml` carries a machine-readable copy of the eight-row
-# allowlist whose home is `knowledge/domains/salmon-data-ecosystem.md`, and it
-# says in its own comment that the copy "is safe only because the
-# render-and-check guard compares the two and fails when they disagree". This is
-# that comparison. Without it that sentence is false, and a false claim about a
-# guard is the failure mode this repository has already shipped once.
+# `members:` in `queue/config.yaml` is the single source of the member list
+# (Brett, 2026-11-24). Until that day the domain card's table was the source and
+# the configuration a copy; the direction was reversed because the client needs
+# the list in a form it can read without parsing prose, and a list that two files
+# each own is two lists. The card now renders the count and the list as
+# generated blocks, and keeps a role table saying what each member is for.
 #
-# The card wins when the two disagree; the configuration copy is the wrong one.
+# That role table is the one hand-written list of members left, and this is the
+# comparison that keeps it from becoming a stale copy: it must name exactly the
+# configured repositories. When the two disagree the configuration is right
+# about WHO is a member and the table is the copy to fix; adding a member means
+# a configuration entry, which is Brett's to merge, and a role row with it.
 #
-# WHAT IT DOES NOT CHECK: only the set of repository names. It never reads
-# `org` or `forge`, which the card's table does not state in a machine-readable
-# column, so a member sitting under the wrong organisation or the wrong forge
-# passes this check. The GitLab member matters for the authorization boundary,
-# so that field is verified by reading, not here.
+# WHAT IT DOES NOT CHECK: only the set of repository names. The role table does
+# not state `org` or `forge`; those reach the bundle only through the generated
+# member list, so a member under the wrong organization or forge is wrong in
+# one place, the configuration, and is verified by reading it.
 #
-# RETIRES WHEN: the `members:` block is deleted from the queue configuration
-# because the client reads the allowlist from the card directly, which the
-# configuration already names as its own retirement condition.
+# RETIRES WHEN: the role table is generated too, or deleted, so that no
+# hand-written list of members is left to compare.
 
 QUEUE_CONFIG_FILE = "queue/config.yaml"
 DOMAIN_CARD_FILE = "knowledge/domains/salmon-data-ecosystem.md"
@@ -1484,7 +1696,8 @@ def read_config_members(path: Path) -> list[str]:
     return [row.repo for row in read_config_member_rows(path)]
 
 
-def read_card_allowlist(path: Path) -> list[str]:
+def read_card_role_table(path: Path) -> list[str]:
+    """The repositories named in the domain card's `| Repo | Role |` table."""
     repos: list[str] = []
     inside = False
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -1510,16 +1723,17 @@ def validate_members(root: Path) -> list[Problem]:
     if not card_path.is_file():
         return [
             Problem(
-                QUEUE_CONFIG_FILE,
+                DOMAIN_CARD_FILE,
                 0,
-                "members-source-missing",
-                f"the configuration copies the allowlist from {DOMAIN_CARD_FILE}, "
-                "which is not present, so the copy cannot be checked against its source",
+                "members-card-missing",
+                f"{DOMAIN_CARD_FILE} is not present, so its role table cannot be "
+                f"checked against `members:` in {QUEUE_CONFIG_FILE}; the card "
+                "carries the generated member list and the ruled membership test",
             )
         ]
 
     config_members = read_config_members(config_path)
-    card_members = read_card_allowlist(card_path)
+    card_members = read_card_role_table(card_path)
     problems: list[Problem] = []
     if not config_members:
         problems.append(
@@ -1527,9 +1741,9 @@ def validate_members(root: Path) -> list[Problem]:
                 QUEUE_CONFIG_FILE,
                 0,
                 "members-unreadable",
-                "no `members:` entries found; the cross-check against "
-                f"{DOMAIN_CARD_FILE} cannot run, and a check that silently does "
-                "nothing is worse than no check",
+                "no `members:` entries found; the member list has no source, and "
+                f"the cross-check against {DOMAIN_CARD_FILE} cannot run. A check "
+                "that silently does nothing is worse than no check",
             )
         )
     if not card_members:
@@ -1538,8 +1752,8 @@ def validate_members(root: Path) -> list[Problem]:
                 DOMAIN_CARD_FILE,
                 0,
                 "members-unreadable",
-                "the allowlist table could not be read, so the configuration copy "
-                "cannot be checked against it",
+                "the role table (headed `| Repo | Role |`) could not be read, so it "
+                f"cannot be checked against `members:` in {QUEUE_CONFIG_FILE}",
             )
         )
     if problems:
@@ -1548,22 +1762,24 @@ def validate_members(root: Path) -> list[Problem]:
     for repo in sorted(set(config_members) - set(card_members)):
         problems.append(
             Problem(
-                QUEUE_CONFIG_FILE,
+                DOMAIN_CARD_FILE,
                 0,
                 "members-drift",
-                f"{repo!r} is a member in the configuration but not in the "
-                f"{DOMAIN_CARD_FILE} allowlist; the card governs, so remove it here "
-                "or add the row there first",
+                f"{repo!r} is a member in {QUEUE_CONFIG_FILE} but has no row in the "
+                f"{DOMAIN_CARD_FILE} role table; the configuration is the source of "
+                "membership, so add the row saying what the member is for",
             )
         )
     for repo in sorted(set(card_members) - set(config_members)):
         problems.append(
             Problem(
-                QUEUE_CONFIG_FILE,
+                DOMAIN_CARD_FILE,
                 0,
                 "members-drift",
-                f"{repo!r} is in the {DOMAIN_CARD_FILE} allowlist but missing from "
-                "the configuration copy; the card governs, so add it here",
+                f"{repo!r} has a row in the {DOMAIN_CARD_FILE} role table but is not "
+                f"a member in {QUEUE_CONFIG_FILE}; the configuration is the source of "
+                "membership, so delete the row, or admit the repository there first "
+                "(a membership change is Brett's to merge)",
             )
         )
     return problems
@@ -1657,9 +1873,10 @@ def validate_member_fields(root: Path) -> list[Problem]:
 # `HUB.md` GOVERNS. Its participation table under the standing authorization is
 # the measured record and says so in its own text ("this is the operative copy,
 # and it is now the only one"). The `solo:` column in the configuration is the
-# machine-readable copy, exactly as `members:` is a copy of the domain card, and
-# it is safe only because this comparison exists. When the two disagree the
-# table is right and the configuration is wrong.
+# machine-readable copy, and it is safe only because this comparison exists.
+# When the two disagree the table is right and the configuration is wrong. (The
+# member list itself runs the other way: `members:` is its source and the domain
+# card renders it.)
 #
 # THE ASYMMETRY IS DELIBERATE. A repository marked `solo: true` that the table
 # does not list fails, because a grant nothing measured is a grant nobody made.
@@ -1674,8 +1891,8 @@ def validate_member_fields(root: Path) -> list[Problem]:
 # so a collaborator who lands their first commit tomorrow makes both the table
 # and this column wrong together and no test will notice. Re-measuring is a
 # human job with a date on it. A table row naming a repository that is not a
-# member is also ignored rather than reported: membership is the domain card's
-# ruling and the members cross-check above owns that disagreement.
+# member is also ignored rather than reported: membership is `members:` in the
+# configuration, and the members cross-check above owns that disagreement.
 #
 # RETIRES WHEN: the participation test stops gating writes, or a client that can
 # ask the forge who has contributed replaces the recorded answer with a measured
@@ -2495,6 +2712,32 @@ QUEUE_FACT_SENTENCE_RE = re.compile(
 )
 
 
+def visible_prose(text: str) -> str:
+    """`text` with generated blocks and fenced code blanked, newlines kept.
+
+    Shared by the two prose rules. A generated block has its own freshness check
+    and a fenced example describes syntax rather than current fact, so neither
+    is read as prose; every newline survives so a reported line number is the
+    line in the file.
+    """
+    text = BLOCK_RE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+    fence = None
+    visible = []
+    for line in text.splitlines(keepends=True):
+        marker = MARKDOWN_FENCE_RE.match(line.rstrip("\r\n"))
+        if fence is not None:
+            if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= fence[1] \
+                    and not marker.group(2).strip():
+                fence = None
+            visible.append("\n" if line.endswith("\n") else "")
+        elif marker and not (marker.group(1)[0] == "`" and "`" in marker.group(2)):
+            fence = (marker.group(1)[0], len(marker.group(1)))
+            visible.append("\n" if line.endswith("\n") else "")
+        else:
+            visible.append(line)
+    return "".join(visible)
+
+
 def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem]:
     """B-209's limited grammar, declared first in queue/README.md.
 
@@ -2508,23 +2751,7 @@ def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem
     known = {item.id for item in items}
     problems = []
     for path in find_prose_files(root, DEFAULT_PROSE_ROOTS):
-        text = path.read_text(encoding="utf-8")
-        text = BLOCK_RE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
-        fence = None
-        visible = []
-        for line in text.splitlines(keepends=True):
-            marker = MARKDOWN_FENCE_RE.match(line.rstrip("\r\n"))
-            if fence is not None:
-                if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= fence[1] \
-                        and not marker.group(2).strip():
-                    fence = None
-                visible.append("\n" if line.endswith("\n") else "")
-            elif marker and not (marker.group(1)[0] == "`" and "`" in marker.group(2)):
-                fence = (marker.group(1)[0], len(marker.group(1)))
-                visible.append("\n" if line.endswith("\n") else "")
-            else:
-                visible.append(line)
-        prose = "".join(visible)
+        prose = visible_prose(path.read_text(encoding="utf-8"))
         # A wrapped historical sentence can begin its SECOND line with an id
         # (backlog.md's export-of-349a443 example). A physical line is not a
         # standalone assertion. Restrict reach to paragraph/list starts.
@@ -2547,6 +2774,108 @@ def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem
                     "Link to its item or use the existing generated item block; "
                     "the item owns state, claimable and blocked_by, even when this copy agrees today",
                 ))
+    return problems
+
+
+# --------------------------------------------------------------------------
+# A member count written by hand (retro of pull request #286, 2026-11-24)
+# --------------------------------------------------------------------------
+#
+# WHAT THIS GUARDS. Admitting the tenth member took three review rounds, and
+# every important finding was one defect: the member count, or the member list,
+# stated by hand in about ten places with one copy left stale. The count and the
+# list are now generated from `members:` in the queue configuration. This rule
+# keeps a hand-written count from growing back in the bundle.
+#
+# WHAT IT RECOGNIZES: a cardinal from two upward, as a word or in digits,
+# written directly before a member noun, or before "repositories" when the
+# phrase names the hub or the ecosystem. These are the shapes the copies took:
+#
+#     the ten-repo salmon data ecosystem       ten repositories, one hub
+#     **ten** member repositories              five of the ten members
+#     the ten rows in the domain card          the ten repositories in the ecosystem
+#
+# It flags a subset count ("two members that do not") as well as the total,
+# because a subset of the list is derived from the list and goes stale the same
+# way.
+#
+# WHAT IT DOES NOT SEE, so that green is not read as more than it is:
+#   * an ordinal. "The tenth member, admitted 2026-11-24" records admission
+#     order, which does not change, and is left alone;
+#   * a count in any other wording: "is ten now", "it is ten since", "nine of
+#     them", or a list of names. Those remain review subjects;
+#   * text in double quotes, which is how the bundle quotes a former sentence
+#     ("eight sections for seven members") when it records a correction;
+#   * a file whose name carries a date, such as every execplan under
+#     `knowledge/plans/`, because a dated record is history by construction;
+#   * anything outside `knowledge/`, the bundle. `AGENTS.md`, `HUB.md` and the
+#     other prose roots are not read.
+#
+# "Members" meaning people would be a false positive; on the tree this rule was
+# written against, after the copies were removed, it reports nothing at all, and
+# before they were removed it reported twelve, each a present-tense count. Reword
+# a false positive ("eight people") rather than exempting a file.
+#
+# RETIRES WHEN: membership stops being a list in `queue/config.yaml`, or the
+# bundle's prose is generated rather than hand-written.
+
+MEMBER_COUNT_PROSE_ROOTS = ("knowledge",)
+DATED_FILE_NAME_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_MC_SPACE = r"(?:[ \t]*\n[ \t]*|[ \t]+)"  # one gap, never across a blank line
+_MC_DECORATION = r"(?:\*\*|\*|_|`)?"
+_MC_COUNT = (
+    _MC_DECORATION + r"(?P<count>" + "|".join(NUMBER_WORDS[2:]) + r"|\d+)" + _MC_DECORATION
+)
+MEMBER_COUNT_PROSE_RE = re.compile(
+    r"(?<![\w.\-#/])" + _MC_COUNT + r"(?:"
+    # ten members, ten member repositories, eight hub member repositories
+    + _MC_SPACE + r"(?:hub" + _MC_SPACE + r")?member(?:s\b|" + _MC_SPACE
+    + r"repositor(?:y|ies)\b|" + _MC_SPACE + r"repos?\b)"
+    # ten-repo salmon data ecosystem, ten-repository ecosystem, ten repositories, one hub
+    + r"|(?:-|" + _MC_SPACE + r")repo(?:s|sitory|sitories)?,?" + _MC_SPACE
+    + r"(?:one" + _MC_SPACE + r"hub\b|(?:salmon" + _MC_SPACE + r"data" + _MC_SPACE
+    + r")?ecosystem\b)"
+    # the ten rows in the domain card, the ten repositories in the ecosystem
+    + r"|" + _MC_SPACE + r"(?:rows|repositories|repos)" + _MC_SPACE + r"in" + _MC_SPACE
+    + r"the" + _MC_SPACE + r"\[?(?:ecosystem|hub|domain|allowlist)\b"
+    + r")",
+    re.IGNORECASE,
+)
+# A double-quoted span inside one paragraph, straight or curly.
+QUOTED_SPAN_RE = re.compile(
+    r"\"[^\"\n]*(?:\n(?![ \t]*\n)[^\"\n]*)*\"|“[^”\n]*(?:\n(?![ \t]*\n)[^”\n]*)*”"
+)
+
+
+def _blank(match: re.Match) -> str:
+    return "".join("\n" if char == "\n" else " " for char in match.group(0))
+
+
+def validate_member_count_in_prose(root: Path) -> list[Problem]:
+    """Fail on a hand-written member count in the bundle; see the comment above."""
+    problems = []
+    for path in find_prose_files(root, MEMBER_COUNT_PROSE_ROOTS):
+        if DATED_FILE_NAME_RE.search(path.name):
+            continue
+        prose = visible_prose(path.read_text(encoding="utf-8"))
+        # Front matter is YAML, where the double quotes delimit the value rather
+        # than quoting anyone, so the quote exemption starts after it.
+        body_start = 0
+        if prose.startswith("---\n"):
+            end = prose.find("\n---", 4)
+            if end != -1:
+                body_start = end + 4
+        prose = prose[:body_start] + QUOTED_SPAN_RE.sub(_blank, prose[body_start:])
+        for match in MEMBER_COUNT_PROSE_RE.finditer(prose):
+            phrase = " ".join(match.group(0).split())
+            problems.append(Problem(
+                relative(path, root), prose.count("\n", 0, match.start()) + 1,
+                "member-count-in-prose",
+                f"{phrase!r} states a member count by hand. The count and the list "
+                f"are generated from `members:` in {QUEUE_CONFIG_FILE} into "
+                f"{DOMAIN_CARD_FILE}; point at that list instead of stating a "
+                "number, or, for a dated record, quote the former wording",
+            ))
     return problems
 
 
@@ -2611,6 +2940,8 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_port_records(root, items)
         + validate_queue_facts_in_prose(root, items)
         + validate_port_pair_presence(root, items)
+        + validate_member_count_in_prose(root)
+        + validate_retires_when_length(root, items)
     )
 
     baseline: int | None = None
@@ -2726,8 +3057,8 @@ def command_check(args, root: Path, queue_dir: Path, out) -> int:
                     f"DRIFT: {display} block `hub:generated:{name}` no longer matches the "
                     f"hub queue.\n"
                     f"       Fix it with: {RENDER_COMMAND}\n"
-                    f"       Do not edit the block by hand; the queue file under "
-                    f"queue/items/ is the source.",
+                    f"       Do not edit the block by hand; {block_source(name)} "
+                    f"is the source.",
                     file=out,
                 )
                 drift += 1

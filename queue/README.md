@@ -102,6 +102,13 @@ that counts a list is a copy of that list, and the copy is what rots.)*
   condition outlives its cause and then sits in the queue looking like work.
   This is the same rule the package applies to every guard, suppression, and
   exclusion: a thing that silences a signal has to say what would retire it.
+- **`retires_when` is at most 120 words**, Brett's "about 100" with a margin
+  (2026-11-24): it states what has to be true, and the measurements and history
+  go to the evidence file (corollary 3 below). `hub_queue.py lint` fails on an
+  item over the cap unless `scripts/hub-retires-when-length-baseline.txt` lists
+  it, and on a listed item that is back within the cap or gone, so that list
+  only shrinks. *Retires when* the list is empty: the file and its exemption
+  then go, and the cap stays.
 - **`claimable: false` is required when the item needs a decision from Brett or
   a credential he holds.** Section 9.2 counted five of the first class and one
   of the second among 44 open items. Leaving them claimable does not make them
@@ -460,10 +467,11 @@ they are about the *search* for stale copies rather than about the copies. Rule
 10 is about the author, and it is the only one here found by someone else in
 the act of adding the other nine.
 
-Two facts are deliberately **not** queue state, and the same rule points the
-other way for them. Membership of the ecosystem lives in the
-[domain card](../knowledge/domains/salmon-data-ecosystem.md), whose ruled
-allowlist governs; the member list in `config.yaml` is a machine-readable copy
-and it is the copy that loses. Release versions and the parity window live in
-the [roadmap](../knowledge/roadmap.md) release index. Do not add item files for
-either.
+Two facts are deliberately **not** queue state, and neither gets an item file.
+The member list lives in `members:` in [`config.yaml`](config.yaml), its single
+source since 2026-11-24: the
+[domain card](../knowledge/domains/salmon-data-ecosystem.md) renders the count
+and the list from it as generated blocks and keeps the ruled membership test
+and a role table that lint compares with the list. Until that day the card's
+table governed and the configuration was the copy. Release versions and the
+parity window live in the [roadmap](../knowledge/roadmap.md) release index.

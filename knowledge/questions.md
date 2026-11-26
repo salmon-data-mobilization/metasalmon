@@ -1160,8 +1160,8 @@ nothing was asking the test to stretch, so the tension that produced the
 question disappeared instead of being resolved in either direction. The test
 ruled in [Q10](#q10--which-membership-test-governs-the-hub-and-is-the-workshop-the-eighth-member--answered-2026-08-24-brett)
 stands unamended: *a repository is a member when this hub sequences that
-repository's work.* The eight members are unchanged and the Foundry's admission
-under Q19 is the ninth.
+repository's work.* The members admitted before it are unchanged, and the
+Foundry's admission under Q19 stands.
 
 **Full text:** Appendix A Q36. **Owner:** the
 [domain card](domains/salmon-data-ecosystem.md); no change.
@@ -1215,9 +1215,10 @@ other people as him, and the delay was costing a continuous-integration run
 each time.
 
 **Two consequences a reader of Q37 would otherwise carry away wrong.** The
-scope test is **participation, not ownership**: three member repositories have
-had other contributors and the grant does not reach them, so an agent working
-there pushes its branch, drafts the pull request text in chat, and waits. And
+scope test is **participation, not ownership**: member repositories that have
+had other contributors are outside the grant (`HUB.md`'s participation table
+names them), so an agent working there pushes its branch, drafts the pull
+request text in chat, and waits. And
 the claim that an agent cannot enlarge its own queue is **no longer
 structural**: it was true because an agent could not reach `main` at all, and
 it is now an audit trail resting on a cited authorization.
