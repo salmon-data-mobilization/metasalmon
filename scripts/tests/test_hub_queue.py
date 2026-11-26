@@ -2454,9 +2454,20 @@ class TestMemberCountInProse(QueueTestCase):
         self.write_prose("knowledge/card.md", "No count.\n")
         self.write_prose("knowledge/plans/2026-09-04-a-plan.md", count)
         self.write_prose("knowledge/evidence-2026-09-08.md", count)
-        self.write_prose("AGENTS.md", count)
         self.write_prose("queue/README.md", count)
+        self.write_prose("README.md", count)
         self.assert_accepts()
+
+    def test_agents_and_hub_are_read(self):
+        # AGENTS.md and HUB.md joined the rule's roots on 2026-11-26, once #290
+        # had removed their hand-kept member lists.
+        self.write_item(BASE_DEFECT)
+        for relpath in ("AGENTS.md", "HUB.md"):
+            with self.subTest(relpath=relpath):
+                self.write_prose(relpath, "The hub coordinates ten member repositories.\n")
+                self.assert_rejects("member-count-in-prose")
+                self.write_prose(relpath, "The member list is generated.\n")
+                self.assert_accepts()
 
     def test_front_matter_quotes_are_yaml_and_are_still_read(self):
         # The quote exemption must not swallow a front-matter description, which

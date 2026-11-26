@@ -2808,8 +2808,10 @@ def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem
 #     ("eight sections for seven members") when it records a correction;
 #   * a file whose name carries a date, such as every execplan under
 #     `knowledge/plans/`, because a dated record is history by construction;
-#   * anything outside `knowledge/`, the bundle. `AGENTS.md`, `HUB.md` and the
-#     other prose roots are not read.
+#   * anything outside `knowledge/`, `AGENTS.md` and `HUB.md`. `README.md`,
+#     `NEWS.md` and the other prose roots are not read. `AGENTS.md` and `HUB.md`
+#     joined on 2026-11-26, after #290 removed their hand-kept member lists;
+#     neither held a count the rule matches then.
 #
 # "Members" meaning people would be a false positive; on the tree this rule was
 # written against, after the copies were removed, it reports nothing at all, and
@@ -2819,7 +2821,7 @@ def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem
 # RETIRES WHEN: membership stops being a list in `queue/config.yaml`, or the
 # bundle's prose is generated rather than hand-written.
 
-MEMBER_COUNT_PROSE_ROOTS = ("knowledge",)
+MEMBER_COUNT_PROSE_ROOTS = ("knowledge", "AGENTS.md", "HUB.md")
 DATED_FILE_NAME_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _MC_SPACE = r"(?:[ \t]*\n[ \t]*|[ \t]+)"  # one gap, never across a blank line
 _MC_DECORATION = r"(?:\*\*|\*|_|`)?"
