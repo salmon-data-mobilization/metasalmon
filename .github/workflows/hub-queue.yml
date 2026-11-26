@@ -52,7 +52,7 @@ on:
       # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md`,
       # `knowledge/`, `NEWS.md` and `notes/evidence/theme-a/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
       # for the members cross-check, and re-renders the one configured target,
-      # `knowledge/roadmap.md`. An input the client reads that no filter here
+      # `knowledge/domains/salmon-data-ecosystem.md`. An input the client reads that no filter here
       # names is a guard that is green because it never executed: a pull request
       # touching only that file can commit a stale block, and the job is skipped
       # rather than failed.
@@ -102,7 +102,7 @@ on:
       # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md`,
       # `knowledge/`, `NEWS.md` and `notes/evidence/theme-a/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
       # for the members cross-check, and re-renders the one configured target,
-      # `knowledge/roadmap.md`. An input the client reads that no filter here
+      # `knowledge/domains/salmon-data-ecosystem.md`. An input the client reads that no filter here
       # names is a guard that is green because it never executed: a pull request
       # touching only that file can commit a stale block, and the job is skipped
       # rather than failed.
