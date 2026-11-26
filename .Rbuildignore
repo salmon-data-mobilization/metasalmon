@@ -10,6 +10,7 @@
 ^\.metasalmonpy-sibling$
 ^notes$
 ^knowledge$
+^proposals(/|$)
 ^\.DS_Store$
 \.cursorignore$
 \.cursor($|/)
